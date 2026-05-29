@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useWebhooks } from '../hooks/useCrm';
 import { PageHeader } from '../components/ui/LayoutComponents';
-import { Card, Button, Badge } from '../components/ui/Base';
+import { Card, Button, Badge, type BadgeVariant } from '../components/ui/Base';
 import { Link2, ExternalLink, Activity, Terminal, Shield, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { formatDate } from '../lib/utils';
+import type { WebhookDelivery } from '../lib/api/types';
 
 function webhookStatusLabel(status: string) {
   if (status === 'planned') return 'planejado';
@@ -12,10 +13,36 @@ function webhookStatusLabel(status: string) {
   return 'inativo';
 }
 
-function webhookBadgeVariant(status: string) {
+function webhookBadgeVariant(status: string): BadgeVariant {
   if (status === 'active') return 'success';
   if (status === 'failing') return 'error';
   return 'default';
+}
+
+function deliveryStatusLabel(status: WebhookDelivery['status']) {
+  if (status === 'sent') return 'Enviado';
+  if (status === 'failed') return 'Falhou';
+  return 'Na fila';
+}
+
+function deliveryBadgeVariant(status: WebhookDelivery['status']): BadgeVariant {
+  if (status === 'sent') return 'success';
+  if (status === 'failed') return 'error';
+  return 'warning';
+}
+
+function deliverySummary(delivery: WebhookDelivery) {
+  const pieces = [
+    delivery.httpStatus ? `HTTP ${delivery.httpStatus}` : 'HTTP pendente',
+    `${delivery.attempts} tentativa${delivery.attempts === 1 ? '' : 's'}`,
+  ];
+  if (delivery.deliveredAt) pieces.push(`entregue ${formatDate(delivery.deliveredAt)}`);
+  return pieces.join(' · ');
+}
+
+function safeResponsePreview(responseBody?: string | null) {
+  if (!responseBody) return null;
+  return responseBody.length > 120 ? `${responseBody.slice(0, 120)}...` : responseBody;
 }
 
 export default function Webhooks() {
@@ -106,17 +133,25 @@ export default function Webhooks() {
           <Card className="p-6">
             <h3 className="font-bold text-graphite mb-4 flex items-center gap-2">
               <Activity size={20} className="text-energy-green" />
-              Logs Recentes (fila controlada)
+              Logs Recentes (dispatcher controlado)
             </h3>
-            <div className="bg-graphite rounded-xl p-4 font-mono text-xs text-energy-green overflow-x-auto space-y-1">
+            <div className="bg-graphite rounded-xl p-4 font-mono text-xs text-energy-green overflow-x-auto space-y-2">
               {deliveries.length === 0 ? (
                 <p className="opacity-50"># Nenhuma entrega registrada ainda no preview</p>
               ) : deliveries.slice(0, 6).map((delivery) => (
-                <p key={delivery.id}>
-                  {JSON.stringify({ event: delivery.eventType, webhook: delivery.webhookName ?? delivery.webhookId, status: delivery.status, attempts: delivery.attempts })}
-                </p>
+                <div key={delivery.id} className="rounded-lg border border-white/10 bg-white/5 p-3 text-[11px] text-mint-light">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-energy-green">{delivery.eventType}</span>
+                    <span className="text-gray-400">→ {delivery.webhookName ?? delivery.webhookId}</span>
+                    <Badge variant={deliveryBadgeVariant(delivery.status)}>{deliveryStatusLabel(delivery.status)}</Badge>
+                  </div>
+                  <p className="mt-1 text-gray-300">{deliverySummary(delivery)}</p>
+                  {safeResponsePreview(delivery.responseBody) && (
+                    <p className="mt-1 text-gray-400">resposta: {safeResponsePreview(delivery.responseBody)}</p>
+                  )}
+                </div>
               ))}
-              <p className="opacity-50 mt-4"># Modo seguro: fila/log interno; sem HTTP externo automático</p>
+              <p className="opacity-50 mt-4"># Dispatcher seguro: só envia HTTP para hosts explicitamente permitidos por allowlist</p>
             </div>
           </Card>
         </div>
@@ -160,7 +195,7 @@ export default function Webhooks() {
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Webhooks Queue</span>
-                <span className="text-energy-success font-bold">Controlada</span>
+                <span className="text-energy-success font-bold">Dispatcher controlado</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Tracking Engine</span>

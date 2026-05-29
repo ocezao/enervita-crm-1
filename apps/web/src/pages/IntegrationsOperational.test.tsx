@@ -38,13 +38,13 @@ describe('Operational integrations pages', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/automations', { credentials: 'include' });
   });
 
-  it('records controlled webhook test deliveries through the API and shows the result to the operator', async () => {
+  it('records controlled webhook test deliveries through the API and shows dispatcher status details', async () => {
     window.history.pushState({}, '', '/webhooks');
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url === '/api/me') return jsonResponse({ user: operator });
       if (url === '/api/webhooks') return jsonResponse({ webhooks: [{ id: 'n8n-lead-created', name: 'n8n - lead criado', url: 'https://n8n.enervita.com.br/webhook/lead-created', eventTypes: ['lead.created'], status: 'planned', successRate: 0, secretConfigured: false }] });
-      if (url === '/api/webhooks/deliveries') return jsonResponse({ deliveries: [] });
+      if (url === '/api/webhooks/deliveries') return jsonResponse({ deliveries: [{ id: 'delivery-sent', webhookId: 'n8n-lead-created', webhookName: 'n8n - lead criado', eventType: 'lead.created', status: 'sent', httpStatus: 200, attempts: 1, createdAt: '2026-05-29T09:00:00.000Z', deliveredAt: '2026-05-29T09:00:02.000Z', responseBody: 'ok' }] });
       if (url === '/api/webhooks/n8n-lead-created/test' && init?.method === 'POST') return jsonResponse({ result: { success: true, message: 'Entrega de teste registrada na fila controlada', delivery: { id: 'delivery-1', webhookId: 'n8n-lead-created', webhookName: 'n8n - lead criado', eventType: 'webhook.test', status: 'queued', httpStatus: null, attempts: 0, createdAt: '2026-05-29T10:00:00.000Z' } } });
       return jsonResponse({ error: 'Not found' }, 404);
     });
@@ -53,6 +53,9 @@ describe('Operational integrations pages', () => {
     render(<App />);
 
     expect(await screen.findByText('n8n - lead criado')).toBeInTheDocument();
+    expect(await screen.findByText('Enviado')).toBeInTheDocument();
+    expect(screen.getByText(/HTTP 200/)).toBeInTheDocument();
+
     await userEvent.click(screen.getByRole('button', { name: /testar webhook n8n - lead criado/i }));
 
     await waitFor(() => {
@@ -60,5 +63,6 @@ describe('Operational integrations pages', () => {
     });
     expect(await screen.findByText('Entrega de teste registrada na fila controlada')).toBeInTheDocument();
     expect(await screen.findByText(/webhook.test/)).toBeInTheDocument();
+    expect(screen.getByText('Na fila')).toBeInTheDocument();
   });
 });

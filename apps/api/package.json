@@ -7,7 +7,8 @@
     "lint": "echo \"API placeholder: no lint configured yet\"",
     "dev": "tsx watch src/server.ts",
     "test": "node --import tsx --test src/__tests__/*.test.ts",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "tsc -p tsconfig.json",
+    "dispatch:webhooks": "node --import tsx scripts/dispatch-webhooks.ts"
   },
   "dependencies": {
     "@enervita/shared": "0.0.0",
