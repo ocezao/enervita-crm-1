@@ -102,6 +102,42 @@ export interface TrackingEvent {
   payload: Record<string, unknown>;
 }
 
+
+export interface Proposal {
+  id: string;
+  tenantId?: string;
+  leadId: string;
+  title: string;
+  status: 'draft' | 'sent' | 'accepted' | 'lost' | 'expired';
+  monthlyBillValue: number;
+  estimatedKwh: number;
+  discountPercentage: number;
+  projectedMonthlySavings: number;
+  projectedAnnualSavings: number;
+  validUntil?: string;
+  sentAt?: string;
+  acceptedAt?: string;
+  lostAt?: string;
+  lostReason?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+  leadName?: string;
+  leadStage?: LeadStage;
+}
+
+export type CreateProposalPayload = {
+  leadId: string;
+  title: string;
+  monthlyBillValue: number;
+  estimatedKwh?: number;
+  discountPercentage: number;
+  projectedMonthlySavings: number;
+  projectedAnnualSavings: number;
+  validUntil?: string;
+  notes?: string;
+};
+
 export interface SyncMapping {
   id: string;
   sourceSystem: string;

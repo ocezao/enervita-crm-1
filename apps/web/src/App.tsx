@@ -7,6 +7,7 @@ import Leads from './pages/Leads';
 import Pipeline from './pages/Pipeline';
 import LeadDetail from './pages/LeadDetail';
 import Tasks from './pages/Tasks';
+import Proposals from './pages/Proposals';
 import Automations from './pages/Automations';
 import Webhooks from './pages/Webhooks';
 import Analytics from './pages/Analytics';
@@ -27,6 +28,7 @@ function App() {
               <Route path="/leads/:id" element={<ProtectedRoute requiredAnyPermission={["page.lead_detail", "lead.view"]}><LeadDetail /></ProtectedRoute>} />
               <Route path="/pipeline" element={<ProtectedRoute requiredPermission="page.pipeline"><Pipeline /></ProtectedRoute>} />
               <Route path="/tasks" element={<ProtectedRoute requiredPermission="page.tasks"><Tasks /></ProtectedRoute>} />
+              <Route path="/proposals" element={<ProtectedRoute requiredAnyPermission={["page.proposals", "proposal.view"]}><Proposals /></ProtectedRoute>} />
               <Route path="/automations" element={<ProtectedRoute requiredAnyPermission={["page.automations", "automation.manage"]}><Automations /></ProtectedRoute>} />
               <Route path="/webhooks" element={<ProtectedRoute requiredAnyPermission={["page.webhooks", "webhook.manage", "webhook.test"]}><Webhooks /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute requiredAnyPermission={["page.analytics", "analytics.view", "tracking.view"]}><Analytics /></ProtectedRoute>} />

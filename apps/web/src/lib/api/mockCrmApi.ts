@@ -6,6 +6,9 @@ import {
   AutomationRule,
   Webhook,
   DashboardMetrics,
+  Proposal,
+  CreateProposalPayload,
+  TrackingEvent,
   LeadStage
 } from './types';
 import {
@@ -36,6 +39,53 @@ export class MockCrmApi implements CrmApi {
     lead.stage = stage;
     lead.updatedAt = new Date().toISOString();
     return { ...lead };
+  }
+
+  async listProposals(): Promise<Proposal[]> {
+    await delay(300);
+    return mockLeads.slice(0, 2).map((lead, index) => ({
+      id: `mock-proposal-${index + 1}`,
+      leadId: lead.id,
+      title: `Proposta ${lead.contact?.name || lead.id}`,
+      status: index === 0 ? 'draft' : 'sent',
+      monthlyBillValue: lead.energyBillValue || 2500,
+      estimatedKwh: lead.averageConsumptionKwh || 1800,
+      discountPercentage: 20,
+      projectedMonthlySavings: lead.projectedSavings || 500,
+      projectedAnnualSavings: (lead.projectedSavings || 500) * 12,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      leadName: lead.contact?.name,
+      leadStage: lead.stage,
+    }));
+  }
+
+  async listProposalsForLead(leadId: string): Promise<Proposal[]> {
+    const proposals = await this.listProposals();
+    return proposals.filter((proposal) => proposal.leadId === leadId);
+  }
+
+  async createProposal(payload: CreateProposalPayload): Promise<Proposal> {
+    await delay(300);
+    const lead = mockLeads.find((item) => item.id === payload.leadId);
+    return {
+      id: Math.random().toString(36).substr(2, 9),
+      ...payload,
+      estimatedKwh: payload.estimatedKwh || 0,
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      leadName: lead?.contact?.name,
+      leadStage: lead?.stage,
+    };
+  }
+
+  async listTrackingEventsForLead(leadId: string): Promise<TrackingEvent[]> {
+    await delay(200);
+    return [
+      { id: 'mock-event-meta', leadId, platform: 'meta', eventName: 'Lead', status: 'sent', attempts: 1, payload: { source: 'mock' } },
+      { id: 'mock-event-site', leadId, platform: 'site', eventName: 'lead.created', status: 'sent', attempts: 1, payload: { source: 'mock' } },
+    ];
   }
 
   async listTasks(): Promise<Task[]> {

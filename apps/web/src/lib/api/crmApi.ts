@@ -5,6 +5,9 @@ import {
   AutomationRule,
   Webhook,
   DashboardMetrics,
+  Proposal,
+  CreateProposalPayload,
+  TrackingEvent,
   LeadStage,
   Priority,
 } from './types';
@@ -13,6 +16,11 @@ export interface CrmApi {
   listLeads(): Promise<Lead[]>;
   getLead(id: string): Promise<Lead | undefined>;
   updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string }): Promise<Lead>;
+
+  listProposals(): Promise<Proposal[]>;
+  listProposalsForLead(leadId: string): Promise<Proposal[]>;
+  createProposal(payload: CreateProposalPayload): Promise<Proposal>;
+  listTrackingEventsForLead(leadId: string): Promise<TrackingEvent[]>;
 
   listTasks(): Promise<Task[]>;
   listTasksForLead(leadId: string): Promise<Task[]>;
@@ -64,6 +72,31 @@ type BackendLead = {
   updatedAt: string;
   contact?: BackendContact | null;
 };
+
+type BackendProposal = {
+  id: string;
+  tenantId?: string;
+  leadId: string;
+  title: string;
+  status: Proposal['status'];
+  monthlyBillValue?: string | number | null;
+  estimatedKwh?: string | number | null;
+  discountPercentage?: string | number | null;
+  projectedMonthlySavings?: string | number | null;
+  projectedAnnualSavings?: string | number | null;
+  validUntil?: string | null;
+  sentAt?: string | null;
+  acceptedAt?: string | null;
+  lostAt?: string | null;
+  lostReason?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  leadName?: string | null;
+  leadStage?: LeadStage | null;
+};
+
+type BackendTrackingEvent = TrackingEvent;
 
 type BackendTask = {
   id: string;
@@ -169,6 +202,31 @@ function mapLead(raw: BackendLead): Lead {
   };
 }
 
+function mapProposal(raw: BackendProposal): Proposal {
+  return {
+    id: raw.id,
+    tenantId: raw.tenantId,
+    leadId: raw.leadId,
+    title: raw.title,
+    status: raw.status,
+    monthlyBillValue: numeric(raw.monthlyBillValue),
+    estimatedKwh: numeric(raw.estimatedKwh),
+    discountPercentage: numeric(raw.discountPercentage),
+    projectedMonthlySavings: numeric(raw.projectedMonthlySavings),
+    projectedAnnualSavings: numeric(raw.projectedAnnualSavings),
+    validUntil: raw.validUntil ?? undefined,
+    sentAt: raw.sentAt ?? undefined,
+    acceptedAt: raw.acceptedAt ?? undefined,
+    lostAt: raw.lostAt ?? undefined,
+    lostReason: raw.lostReason ?? undefined,
+    notes: raw.notes ?? undefined,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    leadName: raw.leadName ?? undefined,
+    leadStage: raw.leadStage ?? undefined,
+  };
+}
+
 function mapTask(raw: BackendTask): Task {
   return {
     id: raw.id,
@@ -235,6 +293,30 @@ export class HttpCrmApi implements CrmApi {
       body: JSON.stringify({ stage, notes: options?.notes, lostReason: options?.lostReason }),
     });
     return mapLead(body.lead);
+  }
+
+  async listProposals(): Promise<Proposal[]> {
+    const body = await requestJson<{ proposals: BackendProposal[] }>('/api/proposals');
+    return body.proposals.map(mapProposal);
+  }
+
+  async listProposalsForLead(leadId: string): Promise<Proposal[]> {
+    const body = await requestJson<{ proposals: BackendProposal[] }>(`/api/leads/${encodeURIComponent(leadId)}/proposals`);
+    return body.proposals.map(mapProposal);
+  }
+
+  async createProposal(payload: CreateProposalPayload): Promise<Proposal> {
+    const body = await requestJson<{ proposal: BackendProposal }>('/api/proposals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return mapProposal(body.proposal);
+  }
+
+  async listTrackingEventsForLead(leadId: string): Promise<TrackingEvent[]> {
+    const body = await requestJson<{ events: BackendTrackingEvent[] }>(`/api/leads/${encodeURIComponent(leadId)}/tracking-events`);
+    return body.events;
   }
 
   async listTasks(): Promise<Task[]> {

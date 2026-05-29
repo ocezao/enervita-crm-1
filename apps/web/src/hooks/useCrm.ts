@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api/crmApi';
-import { Lead, LeadStage, Task, DashboardMetrics, AutomationRule, Webhook, Activity } from '../lib/api/types';
+import { Lead, LeadStage, Task, DashboardMetrics, AutomationRule, Webhook, Activity, Proposal, CreateProposalPayload, TrackingEvent } from '../lib/api/types';
 
 export function useLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -130,4 +130,40 @@ export function useWebhooks() {
   const testWebhook = async (id: string) => api.testWebhook(id);
 
   return { webhooks, loading, testWebhook };
+}
+
+
+export function useProposals() {
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.listProposals().then(data => {
+      setProposals(data);
+      setLoading(false);
+    });
+  }, []);
+
+  const createProposal = async (payload: CreateProposalPayload) => {
+    const fresh = await api.createProposal(payload);
+    setProposals(prev => [fresh, ...prev]);
+    return fresh;
+  };
+
+  return { proposals, loading, createProposal };
+}
+
+export function useLeadTrackingEvents(id: string | undefined) {
+  const [events, setEvents] = useState<TrackingEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!id) return;
+    api.listTrackingEventsForLead(id).then(data => {
+      setEvents(data);
+      setLoading(false);
+    });
+  }, [id]);
+
+  return { events, loading };
 }

@@ -11,6 +11,8 @@ import { registerEngagementRoutes } from './modules/engagement/engagement.routes
 import { createPgDashboardRepository, type DashboardRepository } from './modules/dashboard/repository.ts';
 import { registerDashboardRoutes } from './modules/dashboard/dashboard.routes.ts';
 import { registerIntegrationsRoutes } from './modules/integrations/integrations.routes.ts';
+import { createPgProposalsRepository, type ProposalsRepository } from './modules/proposals/repository.ts';
+import { registerProposalsRoutes } from './modules/proposals/proposals.routes.ts';
 
 export type CreateAppOptions = {
   userRepository?: UserRepository;
@@ -18,6 +20,7 @@ export type CreateAppOptions = {
   leadsRepository?: LeadsRepository;
   engagementRepository?: EngagementRepository;
   dashboardRepository?: DashboardRepository;
+  proposalsRepository?: ProposalsRepository;
   sessionSecret?: string;
   secureCookies?: boolean;
 };
@@ -30,6 +33,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   const leadsRepository = options.leadsRepository ?? createPgLeadsRepository(env.databaseUrl);
   const engagementRepository = options.engagementRepository ?? createPgEngagementRepository(env.databaseUrl);
   const dashboardRepository = options.dashboardRepository ?? createPgDashboardRepository(env.databaseUrl);
+  const proposalsRepository = options.proposalsRepository ?? createPgProposalsRepository(env.databaseUrl);
   const sessionSecret = options.sessionSecret ?? env.sessionSecret;
   const secureCookies = options.secureCookies ?? env.nodeEnv === 'production';
 
@@ -41,6 +45,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   void registerEngagementRoutes(app, { userRepository, engagementRepository, sessionSecret });
   void registerDashboardRoutes(app, { userRepository, dashboardRepository, sessionSecret });
   void registerIntegrationsRoutes(app, { userRepository, sessionSecret });
+  void registerProposalsRoutes(app, { userRepository, proposalsRepository, sessionSecret });
 
   app.addHook('onClose', async () => {
     await userRepository.close?.();
@@ -48,6 +53,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
     await leadsRepository.close?.();
     await engagementRepository.close?.();
     await dashboardRepository.close?.();
+    await proposalsRepository.close?.();
   });
 
   return app;

@@ -7,6 +7,7 @@ import {
   Settings,
   BarChart3,
   Link2,
+  FileText,
   Sun,
   ShieldCheck,
 } from 'lucide-react';
@@ -20,6 +21,7 @@ const navItems = [
   { icon: Users, label: 'Leads', path: '/leads', requiredAny: ['page.leads', 'lead.view'] },
   { icon: Kanban, label: 'Pipeline', path: '/pipeline', requiredAny: ['page.pipeline'] },
   { icon: CheckSquare, label: 'Tarefas', path: '/tasks', requiredAny: ['page.tasks'] },
+  { icon: FileText, label: 'Propostas', path: '/proposals', requiredAny: ['page.proposals', 'proposal.view'] },
   { icon: Zap, label: 'Automações', path: '/automations', requiredAny: ['page.automations', 'automation.manage'] },
   { icon: BarChart3, label: 'Analytics', path: '/analytics', requiredAny: ['page.analytics', 'analytics.view', 'tracking.view'] },
   { icon: Link2, label: 'Webhooks', path: '/webhooks', requiredAny: ['page.webhooks', 'webhook.manage', 'webhook.test'] },

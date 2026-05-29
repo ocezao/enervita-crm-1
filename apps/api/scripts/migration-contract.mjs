@@ -1,6 +1,7 @@
 export const migrationFiles = [
   'infra/migrations/001_initial_schema.sql',
   'infra/migrations/002_user_stage_permissions.sql',
+  'infra/migrations/003_proposals.sql',
 ];
 
 export const migrationFile = migrationFiles[0];
@@ -29,6 +30,7 @@ export const requiredTables = [
   'consent_records',
   'audit_logs',
   'integration_tokens',
+  'proposals',
 ];
 
 export const requiredColumns = {
@@ -81,9 +83,10 @@ export const requiredColumns = {
   consent_records: ['id', 'tenant_id', 'contact_id', 'consent_type', 'granted', 'source', 'ip_address', 'user_agent', 'evidence', 'occurred_at'],
   audit_logs: ['id', 'tenant_id', 'actor_user_id', 'entity_type', 'entity_id', 'action', 'before_data', 'after_data', 'ip_address', 'user_agent', 'created_at'],
   integration_tokens: ['id', 'tenant_id', 'provider', 'label', 'encrypted_secret', 'scopes', 'status', 'created_by', 'created_at', 'updated_at'],
+  proposals: ['id', 'tenant_id', 'lead_id', 'title', 'status', 'monthly_bill_value', 'estimated_kwh', 'discount_percentage', 'projected_monthly_savings', 'projected_annual_savings', 'valid_until', 'sent_at', 'accepted_at', 'lost_at', 'lost_reason', 'notes', 'metadata', 'created_by', 'created_at', 'updated_at'],
 };
 
-export const requiredEnums = ['lead_stage', 'priority_level', 'task_status', 'activity_type', 'delivery_status', 'permission_effect'];
+export const requiredEnums = ['lead_stage', 'priority_level', 'task_status', 'activity_type', 'delivery_status', 'permission_effect', 'proposal_status'];
 
 export const requiredNotNullColumns = {
   users: ['tenant_id'],
@@ -93,6 +96,7 @@ export const requiredNotNullColumns = {
   stage_permissions: ['tenant_id', 'role_id', 'permission_id'],
   user_stage_permissions: ['tenant_id', 'permission_id'],
   audit_logs: ['tenant_id'],
+  proposals: ['tenant_id', 'lead_id'],
 };
 
 export const requiredConstraints = [
@@ -128,4 +132,6 @@ export const requiredConstraints = [
   'consent_records_contact_tenant_fk',
   'audit_logs_actor_user_tenant_fk',
   'integration_tokens_created_by_tenant_fk',
+  'proposals_lead_tenant_fk',
+  'proposals_created_by_tenant_fk',
 ];
