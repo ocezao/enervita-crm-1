@@ -11,6 +11,7 @@ import Automations from './pages/Automations';
 import Webhooks from './pages/Webhooks';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+import UsersPermissions from './pages/UsersPermissions';
 import Login from './pages/Login';
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
               <Route path="/webhooks" element={<Webhooks />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/settings" element={<Settings />} />
+              <Route path="/users" element={<ProtectedRoute requiredAnyPermission={["page.users", "user.manage"]}><UsersPermissions /></ProtectedRoute>} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
