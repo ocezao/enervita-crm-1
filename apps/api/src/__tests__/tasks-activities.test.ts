@@ -86,6 +86,10 @@ function makeEngagementRepository(): EngagementRepository {
     async listTasks(tenantId, allowedStages) {
       return tasks.filter((task) => task.tenantId === tenantId && (allowedStages === null || !task.leadStage || allowedStages.includes(task.leadStage)));
     },
+    async listTasksForLead(tenantId, leadId, allowedStages) {
+      const visible = tasks.filter((task) => task.tenantId === tenantId && task.leadId === leadId && (allowedStages === null || !task.leadStage || allowedStages.includes(task.leadStage)));
+      return visible.length > 0 ? visible : null;
+    },
     async createTask(context, input) {
       const task = makeTask({ id: 'ffffffff-ffff-4fff-8fff-ffffffffffff', tenantId: context.tenantId, leadId: input.leadId ?? null, title: input.title, priority: input.priority ?? 'media', dueDate: input.dueDate ?? null, notes: input.notes ?? null });
       tasks.unshift(task);
@@ -174,4 +178,18 @@ test('POST /api/leads/:id/activities requires activity.create and records an act
 
   assert.equal(response.statusCode, 201);
   assert.equal(response.json().activity.activityType, 'whatsapp');
+});
+
+
+
+test('GET /api/leads/:id/tasks lists historical tasks for a visible lead', async (t) => {
+  const actor = makeAuthUser({ roles: ['sdr'], permissions: ['lead.view'], allowedStages: ['novo_lead'] });
+  const app = createApp({ userRepository: makeUserRepository(actor), engagementRepository: makeEngagementRepository(), sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+  const cookie = await loginAndGetCookie(app);
+
+  const response = await app.inject({ method: 'GET', url: `/api/leads/${LEAD_ID}/tasks`, headers: { cookie } });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().tasks[0].title, 'Ligar para lead');
 });

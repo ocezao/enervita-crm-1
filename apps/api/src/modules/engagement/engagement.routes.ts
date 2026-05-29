@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { requirePermission } from '../../middleware/requireAuth.ts';
 import type { PublicUser, UserRepository } from '../auth/userRepository.ts';
-import { createActivity, createTask, completeTask, EngagementNotFoundError, listActivities, listTasks } from './engagement.service.ts';
+import { createActivity, createTask, completeTask, EngagementNotFoundError, listActivities, listTasks, listTasksForLead } from './engagement.service.ts';
 import type { EngagementRepository } from './repository.ts';
 import { EngagementValidationError, validateCreateActivityBody, validateCreateTaskBody, validateUuid } from './validation.ts';
 
@@ -42,6 +42,17 @@ export async function registerEngagementRoutes(app: FastifyInstance, options: En
   app.get('/api/tasks', { preHandler: tasksPagePreHandler }, async (request, reply) => {
     try {
       const tasks = await listTasks(options.engagementRepository, authenticatedUser(request));
+      return { tasks };
+    } catch (error) {
+      return handleEngagementError(error, reply);
+    }
+  });
+
+  app.get('/api/leads/:id/tasks', { preHandler: leadViewPreHandler }, async (request, reply) => {
+    try {
+      const { id: rawId } = request.params as { id: string };
+      const leadId = validateUuid(rawId, 'id');
+      const tasks = await listTasksForLead(options.engagementRepository, authenticatedUser(request), leadId);
       return { tasks };
     } catch (error) {
       return handleEngagementError(error, reply);

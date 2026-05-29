@@ -45,6 +45,7 @@ export type Activity = {
 
 export type EngagementRepository = {
   listTasks(tenantId: string, allowedStages: PipelineStageKey[] | null): Promise<Task[]>;
+  listTasksForLead(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null): Promise<Task[] | null>;
   createTask(context: AuditContext, input: TaskInput, allowedStages?: PipelineStageKey[] | null): Promise<Task | null>;
   completeTask(context: AuditContext, taskId: string, allowedStages: PipelineStageKey[] | null): Promise<Task | null>;
   listActivities(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null): Promise<Activity[]>;
@@ -163,6 +164,21 @@ export function createPgEngagementRepository(databaseUrl: string): EngagementRep
         [tenantId, ...stageParams(allowedStages)],
       );
       return result.rows.map(rowToTask);
+    },
+    async listTasksForLead(tenantId, leadId, allowedStages) {
+      const client = await pool.connect();
+      try {
+        if (!(await leadIsVisible(client, tenantId, leadId, allowedStages))) return null;
+        const result = await client.query(
+          `${taskSelect}
+            where t.tenant_id = $1 and t.lead_id = $2${stageClause('l', allowedStages, 3)}
+            order by coalesce(t.due_date, t.created_at) asc, t.created_at desc`,
+          [tenantId, leadId, ...stageParams(allowedStages)],
+        );
+        return result.rows.map(rowToTask);
+      } finally {
+        client.release();
+      }
     },
     async createTask(context, input, allowedStages = null) {
       const client = await pool.connect();

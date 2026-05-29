@@ -22,10 +22,11 @@ import { userHasPermission } from '../auth/permissions';
 
 export default function LeadDetail() {
   const { id } = useParams();
-  const { lead, activities, tasks, loading, addActivity, addTask } = useLeadDetail(id);
+  const { lead, activities, tasks, loading, addActivity, addTask, completeTask } = useLeadDetail(id);
   const { user } = useAuth();
   const canCreateActivity = userHasPermission(user, 'activity.create');
   const canCreateTask = userHasPermission(user, 'task.create');
+  const canCompleteTask = userHasPermission(user, 'task.complete');
   const [activeTab, setActiveTab] = useState('timeline');
   const [activityNote, setActivityNote] = useState('');
   const [taskTitle, setTaskTitle] = useState('');
@@ -230,14 +231,26 @@ export default function LeadDetail() {
                 {tasks.length === 0 ? (
                   <div className="p-12 text-center"><CheckCircle2 size={48} className="mx-auto text-gray-200 mb-4" /><h4 className="font-bold text-graphite">Nenhuma tarefa pendente</h4><p className="text-sm text-gray-500 mt-2">Tudo em dia com este lead.</p></div>
                 ) : (
-                  <div className="space-y-3">{tasks.map((task) => (<div key={task.id} className="rounded-xl border border-gray-100 bg-white p-4"><p className="font-bold text-graphite">{task.title}</p><p className="text-xs text-gray-500">Prioridade: {task.priority} · Vence em {formatDate(task.dueDate)}</p></div>))}</div>
+                  <div className="space-y-3">{tasks.map((task) => (<div key={task.id} className="rounded-xl border border-gray-100 bg-white p-4 flex items-start justify-between gap-4"><div><p className="font-bold text-graphite">{task.title}</p><p className="text-xs text-gray-500">Status: {task.status} · Prioridade: {task.priority} · Vence em {formatDate(task.dueDate)}</p></div>{canCompleteTask && task.status !== 'concluido' && <Button variant="outline" size="sm" onClick={() => completeTask(task.id)}>Concluir tarefa</Button>}</div>))}</div>
                 )}
               </div>
             )}
 
-            {activeTab !== 'timeline' && activeTab !== 'tasks' && (
+            {activeTab === 'events' && (
+              <div className="p-6 space-y-4">
+                <h4 className="font-bold text-graphite">Resumo de tracking do lead</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-xl bg-gray-50 p-4"><span className="text-gray-400">Origem</span><p className="font-bold text-graphite">{lead.leadSource || 'Não informada'}</p></div>
+                  <div className="rounded-xl bg-gray-50 p-4"><span className="text-gray-400">UTM source/medium</span><p className="font-bold text-graphite">{lead.utmSource || 'sem utm'} / {lead.utmMedium || 'sem medium'}</p></div>
+                  <div className="rounded-xl bg-gray-50 p-4 md:col-span-2"><span className="text-gray-400">Campanha</span><p className="font-bold text-graphite">{lead.utmCampaign || 'Sem campanha registrada'}</p></div>
+                </div>
+                <p className="text-xs text-gray-500">Eventos técnicos detalhados por lead ainda dependem da decisão de integrar a fila operacional de tracking ao preview.</p>
+              </div>
+            )}
+
+            {activeTab === 'proposals' && (
               <div className="p-12 text-center text-gray-400">
-                Recurso em desenvolvimento para a versão Mock.
+                Propostas reais ainda pendentes de decisão de origem: importar do banco operacional/Twenty ou criar módulo próprio no CRM custom.
               </div>
             )}
           </Card>

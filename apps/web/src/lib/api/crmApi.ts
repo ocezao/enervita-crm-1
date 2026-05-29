@@ -15,6 +15,7 @@ export interface CrmApi {
   updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string }): Promise<Lead>;
 
   listTasks(): Promise<Task[]>;
+  listTasksForLead(leadId: string): Promise<Task[]>;
   createTask(payload: Partial<Task>): Promise<Task>;
   completeTask(id: string): Promise<Task>;
 
@@ -238,6 +239,11 @@ export class HttpCrmApi implements CrmApi {
 
   async listTasks(): Promise<Task[]> {
     const body = await requestJson<{ tasks: BackendTask[] }>('/api/tasks');
+    return body.tasks.map(mapTask);
+  }
+
+  async listTasksForLead(leadId: string): Promise<Task[]> {
+    const body = await requestJson<{ tasks: BackendTask[] }>(`/api/leads/${encodeURIComponent(leadId)}/tasks`);
     return body.tasks.map(mapTask);
   }
 

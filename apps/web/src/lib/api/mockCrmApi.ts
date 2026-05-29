@@ -1,19 +1,19 @@
 import { CrmApi } from './crmApi';
-import { 
-  Lead, 
-  Task, 
-  Activity, 
-  AutomationRule, 
-  Webhook, 
+import {
+  Lead,
+  Task,
+  Activity,
+  AutomationRule,
+  Webhook,
   DashboardMetrics,
   LeadStage
 } from './types';
-import { 
-  mockLeads, 
-  mockTasks, 
-  mockActivities, 
-  mockAutomations, 
-  mockWebhooks 
+import {
+  mockLeads,
+  mockTasks,
+  mockActivities,
+  mockAutomations,
+  mockWebhooks
 } from '../../data/mockData';
 
 const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
@@ -41,6 +41,11 @@ export class MockCrmApi implements CrmApi {
   async listTasks(): Promise<Task[]> {
     await delay(400);
     return [...mockTasks];
+  }
+
+  async listTasksForLead(leadId: string): Promise<Task[]> {
+    await delay(150);
+    return mockTasks.filter((task) => task.leadId === leadId);
   }
 
   async createTask(payload: Partial<Task>): Promise<Task> {

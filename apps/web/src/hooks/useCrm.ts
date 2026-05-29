@@ -25,6 +25,7 @@ export function useLeads() {
 export function useLeadDetail(id: string | undefined) {
   const [lead, setLead] = useState<Lead | undefined>();
   const [activities, setActivities] = useState<Activity[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,17 +35,17 @@ export function useLeadDetail(id: string | undefined) {
         setLoading(true);
         return Promise.all([
           api.getLead(id),
-          api.listActivities(id)
+          api.listActivities(id),
+          api.listTasksForLead(id)
         ]);
       })
-      .then(([l, a]) => {
+      .then(([l, a, t]) => {
         setLead(l);
         setActivities(a);
+        setTasks(t);
         setLoading(false);
       });
   }, [id]);
-
-  const [tasks, setTasks] = useState<Task[]>([]);
 
   const addActivity = async (payload: Partial<Activity>) => {
     const fresh = await api.createActivity({ ...payload, leadId: id });
@@ -58,7 +59,13 @@ export function useLeadDetail(id: string | undefined) {
     return fresh;
   };
 
-  return { lead, activities, tasks, loading, addActivity, addTask };
+  const completeTask = async (taskId: string) => {
+    const updated = await api.completeTask(taskId);
+    setTasks(prev => prev.map(task => task.id === taskId ? updated : task));
+    return updated;
+  };
+
+  return { lead, activities, tasks, loading, addActivity, addTask, completeTask };
 }
 
 export function useTasks() {

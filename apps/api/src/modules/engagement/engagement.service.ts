@@ -28,6 +28,12 @@ export async function listTasks(repository: EngagementRepository, actor: PublicU
   return repository.listTasks(actor.tenantId, scopedStages(actor));
 }
 
+export async function listTasksForLead(repository: EngagementRepository, actor: PublicUser, leadId: string) {
+  const tasks = await repository.listTasksForLead(actor.tenantId, leadId, scopedStages(actor));
+  if (!tasks) throw new EngagementNotFoundError('Lead not found');
+  return tasks;
+}
+
 export async function createTask(repository: EngagementRepository, actor: PublicUser, input: TaskInput, metadata: RequestAuditMetadata) {
   const task = await repository.createTask(makeAuditContext(actor, metadata), input, scopedStages(actor));
   if (!task) throw new EngagementNotFoundError('Lead not found');
