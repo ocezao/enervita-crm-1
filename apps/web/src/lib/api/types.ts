@@ -160,6 +160,17 @@ export interface AutomationRule {
   status?: 'planned' | 'active' | 'paused';
 }
 
+export interface AutomationRun {
+  id: string;
+  automationId: string;
+  status: 'queued' | 'success' | 'failed';
+  inputPayload: Record<string, unknown>;
+  outputPayload: Record<string, unknown>;
+  errorMessage?: string | null;
+  startedAt: string;
+  finishedAt?: string | null;
+}
+
 export interface Webhook {
   id: string;
   name: string;
@@ -169,6 +180,26 @@ export interface Webhook {
   lastDeliveryAt?: string;
   successRate: number;
   secretConfigured?: boolean;
+}
+
+export interface WebhookDelivery {
+  id: string;
+  tenantId?: string;
+  webhookId: string;
+  webhookName?: string;
+  eventType: string;
+  status: 'queued' | 'sent' | 'failed';
+  httpStatus: number | null;
+  attempts: number;
+  createdAt: string;
+  deliveredAt?: string | null;
+  responseBody?: string | null;
+}
+
+export interface WebhookTestResult {
+  success: boolean;
+  message: string;
+  delivery: WebhookDelivery;
 }
 
 export interface DashboardMetrics {

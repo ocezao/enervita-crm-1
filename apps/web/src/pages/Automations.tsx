@@ -11,7 +11,7 @@ function statusLabel(status: string | undefined, active: boolean) {
 }
 
 export default function Automations() {
-  const { automations, loading } = useAutomations();
+  const { automations, loading, runAutomation, lastRun } = useAutomations();
 
   return (
     <div className="space-y-6">
@@ -74,8 +74,8 @@ export default function Automations() {
                 Executado em {rule.lastRunAt ? formatDate(rule.lastRunAt) : 'Nunca'}
               </div>
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" className="text-xs gap-1">
-                  <Play size={12} /> Testar
+                <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => void runAutomation(rule.id)}>
+                  <Play size={12} /> Executar controlado
                 </Button>
                 <Button variant="outline" size="sm" className="text-xs gap-1">
                   <Settings2 size={12} /> Configurar
@@ -91,10 +91,15 @@ export default function Automations() {
           <div className="max-w-md text-center md:text-left">
             <h3 className="text-xl font-bold mb-2">Sugestão da Enervita IA</h3>
             <p className="text-gray-400 text-sm">
-              Catálogo técnico conectado à API real do preview. As regras seguem planejadas até integração com n8n/eventos reais ser aprovada.
+              Catálogo técnico conectado à API real do preview. A execução controlada registra runs/filas sem chamar provedores externos.
             </p>
+            {lastRun && (
+              <p className="mt-3 text-xs text-energy-green font-mono">
+                Última execução controlada: {lastRun.status} · filas geradas: {String(lastRun.outputPayload.queuedWebhookDeliveries ?? 0)}
+              </p>
+            )}
           </div>
-          <Button variant="secondary" className="whitespace-nowrap">Planejar ativação</Button>
+          <Button variant="secondary" className="whitespace-nowrap">Planejar ativação n8n</Button>
         </div>
         <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-solar-orange/10 rounded-full blur-3xl"></div>
       </Card>

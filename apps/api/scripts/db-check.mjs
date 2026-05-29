@@ -69,7 +69,7 @@ try {
     if (!existingConstraints.has(constraint)) failures.push(`missing constraint: ${constraint}`);
   }
 
-  const requiredMigrationVersions = ["001_initial_schema", "002_user_stage_permissions"];
+  const requiredMigrationVersions = ["001_initial_schema", "002_user_stage_permissions", "003_proposals", "004_controlled_integrations"];
   const migrationResult = await client.query(
     `select version from schema_migrations where version = any($1::text[])`,
     [requiredMigrationVersions],

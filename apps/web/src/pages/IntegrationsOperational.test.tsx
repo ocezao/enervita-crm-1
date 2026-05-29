@@ -8,7 +8,7 @@ const operator = {
   name: 'Admin Integrações',
   email: 'integracoes@example.com',
   roles: [],
-  permissions: ['page.automations', 'page.webhooks', 'webhook.test'],
+  permissions: ['page.automations', 'page.webhooks', 'webhook.test', 'automation.manage'],
   allowedStages: [],
 };
 
@@ -38,13 +38,14 @@ describe('Operational integrations pages', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/automations', { credentials: 'include' });
   });
 
-  it('dry-runs webhook tests through the API and shows the result to the operator', async () => {
+  it('records controlled webhook test deliveries through the API and shows the result to the operator', async () => {
     window.history.pushState({}, '', '/webhooks');
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
       if (url === '/api/me') return jsonResponse({ user: operator });
       if (url === '/api/webhooks') return jsonResponse({ webhooks: [{ id: 'n8n-lead-created', name: 'n8n - lead criado', url: 'https://n8n.enervita.com.br/webhook/lead-created', eventTypes: ['lead.created'], status: 'planned', successRate: 0, secretConfigured: false }] });
-      if (url === '/api/webhooks/n8n-lead-created/test' && init?.method === 'POST') return jsonResponse({ result: { success: true, message: 'Webhook dry-run validado' } });
+      if (url === '/api/webhooks/deliveries') return jsonResponse({ deliveries: [] });
+      if (url === '/api/webhooks/n8n-lead-created/test' && init?.method === 'POST') return jsonResponse({ result: { success: true, message: 'Entrega de teste registrada na fila controlada', delivery: { id: 'delivery-1', webhookId: 'n8n-lead-created', webhookName: 'n8n - lead criado', eventType: 'webhook.test', status: 'queued', httpStatus: null, attempts: 0, createdAt: '2026-05-29T10:00:00.000Z' } } });
       return jsonResponse({ error: 'Not found' }, 404);
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -57,6 +58,7 @@ describe('Operational integrations pages', () => {
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/webhooks/n8n-lead-created/test', { credentials: 'include', method: 'POST' });
     });
-    expect(await screen.findByText('Webhook dry-run validado')).toBeInTheDocument();
+    expect(await screen.findByText('Entrega de teste registrada na fila controlada')).toBeInTheDocument();
+    expect(await screen.findByText(/webhook.test/)).toBeInTheDocument();
   });
 });

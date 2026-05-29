@@ -67,7 +67,7 @@ test('GET /api/webhooks requires page.webhooks and returns webhook catalog witho
   assert.ok(body.webhooks.some((webhook: { id: string; status: string; secretConfigured: boolean; url: string }) => webhook.id === 'n8n-lead-created' && webhook.status === 'planned' && webhook.secretConfigured === false && !webhook.url.includes('token')));
 });
 
-test('POST /api/webhooks/:id/test requires webhook.test and performs dry-run validation only', async (t) => {
+test('POST /api/webhooks/:id/test requires webhook.test and records a controlled queued delivery', async (t) => {
   const app = createApp({ userRepository: makeUserRepository(makeAuthUser()), sessionSecret: SESSION_SECRET });
   t.after(async () => app.close());
   const cookie = await loginAndGetCookie(app);
@@ -76,7 +76,8 @@ test('POST /api/webhooks/:id/test requires webhook.test and performs dry-run val
 
   assert.equal(response.statusCode, 200);
   assert.equal(response.json().result.success, true);
-  assert.match(response.json().result.message, /dry-run/i);
+  assert.equal(response.json().result.delivery.status, 'queued');
+  assert.doesNotMatch(response.json().result.message, /dry-run/i);
 });
 
 test('GET /api/webhooks rejects authenticated users without page.webhooks', async (t) => {
@@ -87,4 +88,121 @@ test('GET /api/webhooks rejects authenticated users without page.webhooks', asyn
   const response = await app.inject({ method: 'GET', url: '/api/webhooks', headers: { cookie } });
 
   assert.equal(response.statusCode, 403);
+});
+
+
+test('POST /api/automations/:id/run requires automation.manage and records a real controlled automation run', async (t) => {
+  const calls: string[] = [];
+  const app = createApp({
+    userRepository: makeUserRepository(makeAuthUser({ permissions: ['page.automations', 'automation.manage'] })),
+    sessionSecret: SESSION_SECRET,
+    integrationsRepository: {
+      async listAutomations() { return []; },
+      async listWebhooks() { return []; },
+      async listWebhookDeliveries() { return []; },
+      async runAutomation(context, id, inputPayload) {
+        calls.push(`${context.tenantId}:${id}:${inputPayload.reason}`);
+        return {
+          id: 'run-1',
+          automationId: id,
+          status: 'success',
+          inputPayload,
+          outputPayload: { queuedWebhookDeliveries: 1 },
+          startedAt: '2026-05-29T10:00:00.000Z',
+          finishedAt: '2026-05-29T10:00:01.000Z',
+        };
+      },
+      async testWebhook() { throw new Error('not used'); },
+      async close() {},
+    },
+  });
+  t.after(async () => app.close());
+  const cookie = await loginAndGetCookie(app);
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/automations/lead-no-followup-12h/run',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: { reason: 'homologacao-controlada' },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().run.status, 'success');
+  assert.deepEqual(calls, [`${TENANT_ID}:lead-no-followup-12h:homologacao-controlada`]);
+});
+
+test('POST /api/webhooks/:id/test records a queued test delivery instead of dry-run-only text', async (t) => {
+  const app = createApp({
+    userRepository: makeUserRepository(makeAuthUser({ permissions: ['webhook.test'] })),
+    sessionSecret: SESSION_SECRET,
+    integrationsRepository: {
+      async listAutomations() { return []; },
+      async listWebhooks() { return []; },
+      async listWebhookDeliveries() { return []; },
+      async runAutomation() { throw new Error('not used'); },
+      async testWebhook(context, id) {
+        return {
+          success: true,
+          message: 'Entrega de teste registrada na fila controlada; nenhum HTTP externo foi chamado.',
+          delivery: {
+            id: 'delivery-1',
+            webhookId: id,
+            eventType: 'webhook.test',
+            status: 'queued',
+            httpStatus: null,
+            attempts: 0,
+            createdAt: '2026-05-29T10:00:00.000Z',
+          },
+          contextTenantId: context.tenantId,
+        };
+      },
+      async close() {},
+    },
+  });
+  t.after(async () => app.close());
+  const cookie = await loginAndGetCookie(app);
+
+  const response = await app.inject({ method: 'POST', url: '/api/webhooks/n8n-lead-created/test', headers: { cookie } });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().result.delivery.status, 'queued');
+  assert.equal(response.json().result.contextTenantId, TENANT_ID);
+  assert.doesNotMatch(response.json().result.message, /dry-run/i);
+});
+
+test('GET /api/webhooks/deliveries returns recent controlled delivery logs', async (t) => {
+  const app = createApp({
+    userRepository: makeUserRepository(makeAuthUser({ permissions: ['page.webhooks'] })),
+    sessionSecret: SESSION_SECRET,
+    integrationsRepository: {
+      async listAutomations() { return []; },
+      async listWebhooks() { return []; },
+      async listWebhookDeliveries(context) {
+        return [{
+          id: 'delivery-1',
+          webhookId: 'n8n-lead-created',
+          webhookName: 'n8n - lead criado',
+          eventType: 'webhook.test',
+          status: 'queued',
+          httpStatus: null,
+          attempts: 0,
+          createdAt: '2026-05-29T10:00:00.000Z',
+          deliveredAt: null,
+          responseBody: null,
+          tenantId: context.tenantId,
+        }];
+      },
+      async runAutomation() { throw new Error('not used'); },
+      async testWebhook() { throw new Error('not used'); },
+      async close() {},
+    },
+  });
+  t.after(async () => app.close());
+  const cookie = await loginAndGetCookie(app);
+
+  const response = await app.inject({ method: 'GET', url: '/api/webhooks/deliveries', headers: { cookie } });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().deliveries[0].status, 'queued');
+  assert.equal(response.json().deliveries[0].tenantId, TENANT_ID);
 });

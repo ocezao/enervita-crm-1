@@ -3,7 +3,10 @@ import {
   Task,
   Activity,
   AutomationRule,
+  AutomationRun,
   Webhook,
+  WebhookDelivery,
+  WebhookTestResult,
   DashboardMetrics,
   Proposal,
   CreateProposalPayload,
@@ -33,9 +36,11 @@ export interface CrmApi {
   listDashboardMetrics(): Promise<DashboardMetrics>;
 
   listAutomations(): Promise<AutomationRule[]>;
+  runAutomation(id: string, payload?: Record<string, unknown>): Promise<AutomationRun>;
 
   listWebhooks(): Promise<Webhook[]>;
-  testWebhook(id: string): Promise<{ success: boolean; message: string }>;
+  listWebhookDeliveries(): Promise<WebhookDelivery[]>;
+  testWebhook(id: string): Promise<WebhookTestResult>;
 }
 
 type BackendContact = {
@@ -383,13 +388,27 @@ export class HttpCrmApi implements CrmApi {
     return body.automations;
   }
 
+  async runAutomation(id: string, payload: Record<string, unknown> = {}): Promise<AutomationRun> {
+    const body = await requestJson<{ run: AutomationRun }>(`/api/automations/${encodeURIComponent(id)}/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return body.run;
+  }
+
   async listWebhooks(): Promise<Webhook[]> {
     const body = await requestJson<{ webhooks: Webhook[] }>('/api/webhooks');
     return body.webhooks;
   }
 
-  async testWebhook(id: string): Promise<{ success: boolean; message: string }> {
-    const body = await requestJson<{ result: { success: boolean; message: string } }>(`/api/webhooks/${encodeURIComponent(id)}/test`, {
+  async listWebhookDeliveries(): Promise<WebhookDelivery[]> {
+    const body = await requestJson<{ deliveries: WebhookDelivery[] }>('/api/webhooks/deliveries');
+    return body.deliveries;
+  }
+
+  async testWebhook(id: string): Promise<WebhookTestResult> {
+    const body = await requestJson<{ result: WebhookTestResult }>(`/api/webhooks/${encodeURIComponent(id)}/test`, {
       method: 'POST',
     });
     return body.result;

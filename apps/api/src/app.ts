@@ -11,6 +11,7 @@ import { registerEngagementRoutes } from './modules/engagement/engagement.routes
 import { createPgDashboardRepository, type DashboardRepository } from './modules/dashboard/repository.ts';
 import { registerDashboardRoutes } from './modules/dashboard/dashboard.routes.ts';
 import { registerIntegrationsRoutes } from './modules/integrations/integrations.routes.ts';
+import { createPgIntegrationsRepository, createStaticIntegrationsRepository, type IntegrationsRepository } from './modules/integrations/repository.ts';
 import { createPgProposalsRepository, type ProposalsRepository } from './modules/proposals/repository.ts';
 import { registerProposalsRoutes } from './modules/proposals/proposals.routes.ts';
 
@@ -21,6 +22,7 @@ export type CreateAppOptions = {
   engagementRepository?: EngagementRepository;
   dashboardRepository?: DashboardRepository;
   proposalsRepository?: ProposalsRepository;
+  integrationsRepository?: IntegrationsRepository;
   sessionSecret?: string;
   secureCookies?: boolean;
 };
@@ -34,6 +36,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   const engagementRepository = options.engagementRepository ?? createPgEngagementRepository(env.databaseUrl);
   const dashboardRepository = options.dashboardRepository ?? createPgDashboardRepository(env.databaseUrl);
   const proposalsRepository = options.proposalsRepository ?? createPgProposalsRepository(env.databaseUrl);
+  const integrationsRepository = options.integrationsRepository ?? (options.userRepository ? createStaticIntegrationsRepository() : createPgIntegrationsRepository(env.databaseUrl));
   const sessionSecret = options.sessionSecret ?? env.sessionSecret;
   const secureCookies = options.secureCookies ?? env.nodeEnv === 'production';
 
@@ -44,7 +47,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   void registerLeadsRoutes(app, { userRepository, leadsRepository, sessionSecret });
   void registerEngagementRoutes(app, { userRepository, engagementRepository, sessionSecret });
   void registerDashboardRoutes(app, { userRepository, dashboardRepository, sessionSecret });
-  void registerIntegrationsRoutes(app, { userRepository, sessionSecret });
+  void registerIntegrationsRoutes(app, { userRepository, integrationsRepository, sessionSecret });
   void registerProposalsRoutes(app, { userRepository, proposalsRepository, sessionSecret });
 
   app.addHook('onClose', async () => {
@@ -54,6 +57,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
     await engagementRepository.close?.();
     await dashboardRepository.close?.();
     await proposalsRepository.close?.();
+    await integrationsRepository.close?.();
   });
 
   return app;

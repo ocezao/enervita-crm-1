@@ -1,10 +1,12 @@
-import type { FastifyInstance, FastifyReply } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { requirePermission } from '../../middleware/requireAuth.ts';
-import type { UserRepository } from '../auth/userRepository.ts';
-import { IntegrationNotFoundError, listAutomations, listWebhooks, testWebhook } from './integrations.service.ts';
+import type { PublicUser, UserRepository } from '../auth/userRepository.ts';
+import type { AuditContext } from '../users/repository.ts';
+import { IntegrationNotFoundError, type IntegrationsRepository } from './repository.ts';
 
 type IntegrationsRouteOptions = {
   userRepository: UserRepository;
+  integrationsRepository: IntegrationsRepository;
   sessionSecret: string;
 };
 
@@ -13,19 +15,52 @@ function handleIntegrationError(error: unknown, reply: FastifyReply) {
   throw error;
 }
 
+function contextFromRequest(request: FastifyRequest): AuditContext {
+  const user = (request as FastifyRequest & { authenticatedUser?: PublicUser }).authenticatedUser;
+  if (!user) throw new Error('Authenticated user not found in request context');
+  return {
+    actorUserId: user.id,
+    tenantId: user.tenantId,
+    ipAddress: request.ip,
+    userAgent: typeof request.headers['user-agent'] === 'string' ? request.headers['user-agent'] : undefined,
+  };
+}
+
 export async function registerIntegrationsRoutes(app: FastifyInstance, options: IntegrationsRouteOptions): Promise<void> {
   const automationsPreHandler = requirePermission('page.automations', { userRepository: options.userRepository, sessionSecret: options.sessionSecret });
+  const automationManagePreHandler = requirePermission('automation.manage', { userRepository: options.userRepository, sessionSecret: options.sessionSecret });
   const webhooksPreHandler = requirePermission('page.webhooks', { userRepository: options.userRepository, sessionSecret: options.sessionSecret });
   const webhookTestPreHandler = requirePermission('webhook.test', { userRepository: options.userRepository, sessionSecret: options.sessionSecret });
 
-  app.get('/api/automations', { preHandler: automationsPreHandler }, async () => ({ automations: listAutomations() }));
+  app.get('/api/automations', { preHandler: automationsPreHandler }, async (request) => {
+    const context = contextFromRequest(request);
+    return { automations: await options.integrationsRepository.listAutomations(context.tenantId) };
+  });
 
-  app.get('/api/webhooks', { preHandler: webhooksPreHandler }, async () => ({ webhooks: listWebhooks() }));
+  app.post('/api/automations/:id/run', { preHandler: automationManagePreHandler }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const payload = request.body && typeof request.body === 'object' ? request.body as Record<string, unknown> : {};
+      return { run: await options.integrationsRepository.runAutomation(contextFromRequest(request), id, payload) };
+    } catch (error) {
+      return handleIntegrationError(error, reply);
+    }
+  });
+
+  app.get('/api/webhooks', { preHandler: webhooksPreHandler }, async (request) => {
+    const context = contextFromRequest(request);
+    return { webhooks: await options.integrationsRepository.listWebhooks(context.tenantId) };
+  });
+
+  app.get('/api/webhooks/deliveries', { preHandler: webhooksPreHandler }, async (request) => {
+    const context = contextFromRequest(request);
+    return { deliveries: await options.integrationsRepository.listWebhookDeliveries(context) };
+  });
 
   app.post('/api/webhooks/:id/test', { preHandler: webhookTestPreHandler }, async (request, reply) => {
     try {
       const { id } = request.params as { id: string };
-      return { result: testWebhook(id) };
+      return { result: await options.integrationsRepository.testWebhook(contextFromRequest(request), id) };
     } catch (error) {
       return handleIntegrationError(error, reply);
     }

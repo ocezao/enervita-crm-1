@@ -4,7 +4,10 @@ import {
   Task,
   Activity,
   AutomationRule,
+  AutomationRun,
   Webhook,
+  WebhookDelivery,
+  WebhookTestResult,
   DashboardMetrics,
   Proposal,
   CreateProposalPayload,
@@ -180,14 +183,44 @@ export class MockCrmApi implements CrmApi {
     return [...mockAutomations];
   }
 
+  async runAutomation(id: string): Promise<AutomationRun> {
+    await delay(400);
+    return {
+      id: 'mock-run-1',
+      automationId: id,
+      status: 'success',
+      inputPayload: { reason: 'mock' },
+      outputPayload: { queuedWebhookDeliveries: 0, externalHttpCalled: false },
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+    };
+  }
+
   async listWebhooks(): Promise<Webhook[]> {
     await delay(400);
     return [...mockWebhooks];
   }
 
-  async testWebhook(): Promise<{ success: boolean; message: string }> {
+  async listWebhookDeliveries(): Promise<WebhookDelivery[]> {
+    await delay(200);
+    return [];
+  }
+
+  async testWebhook(id: string): Promise<WebhookTestResult> {
     await delay(1000);
-    return { success: true, message: 'Webhook dry-run validado (Mock)' };
+    return {
+      success: true,
+      message: 'Entrega de teste registrada na fila controlada (Mock)',
+      delivery: {
+        id: 'mock-delivery-1',
+        webhookId: id,
+        eventType: 'webhook.test',
+        status: 'queued',
+        httpStatus: null,
+        attempts: 0,
+        createdAt: new Date().toISOString(),
+      },
+    };
   }
 }
 

@@ -2,6 +2,7 @@ export const migrationFiles = [
   'infra/migrations/001_initial_schema.sql',
   'infra/migrations/002_user_stage_permissions.sql',
   'infra/migrations/003_proposals.sql',
+  'infra/migrations/004_controlled_integrations.sql',
 ];
 
 export const migrationFile = migrationFiles[0];

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api/crmApi';
-import { Lead, LeadStage, Task, DashboardMetrics, AutomationRule, Webhook, Activity, Proposal, CreateProposalPayload, TrackingEvent } from '../lib/api/types';
+import { Lead, LeadStage, Task, DashboardMetrics, AutomationRule, AutomationRun, Webhook, WebhookDelivery, WebhookTestResult, Activity, Proposal, CreateProposalPayload, TrackingEvent } from '../lib/api/types';
 
 export function useLeads() {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -104,6 +104,7 @@ export function useDashboardMetrics() {
 
 export function useAutomations() {
   const [automations, setAutomations] = useState<AutomationRule[]>([]);
+  const [lastRun, setLastRun] = useState<AutomationRun | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -113,23 +114,37 @@ export function useAutomations() {
     });
   }, []);
 
-  return { automations, loading };
+  const runAutomation = async (id: string) => {
+    const run = await api.runAutomation(id, { reason: 'homologacao-controlada-ui' });
+    setLastRun(run);
+    setAutomations(prev => prev.map(rule => rule.id === id ? { ...rule, lastRunAt: run.finishedAt ?? run.startedAt } : rule));
+    return run;
+  };
+
+  return { automations, loading, runAutomation, lastRun };
 }
 
 export function useWebhooks() {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
+  const [deliveries, setDeliveries] = useState<WebhookDelivery[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    api.listWebhooks().then(data => {
-      setWebhooks(data);
+    Promise.all([api.listWebhooks(), api.listWebhookDeliveries()]).then(([webhookData, deliveryData]) => {
+      setWebhooks(webhookData);
+      setDeliveries(deliveryData);
       setLoading(false);
     });
   }, []);
 
-  const testWebhook = async (id: string) => api.testWebhook(id);
+  const testWebhook = async (id: string): Promise<WebhookTestResult> => {
+    const result = await api.testWebhook(id);
+    setDeliveries(prev => [result.delivery, ...prev]);
+    setWebhooks(prev => prev.map(webhook => webhook.id === id ? { ...webhook, lastDeliveryAt: result.delivery.createdAt } : webhook));
+    return result;
+  };
 
-  return { webhooks, loading, testWebhook };
+  return { webhooks, deliveries, loading, testWebhook };
 }
 
 

@@ -19,7 +19,7 @@ function webhookBadgeVariant(status: string) {
 }
 
 export default function Webhooks() {
-  const { webhooks, loading, testWebhook } = useWebhooks();
+  const { webhooks, deliveries, loading, testWebhook } = useWebhooks();
   const [testResults, setTestResults] = useState<Record<string, string>>({});
   const [testingId, setTestingId] = useState<string | null>(null);
 
@@ -106,13 +106,17 @@ export default function Webhooks() {
           <Card className="p-6">
             <h3 className="font-bold text-graphite mb-4 flex items-center gap-2">
               <Activity size={20} className="text-energy-green" />
-              Logs Recentes (preview)
+              Logs Recentes (fila controlada)
             </h3>
-            <div className="bg-graphite rounded-xl p-4 font-mono text-xs text-energy-green overflow-x-auto">
-              <p className="opacity-50"># Dry-run: nenhum payload externo enviado</p>
-              <p className="mt-1">{"{"} "event": "lead.created", "status": "planned" {"}"}</p>
-              <p className="opacity-50 mt-4"># Aguardando decisão de ativação n8n</p>
-              <p className="mt-1">{"{"} "event": "lead.stage_changed", "status": "planned" {"}"}</p>
+            <div className="bg-graphite rounded-xl p-4 font-mono text-xs text-energy-green overflow-x-auto space-y-1">
+              {deliveries.length === 0 ? (
+                <p className="opacity-50"># Nenhuma entrega registrada ainda no preview</p>
+              ) : deliveries.slice(0, 6).map((delivery) => (
+                <p key={delivery.id}>
+                  {JSON.stringify({ event: delivery.eventType, webhook: delivery.webhookName ?? delivery.webhookId, status: delivery.status, attempts: delivery.attempts })}
+                </p>
+              ))}
+              <p className="opacity-50 mt-4"># Modo seguro: fila/log interno; sem HTTP externo automático</p>
             </div>
           </Card>
         </div>
@@ -156,11 +160,11 @@ export default function Webhooks() {
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Webhooks Queue</span>
-                <span className="text-gray-500 font-bold">Planejado</span>
+                <span className="text-energy-success font-bold">Controlada</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Tracking Engine</span>
-                <span className="text-gray-500 font-bold">Planejado</span>
+                <span className="text-energy-success font-bold">Controlada</span>
               </div>
             </div>
           </Card>
