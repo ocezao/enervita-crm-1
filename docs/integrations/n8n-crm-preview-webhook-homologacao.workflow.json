@@ -1,0 +1,159 @@
+{
+  "id": "env-crm-preview-webhook-homologacao",
+  "name": "Enervita | CRM Preview Webhook Homologacao",
+  "description": "Homologacao controlada do dispatcher do CRM preview. Recebe payloads sinteticos lead.created, lead.stage_changed, proposal.open_48h e webhook.test sem acionar fluxo comercial real.",
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-created",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a7b3b9da-834d-4d61-8b6e-4e6f55d1a101",
+      "name": "Webhook lead.created",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "env-crm-preview-lead-created"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-stage-changed",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "4f42a0f5-50c8-4dc5-8767-425113d7a102",
+      "name": "Webhook lead.stage_changed",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        220
+      ],
+      "webhookId": "env-crm-preview-stage-changed"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "proposal-open-48h",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "723086db-9575-42e2-91dd-750753d7a103",
+      "name": "Webhook proposal.open_48h",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        440
+      ],
+      "webhookId": "env-crm-preview-proposal-open-48h"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "webhook-test",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "4095961b-9736-4ce8-8c8a-ec28e7e9a104",
+      "name": "Webhook webhook.test",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        660
+      ],
+      "webhookId": "env-crm-preview-webhook-test"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { ok: true, workflow: 'env-crm-preview-webhook-homologacao', eventType: $json.body?.event_type || $json.body?.eventType || 'unknown', homologation: $json.body?.homologation === true, receivedAt: $now.toISO() } }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "c939391e-0d1e-4bcf-8d2e-fbd30b19a201",
+      "name": "Responder homologacao",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        360,
+        330
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook lead.created": {
+      "main": [
+        [
+          {
+            "node": "Responder homologacao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook lead.stage_changed": {
+      "main": [
+        [
+          {
+            "node": "Responder homologacao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook proposal.open_48h": {
+      "main": [
+        [
+          {
+            "node": "Responder homologacao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook webhook.test": {
+      "main": [
+        [
+          {
+            "node": "Responder homologacao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Sao_Paulo",
+    "saveExecutionProgress": true,
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all"
+  },
+  "staticData": null,
+  "meta": null,
+  "pinData": {},
+  "activeVersionId": "5a60dee9-697c-4526-8919-490284df84ca",
+  "versionCounter": 3,
+  "triggerCount": 4,
+  "tags": [],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}
