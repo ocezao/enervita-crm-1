@@ -12,7 +12,7 @@ import {
 export interface CrmApi {
   listLeads(): Promise<Lead[]>;
   getLead(id: string): Promise<Lead | undefined>;
-  updateLeadStage(id: string, stage: LeadStage): Promise<Lead>;
+  updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string }): Promise<Lead>;
 
   listTasks(): Promise<Task[]>;
   createTask(payload: Partial<Task>): Promise<Task>;
@@ -227,11 +227,11 @@ export class HttpCrmApi implements CrmApi {
     return mapLead(body.lead);
   }
 
-  async updateLeadStage(id: string, stage: LeadStage): Promise<Lead> {
+  async updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string }): Promise<Lead> {
     const body = await requestJson<{ lead: BackendLead }>(`/api/leads/${encodeURIComponent(id)}/stage`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage }),
+      body: JSON.stringify({ stage, notes: options?.notes, lostReason: options?.lostReason }),
     });
     return mapLead(body.lead);
   }

@@ -13,8 +13,8 @@ export function useLeads() {
     });
   }, []);
 
-  const updateStage = async (id: string, stage: LeadStage) => {
-    const updated = await api.updateLeadStage(id, stage);
+  const updateStage = async (id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string }) => {
+    const updated = await api.updateLeadStage(id, stage, options);
     setLeads(prev => prev.map(l => l.id === id ? updated : l));
     return updated;
   };
@@ -44,13 +44,21 @@ export function useLeadDetail(id: string | undefined) {
       });
   }, [id]);
 
+  const [tasks, setTasks] = useState<Task[]>([]);
+
   const addActivity = async (payload: Partial<Activity>) => {
     const fresh = await api.createActivity({ ...payload, leadId: id });
     setActivities(prev => [fresh, ...prev]);
     return fresh;
   };
 
-  return { lead, activities, loading, addActivity };
+  const addTask = async (payload: Partial<Task>) => {
+    const fresh = await api.createTask({ ...payload, leadId: id });
+    setTasks(prev => [fresh, ...prev]);
+    return fresh;
+  };
+
+  return { lead, activities, tasks, loading, addActivity, addTask };
 }
 
 export function useTasks() {

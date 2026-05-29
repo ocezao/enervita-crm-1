@@ -22,17 +22,30 @@ import { userHasPermission } from '../auth/permissions';
 
 export default function LeadDetail() {
   const { id } = useParams();
-  const { lead, activities, loading, addActivity } = useLeadDetail(id);
+  const { lead, activities, tasks, loading, addActivity, addTask } = useLeadDetail(id);
   const { user } = useAuth();
   const canCreateActivity = userHasPermission(user, 'activity.create');
+  const canCreateTask = userHasPermission(user, 'task.create');
   const [activeTab, setActiveTab] = useState('timeline');
   const [activityNote, setActivityNote] = useState('');
+  const [taskTitle, setTaskTitle] = useState('');
+  const [taskPriority, setTaskPriority] = useState<'baixa' | 'media' | 'alta' | 'urgente'>('media');
+  const [taskDueDate, setTaskDueDate] = useState('');
 
   async function handleCreateActivity() {
     const outcome = activityNote.trim();
     if (!outcome) return;
     await addActivity({ activityType: 'note', outcome, notes: outcome });
     setActivityNote('');
+  }
+
+  async function handleCreateTask() {
+    const title = taskTitle.trim();
+    if (!title) return;
+    await addTask({ title, priority: taskPriority, dueDate: taskDueDate || undefined });
+    setTaskTitle('');
+    setTaskPriority('media');
+    setTaskDueDate('');
   }
 
   if (loading) return <div className="p-8">Carregando detalhes...</div>;
@@ -194,13 +207,31 @@ export default function LeadDetail() {
             )}
 
             {activeTab === 'tasks' && (
-              <div className="p-12 text-center">
-                <CheckCircle2 size={48} className="mx-auto text-gray-200 mb-4" />
-                <h4 className="font-bold text-graphite">Nenhuma tarefa pendente</h4>
-                <p className="text-sm text-gray-500 mt-2">Tudo em dia com este lead.</p>
-                <Button variant="outline" className="mt-6 gap-2">
-                  <Plus size={16} /> Nova Tarefa
-                </Button>
+              <div className="p-6 space-y-6">
+                {canCreateTask && (
+                  <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 space-y-4">
+                    <h4 className="font-bold text-graphite">Nova tarefa para este lead</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <label className="text-xs font-bold text-gray-500 uppercase">Título da tarefa
+                        <input aria-label="Título da tarefa" value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm" />
+                      </label>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Prioridade
+                        <select aria-label="Prioridade" value={taskPriority} onChange={(event) => setTaskPriority(event.target.value as typeof taskPriority)} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm">
+                          <option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="urgente">Urgente</option>
+                        </select>
+                      </label>
+                      <label className="text-xs font-bold text-gray-500 uppercase">Vencimento
+                        <input aria-label="Vencimento" type="datetime-local" value={taskDueDate} onChange={(event) => setTaskDueDate(event.target.value)} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm" />
+                      </label>
+                    </div>
+                    <Button variant="primary" size="sm" className="gap-2" onClick={handleCreateTask}><Plus size={16} /> Criar tarefa</Button>
+                  </div>
+                )}
+                {tasks.length === 0 ? (
+                  <div className="p-12 text-center"><CheckCircle2 size={48} className="mx-auto text-gray-200 mb-4" /><h4 className="font-bold text-graphite">Nenhuma tarefa pendente</h4><p className="text-sm text-gray-500 mt-2">Tudo em dia com este lead.</p></div>
+                ) : (
+                  <div className="space-y-3">{tasks.map((task) => (<div key={task.id} className="rounded-xl border border-gray-100 bg-white p-4"><p className="font-bold text-graphite">{task.title}</p><p className="text-xs text-gray-500">Prioridade: {task.priority} · Vence em {formatDate(task.dueDate)}</p></div>))}</div>
+                )}
               </div>
             )}
 
