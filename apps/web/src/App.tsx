@@ -22,15 +22,15 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/leads" element={<Leads />} />
-              <Route path="/leads/:id" element={<LeadDetail />} />
-              <Route path="/pipeline" element={<Pipeline />} />
-              <Route path="/tasks" element={<Tasks />} />
-              <Route path="/automations" element={<Automations />} />
-              <Route path="/webhooks" element={<Webhooks />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/" element={<ProtectedRoute requiredPermission="page.dashboard"><Dashboard /></ProtectedRoute>} />
+              <Route path="/leads" element={<ProtectedRoute requiredAnyPermission={["page.leads", "lead.view"]}><Leads /></ProtectedRoute>} />
+              <Route path="/leads/:id" element={<ProtectedRoute requiredAnyPermission={["page.lead_detail", "lead.view"]}><LeadDetail /></ProtectedRoute>} />
+              <Route path="/pipeline" element={<ProtectedRoute requiredPermission="page.pipeline"><Pipeline /></ProtectedRoute>} />
+              <Route path="/tasks" element={<ProtectedRoute requiredPermission="page.tasks"><Tasks /></ProtectedRoute>} />
+              <Route path="/automations" element={<ProtectedRoute requiredAnyPermission={["page.automations", "automation.manage"]}><Automations /></ProtectedRoute>} />
+              <Route path="/webhooks" element={<ProtectedRoute requiredAnyPermission={["page.webhooks", "webhook.manage", "webhook.test"]}><Webhooks /></ProtectedRoute>} />
+              <Route path="/analytics" element={<ProtectedRoute requiredAnyPermission={["page.analytics", "analytics.view", "tracking.view"]}><Analytics /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute requiredAnyPermission={["page.settings", "settings.manage"]}><Settings /></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute requiredAnyPermission={["page.users", "user.manage"]}><UsersPermissions /></ProtectedRoute>} />
             </Route>
           </Route>

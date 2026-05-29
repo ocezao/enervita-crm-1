@@ -139,4 +139,32 @@ describe('crmApi HTTP client', () => {
     expect(activities[0].outcome).toBe('Nota real');
     expect(created.activityType).toBe('whatsapp');
   });
+
+
+  it('loads dashboard metrics from /api/dashboard using session cookies', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        metrics: {
+          newLeadsToday: 5,
+          leadsWithoutFollowup: 2,
+          overdueTasks: 1,
+          openProposals: 4,
+          leadsBySource: [{ source: 'site', count: 5 }],
+          leadsByStage: [{ stage: 'novo_lead', count: 3 }],
+          conversionsByPlatform: [{ platform: 'meta', count: 2 }],
+          recentEvents: [{ id: 'activity-1', leadId: 'lead-1', contactId: 'contact-1', activityType: 'note', outcome: 'Atividade real', occurredAt: '2026-05-29T00:00:00.000Z', createdAt: '2026-05-29T00:00:00.000Z' }],
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const metrics = await api.listDashboardMetrics();
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/dashboard', { credentials: 'include' });
+    expect(metrics.newLeadsToday).toBe(5);
+    expect(metrics.recentEvents[0].outcome).toBe('Atividade real');
+  });
+
+
 });

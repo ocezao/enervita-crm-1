@@ -50,6 +50,18 @@ function mockFetchForUser(user: unknown) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     if (url === '/api/me') return jsonResponse({ user });
+    if (url === '/api/dashboard') return jsonResponse({
+    metrics: {
+      newLeadsToday: 1,
+      leadsWithoutFollowup: 0,
+      overdueTasks: 0,
+      openProposals: 0,
+      leadsBySource: [],
+      leadsByStage: [],
+      conversionsByPlatform: [],
+      recentEvents: [],
+    },
+  });
     if (url === '/api/permissions/catalog') return jsonResponse(catalog);
     if (url === '/api/users' && !init?.method) return jsonResponse({ users });
     if (url === '/api/users' && init?.method === 'POST') return jsonResponse({ user: { ...users[0], id: 'user-2', name: 'Novo Usuário' } }, 201);

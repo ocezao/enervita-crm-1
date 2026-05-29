@@ -283,15 +283,10 @@ export class HttpCrmApi implements CrmApi {
   }
 
   async listDashboardMetrics(): Promise<DashboardMetrics> {
+    const body = await requestJson<{ metrics: DashboardMetrics }>('/api/dashboard');
     return {
-      newLeadsToday: 0,
-      leadsWithoutFollowup: 0,
-      overdueTasks: 0,
-      openProposals: 0,
-      leadsBySource: [],
-      leadsByStage: [],
-      conversionsByPlatform: [],
-      recentEvents: [],
+      ...body.metrics,
+      recentEvents: body.metrics.recentEvents.map(mapActivity),
     };
   }
 

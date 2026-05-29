@@ -30,6 +30,27 @@ function jsonResponse(body: unknown, status = 200) {
   };
 }
 
+function mockFetchWithDashboard(userResponse: unknown) {
+  return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const url = String(input);
+    if (url === '/api/me') return jsonResponse({ user: userResponse });
+    if (url === '/api/dashboard') return jsonResponse({
+    metrics: {
+      newLeadsToday: 1,
+      leadsWithoutFollowup: 0,
+      overdueTasks: 0,
+      openProposals: 0,
+      leadsBySource: [],
+      leadsByStage: [],
+      conversionsByPlatform: [],
+      recentEvents: [],
+    },
+  });
+    if (url === '/api/auth/logout' && init?.method === 'POST') return jsonResponse({ ok: true });
+    return jsonResponse({ error: 'Not found' }, 404);
+  });
+}
+
 describe('App auth flow', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -47,7 +68,7 @@ describe('App auth flow', () => {
   });
 
   it('renders private CRM content when a valid session exists', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({ user })));
+    vi.stubGlobal('fetch', mockFetchWithDashboard(user));
 
     render(<App />);
 
@@ -56,10 +77,7 @@ describe('App auth flow', () => {
   });
 
   it('logs out from the topbar and sends the operator back to login', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ user }))
-      .mockResolvedValueOnce(jsonResponse({ ok: true }));
+    const fetchMock = mockFetchWithDashboard(user);
     vi.stubGlobal('fetch', fetchMock);
 
     render(<App />);
