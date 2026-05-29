@@ -64,6 +64,36 @@ type BackendLead = {
   contact?: BackendContact | null;
 };
 
+type BackendTask = {
+  id: string;
+  tenantId?: string;
+  leadId?: string | null;
+  title: string;
+  description?: string | null;
+  status: 'pendente' | 'concluido' | 'atrasado' | 'cancelado';
+  priority?: string | null;
+  ownerId?: string | null;
+  ownerName?: string | null;
+  dueDate?: string | null;
+  notes?: string | null;
+  completedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  leadName?: string | null;
+};
+
+type BackendActivity = {
+  id: string;
+  leadId: string;
+  contactId?: string | null;
+  activityType: Activity['activityType'];
+  outcome?: string | null;
+  responseTimeSeconds?: number | null;
+  notes?: string | null;
+  occurredAt: string;
+  createdAt: string;
+};
+
 type ApiErrorBody = { error?: string };
 
 function numeric(value: unknown, fallback = 0): number {
@@ -138,6 +168,36 @@ function mapLead(raw: BackendLead): Lead {
   };
 }
 
+function mapTask(raw: BackendTask): Task {
+  return {
+    id: raw.id,
+    leadId: raw.leadId ?? '',
+    title: raw.title,
+    status: raw.status === 'cancelado' ? 'atrasado' : raw.status,
+    priority: priority(raw.priority),
+    owner: raw.ownerName ?? raw.ownerId ?? 'Sem responsável',
+    dueDate: raw.dueDate ?? raw.createdAt,
+    notes: raw.notes ?? raw.description ?? undefined,
+    createdAt: raw.createdAt,
+    updatedAt: raw.updatedAt,
+    leadName: raw.leadName ?? undefined,
+  };
+}
+
+function mapActivity(raw: BackendActivity): Activity {
+  return {
+    id: raw.id,
+    leadId: raw.leadId,
+    contactId: raw.contactId ?? '',
+    activityType: raw.activityType,
+    outcome: raw.outcome ?? raw.notes ?? '',
+    responseTimeSeconds: raw.responseTimeSeconds ?? undefined,
+    notes: raw.notes ?? undefined,
+    occurredAt: raw.occurredAt,
+    createdAt: raw.createdAt,
+  };
+}
+
 async function parseError(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as ApiErrorBody;
@@ -177,24 +237,49 @@ export class HttpCrmApi implements CrmApi {
   }
 
   async listTasks(): Promise<Task[]> {
-    return [];
+    const body = await requestJson<{ tasks: BackendTask[] }>('/api/tasks');
+    return body.tasks.map(mapTask);
   }
 
   async createTask(payload: Partial<Task>): Promise<Task> {
-    throw new Error(`API real de tarefas ainda não implementada para: ${payload.title ?? 'tarefa'}`);
+    const body = await requestJson<{ task: BackendTask }>('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        leadId: payload.leadId || undefined,
+        title: payload.title,
+        priority: payload.priority,
+        dueDate: payload.dueDate,
+        notes: payload.notes,
+      }),
+    });
+    return mapTask(body.task);
   }
 
   async completeTask(id: string): Promise<Task> {
-    throw new Error(`API real de tarefas ainda não implementada para: ${id}`);
+    const body = await requestJson<{ task: BackendTask }>(`/api/tasks/${encodeURIComponent(id)}/complete`, {
+      method: 'PATCH',
+    });
+    return mapTask(body.task);
   }
 
   async listActivities(leadId: string): Promise<Activity[]> {
-    void leadId;
-    return [];
+    const body = await requestJson<{ activities: BackendActivity[] }>(`/api/leads/${encodeURIComponent(leadId)}/activities`);
+    return body.activities.map(mapActivity);
   }
 
   async createActivity(payload: Partial<Activity>): Promise<Activity> {
-    throw new Error(`API real de atividades ainda não implementada para lead: ${payload.leadId ?? 'desconhecido'}`);
+    if (!payload.leadId) throw new Error('leadId é obrigatório para registrar atividade');
+    const body = await requestJson<{ activity: BackendActivity }>(`/api/leads/${encodeURIComponent(payload.leadId)}/activities`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        activityType: payload.activityType ?? 'note',
+        outcome: payload.outcome ?? payload.notes ?? '',
+        notes: payload.notes,
+      }),
+    });
+    return mapActivity(body.activity);
   }
 
   async listDashboardMetrics(): Promise<DashboardMetrics> {

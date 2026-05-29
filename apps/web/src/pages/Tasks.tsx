@@ -5,19 +5,26 @@ import { PriorityBadge } from '../components/ui/StatusBadges';
 import { CheckCircle2, Plus, Calendar, Filter, User } from 'lucide-react';
 import { formatDate } from '../lib/utils';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../auth/useAuth';
+import { userHasPermission } from '../auth/permissions';
 
 export default function Tasks() {
   const { tasks, loading, completeTask } = useTasks();
+  const { user } = useAuth();
+  const canCreateTask = userHasPermission(user, 'task.create');
+  const canCompleteTask = userHasPermission(user, 'task.complete');
 
   return (
     <div className="space-y-6">
-      <PageHeader 
-        title="Minhas Tarefas" 
+      <PageHeader
+        title="Minhas Tarefas"
         description="Gerencie seu follow-up e compromissos do dia."
         actions={
-          <Button variant="primary" size="sm" className="gap-2">
-            <Plus size={16} /> Nova Tarefa
-          </Button>
+          canCreateTask ? (
+            <Button variant="primary" size="sm" className="gap-2">
+              <Plus size={16} /> Nova Tarefa
+            </Button>
+          ) : null
         }
       />
 
@@ -59,17 +66,19 @@ export default function Tasks() {
         ) : tasks.map((task) => (
           <div key={task.id} className="p-4 hover:bg-gray-50/50 transition-colors flex items-center justify-between group">
             <div className="flex items-start gap-4">
-              <button 
-                onClick={() => completeTask(task.id)}
+              <button
+                onClick={() => canCompleteTask && completeTask(task.id)}
+                disabled={!canCompleteTask || task.status === 'concluido'}
+                aria-label={canCompleteTask ? 'Concluir tarefa' : 'Sem permissão para concluir tarefa'}
                 className={`mt-1 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                  task.status === 'concluido' 
-                    ? 'bg-energy-success border-energy-success text-white' 
-                    : 'border-gray-200 hover:border-solar-orange'
+                  task.status === 'concluido'
+                    ? 'bg-energy-success border-energy-success text-white'
+                    : canCompleteTask ? 'border-gray-200 hover:border-solar-orange' : 'border-gray-100 cursor-not-allowed opacity-60'
                 }`}
               >
                 {task.status === 'concluido' && <CheckCircle2 size={12} />}
               </button>
-              
+
               <div>
                 <h5 className={`font-bold text-sm ${task.status === 'concluido' ? 'text-gray-400 line-through' : 'text-graphite'}`}>
                   {task.title}

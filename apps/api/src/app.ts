@@ -6,11 +6,14 @@ import { createPgUsersRepository, type UsersRepository } from './modules/users/r
 import { registerUsersRoutes } from './modules/users/users.routes.ts';
 import { createPgLeadsRepository, type LeadsRepository } from './modules/leads/repository.ts';
 import { registerLeadsRoutes } from './modules/leads/leads.routes.ts';
+import { createPgEngagementRepository, type EngagementRepository } from './modules/engagement/repository.ts';
+import { registerEngagementRoutes } from './modules/engagement/engagement.routes.ts';
 
 export type CreateAppOptions = {
   userRepository?: UserRepository;
   usersRepository?: UsersRepository;
   leadsRepository?: LeadsRepository;
+  engagementRepository?: EngagementRepository;
   sessionSecret?: string;
   secureCookies?: boolean;
 };
@@ -21,6 +24,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   const userRepository = options.userRepository ?? createPgUserRepository(env.databaseUrl);
   const usersRepository = options.usersRepository ?? createPgUsersRepository(env.databaseUrl);
   const leadsRepository = options.leadsRepository ?? createPgLeadsRepository(env.databaseUrl);
+  const engagementRepository = options.engagementRepository ?? createPgEngagementRepository(env.databaseUrl);
   const sessionSecret = options.sessionSecret ?? env.sessionSecret;
   const secureCookies = options.secureCookies ?? env.nodeEnv === 'production';
 
@@ -29,11 +33,13 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   void registerAuthRoutes(app, { userRepository, sessionSecret, secureCookies });
   void registerUsersRoutes(app, { userRepository, usersRepository, sessionSecret });
   void registerLeadsRoutes(app, { userRepository, leadsRepository, sessionSecret });
+  void registerEngagementRoutes(app, { userRepository, engagementRepository, sessionSecret });
 
   app.addHook('onClose', async () => {
     await userRepository.close?.();
     await usersRepository.close?.();
     await leadsRepository.close?.();
+    await engagementRepository.close?.();
   });
 
   return app;

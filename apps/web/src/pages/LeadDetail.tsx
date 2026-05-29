@@ -2,14 +2,14 @@ import { useParams, Link } from 'react-router-dom';
 import { useLeadDetail } from '../hooks/useCrm';
 import { Button, Card, Badge } from '../components/ui/Base';
 import { StageBadge, PriorityBadge } from '../components/ui/StatusBadges';
-import { 
-  ArrowLeft, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  MessageSquare, 
-  CheckCircle2, 
-  Clock, 
+import {
+  ArrowLeft,
+  Phone,
+  Mail,
+  MapPin,
+  MessageSquare,
+  CheckCircle2,
+  Clock,
   FileText,
   Zap,
   MoreVertical,
@@ -17,11 +17,23 @@ import {
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useState } from 'react';
+import { useAuth } from '../auth/useAuth';
+import { userHasPermission } from '../auth/permissions';
 
 export default function LeadDetail() {
   const { id } = useParams();
-  const { lead, activities, loading } = useLeadDetail(id);
+  const { lead, activities, loading, addActivity } = useLeadDetail(id);
+  const { user } = useAuth();
+  const canCreateActivity = userHasPermission(user, 'activity.create');
   const [activeTab, setActiveTab] = useState('timeline');
+  const [activityNote, setActivityNote] = useState('');
+
+  async function handleCreateActivity() {
+    const outcome = activityNote.trim();
+    if (!outcome) return;
+    await addActivity({ activityType: 'note', outcome, notes: outcome });
+    setActivityNote('');
+  }
 
   if (loading) return <div className="p-8">Carregando detalhes...</div>;
   if (!lead) return <div className="p-8">Lead não encontrado.</div>;
@@ -49,7 +61,7 @@ export default function LeadDetail() {
               <h3 className="font-bold text-graphite">Informações do Contato</h3>
               <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical size={16} /></Button>
             </div>
-            
+
             <div className="space-y-4">
               <div className="flex items-start gap-3">
                 <div className="p-2 bg-gray-100 rounded-lg"><Phone size={16} className="text-gray-500" /></div>
@@ -138,12 +150,15 @@ export default function LeadDetail() {
               <div className="p-6">
                 <div className="flex gap-4 mb-8">
                   <div className="flex-1">
-                    <textarea 
-                      placeholder="Registrar uma nota ou resultado de contato..."
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 min-h-[100px]"
+                    <textarea
+                      placeholder={canCreateActivity ? 'Registrar uma nota ou resultado de contato...' : 'Sem permissão para registrar atividade'}
+                      value={activityNote}
+                      onChange={(event) => setActivityNote(event.target.value)}
+                      disabled={!canCreateActivity}
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 min-h-[100px] disabled:opacity-60"
                     />
                     <div className="flex justify-end mt-2">
-                      <Button variant="primary" size="sm">Registrar Atividade</Button>
+                      {canCreateActivity && <Button variant="primary" size="sm" onClick={handleCreateActivity}>Registrar Atividade</Button>}
                     </div>
                   </div>
                 </div>
