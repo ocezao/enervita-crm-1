@@ -1,0 +1,24 @@
+{
+  "name": "enervita-crm",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace @enervita/web",
+    "lint": "npm run lint --workspace @enervita/web",
+    "dev:web": "npm run dev --workspace @enervita/web",
+    "preview:web": "npm run preview --workspace @enervita/web",
+    "db:migrate": "node apps/api/scripts/db-migrate.mjs",
+    "db:check": "node apps/api/scripts/db-check.mjs",
+    "db:seed-admin": "tsx apps/api/src/db/seedAdmin.ts",
+    "test:migration": "node apps/api/scripts/check-migration-file.mjs",
+    "test:seed-admin": "node apps/api/scripts/check-seed-admin.mjs",
+    "dev:api": "npm run dev --workspace @enervita/api",
+    "test:api": "npm run test --workspace @enervita/api",
+    "typecheck:api": "npm run typecheck --workspace @enervita/api"
+  }
+}

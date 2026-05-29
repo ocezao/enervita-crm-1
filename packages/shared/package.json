@@ -1,0 +1,9 @@
+{
+  "name": "@enervita/shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "lint": "echo \"Shared package placeholder: no lint configured yet\""
+  }
+}

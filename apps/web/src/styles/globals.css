@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@theme {
+  --color-solar-orange: #F58220;
+  --color-energy-green: #2EAD5B;
+  --color-energy-deep: #0E7A3D;
+  --color-energy-success: #22A06B;
+  --color-graphite: #17211B;
+  --color-graphite-soft: #2A332D;
+  --color-warm-white: #FAF7F0;
+  --color-warm-sand: #EFE6D4;
+  --color-mint-light: #EAF6EE;
+  --color-alert-red: #D94A38;
+  --color-alert-amber: #F5A524;
+  
+  --font-sans: "Inter", "system-ui", "sans-serif";
+  --font-display: "Lexend", "sans-serif";
+}
+
+@layer base {
+  body {
+    @apply bg-warm-white text-graphite font-sans;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+.glass-card {
+  @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm;
+}
+
+.solar-gradient {
+  background: linear-gradient(135deg, #F58220 0%, #F5A524 100%);
+}
+
+.energy-gradient {
+  background: linear-gradient(135deg, #0E7A3D 0%, #2EAD5B 100%);
+}

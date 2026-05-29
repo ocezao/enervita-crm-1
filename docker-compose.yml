@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: enervita-crm-preview-postgres
+    environment:
+      POSTGRES_USER: enervita
+      POSTGRES_PASSWORD: enervita
+      POSTGRES_DB: enervita_crm
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - enervita_crm_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U enervita -d enervita_crm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  enervita_crm_postgres_data:
