@@ -69,11 +69,16 @@ try {
     if (!existingConstraints.has(constraint)) failures.push(`missing constraint: ${constraint}`);
   }
 
+  const requiredMigrationVersions = ["001_initial_schema", "002_user_stage_permissions"];
   const migrationResult = await client.query(
-    `select version from schema_migrations where version = $1`,
-    ['001_initial_schema'],
+    `select version from schema_migrations where version = any($1::text[])`,
+    [requiredMigrationVersions],
   );
-  if (migrationResult.rowCount !== 1) failures.push('missing schema_migrations row: 001_initial_schema');
+  const appliedMigrations = new Set(migrationResult.rows.map((row) => row.version));
+  for (const version of requiredMigrationVersions) {
+    if (!appliedMigrations.has(version)) failures.push(`missing schema_migrations row: ${version}`);
+  }
+
 
   if (failures.length > 0) {
     console.error('Database schema check failed:');

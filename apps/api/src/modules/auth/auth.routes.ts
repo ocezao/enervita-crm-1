@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import { getAuthenticatedUser } from '../../middleware/requireAuth.ts';
+import { getAuthenticatedUser, requireAuth } from '../../middleware/requireAuth.ts';
+import { buildPermissionsCatalog } from '../permissions/permission.service.ts';
 import { loginWithPassword } from './auth.service.ts';
 import { createSessionToken, serializeClearSessionCookie, serializeSessionCookie } from './session.ts';
 import type { UserRepository } from './userRepository.ts';
@@ -91,4 +92,10 @@ export async function registerAuthRoutes(app: FastifyInstance, options: AuthRout
     if (!user) return reply.code(401).send({ error: 'Authentication required' });
     return { user };
   });
+
+  app.get(
+    '/api/permissions/catalog',
+    { preHandler: requireAuth({ userRepository: options.userRepository, sessionSecret: options.sessionSecret }) },
+    async () => buildPermissionsCatalog(),
+  );
 }

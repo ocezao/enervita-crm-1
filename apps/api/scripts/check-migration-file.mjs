@@ -1,6 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import {
-  migrationFile,
+  migrationFiles,
   requiredColumns,
   requiredConstraints,
   requiredEnums,
@@ -40,13 +40,13 @@ function hasNotNullColumn(tableBody, column) {
 const failures = [];
 let sql;
 try {
-  sql = await readFile(migrationFile, 'utf8');
+  const sqlParts = await Promise.all(migrationFiles.map((file) => readFile(file, "utf8")));
+  sql = sqlParts.join("\n");
 } catch (error) {
-  console.error(`Migration file not found: ${migrationFile}`);
+  console.error("Migration file not found.");
   console.error(error.message);
   process.exit(1);
 }
-
 const normalized = normalize(sql);
 
 for (const extension of ['pgcrypto']) {
@@ -101,5 +101,5 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-console.log(`Migration validation passed for ${migrationFile}`);
+console.log("Migration validation passed for " + migrationFiles.join(", "));
 console.log(`Validated ${requiredTables.length} tables and ${requiredEnums.length} enums.`);

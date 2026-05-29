@@ -1,4 +1,9 @@
-export const migrationFile = 'infra/migrations/001_initial_schema.sql';
+export const migrationFiles = [
+  'infra/migrations/001_initial_schema.sql',
+  'infra/migrations/002_user_stage_permissions.sql',
+];
+
+export const migrationFile = migrationFiles[0];
 
 export const requiredTables = [
   'tenants',
@@ -9,6 +14,7 @@ export const requiredTables = [
   'permissions',
   'user_permissions',
   'stage_permissions',
+  'user_stage_permissions',
   'contacts',
   'leads',
   'lead_stage_history',
@@ -48,6 +54,19 @@ export const requiredColumns = {
   permissions: ['id', 'key', 'resource', 'action', 'description', 'created_at'],
   user_permissions: ['tenant_id', 'user_id', 'permission_id', 'effect', 'scope', 'granted_by', 'granted_at', 'expires_at'],
   stage_permissions: ['id', 'tenant_id', 'role_id', 'permission_id', 'stage', 'effect', 'created_at'],
+  user_stage_permissions: [
+    'id',
+    'tenant_id',
+    'user_id',
+    'employee_profile_id',
+    'permission_id',
+    'stage',
+    'effect',
+    'granted_by',
+    'granted_at',
+    'expires_at',
+    'created_at',
+  ],
   contacts: ['id', 'tenant_id', 'name', 'email', 'phone', 'company', 'source', 'consent', 'metadata', 'created_at', 'updated_at'],
   leads: ['id', 'tenant_id', 'contact_id', 'stage', 'qualification_status', 'lead_source', 'utm_source', 'utm_medium', 'utm_campaign', 'estimated_ticket', 'sdr_owner_id', 'priority', 'created_at', 'updated_at'],
   lead_stage_history: ['id', 'tenant_id', 'lead_id', 'from_stage', 'to_stage', 'changed_by', 'changed_at', 'notes'],
@@ -72,6 +91,7 @@ export const requiredNotNullColumns = {
   user_roles: ['tenant_id', 'user_id', 'role_id'],
   user_permissions: ['tenant_id', 'user_id', 'permission_id'],
   stage_permissions: ['tenant_id', 'role_id', 'permission_id'],
+  user_stage_permissions: ['tenant_id', 'permission_id'],
   audit_logs: ['tenant_id'],
 };
 
@@ -89,6 +109,10 @@ export const requiredConstraints = [
   'user_permissions_user_tenant_fk',
   'user_permissions_granted_by_tenant_fk',
   'stage_permissions_role_tenant_fk',
+  'employee_profiles_id_tenant_unique',
+  'user_stage_permissions_user_tenant_fk',
+  'user_stage_permissions_employee_profile_tenant_fk',
+  'user_stage_permissions_granted_by_tenant_fk',
   'leads_contact_tenant_fk',
   'leads_sdr_owner_tenant_fk',
   'lead_stage_history_lead_tenant_fk',
