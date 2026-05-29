@@ -1,0 +1,60 @@
+import { type PipelineStageKey } from '@enervita/shared';
+import { canAccessStage, getStageScopeForUser, hasPermission, isKnownPipelineStage } from '../permissions/permission.service.ts';
+import type { PublicUser } from '../auth/userRepository.ts';
+import type { AuditContext } from '../users/repository.ts';
+import type { LeadsRepository } from './repository.ts';
+import { LeadsOperationError } from './repository.ts';
+import type { CreateLeadInput, StageChangeInput, UpdateLeadInput } from './validation.ts';
+
+export type RequestAuditMetadata = {
+  ipAddress?: string;
+  userAgent?: string;
+};
+
+function makeAuditContext(actor: PublicUser, metadata: RequestAuditMetadata): AuditContext {
+  return {
+    actorUserId: actor.id,
+    tenantId: actor.tenantId,
+    ipAddress: metadata.ipAddress,
+    userAgent: metadata.userAgent,
+  };
+}
+
+function scopedStages(actor: PublicUser): PipelineStageKey[] | null {
+  return getStageScopeForUser(actor);
+}
+
+function ensureStageAllowed(actor: PublicUser, stage: PipelineStageKey): void {
+  if (!canAccessStage(actor, stage)) throw new LeadsOperationError('Pipeline stage is not allowed for this user');
+}
+
+function ensureMarkLostAllowed(actor: PublicUser, stage: PipelineStageKey): void {
+  if (stage === 'perdido' && !hasPermission(actor, 'lead.mark_lost')) {
+    throw new LeadsOperationError('lead.mark_lost permission is required to mark a lead as lost');
+  }
+}
+
+export async function listLeads(repository: LeadsRepository, actor: PublicUser) {
+  return repository.listLeads(actor.tenantId, scopedStages(actor));
+}
+
+export async function getLead(repository: LeadsRepository, actor: PublicUser, leadId: string) {
+  return repository.getLead(actor.tenantId, leadId, scopedStages(actor));
+}
+
+export async function createLead(repository: LeadsRepository, actor: PublicUser, input: CreateLeadInput, metadata: RequestAuditMetadata) {
+  ensureStageAllowed(actor, input.stage);
+  ensureMarkLostAllowed(actor, input.stage);
+  return repository.createLead(makeAuditContext(actor, metadata), input);
+}
+
+export async function updateLead(repository: LeadsRepository, actor: PublicUser, leadId: string, input: UpdateLeadInput, metadata: RequestAuditMetadata) {
+  return repository.updateLead(makeAuditContext(actor, metadata), leadId, scopedStages(actor), input);
+}
+
+export async function changeLeadStage(repository: LeadsRepository, actor: PublicUser, leadId: string, input: StageChangeInput, metadata: RequestAuditMetadata) {
+  if (!isKnownPipelineStage(input.stage)) throw new LeadsOperationError('Unknown pipeline stage');
+  ensureStageAllowed(actor, input.stage);
+  ensureMarkLostAllowed(actor, input.stage);
+  return repository.changeStage(makeAuditContext(actor, metadata), leadId, scopedStages(actor), input.stage, input.notes, input.lostReason);
+}
