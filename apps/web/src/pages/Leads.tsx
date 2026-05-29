@@ -5,21 +5,25 @@ import { StageBadge, PriorityBadge } from '../components/ui/StatusBadges';
 import { Search, Filter, MoreHorizontal, Eye, MessageSquare } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../auth/useAuth';
+import { userHasPermission } from '../auth/permissions';
 
 export default function Leads() {
   const { leads, loading } = useLeads();
+  const { user } = useAuth();
+  const canExportCsv = userHasPermission(user, 'csv.export');
 
   return (
     <div className="space-y-6">
-      <PageHeader 
-        title="Leads" 
+      <PageHeader
+        title="Leads"
         description="Gerencie todos os seus leads e oportunidades em um só lugar."
         actions={
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="gap-2">
               <Filter size={16} /> Filtros
             </Button>
-            <Button variant="primary" size="sm">Exportar CSV</Button>
+            {canExportCsv && <Button variant="primary" size="sm">Exportar CSV</Button>}
           </div>
         }
       />
@@ -47,8 +51,8 @@ export default function Leads() {
         <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input 
-              placeholder="Buscar por nome, empresa ou e-mail..." 
+            <input
+              placeholder="Buscar por nome, empresa ou e-mail..."
               className="w-full bg-white border border-gray-200 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30"
             />
           </div>
@@ -120,7 +124,7 @@ export default function Leads() {
             </tbody>
           </table>
         </div>
-        
+
         <div className="p-4 border-t border-gray-100 bg-gray-50/30 flex items-center justify-between">
           <p className="text-xs text-gray-500">Mostrando {leads.length} de {leads.length} leads</p>
           <div className="flex gap-2">

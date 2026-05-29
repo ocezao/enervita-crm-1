@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { api } from '../lib/api/mockCrmApi';
+import { api } from '../lib/api/crmApi';
 import { Lead, LeadStage, Task, DashboardMetrics, AutomationRule, Webhook, Activity } from '../lib/api/types';
 
 export function useLeads() {
