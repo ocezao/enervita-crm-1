@@ -137,7 +137,7 @@ export class MockCrmApi implements CrmApi {
 
   async testWebhook(): Promise<{ success: boolean; message: string }> {
     await delay(1000);
-    return { success: true, message: 'Webhook entregue com sucesso (Mock)' };
+    return { success: true, message: 'Webhook dry-run validado (Mock)' };
   }
 }
 

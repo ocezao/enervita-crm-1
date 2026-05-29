@@ -167,4 +167,33 @@ describe('crmApi HTTP client', () => {
   });
 
 
+  it('lists automations and webhooks through real integration endpoints and dry-runs webhook tests', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ automations: [{ id: 'lead-no-followup-12h', name: 'Alerta sem follow-up', trigger: 'lead.no_followup_12h', conditions: ['Sem atividade há 12h'], actions: ['Criar tarefa urgente'], active: false, status: 'planned' }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ webhooks: [{ id: 'n8n-lead-created', name: 'n8n lead.created', url: 'https://n8n.enervita.com.br/webhook/lead-created', eventTypes: ['lead.created'], status: 'planned', successRate: 0, secretConfigured: false }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ result: { success: true, message: 'Webhook dry-run validado' } }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const automations = await api.listAutomations();
+    const webhooks = await api.listWebhooks();
+    const result = await api.testWebhook('n8n-lead-created');
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/automations', { credentials: 'include' });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/webhooks', { credentials: 'include' });
+    expect(fetchMock).toHaveBeenNthCalledWith(3, '/api/webhooks/n8n-lead-created/test', { credentials: 'include', method: 'POST' });
+    expect(automations[0]).toMatchObject({ id: 'lead-no-followup-12h', trigger: 'lead.no_followup_12h' });
+    expect(webhooks[0]).toMatchObject({ id: 'n8n-lead-created', status: 'planned' });
+    expect(result.success).toBe(true);
+  });
+
+
 });

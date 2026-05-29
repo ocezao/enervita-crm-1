@@ -1,11 +1,11 @@
-export type LeadStage = 
-  | 'novo_lead' 
-  | 'qualificacao' 
-  | 'atendimento_iniciado' 
-  | 'conta_recebida' 
-  | 'diagnostico' 
-  | 'proposta_enviada' 
-  | 'contrato_enervita' 
+export type LeadStage =
+  | 'novo_lead'
+  | 'qualificacao'
+  | 'atendimento_iniciado'
+  | 'conta_recebida'
+  | 'diagnostico'
+  | 'proposta_enviada'
+  | 'contrato_enervita'
   | 'perdido';
 
 export type LeadStatus = 'aguardando' | 'em_andamento' | 'concluido' | 'cancelado';
@@ -121,6 +121,7 @@ export interface AutomationRule {
   actions: string[];
   active: boolean;
   lastRunAt?: string;
+  status?: 'planned' | 'active' | 'paused';
 }
 
 export interface Webhook {
@@ -128,9 +129,10 @@ export interface Webhook {
   name: string;
   url: string;
   eventTypes: string[];
-  status: 'active' | 'inactive' | 'failing';
+  status: 'planned' | 'active' | 'inactive' | 'failing';
   lastDeliveryAt?: string;
   successRate: number;
+  secretConfigured?: boolean;
 }
 
 export interface DashboardMetrics {

@@ -4,13 +4,19 @@ import { Card, Button, Badge } from '../components/ui/Base';
 import { Zap, Play, Settings2, Power, Clock, ArrowRight } from 'lucide-react';
 import { formatDate } from '../lib/utils';
 
+function statusLabel(status: string | undefined, active: boolean) {
+  if (status === 'planned') return 'Planejada';
+  if (status === 'paused') return 'Pausada';
+  return active ? 'Ativa' : 'Inativa';
+}
+
 export default function Automations() {
   const { automations, loading } = useAutomations();
 
   return (
     <div className="space-y-6">
-      <PageHeader 
-        title="Automações" 
+      <PageHeader
+        title="Automações"
         description="Regras inteligentes para acelerar seu processo comercial."
         actions={
           <Button variant="primary" size="sm" className="gap-2">
@@ -32,6 +38,7 @@ export default function Automations() {
                 <div>
                   <h3 className="font-bold text-graphite">{rule.name}</h3>
                   <p className="text-xs text-gray-400">Trigger: {rule.trigger}</p>
+                  <Badge variant={rule.active ? 'success' : 'default'} className="mt-2 text-[10px]">{statusLabel(rule.status, rule.active)}</Badge>
                 </div>
               </div>
               <Button variant="ghost" size="icon" className={rule.active ? 'text-energy-success' : 'text-gray-300'}>
@@ -84,10 +91,10 @@ export default function Automations() {
           <div className="max-w-md text-center md:text-left">
             <h3 className="text-xl font-bold mb-2">Sugestão da Enervita IA</h3>
             <p className="text-gray-400 text-sm">
-              Identificamos que 40% dos seus leads demoram mais de 12h para o primeiro contato. Que tal criar uma automação de alerta imediato?
+              Catálogo técnico conectado à API real do preview. As regras seguem planejadas até integração com n8n/eventos reais ser aprovada.
             </p>
           </div>
-          <Button variant="secondary" className="whitespace-nowrap">Ativar Sugestão</Button>
+          <Button variant="secondary" className="whitespace-nowrap">Planejar ativação</Button>
         </div>
         <div className="absolute -left-10 -bottom-10 w-40 h-40 bg-solar-orange/10 rounded-full blur-3xl"></div>
       </Card>

@@ -1,16 +1,42 @@
+import { useState } from 'react';
 import { useWebhooks } from '../hooks/useCrm';
 import { PageHeader } from '../components/ui/LayoutComponents';
 import { Card, Button, Badge } from '../components/ui/Base';
 import { Link2, ExternalLink, Activity, Terminal, Shield, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { formatDate } from '../lib/utils';
 
+function webhookStatusLabel(status: string) {
+  if (status === 'planned') return 'planejado';
+  if (status === 'active') return 'ativo';
+  if (status === 'failing') return 'falhando';
+  return 'inativo';
+}
+
+function webhookBadgeVariant(status: string) {
+  if (status === 'active') return 'success';
+  if (status === 'failing') return 'error';
+  return 'default';
+}
+
 export default function Webhooks() {
-  const { webhooks, loading } = useWebhooks();
+  const { webhooks, loading, testWebhook } = useWebhooks();
+  const [testResults, setTestResults] = useState<Record<string, string>>({});
+  const [testingId, setTestingId] = useState<string | null>(null);
+
+  const handleTest = async (id: string) => {
+    setTestingId(id);
+    try {
+      const result = await testWebhook(id);
+      setTestResults(prev => ({ ...prev, [id]: result.message }));
+    } finally {
+      setTestingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <PageHeader 
-        title="Desenvolvedores & API" 
+      <PageHeader
+        title="Desenvolvedores & API"
         description="Conecte a Enervita com suas ferramentas favoritas."
         actions={
           <Button variant="outline" size="sm" className="gap-2">
@@ -40,11 +66,11 @@ export default function Webhooks() {
                       <h4 className="font-bold text-sm text-graphite">{webhook.name}</h4>
                       <code className="text-[10px] text-gray-400 break-all">{webhook.url}</code>
                     </div>
-                    <Badge variant={webhook.status === 'active' ? 'success' : 'error'}>
-                      {webhook.status}
+                    <Badge variant={webhookBadgeVariant(webhook.status)}>
+                      {webhookStatusLabel(webhook.status)}
                     </Badge>
                   </div>
-                  
+
                   <div className="flex flex-wrap gap-1 mb-4">
                     {webhook.eventTypes.map(e => (
                       <span key={e} className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-mono">
@@ -65,9 +91,12 @@ export default function Webhooks() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8"><RefreshCw size={14} /></Button>
+                      <Button aria-label={`Testar webhook ${webhook.name}`} variant="ghost" size="icon" className="h-8 w-8" onClick={() => void handleTest(webhook.id)} disabled={testingId === webhook.id}><RefreshCw size={14} /></Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8"><ExternalLink size={14} /></Button>
                     </div>
+                    {testResults[webhook.id] && (
+                      <p className="mt-3 text-xs text-energy-success font-medium">{testResults[webhook.id]}</p>
+                    )}
                   </div>
                 </div>
               ))}
@@ -77,13 +106,13 @@ export default function Webhooks() {
           <Card className="p-6">
             <h3 className="font-bold text-graphite mb-4 flex items-center gap-2">
               <Activity size={20} className="text-energy-green" />
-              Logs Recentes (Mock)
+              Logs Recentes (preview)
             </h3>
             <div className="bg-graphite rounded-xl p-4 font-mono text-xs text-energy-green overflow-x-auto">
-              <p className="opacity-50"># [2024-05-24 14:22:01] POST /webhook/leads - 200 OK</p>
-              <p className="mt-1">{"{"} "event": "lead.created", "id": "l_923", "name": "Joao Silva" {"}"}</p>
-              <p className="opacity-50 mt-4"># [2024-05-24 14:20:15] POST /webhook/leads - 200 OK</p>
-              <p className="mt-1">{"{"} "event": "lead.stage_changed", "id": "l_112", "to": "proposta_enviada" {"}"}</p>
+              <p className="opacity-50"># Dry-run: nenhum payload externo enviado</p>
+              <p className="mt-1">{"{"} "event": "lead.created", "status": "planned" {"}"}</p>
+              <p className="opacity-50 mt-4"># Aguardando decisão de ativação n8n</p>
+              <p className="mt-1">{"{"} "event": "lead.stage_changed", "status": "planned" {"}"}</p>
             </div>
           </Card>
         </div>
@@ -127,11 +156,11 @@ export default function Webhooks() {
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Webhooks Queue</span>
-                <span className="text-energy-success font-bold">Online</span>
+                <span className="text-gray-500 font-bold">Planejado</span>
               </div>
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">Tracking Engine</span>
-                <span className="text-energy-success font-bold">Online</span>
+                <span className="text-gray-500 font-bold">Planejado</span>
               </div>
             </div>
           </Card>

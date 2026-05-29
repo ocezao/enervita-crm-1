@@ -127,5 +127,7 @@ export function useWebhooks() {
     });
   }, []);
 
-  return { webhooks, loading };
+  const testWebhook = async (id: string) => api.testWebhook(id);
+
+  return { webhooks, loading, testWebhook };
 }

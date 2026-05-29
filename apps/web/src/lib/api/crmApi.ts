@@ -297,15 +297,20 @@ export class HttpCrmApi implements CrmApi {
   }
 
   async listAutomations(): Promise<AutomationRule[]> {
-    return [];
+    const body = await requestJson<{ automations: AutomationRule[] }>('/api/automations');
+    return body.automations;
   }
 
   async listWebhooks(): Promise<Webhook[]> {
-    return [];
+    const body = await requestJson<{ webhooks: Webhook[] }>('/api/webhooks');
+    return body.webhooks;
   }
 
   async testWebhook(id: string): Promise<{ success: boolean; message: string }> {
-    return { success: false, message: `API real de webhooks ainda não implementada para: ${id}` };
+    const body = await requestJson<{ result: { success: boolean; message: string } }>(`/api/webhooks/${encodeURIComponent(id)}/test`, {
+      method: 'POST',
+    });
+    return body.result;
   }
 }
 

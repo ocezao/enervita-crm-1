@@ -10,6 +10,7 @@ import { createPgEngagementRepository, type EngagementRepository } from './modul
 import { registerEngagementRoutes } from './modules/engagement/engagement.routes.ts';
 import { createPgDashboardRepository, type DashboardRepository } from './modules/dashboard/repository.ts';
 import { registerDashboardRoutes } from './modules/dashboard/dashboard.routes.ts';
+import { registerIntegrationsRoutes } from './modules/integrations/integrations.routes.ts';
 
 export type CreateAppOptions = {
   userRepository?: UserRepository;
@@ -39,6 +40,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   void registerLeadsRoutes(app, { userRepository, leadsRepository, sessionSecret });
   void registerEngagementRoutes(app, { userRepository, engagementRepository, sessionSecret });
   void registerDashboardRoutes(app, { userRepository, dashboardRepository, sessionSecret });
+  void registerIntegrationsRoutes(app, { userRepository, sessionSecret });
 
   app.addHook('onClose', async () => {
     await userRepository.close?.();
