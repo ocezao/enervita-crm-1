@@ -4,6 +4,8 @@ import {
   Activity,
   AutomationRule,
   AutomationRun,
+  N8nWorkflow,
+  N8nWorkflowToggleResult,
   Webhook,
   WebhookDelivery,
   WebhookTestResult,
@@ -11,14 +13,19 @@ import {
   Proposal,
   CreateProposalPayload,
   TrackingEvent,
+  AdsOverview,
+  AdsSyncResult,
   LeadStage,
+  LeadTag,
   Priority,
+  CrmAnalyticsOverview,
 } from './types';
 
 export interface CrmApi {
-  listLeads(): Promise<Lead[]>;
+  listLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' }): Promise<Lead[]>;
   getLead(id: string): Promise<Lead | undefined>;
   updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string }): Promise<Lead>;
+  setLeadTags(id: string, tags: string[]): Promise<Lead>;
 
   listProposals(): Promise<Proposal[]>;
   listProposalsForLead(leadId: string): Promise<Proposal[]>;
@@ -34,13 +41,19 @@ export interface CrmApi {
   createActivity(payload: Partial<Activity>): Promise<Activity>;
 
   listDashboardMetrics(): Promise<DashboardMetrics>;
+  getAnalyticsOverview(filters?: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage }): Promise<CrmAnalyticsOverview>;
 
   listAutomations(): Promise<AutomationRule[]>;
   runAutomation(id: string, payload?: Record<string, unknown>): Promise<AutomationRun>;
+  listN8nWorkflows(): Promise<N8nWorkflow[]>;
+  setN8nWorkflowActive(id: string, active: boolean): Promise<N8nWorkflowToggleResult>;
 
   listWebhooks(): Promise<Webhook[]>;
   listWebhookDeliveries(): Promise<WebhookDelivery[]>;
   testWebhook(id: string): Promise<WebhookTestResult>;
+
+  getAdsOverview(): Promise<AdsOverview>;
+  syncMetaAds(): Promise<{ result: AdsSyncResult; overview: AdsOverview }>;
 }
 
 type BackendContact = {
@@ -68,6 +81,10 @@ type BackendLead = {
   utmCampaign?: string | null;
   utmContent?: string | null;
   utmTerm?: string | null;
+  fbp?: string | null;
+  fbc?: string | null;
+  fbclid?: string | null;
+  gclid?: string | null;
   estimatedTicket?: string | number | null;
   sdrOwnerId?: string | null;
   priority?: string | null;
@@ -76,6 +93,7 @@ type BackendLead = {
   createdAt: string;
   updatedAt: string;
   contact?: BackendContact | null;
+  tags?: LeadTag[] | null;
 };
 
 type BackendProposal = {
@@ -182,6 +200,10 @@ function mapLead(raw: BackendLead): Lead {
     utmCampaign: raw.utmCampaign ?? undefined,
     utmContent: raw.utmContent ?? undefined,
     utmTerm: raw.utmTerm ?? undefined,
+    fbp: raw.fbp ?? undefined,
+    fbc: raw.fbc ?? undefined,
+    fbclid: raw.fbclid ?? undefined,
+    gclid: raw.gclid ?? undefined,
     estimatedTicket: numeric(raw.estimatedTicket),
     sdrOwner: raw.sdrOwnerId ?? 'Sem responsável',
     notes: raw.notes ?? undefined,
@@ -193,6 +215,8 @@ function mapLead(raw: BackendLead): Lead {
     offer: stringFromMetadata(metadata, ['offer', 'ofertaEnervita', 'oferta'], 'Enervita Solar'),
     projectedSavings: numberFromMetadata(metadata, ['projectedSavings', 'economiaMensalProjetada']),
     priority: priority(raw.priority),
+    metadata,
+    tags: Array.isArray(raw.tags) ? raw.tags : [],
     contact: {
       id: contact.id ?? raw.contactId,
       name: contact.name ?? 'Lead sem nome',
@@ -240,6 +264,7 @@ function mapTask(raw: BackendTask): Task {
     status: raw.status === 'cancelado' ? 'atrasado' : raw.status,
     priority: priority(raw.priority),
     owner: raw.ownerName ?? raw.ownerId ?? 'Sem responsável',
+    ownerId: raw.ownerId ?? undefined,
     dueDate: raw.dueDate ?? raw.createdAt,
     notes: raw.notes ?? raw.description ?? undefined,
     createdAt: raw.createdAt,
@@ -278,8 +303,12 @@ async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export class HttpCrmApi implements CrmApi {
-  async listLeads(): Promise<Lead[]> {
-    const body = await requestJson<{ leads: BackendLead[] }>('/api/leads');
+  async listLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' }): Promise<Lead[]> {
+    const params = new URLSearchParams();
+    if (filters?.tags?.length) params.set('tags', filters.tags.join(','));
+    if (filters?.tagMode && filters.tagMode !== 'any') params.set('tagMode', filters.tagMode);
+    const query = params.toString();
+    const body = await requestJson<{ leads: BackendLead[] }>(`/api/leads${query ? `?${query}` : ''}`);
     return body.leads.map(mapLead);
   }
 
@@ -296,6 +325,15 @@ export class HttpCrmApi implements CrmApi {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ stage, notes: options?.notes, lostReason: options?.lostReason }),
+    });
+    return mapLead(body.lead);
+  }
+
+  async setLeadTags(id: string, tags: string[]): Promise<Lead> {
+    const body = await requestJson<{ lead: BackendLead }>(`/api/leads/${encodeURIComponent(id)}/tags`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags }),
     });
     return mapLead(body.lead);
   }
@@ -341,6 +379,8 @@ export class HttpCrmApi implements CrmApi {
       body: JSON.stringify({
         leadId: payload.leadId || undefined,
         title: payload.title,
+        description: payload.notes,
+        ownerId: payload.ownerId,
         priority: payload.priority,
         dueDate: payload.dueDate,
         notes: payload.notes,
@@ -383,6 +423,20 @@ export class HttpCrmApi implements CrmApi {
     };
   }
 
+  async getAnalyticsOverview(filters: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage } = {}): Promise<CrmAnalyticsOverview> {
+    const params = new URLSearchParams();
+    if (filters.days) params.set('days', String(filters.days));
+    if (filters.period) params.set('period', filters.period);
+    if (filters.startDate) params.set('startDate', filters.startDate);
+    if (filters.endDate) params.set('endDate', filters.endDate);
+    if (filters.source) params.set('source', filters.source);
+    if (filters.campaign) params.set('campaign', filters.campaign);
+    if (filters.stage) params.set('stage', filters.stage);
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    const body = await requestJson<{ overview: CrmAnalyticsOverview }>(`/api/analytics/overview${suffix}`);
+    return body.overview;
+  }
+
   async listAutomations(): Promise<AutomationRule[]> {
     const body = await requestJson<{ automations: AutomationRule[] }>('/api/automations');
     return body.automations;
@@ -395,6 +449,29 @@ export class HttpCrmApi implements CrmApi {
       body: JSON.stringify(payload),
     });
     return body.run;
+  }
+
+  async listN8nWorkflows(): Promise<N8nWorkflow[]> {
+    const body = await requestJson<{ workflows: N8nWorkflow[] }>('/api/automations/n8n-workflows');
+    return body.workflows;
+  }
+
+  async setN8nWorkflowActive(id: string, active: boolean): Promise<N8nWorkflowToggleResult> {
+    const body = await requestJson<{ result: N8nWorkflowToggleResult }>(`/api/automations/n8n-workflows/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active }),
+    });
+    return body.result;
+  }
+
+  async getAdsOverview(): Promise<AdsOverview> {
+    const body = await requestJson<{ overview: AdsOverview }>('/api/ads/overview');
+    return body.overview;
+  }
+
+  async syncMetaAds(): Promise<{ result: AdsSyncResult; overview: AdsOverview }> {
+    return await requestJson<{ result: AdsSyncResult; overview: AdsOverview }>("/api/ads/sync/meta", { method: "POST" });
   }
 
   async listWebhooks(): Promise<Webhook[]> {

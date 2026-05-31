@@ -1,24 +1,199 @@
-import { useLeads } from '../hooks/useCrm';
-import { PageHeader } from '../components/ui/LayoutComponents';
-import { LeadStage, Lead } from '../lib/api/types';
-import { Card, Button } from '../components/ui/Base';
-import { PriorityBadge } from '../components/ui/StatusBadges';
-import { formatCurrency } from '../lib/utils';
-import { MoreHorizontal, Plus, Clock, Phone, ArrowRight } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import type { DragEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { ArrowRight, CalendarClock, Clock, Filter, Flame, GripVertical, Phone, Plus, RotateCcw, Search, TimerReset, Users } from 'lucide-react';
+import { useLeads } from '../hooks/useCrm';
 import { useAuth } from '../auth/useAuth';
 import { isAdminUser, userHasPermission } from '../auth/permissions';
+import { PageHeader } from '../components/ui/LayoutComponents';
+import { Badge, Button, Card } from '../components/ui/Base';
+import { PriorityBadge, StageBadge } from '../components/ui/StatusBadges';
+import type { Lead, LeadStage, Priority } from '../lib/api/types';
+import { cn, formatCurrency } from '../lib/utils';
 
-const stages: { id: LeadStage; label: string }[] = [
-  { id: 'novo_lead', label: 'Novo lead' },
-  { id: 'qualificacao', label: 'Qualificação' },
-  { id: 'atendimento_iniciado', label: 'Atendimento iniciado' },
-  { id: 'conta_recebida', label: 'Conta recebida' },
-  { id: 'diagnostico', label: 'Diagnóstico' },
-  { id: 'proposta_enviada', label: 'Proposta enviada' },
-  { id: 'contrato_enervita', label: 'Contrato Enervita' },
-  { id: 'perdido', label: 'Perdido' },
+const stages: Array<{ id: LeadStage; label: string; limit: number; helper: string }> = [
+  { id: 'novo_lead', label: 'Novo lead', limit: 15, helper: 'Entrada e triagem rápida' },
+  { id: 'qualificacao', label: 'Qualificação', limit: 10, helper: 'Confirmar perfil e interesse' },
+  { id: 'atendimento_iniciado', label: 'Atendimento iniciado', limit: 8, helper: 'Primeiro contato em andamento' },
+  { id: 'conta_recebida', label: 'Conta recebida', limit: 8, helper: 'Fatura recebida para análise' },
+  { id: 'diagnostico', label: 'Diagnóstico', limit: 6, helper: 'Dimensionamento e recomendação' },
+  { id: 'proposta_enviada', label: 'Proposta enviada', limit: 6, helper: 'Follow-up de fechamento' },
+  { id: 'contrato_enervita', label: 'Contrato Enervita', limit: 99, helper: 'Ganho / implantação' },
+  { id: 'perdido', label: 'Perdido', limit: 99, helper: 'Motivos e aprendizado' },
 ];
-function visibleStagesForUser(user: ReturnType<typeof useAuth>['user']) { if (isAdminUser(user)) return stages; const allowed = new Set(user?.allowedStages ?? []); return stages.filter((stage) => allowed.has(stage.id)); }
-export default function Pipeline() { const { leads, updateStage } = useLeads(); const { user } = useAuth(); const visibleStages = visibleStagesForUser(user); const canMoveStage = userHasPermission(user, 'lead.stage_change'); const getLeadsInStage = (stageId: LeadStage) => leads.filter(l => l.stage === stageId); function nextVisibleStage(currentStage: LeadStage): { id: LeadStage; label: string } | undefined { const index = visibleStages.findIndex((stage) => stage.id === currentStage); return index >= 0 ? visibleStages[index + 1] : undefined; } return (<div className="h-[calc(100vh-120px)] flex flex-col"><PageHeader title="Pipeline de Vendas" description="Acompanhe o progresso das suas oportunidades." actions={userHasPermission(user, 'lead.create') && (<Button variant="primary" size="sm" className="gap-2"><Plus size={16} /> Novo Lead</Button>)} /><div className="flex-1 overflow-x-auto pb-4"><div className="flex gap-4 h-full min-w-max">{visibleStages.map((stage) => (<div key={stage.id} className="w-72 flex flex-col gap-3" data-testid={`pipeline-column-${stage.id}`}><div className="flex items-center justify-between px-1"><div className="flex items-center gap-2"><h3 className="font-bold text-sm text-graphite uppercase tracking-wider">{stage.label}</h3><span className="bg-gray-200 text-gray-600 text-[10px] font-bold px-1.5 py-0.5 rounded-full">{getLeadsInStage(stage.id).length}</span></div>{userHasPermission(user, 'lead.create') && (<Button variant="ghost" size="icon" className="h-6 w-6" aria-label={`Criar lead em ${stage.label}`}><Plus size={14} className="text-gray-400" /></Button>)}</div><div className="flex-1 bg-gray-100/50 rounded-2xl p-2 space-y-3 overflow-y-auto border border-gray-200/50">{getLeadsInStage(stage.id).map((lead) => (<KanbanCard key={lead.id} lead={lead} nextStage={nextVisibleStage(lead.stage)} canMoveStage={canMoveStage} onMove={(targetStage) => updateStage(lead.id, targetStage, { notes: 'Movido pelo pipeline visual' })} />))}{getLeadsInStage(stage.id).length === 0 && (<div className="py-8 text-center border-2 border-dashed border-gray-200 rounded-xl"><p className="text-[10px] font-bold text-gray-400 uppercase">Vazio</p></div>)}</div></div>))}</div></div></div>); }
-function KanbanCard({ lead, nextStage, canMoveStage, onMove }: { lead: Lead; nextStage?: { id: LeadStage; label: string }; canMoveStage: boolean; onMove: (stage: LeadStage) => void }) { return (<Card className="p-4 hover:shadow-md hover:border-solar-orange/30 transition-all group border-transparent"><Link to={`/leads/${lead.id}`} className="block"><div className="flex justify-between items-start mb-3"><PriorityBadge priority={lead.priority} /><Button variant="ghost" size="icon" className="h-6 w-6 opacity-0 group-hover:opacity-100"><MoreHorizontal size={14} /></Button></div><h4 className="font-bold text-sm text-graphite mb-1 group-hover:text-solar-orange transition-colors">{lead.contact?.name}</h4><p className="text-xs text-gray-500 mb-4">{lead.contact?.company}</p><div className="space-y-2 mb-4"><div className="flex items-center gap-2 text-[10px] text-gray-500 font-medium"><Clock size={12} className="text-solar-orange" />Parado há 2 dias</div><div className="flex items-center gap-2 text-[10px] text-gray-500 font-medium"><Phone size={12} className="text-energy-green" />Próxima ação: Ligar amanhã</div></div><div className="pt-3 border-t border-gray-50 flex items-center justify-between"><p className="font-bold text-sm text-energy-green">{formatCurrency(lead.energyBillValue)}</p><div className="flex -space-x-2"><div className="w-6 h-6 rounded-full border-2 border-white bg-solar-orange text-[8px] flex items-center justify-center text-white font-bold">CS</div></div></div></Link>{canMoveStage && nextStage && (<Button variant="outline" size="sm" className="mt-3 w-full gap-2" onClick={() => onMove(nextStage.id)} aria-label={`Mover ${lead.contact?.name ?? 'lead'} para ${nextStage.label}`}><ArrowRight size={14} /> Mover para {nextStage.label}</Button>)}</Card>); }
+
+const priorities: Array<'todas' | Priority> = ['todas', 'urgente', 'alta', 'media', 'baixa'];
+type AgingFilter = 'todos' | 'sem_proxima_acao' | 'parados_3d' | 'parados_7d';
+type SortKey = 'oldest_stage' | 'updated_desc' | 'bill_desc' | 'priority_desc';
+
+function visibleStagesForUser(user: ReturnType<typeof useAuth>['user']) {
+  if (isAdminUser(user)) return stages;
+  const allowed = new Set(user?.allowedStages ?? []);
+  return stages.filter((stage) => allowed.has(stage.id));
+}
+
+function daysSince(date?: string) {
+  if (!date) return 0;
+  const time = new Date(date).getTime();
+  if (!Number.isFinite(time)) return 0;
+  return Math.max(0, Math.floor((Date.now() - time) / 86400000));
+}
+
+function daysUntil(date?: string) {
+  if (!date) return undefined;
+  const time = new Date(date).getTime();
+  if (!Number.isFinite(time)) return undefined;
+  return Math.ceil((time - Date.now()) / 86400000);
+}
+
+function normalize(value?: string | number | null) {
+  return String(value ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function priorityWeight(priority: Priority) {
+  return { urgente: 4, alta: 3, media: 2, baixa: 1 }[priority] ?? 0;
+}
+
+function nextActionLabel(lead: Lead) {
+  const diff = daysUntil(lead.nextActionAt);
+  if (diff === undefined) return 'Sem próxima ação';
+  if (diff < 0) return `Atrasada há ${Math.abs(diff)}d`;
+  if (diff === 0) return 'Vence hoje';
+  if (diff === 1) return 'Amanhã';
+  return `Em ${diff} dias`;
+}
+
+function matchesAging(lead: Lead, filter: AgingFilter) {
+  const stalled = daysSince(lead.updatedAt || lead.createdAt);
+  if (filter === 'sem_proxima_acao') return !lead.nextActionAt;
+  if (filter === 'parados_3d') return stalled >= 3;
+  if (filter === 'parados_7d') return stalled >= 7;
+  return true;
+}
+
+function sortLeads(leads: Lead[], sort: SortKey) {
+  return [...leads].sort((a, b) => {
+    if (sort === 'bill_desc') return (b.energyBillValue || b.estimatedTicket || 0) - (a.energyBillValue || a.estimatedTicket || 0);
+    if (sort === 'priority_desc') return priorityWeight(b.priority) - priorityWeight(a.priority) || daysSince(b.updatedAt) - daysSince(a.updatedAt);
+    if (sort === 'oldest_stage') return daysSince(b.updatedAt || b.createdAt) - daysSince(a.updatedAt || a.createdAt);
+    return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
+  });
+}
+
+export default function Pipeline() {
+  const { leads, updateStage } = useLeads();
+  const { user } = useAuth();
+  const visibleStages = visibleStagesForUser(user);
+  const canMoveStage = userHasPermission(user, 'lead.stage_change');
+  const canCreate = userHasPermission(user, 'lead.create');
+  const [query, setQuery] = useState('');
+  const [priority, setPriority] = useState<'todas' | Priority>('todas');
+  const [source, setSource] = useState('todas');
+  const [aging, setAging] = useState<AgingFilter>('todos');
+  const [sort, setSort] = useState<SortKey>('oldest_stage');
+  const [minBill, setMinBill] = useState('');
+  const [draggingLeadId, setDraggingLeadId] = useState<string | null>(null);
+  const stageIds = useMemo(() => new Set(visibleStages.map((stage) => stage.id)), [visibleStages]);
+  const sources = useMemo(() => Array.from(new Set(leads.map((lead) => lead.leadSource || lead.contact?.source || 'desconhecido'))).sort(), [leads]);
+  const visibleRawLeads = useMemo(() => leads.filter((lead) => stageIds.has(lead.stage)), [leads, stageIds]);
+
+  const filteredLeads = useMemo(() => {
+    const q = normalize(query.trim());
+    const min = Number(minBill.replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+    return sortLeads(visibleRawLeads.filter((lead) => {
+      const searchable = [lead.contact?.name, lead.contact?.company, lead.contact?.email, lead.contact?.phone, lead.leadSource, lead.utmSource, lead.utmCampaign, lead.qualificationStatus].map(normalize).join(' ');
+      const leadSource = lead.leadSource || lead.contact?.source || 'desconhecido';
+      return (!q || searchable.includes(q)) &&
+        (priority === 'todas' || lead.priority === priority) &&
+        (source === 'todas' || leadSource === source) &&
+        matchesAging(lead, aging) &&
+        ((lead.energyBillValue || lead.estimatedTicket || 0) >= min);
+    }), sort);
+  }, [visibleRawLeads, query, priority, source, aging, minBill, sort]);
+
+  const totalPipeline = filteredLeads.reduce((sum, lead) => sum + (lead.energyBillValue || lead.estimatedTicket || 0), 0);
+  const staleCount = filteredLeads.filter((lead) => daysSince(lead.updatedAt || lead.createdAt) >= 3).length;
+  const missingNextAction = filteredLeads.filter((lead) => !lead.nextActionAt).length;
+  const urgentCount = filteredLeads.filter((lead) => lead.priority === 'urgente' || lead.priority === 'alta').length;
+
+  function leadsInStage(stageId: LeadStage) {
+    return filteredLeads.filter((lead) => lead.stage === stageId);
+  }
+
+  function nextVisibleStage(currentStage: LeadStage) {
+    const index = visibleStages.findIndex((stage) => stage.id === currentStage);
+    return index >= 0 ? visibleStages[index + 1] : undefined;
+  }
+
+  function resetFilters() {
+    setQuery(''); setPriority('todas'); setSource('todas'); setAging('todos'); setMinBill(''); setSort('oldest_stage');
+  }
+
+  function moveLead(lead: Lead, targetStage: LeadStage, notes: string) {
+    if (!canMoveStage || lead.stage === targetStage) return;
+    updateStage(lead.id, targetStage, { notes });
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>, targetStage: LeadStage) {
+    event.preventDefault();
+    const leadId = event.dataTransfer.getData('text/plain') || draggingLeadId;
+    const lead = filteredLeads.find((item) => item.id === leadId);
+    setDraggingLeadId(null);
+    if (lead) moveLead(lead, targetStage, `Movido pelo kanban para ${stages.find((stage) => stage.id === targetStage)?.label ?? targetStage}`);
+  }
+
+  return (
+    <div className="h-[calc(100vh-120px)] min-h-[760px] flex flex-col gap-4">
+      <PageHeader title="Pipeline de Vendas" description="Kanban comercial com drag-and-drop, filtros de operação e alertas de gargalo." actions={canCreate && (<Button variant="primary" size="sm" className="gap-2 opacity-60" disabled title="Criação manual de lead em breve"><Plus size={16} /> Novo Lead em breve</Button>)} />
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Card className="p-4 bg-solar-orange/5 border-solar-orange/10"><Users size={18} className="text-solar-orange" /><p className="mt-2 text-[10px] uppercase font-black text-solar-orange tracking-wider">Leads filtrados</p><strong className="text-2xl text-graphite">{filteredLeads.length}</strong></Card>
+        <Card className="p-4 bg-energy-green/5 border-energy-green/10"><Flame size={18} className="text-energy-green" /><p className="mt-2 text-[10px] uppercase font-black text-energy-green tracking-wider">Pipeline estimado</p><strong className="text-2xl text-graphite">{formatCurrency(totalPipeline)}</strong></Card>
+        <Card className="p-4 bg-alert-amber/5 border-alert-amber/10"><TimerReset size={18} className="text-alert-amber" /><p className="mt-2 text-[10px] uppercase font-black text-alert-amber tracking-wider">Parados 3d+</p><strong className="text-2xl text-graphite">{staleCount}</strong></Card>
+        <Card className="p-4 bg-alert-red/5 border-alert-red/10"><CalendarClock size={18} className="text-alert-red" /><p className="mt-2 text-[10px] uppercase font-black text-alert-red tracking-wider">Sem próxima ação</p><strong className="text-2xl text-graphite">{missingNextAction}</strong></Card>
+      </div>
+
+      <Card className="p-4 overflow-visible">
+        <div className="grid grid-cols-1 xl:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] gap-3 items-center">
+          <label className="relative block"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar lead, empresa, telefone, origem ou campanha..." className="w-full bg-white border border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" /></label>
+          <select value={priority} onChange={(event) => setPriority(event.target.value as 'todas' | Priority)} className="bg-white border border-gray-200 rounded-2xl px-3 py-3 text-sm">{priorities.map((item) => <option key={item} value={item}>{item === 'todas' ? 'Todas prioridades' : item}</option>)}</select>
+          <select value={source} onChange={(event) => setSource(event.target.value)} className="bg-white border border-gray-200 rounded-2xl px-3 py-3 text-sm"><option value="todas">Todas origens</option>{sources.map((item) => <option key={item} value={item}>{item}</option>)}</select>
+          <select value={aging} onChange={(event) => setAging(event.target.value as AgingFilter)} className="bg-white border border-gray-200 rounded-2xl px-3 py-3 text-sm"><option value="todos">Todos tempos</option><option value="sem_proxima_acao">Sem próxima ação</option><option value="parados_3d">Parados há 3+ dias</option><option value="parados_7d">Parados há 7+ dias</option></select>
+          <input value={minBill} onChange={(event) => setMinBill(event.target.value)} inputMode="numeric" placeholder="Conta mínima R$" className="bg-white border border-gray-200 rounded-2xl px-3 py-3 text-sm" />
+          <Button variant="outline" size="sm" className="h-11 gap-2" onClick={resetFilters}><RotateCcw size={14} /> Limpar</Button>
+        </div>
+        <div className="mt-3 flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs text-gray-500"><span className="flex items-center gap-2"><Filter size={14} /> {filteredLeads.length} de {visibleRawLeads.length} leads visíveis · {urgentCount} alta/urgente</span><label className="font-bold">Ordenar <select value={sort} onChange={(event) => setSort(event.target.value as SortKey)} className="border border-gray-200 rounded-xl px-2 py-1 bg-white font-medium"><option value="oldest_stage">Mais parados primeiro</option><option value="updated_desc">Atualizados recentemente</option><option value="bill_desc">Maior conta primeiro</option><option value="priority_desc">Prioridade comercial</option></select></label></div>
+      </Card>
+
+      <div className="flex-1 overflow-x-auto pb-4"><div className="flex gap-4 h-full min-w-max">
+        {visibleStages.map((stage) => {
+          const columnLeads = leadsInStage(stage.id);
+          const columnValue = columnLeads.reduce((sum, lead) => sum + (lead.energyBillValue || lead.estimatedTicket || 0), 0);
+          const overLimit = columnLeads.length > stage.limit;
+          return (
+            <div key={stage.id} className="w-80 flex flex-col gap-3" data-testid={`pipeline-column-${stage.id}`}>
+              <div className="px-1"><div className="flex items-start justify-between gap-2"><div><div className="flex items-center gap-2"><h3 className="font-black text-sm text-graphite uppercase tracking-wider">{stage.label}</h3><span className={cn('text-[10px] font-black px-1.5 py-0.5 rounded-full', overLimit ? 'bg-alert-red/10 text-alert-red' : 'bg-gray-200 text-gray-600')}>{columnLeads.length}</span></div><p className="text-[10px] text-gray-400 mt-1">{stage.helper}</p></div>{canCreate && <Button variant="ghost" size="icon" className="h-7 w-7 opacity-40" aria-label={`Criar lead em ${stage.label} em breve`} disabled title="Criação manual de lead em breve"><Plus size={14} /></Button>}</div><div className="mt-2 flex items-center justify-between text-[10px] text-gray-400"><span>{formatCurrency(columnValue)}</span><span>WIP {stage.limit >= 90 ? 'livre' : stage.limit}</span></div>{overLimit && <Badge variant="error" className="mt-2">Gargalo</Badge>}</div>
+              <div className={cn('flex-1 rounded-2xl p-2 space-y-3 overflow-y-auto border-2 border-dashed transition-colors', draggingLeadId ? 'bg-solar-orange/5 border-solar-orange/30' : 'bg-gray-100/60 border-gray-200/60')} onDragOver={(event) => canMoveStage && event.preventDefault()} onDrop={(event) => handleDrop(event, stage.id)}>
+                {columnLeads.map((lead) => <KanbanCard key={lead.id} lead={lead} nextStage={nextVisibleStage(lead.stage)} canMoveStage={canMoveStage} onMove={(target) => moveLead(lead, target, 'Movido pelo pipeline visual')} onDragStart={() => setDraggingLeadId(lead.id)} onDragEnd={() => setDraggingLeadId(null)} />)}
+                {columnLeads.length === 0 && <div className="py-10 text-center border-2 border-dashed border-gray-200 rounded-xl bg-white/60"><p className="text-[10px] font-black text-gray-400 uppercase">{canMoveStage ? 'Solte cards aqui' : 'Sem leads nesta etapa'}</p></div>}
+              </div>
+            </div>
+          );
+        })}
+      </div></div>
+    </div>
+  );
+}
+
+function KanbanCard({ lead, nextStage, canMoveStage, onMove, onDragStart, onDragEnd }: { lead: Lead; nextStage?: { id: LeadStage; label: string }; canMoveStage: boolean; onMove: (stage: LeadStage) => void; onDragStart: () => void; onDragEnd: () => void }) {
+  const stalledDays = daysSince(lead.updatedAt || lead.createdAt);
+  const phone = lead.contact?.phone?.replace(/\D/g, '');
+  const whatsapp = phone ? `https://wa.me/${phone.startsWith('55') ? phone : `55${phone}`}` : undefined;
+  return (
+    <div className="bg-white rounded-xl border border-transparent shadow-sm overflow-hidden p-4 hover:shadow-lg hover:border-solar-orange/30 transition-all group" draggable={canMoveStage} onDragStart={(event: DragEvent<HTMLDivElement>) => { event.dataTransfer.setData('text/plain', lead.id); event.dataTransfer.effectAllowed = 'move'; onDragStart(); }} onDragEnd={onDragEnd}>
+      <div className="flex justify-between items-start mb-3"><div className="flex items-center gap-2"><GripVertical size={14} className="text-gray-300" /><PriorityBadge priority={lead.priority} /></div><StageBadge stage={lead.stage} /></div>
+      <Link to={`/leads/${lead.id}`} className="block"><h4 className="font-black text-sm text-graphite mb-1 group-hover:text-solar-orange transition-colors">{lead.contact?.name || 'Lead sem nome'}</h4><p className="text-xs text-gray-500 mb-3 truncate">{lead.contact?.company || lead.contact?.email || 'Sem empresa'}</p><div className="grid grid-cols-2 gap-2 mb-4"><div className={cn('rounded-xl p-2 text-[10px] font-bold', stalledDays >= 3 ? 'bg-alert-amber/10 text-alert-amber' : 'bg-gray-50 text-gray-500')}><Clock size={12} className="inline mr-1" />{stalledDays === 0 ? 'Atual hoje' : `Parado ${stalledDays}d`}</div><div className={cn('rounded-xl p-2 text-[10px] font-bold', !lead.nextActionAt || (daysUntil(lead.nextActionAt) ?? 1) <= 0 ? 'bg-alert-red/10 text-alert-red' : 'bg-energy-green/10 text-energy-green')}><Phone size={12} className="inline mr-1" />{nextActionLabel(lead)}</div></div><div className="pt-3 border-t border-gray-50 flex items-center justify-between gap-2"><div><p className="font-black text-sm text-energy-green">{formatCurrency(lead.energyBillValue || lead.estimatedTicket)}</p><p className="text-[10px] text-gray-400 truncate max-w-[150px]">{lead.leadSource || 'origem indefinida'}</p></div><div className="w-8 h-8 rounded-full border-2 border-white bg-solar-orange text-[9px] flex items-center justify-center text-white font-black">{lead.sdrOwner?.slice(0, 2).toUpperCase() || 'SD'}</div></div></Link>
+      <div className="mt-3 grid grid-cols-2 gap-2">{whatsapp ? <a href={whatsapp} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-2 py-1.5 text-xs font-bold text-graphite hover:bg-gray-50">WhatsApp</a> : <span className="inline-flex items-center justify-center rounded-lg border border-gray-100 px-2 py-1.5 text-xs font-bold text-gray-300">Sem telefone</span>}{canMoveStage && nextStage ? <Button variant="outline" size="sm" className="gap-1" onClick={() => onMove(nextStage.id)} aria-label={`Mover ${lead.contact?.name ?? 'lead'} para ${nextStage.label}`}><ArrowRight size={14} /> Mover</Button> : <Button variant="ghost" size="sm" disabled>Final</Button>}</div>
+    </div>
+  );
+}

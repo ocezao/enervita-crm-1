@@ -4,6 +4,7 @@ import type { AuditContext } from '../users/repository.ts';
 const { Pool } = pg;
 
 export type AutomationStatus = 'planned' | 'active' | 'paused';
+export type N8nWorkflowStatus = 'active' | 'paused' | 'archived';
 export type WebhookStatus = 'planned' | 'active' | 'inactive' | 'failing';
 export type DeliveryStatus = 'queued' | 'sent' | 'failed';
 export type AutomationRunStatus = 'queued' | 'success' | 'failed';
@@ -17,6 +18,25 @@ export type AutomationRule = {
   active: boolean;
   status: AutomationStatus;
   lastRunAt?: string;
+};
+
+export type N8nWorkflow = {
+  id: string;
+  name: string;
+  description: string;
+  active: boolean;
+  status: N8nWorkflowStatus;
+  triggerSummary: string;
+  nodeSummary: string[];
+  webhookPaths: string[];
+  updatedAt?: string;
+  versionId?: string | null;
+  activeVersionId?: string | null;
+};
+
+export type N8nWorkflowToggleResult = {
+  workflow: N8nWorkflow;
+  message: string;
 };
 
 export type WebhookDefinition = {
@@ -64,12 +84,21 @@ export type WebhookTestResult = {
 
 export type IntegrationsRepository = {
   listAutomations(tenantId: string): Promise<AutomationRule[]>;
+  listN8nWorkflows(): Promise<N8nWorkflow[]>;
+  setN8nWorkflowActive(id: string, active: boolean): Promise<N8nWorkflowToggleResult>;
   listWebhooks(tenantId: string): Promise<WebhookDefinition[]>;
   listWebhookDeliveries(context: AuditContext, limit?: number): Promise<WebhookDelivery[]>;
   runAutomation(context: AuditContext, id: string, inputPayload: Record<string, unknown>): Promise<AutomationRun>;
   testWebhook(context: AuditContext, id: string): Promise<WebhookTestResult>;
   close?(): Promise<void>;
 };
+
+export class N8nUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'N8nUnavailableError';
+  }
+}
 
 export class IntegrationNotFoundError extends Error {
   constructor(message: string) {
@@ -87,6 +116,94 @@ const WEBHOOK_SLUGS: Record<string, { name: string; eventTypes: string[] }> = {
   'n8n-lead-created': { name: 'n8n - lead criado', eventTypes: ['lead.created'] },
   'n8n-stage-changed': { name: 'n8n - mudança de etapa', eventTypes: ['lead.stage_changed'] },
 };
+
+const N8N_WORKFLOW_DESCRIPTIONS: Record<string, string> = {
+  'env-crm-preview-webhook-homologacao': 'Recebe eventos do CRM custom (lead criado, mudança de etapa, proposta aberta e teste) e responde ao CRM para homologar a integração com n8n.',
+  'env-daily-health': 'Executa checagens diárias de saúde e backup consultando serviços internos e banco para acompanhar a operação Enervita.',
+  'env-events-to-openpanel': 'Lê eventos do banco Enervita, prepara o payload e envia métricas comportamentais para o OpenPanel.',
+  'env-ai-vectorization-embeddings': 'Processa dados persistentes para vetorização/embeddings, preparando base de IA e busca semântica.',
+  'env-lead-followup': 'Rotina planejada de follow-up para leads novos, consultando o banco e preparando próximos contatos comerciais.',
+  'env-twenty-to-db': 'Sincroniza dados da base legada/CRM custom para o banco operacional da Enervita enquanto a migração é consolidada.',
+  'env-leads-to-opps': 'Transforma leads do banco operacional em oportunidades no CRM custom da Enervita.',
+  'env-leads-to-people': 'Sincroniza leads capturados no site para contatos/pessoas no CRM custom da Enervita.',
+};
+
+const N8N_WORKFLOW_DISPLAY_NAMES: Record<string, string> = {
+  'env-leads-to-opps': 'Enervita | Banco Enervita -> Oportunidades CRM Custom',
+  'env-leads-to-people': 'Enervita | Leads do Site -> Contatos CRM Custom',
+  'env-twenty-to-db': 'Enervita | CRM Custom/Legado -> Banco Enervita',
+  'env-crm-preview-webhook-homologacao': 'Enervita | CRM Custom Webhooks - Homologação',
+};
+
+function asRecordArray(value: unknown): Record<string, unknown>[] {
+  return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === 'object' && !Array.isArray(item)) : [];
+}
+
+function nodeTypeLabel(type: string): string {
+  const clean = type.replace('n8n-nodes-base.', '');
+  const labels: Record<string, string> = { webhook: 'Webhook', respondToWebhook: 'Resposta webhook', manualTrigger: 'Gatilho manual', scheduleTrigger: 'Agenda', postgres: 'PostgreSQL', httpRequest: 'HTTP externo', code: 'Código', if: 'Condição' };
+  return labels[clean] ?? clean;
+}
+
+function uniqueStrings(values: string[]): string[] {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function workflowDescription(id: string, name: string, dbDescription: unknown, nodes: Record<string, unknown>[]): string {
+  if (typeof dbDescription === 'string' && dbDescription.trim()) return dbDescription.trim();
+  if (N8N_WORKFLOW_DESCRIPTIONS[id]) return N8N_WORKFLOW_DESCRIPTIONS[id];
+  const labels = uniqueStrings(nodes.map((node) => typeof node.type === 'string' ? node.type : '').map(nodeTypeLabel));
+  if (labels.includes('Webhook')) return `Recebe eventos via webhook e executa o fluxo ${name} no n8n.`;
+  if (labels.includes('Agenda')) return `Executa o fluxo ${name} automaticamente por agenda no n8n.`;
+  return `Fluxo ${name} cadastrado no n8n da Enervita.`;
+}
+
+function workflowTriggerSummary(nodes: Record<string, unknown>[]): string {
+  const labels = uniqueStrings(nodes.map((node) => typeof node.type === 'string' ? node.type : '').map(nodeTypeLabel));
+  const triggers = labels.filter((label) => ['Webhook', 'Agenda', 'Gatilho manual'].includes(label));
+  return triggers.length ? triggers.join(' + ') : 'Sem gatilho identificado';
+}
+
+function workflowWebhookPaths(nodes: Record<string, unknown>[]): string[] {
+  return nodes.flatMap((node) => {
+    if (node.type !== 'n8n-nodes-base.webhook') return [];
+    const parameters = objectPayload(node.parameters);
+    const path = typeof parameters.path === 'string' ? parameters.path : '';
+    const method = typeof parameters.httpMethod === 'string' ? parameters.httpMethod.toUpperCase() : 'POST';
+    return path ? [`${method} /webhook/${path}`] : [];
+  });
+}
+
+function rowToN8nWorkflow(row: Record<string, unknown>): N8nWorkflow {
+  const nodes = asRecordArray(row.nodes);
+  const activeVersionId = typeof row.activeVersionId === 'string' ? row.activeVersionId : null;
+  const archived = Boolean(row.isArchived);
+  const id = String(row.id);
+  const name = N8N_WORKFLOW_DISPLAY_NAMES[id] ?? String(row.name);
+  return { id, name, description: workflowDescription(id, name, row.description, nodes), active: Boolean(activeVersionId) && !archived, status: archived ? 'archived' : activeVersionId ? 'active' : 'paused', triggerSummary: workflowTriggerSummary(nodes), nodeSummary: uniqueStrings(nodes.map((node) => typeof node.type === 'string' ? node.type : '').map(nodeTypeLabel)).slice(0, 8), webhookPaths: workflowWebhookPaths(nodes), updatedAt: row.updatedAt as string | undefined, versionId: typeof row.versionId === 'string' ? row.versionId : null, activeVersionId };
+}
+
+function requireN8nPool(pool: pg.Pool | null): pg.Pool {
+  if (!pool) throw new N8nUnavailableError('n8n ainda não está conectado ao CRM. Configure N8N_DATABASE_URL no serviço da API.');
+  return pool;
+}
+
+async function getN8nWorkflow(pool: pg.Pool, id: string): Promise<N8nWorkflow> {
+  const result = await pool.query(`select id, name, active, "activeVersionId", "versionId", "triggerCount", "updatedAt"::text as "updatedAt", nodes, description, "isArchived" from workflow_entity where id = $1 limit 1`, [id]);
+  if (!result.rows[0]) throw new IntegrationNotFoundError('Workflow n8n não encontrado');
+  return rowToN8nWorkflow(result.rows[0]);
+}
+
+function webhookRowsFromNodes(nodes: Record<string, unknown>[]): Array<{ path: string; method: string; node: string }> {
+  return nodes.flatMap((node) => {
+    if (node.type !== 'n8n-nodes-base.webhook') return [];
+    const parameters = objectPayload(node.parameters);
+    const path = typeof parameters.path === 'string' ? parameters.path.trim() : '';
+    const method = typeof parameters.httpMethod === 'string' ? parameters.httpMethod.toUpperCase() : 'POST';
+    const nodeName = typeof node.name === 'string' ? node.name : 'Webhook';
+    return path ? [{ path, method, node: nodeName }] : [];
+  });
+}
 
 function stringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
@@ -223,6 +340,11 @@ const STATIC_AUTOMATIONS: AutomationRule[] = [
   },
 ];
 
+
+const STATIC_N8N_WORKFLOWS: N8nWorkflow[] = [
+  { id: 'env-crm-preview-webhook-homologacao', name: 'Enervita | CRM Custom Webhooks - Homologação', description: N8N_WORKFLOW_DESCRIPTIONS['env-crm-preview-webhook-homologacao'], active: true, status: 'active', triggerSummary: 'Webhook', nodeSummary: ['Webhook', 'Resposta webhook'], webhookPaths: ['POST /webhook/lead-created', 'POST /webhook/lead-stage-changed'] },
+];
+
 const STATIC_WEBHOOKS: WebhookDefinition[] = [
   {
     id: 'n8n-lead-created',
@@ -250,6 +372,8 @@ export function createStaticIntegrationsRepository(): IntegrationsRepository {
     async listAutomations() {
       return STATIC_AUTOMATIONS.map((automation) => ({ ...automation, conditions: [...automation.conditions], actions: [...automation.actions] }));
     },
+    async listN8nWorkflows() { return STATIC_N8N_WORKFLOWS.map((workflow) => ({ ...workflow, nodeSummary: [...workflow.nodeSummary], webhookPaths: [...workflow.webhookPaths] })); },
+    async setN8nWorkflowActive(id, active) { const workflow = STATIC_N8N_WORKFLOWS.find((candidate) => candidate.id === id); if (!workflow) throw new IntegrationNotFoundError('Workflow n8n não encontrado'); const updated = { ...workflow, active, status: active ? 'active' as const : 'paused' as const }; return { workflow: updated, message: active ? 'Workflow n8n marcado como ativo no modo estático.' : 'Workflow n8n marcado como pausado no modo estático.' }; },
     async listWebhooks() {
       return STATIC_WEBHOOKS.map((webhook) => ({ ...webhook, eventTypes: [...webhook.eventTypes] }));
     },
@@ -295,8 +419,9 @@ export function createStaticIntegrationsRepository(): IntegrationsRepository {
   };
 }
 
-export function createPgIntegrationsRepository(databaseUrl: string): IntegrationsRepository {
+export function createPgIntegrationsRepository(databaseUrl: string, n8nDatabaseUrl?: string): IntegrationsRepository {
   const pool = new Pool({ connectionString: databaseUrl });
+  const n8nPool = n8nDatabaseUrl ? new Pool({ connectionString: n8nDatabaseUrl }) : null;
 
   return {
     async listAutomations(tenantId) {
@@ -308,6 +433,35 @@ export function createPgIntegrationsRepository(databaseUrl: string): Integration
         [tenantId],
       );
       return result.rows.map(rowToAutomation);
+    },
+
+    async listN8nWorkflows() {
+      const result = await requireN8nPool(n8nPool).query(`select id, name, active, "activeVersionId", "versionId", "triggerCount", "updatedAt"::text as "updatedAt", nodes, description, "isArchived" from workflow_entity where coalesce("isArchived", false) = false order by name`);
+      return result.rows.map(rowToN8nWorkflow);
+    },
+
+    async setN8nWorkflowActive(id, active) {
+      const n8n = requireN8nPool(n8nPool);
+      const client = await n8n.connect();
+      try {
+        await client.query('begin');
+        const current = await client.query(`select id, name, active, "activeVersionId", "versionId", "updatedAt"::text as "updatedAt", nodes, description, "isArchived" from workflow_entity where id = $1 limit 1`, [id]);
+        if (!current.rows[0]) throw new IntegrationNotFoundError('Workflow n8n não encontrado');
+        if (current.rows[0].isArchived) throw new IntegrationNotFoundError('Workflow n8n arquivado não pode ser alterado pelo CRM');
+        const nodes = asRecordArray(current.rows[0].nodes);
+        if (active) {
+          const versionId = current.rows[0].activeVersionId ?? current.rows[0].versionId;
+          await client.query(`update workflow_entity set active = true, "activeVersionId" = $2, "updatedAt" = now() where id = $1`, [id, versionId]);
+          await client.query('delete from webhook_entity where "workflowId" = $1', [id]);
+          for (const webhook of webhookRowsFromNodes(nodes)) await client.query(`insert into webhook_entity ("webhookPath", method, node, "workflowId") values ($1, $2, $3, $4)`, [webhook.path, webhook.method, webhook.node, id]);
+        } else {
+          await client.query(`update workflow_entity set active = false, "activeVersionId" = null, "updatedAt" = now() where id = $1`, [id]);
+          await client.query('delete from webhook_entity where "workflowId" = $1', [id]);
+        }
+        await client.query('commit');
+        const workflow = await getN8nWorkflow(n8n, id);
+        return { workflow, message: active ? 'Workflow despausado no n8n. Webhooks de produção foram registrados novamente quando aplicável.' : 'Workflow pausado no n8n. Webhooks de produção foram removidos quando aplicável.' };
+      } catch (error) { await client.query('rollback'); throw error; } finally { client.release(); }
     },
 
     async listWebhooks(tenantId) {
@@ -405,6 +559,7 @@ export function createPgIntegrationsRepository(databaseUrl: string): Integration
 
     async close() {
       await pool.end();
+      await n8nPool?.end();
     },
   };
 }

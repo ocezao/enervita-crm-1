@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { FileText, Plus, Send, TrendingUp } from 'lucide-react';
 import { PageHeader } from '../components/ui/LayoutComponents';
 import { Badge, Button, Card } from '../components/ui/Base';
@@ -22,45 +22,17 @@ const statusVariants = {
 } as const;
 
 export default function Proposals() {
-  const { proposals, loading, createProposal } = useProposals();
-  const [message, setMessage] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const { proposals, loading } = useProposals();
 
   const openValue = proposals.filter((proposal) => proposal.status === 'draft' || proposal.status === 'sent').reduce((sum, proposal) => sum + proposal.projectedAnnualSavings, 0);
-
-  const handleCreateSample = async () => {
-    const firstLead = proposals[0]?.leadId;
-    if (!firstLead) {
-      setMessage('Crie a primeira proposta a partir do detalhe de um lead homologado.');
-      return;
-    }
-    setCreating(true);
-    try {
-      const proposal = await createProposal({
-        leadId: firstLead,
-        title: 'Proposta de homologação operacional',
-        monthlyBillValue: 2500,
-        estimatedKwh: 1800,
-        discountPercentage: 20,
-        projectedMonthlySavings: 500,
-        projectedAnnualSavings: 6000,
-        notes: 'Rascunho gerado para validar o módulo próprio de propostas.',
-      });
-      setMessage(`Proposta ${proposal.title} criada em rascunho.`);
-    } finally {
-      setCreating(false);
-    }
-  };
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Propostas"
-        description="Módulo próprio do CRM custom para criar, acompanhar e homologar propostas comerciais da Enervita."
-        actions={<Button size="sm" onClick={handleCreateSample} disabled={creating}><Plus size={16} className="mr-2" />Nova proposta</Button>}
+        description="Módulo próprio do CRM custom para acompanhar propostas comerciais da Enervita. A criação começa no detalhe de um lead para evitar proposta solta."
+        actions={<Link to="/leads"><Button size="sm"><Plus size={16} className="mr-2" />Criar pelo lead</Button></Link>}
       />
-
-      {message && <Card className="p-4 text-sm text-graphite border-solar-orange/20 bg-solar-orange/5">{message}</Card>}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-5">

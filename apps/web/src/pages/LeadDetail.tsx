@@ -16,13 +16,50 @@ import {
   Plus
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../lib/utils';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { userHasPermission } from '../auth/permissions';
 
+type DetailItem = { label: string; value: string };
+
+function textValue(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  if (typeof value === 'boolean') return value ? 'Sim' : 'Não';
+  return '';
+}
+
+function firstMetadataValue(metadata: Record<string, unknown> | undefined, keys: string[], fallback = ''): string {
+  if (!metadata) return fallback;
+  for (const key of keys) {
+    const value = textValue(metadata[key]);
+    if (value) return value;
+  }
+  return fallback;
+}
+
+function cadastroItems(lead: NonNullable<ReturnType<typeof useLeadDetail>['lead']>): DetailItem[] {
+  const leadMetadata = lead.metadata ?? {};
+  const contactMetadata = lead.contact?.metadata ?? {};
+  const metadata = { ...contactMetadata, ...leadMetadata };
+  const items: DetailItem[] = [
+    { label: 'Data do cadastro', value: formatDate(lead.createdAt) },
+    { label: 'Última atualização', value: formatDate(lead.updatedAt) },
+    { label: 'Formulário', value: firstMetadataValue(metadata, ['formName'], lead.leadSource || 'Não informado') },
+    { label: 'Cidade / UF', value: [firstMetadataValue(metadata, ['city']), firstMetadataValue(metadata, ['state'])].filter(Boolean).join(' / ') },
+    { label: 'Tipo de unidade', value: firstMetadataValue(metadata, ['unitType']) },
+    { label: 'Interesse declarado', value: firstMetadataValue(metadata, ['interest', 'request']) },
+    { label: 'Mensagem enviada', value: firstMetadataValue(metadata, ['message']) },
+    { label: 'Consentimento LGPD', value: lead.contact?.consent ? 'Sim' : firstMetadataValue(metadata, ['lgpdConsentimento', 'consent', 'privacy'], 'Não informado') },
+    { label: 'Página de entrada', value: firstMetadataValue(metadata, ['landingPage']) },
+    { label: 'Origem do cadastro', value: firstMetadataValue(metadata, ['importSource', 'source'], lead.leadSource || 'Não informado') },
+  ];
+  return items.filter((item) => item.value && item.value !== 'Invalid Date');
+}
+
 export default function LeadDetail() {
   const { id } = useParams();
-  const { lead, activities, tasks, loading, addActivity, addTask, completeTask } = useLeadDetail(id);
+  const { lead, activities, tasks, loading, addActivity, addTask, completeTask, setTags } = useLeadDetail(id);
   const { user } = useAuth();
   const canCreateActivity = userHasPermission(user, 'activity.create');
   const canCreateTask = userHasPermission(user, 'task.create');
@@ -32,6 +69,8 @@ export default function LeadDetail() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskPriority, setTaskPriority] = useState<'baixa' | 'media' | 'alta' | 'urgente'>('media');
   const [taskDueDate, setTaskDueDate] = useState('');
+  const [tagDraft, setTagDraft] = useState<string | null>(null);
+  const cadastro = useMemo(() => lead ? cadastroItems(lead) : [], [lead]);
 
   async function handleCreateActivity() {
     const outcome = activityNote.trim();
@@ -49,8 +88,19 @@ export default function LeadDetail() {
     setTaskDueDate('');
   }
 
+  async function handleSaveTags() {
+    const tags = (tagDraft ?? currentTagsText).split(',').map((tag) => tag.trim()).filter(Boolean);
+    await setTags(tags);
+    setTagDraft(null);
+  }
+
   if (loading) return <div className="p-8">Carregando detalhes...</div>;
   if (!lead) return <div className="p-8">Lead não encontrado.</div>;
+
+  const currentTagsText = (lead.tags ?? []).map((tag) => tag.slug).join(', ');
+  const phoneDigits = String(lead.contact?.phone ?? '').replace(/\D/g, '');
+  const phoneHref = phoneDigits ? `tel:${lead.contact?.phone}` : undefined;
+  const whatsappHref = phoneDigits ? `https://wa.me/${phoneDigits.startsWith('55') ? phoneDigits : `55${phoneDigits}`}?text=${encodeURIComponent(`Olá ${lead.contact?.name || ''}, aqui é da Enervita. Podemos falar sobre sua economia de energia?`)}` : undefined;
 
   return (
     <div className="space-y-6">
@@ -73,7 +123,7 @@ export default function LeadDetail() {
           <Card className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-graphite">Informações do Contato</h3>
-              <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical size={16} /></Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-40" aria-label="Mais ações em breve" disabled title="Mais ações em breve"><MoreVertical size={16} /></Button>
             </div>
 
             <div className="space-y-4">
@@ -101,12 +151,31 @@ export default function LeadDetail() {
             </div>
 
             <div className="mt-8 grid grid-cols-2 gap-2">
-              <Button variant="secondary" className="gap-2 w-full">
-                <Phone size={16} /> Ligar
-              </Button>
-              <Button variant="outline" className="gap-2 w-full">
-                <MessageSquare size={16} /> WhatsApp
-              </Button>
+              {phoneHref ? <a href={phoneHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-100 px-4 py-2 text-sm font-bold text-graphite hover:bg-gray-200"><Phone size={16} /> Ligar</a> : <Button variant="secondary" className="gap-2 w-full opacity-50" disabled><Phone size={16} /> Sem telefone</Button>}
+              {whatsappHref ? <a href={whatsappHref} target="_blank" rel="noreferrer" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-graphite hover:bg-gray-50"><MessageSquare size={16} /> WhatsApp</a> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
+            </div>
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="font-bold text-graphite mb-4">Tags internas</h3>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {(lead.tags ?? []).length === 0 ? <span className="text-sm text-gray-400">Nenhuma tag interna ainda.</span> : lead.tags.map((tag) => <Badge key={tag.slug} variant="default" className="bg-solar-orange/10 text-solar-orange lowercase normal-case">#{tag.slug}</Badge>)}
+            </div>
+            <label className="text-xs font-bold uppercase tracking-wide text-gray-400">Editar tags separadas por vírgula
+              <input aria-label="Editar tags internas" value={tagDraft ?? currentTagsText} onChange={(event) => setTagDraft(event.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case tracking-normal text-graphite" placeholder="vip, urgente, conta-recebida" />
+            </label>
+            {userHasPermission(user, 'lead.edit') ? <Button variant="primary" size="sm" className="mt-3" onClick={handleSaveTags}>Salvar tags</Button> : <p className="mt-3 text-xs text-gray-400">Sem permissão para editar tags.</p>}
+          </Card>
+
+          <Card className="p-6">
+            <h3 className="font-bold text-graphite mb-4">Informações de cadastro</h3>
+            <div className="space-y-3">
+              {cadastro.map((item) => (
+                <div key={item.label} className="rounded-xl bg-gray-50 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">{item.label}</p>
+                  <p className="mt-1 break-words text-sm font-semibold text-graphite">{item.value}</p>
+                </div>
+              ))}
             </div>
           </Card>
 

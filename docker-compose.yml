@@ -16,5 +16,105 @@ services:
       timeout: 5s
       retries: 10
 
+  api:
+    image: node:20-bookworm-slim
+    container_name: enervita-custom-crm-api
+    working_dir: /app
+    command: sh -lc "npm run dev:api"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 43123
+      DATABASE_URL: postgres://enervita:enervita@postgres:5432/enervita_crm
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET required}
+      META_ADS_ACCESS_TOKEN: ${META_ADS_ACCESS_TOKEN:-}
+      META_AD_ACCOUNT_ID: ${META_AD_ACCOUNT_ID:-}
+      META_AD_ACCOUNT_NUMERIC_ID: ${META_AD_ACCOUNT_NUMERIC_ID:-}
+      META_BUSINESS_ID: ${META_BUSINESS_ID:-}
+      META_PIXEL_ID: ${META_PIXEL_ID:-}
+      META_DATASET_ID: ${META_DATASET_ID:-}
+      META_PIXEL_NAME: ${META_PIXEL_NAME:-}
+      META_PAGE_ID: ${META_PAGE_ID:-}
+      META_PAGE_USERNAME: ${META_PAGE_USERNAME:-}
+      META_INSTAGRAM_BUSINESS_ID: ${META_INSTAGRAM_BUSINESS_ID:-}
+      META_INSTAGRAM_USERNAME: ${META_INSTAGRAM_USERNAME:-}
+      META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION:-}
+      META_TEST_EVENT_CODE: ${META_TEST_EVENT_CODE:-}
+      META_ASSET_SCOPE: ${META_ASSET_SCOPE:-}
+      N8N_DATABASE_URL: postgres://${N8N_DB_USER:-n8n}:${N8N_DB_PASSWORD:-n8n}@enervita-n8n-db:5432/${N8N_DB_NAME:-n8n}
+    volumes:
+      - ./:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - default
+      - enervita_net
+    restart: unless-stopped
+
+  meta-capi-dispatcher:
+    image: node:20-bookworm-slim
+    container_name: enervita-custom-crm-meta-capi-dispatcher
+    working_dir: /app
+    command: sh -lc "while true; do npm run dispatch:meta-capi; sleep $${META_CAPI_DISPATCH_INTERVAL_SECONDS:-300}; done"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://enervita:enervita@postgres:5432/enervita_crm
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET required}
+      META_ADS_ACCESS_TOKEN: ${META_ADS_ACCESS_TOKEN:-}
+      META_PIXEL_ID: ${META_PIXEL_ID:-}
+      META_DATASET_ID: ${META_DATASET_ID:-}
+      META_PIXEL_NAME: ${META_PIXEL_NAME:-}
+      META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION:-}
+      META_TEST_EVENT_CODE: ${META_TEST_EVENT_CODE:-}
+      META_CAPI_DISPATCH_LIMIT: ${META_CAPI_DISPATCH_LIMIT:-25}
+      META_CAPI_MAX_ATTEMPTS: ${META_CAPI_MAX_ATTEMPTS:-3}
+      META_CAPI_DISPATCH_INTERVAL_SECONDS: ${META_CAPI_DISPATCH_INTERVAL_SECONDS:-300}
+    volumes:
+      - ./:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - default
+    restart: unless-stopped
+
+  web:
+    image: node:20-bookworm-slim
+    container_name: enervita-custom-crm-web
+    working_dir: /app/apps/web
+    command: sh -lc "npx vite preview --host 0.0.0.0 --port 43124"
+    volumes:
+      - ./:/app
+    depends_on:
+      - api
+    networks:
+      - default
+    restart: unless-stopped
+
+  proxy:
+    image: node:20-bookworm-slim
+    container_name: enervita-custom-crm-proxy
+    working_dir: /app
+    command: sh -lc "node scripts/preview-proxy.cjs"
+    environment:
+      CRM_PREVIEW_API: http://api:43123
+      CRM_PREVIEW_WEB: http://web:43124
+      CRM_PREVIEW_PORT: 43210
+      CRM_PREVIEW_BIND: 0.0.0.0
+    volumes:
+      - ./:/app
+    depends_on:
+      - api
+      - web
+    networks:
+      - default
+      - enervita_net
+    restart: unless-stopped
+
 volumes:
   enervita_crm_postgres_data:
+
+networks:
+  enervita_net:
+    external: true

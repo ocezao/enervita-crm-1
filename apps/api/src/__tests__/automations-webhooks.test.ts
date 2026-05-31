@@ -99,6 +99,8 @@ test('POST /api/automations/:id/run requires automation.manage and records a rea
     integrationsRepository: {
       async listAutomations() { return []; },
       async listWebhooks() { return []; },
+      async listN8nWorkflows() { return []; },
+      async setN8nWorkflowActive() { throw new Error('not used'); },
       async listWebhookDeliveries() { return []; },
       async runAutomation(context, id, inputPayload) {
         calls.push(`${context.tenantId}:${id}:${inputPayload.reason}`);
@@ -138,6 +140,8 @@ test('POST /api/webhooks/:id/test records a queued test delivery instead of dry-
     integrationsRepository: {
       async listAutomations() { return []; },
       async listWebhooks() { return []; },
+      async listN8nWorkflows() { return []; },
+      async setN8nWorkflowActive() { throw new Error('not used'); },
       async listWebhookDeliveries() { return []; },
       async runAutomation() { throw new Error('not used'); },
       async testWebhook(context, id) {
@@ -177,6 +181,8 @@ test('GET /api/webhooks/deliveries returns recent controlled delivery logs', asy
     integrationsRepository: {
       async listAutomations() { return []; },
       async listWebhooks() { return []; },
+      async listN8nWorkflows() { return []; },
+      async setN8nWorkflowActive() { throw new Error("not used"); },
       async listWebhookDeliveries(context) {
         return [{
           id: 'delivery-1',

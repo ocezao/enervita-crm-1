@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { requirePermission } from '../../middleware/requireAuth.ts';
 import type { PublicUser, UserRepository } from '../auth/userRepository.ts';
 import type { AuditContext } from '../users/repository.ts';
-import { IntegrationNotFoundError, type IntegrationsRepository } from './repository.ts';
+import { IntegrationNotFoundError, N8nUnavailableError, type IntegrationsRepository } from './repository.ts';
 
 type IntegrationsRouteOptions = {
   userRepository: UserRepository;
@@ -12,6 +12,7 @@ type IntegrationsRouteOptions = {
 
 function handleIntegrationError(error: unknown, reply: FastifyReply) {
   if (error instanceof IntegrationNotFoundError) return reply.code(404).send({ error: error.message });
+  if (error instanceof N8nUnavailableError) return reply.code(503).send({ error: error.message });
   throw error;
 }
 
@@ -35,6 +36,22 @@ export async function registerIntegrationsRoutes(app: FastifyInstance, options: 
   app.get('/api/automations', { preHandler: automationsPreHandler }, async (request) => {
     const context = contextFromRequest(request);
     return { automations: await options.integrationsRepository.listAutomations(context.tenantId) };
+  });
+
+
+  app.get('/api/automations/n8n-workflows', { preHandler: automationsPreHandler }, async () => {
+    return { workflows: await options.integrationsRepository.listN8nWorkflows() };
+  });
+
+  app.patch('/api/automations/n8n-workflows/:id', { preHandler: automationManagePreHandler }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const payload = request.body && typeof request.body === 'object' ? request.body as { active?: unknown } : {};
+      if (typeof payload.active !== 'boolean') return reply.code(400).send({ error: 'active boolean é obrigatório' });
+      return { result: await options.integrationsRepository.setN8nWorkflowActive(id, payload.active) };
+    } catch (error) {
+      return handleIntegrationError(error, reply);
+    }
   });
 
   app.post('/api/automations/:id/run', { preHandler: automationManagePreHandler }, async (request, reply) => {

@@ -11,8 +11,8 @@ import Proposals from './pages/Proposals';
 import Automations from './pages/Automations';
 import Webhooks from './pages/Webhooks';
 import Analytics from './pages/Analytics';
+import Ads from './pages/Ads';
 import Settings from './pages/Settings';
-import UsersPermissions from './pages/UsersPermissions';
 import Login from './pages/Login';
 
 function App() {
@@ -32,8 +32,9 @@ function App() {
               <Route path="/automations" element={<ProtectedRoute requiredAnyPermission={["page.automations", "automation.manage"]}><Automations /></ProtectedRoute>} />
               <Route path="/webhooks" element={<ProtectedRoute requiredAnyPermission={["page.webhooks", "webhook.manage", "webhook.test"]}><Webhooks /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute requiredAnyPermission={["page.analytics", "analytics.view", "tracking.view"]}><Analytics /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute requiredAnyPermission={["page.settings", "settings.manage"]}><Settings /></ProtectedRoute>} />
-              <Route path="/users" element={<ProtectedRoute requiredAnyPermission={["page.users", "user.manage"]}><UsersPermissions /></ProtectedRoute>} />
+              <Route path="/ads" element={<ProtectedRoute requiredAnyPermission={["page.ads", "ads.view"]}><Ads /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute requiredAnyPermission={["page.settings", "settings.manage", "user.manage"]}><Settings /></ProtectedRoute>} />
+              <Route path="/users" element={<ProtectedRoute requiredAnyPermission={["user.manage"]}><Navigate to="/settings?tab=users" replace /></ProtectedRoute>} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

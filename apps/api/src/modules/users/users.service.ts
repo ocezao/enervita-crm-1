@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
+import { PERMISSION_KEYS, PIPELINE_STAGE_KEYS } from '@enervita/shared';
 import type { PublicUser } from '../auth/userRepository.ts';
-import type { AuditContext, UsersRepository } from './repository.ts';
+import type { AdminUser, AuditContext, UsersRepository } from './repository.ts';
 import { BCRYPT_ROUNDS } from './repository.ts';
 import type { CreateUserInput, UpdateUserInput } from './validation.ts';
 
@@ -18,12 +19,23 @@ function makeAuditContext(actor: PublicUser, metadata: RequestAuditMetadata): Au
   };
 }
 
+function withEffectiveAccess(user: AdminUser): AdminUser {
+  if (!user.roles.includes('admin')) return user;
+  return {
+    ...user,
+    permissions: [...PERMISSION_KEYS],
+    allowedStages: [...PIPELINE_STAGE_KEYS],
+  };
+}
+
 export async function listAdminUsers(repository: UsersRepository, actor: PublicUser) {
-  return repository.listUsers(actor.tenantId);
+  const users = await repository.listUsers(actor.tenantId);
+  return users.map(withEffectiveAccess);
 }
 
 export async function getAdminUser(repository: UsersRepository, actor: PublicUser, userId: string) {
-  return repository.getUser(actor.tenantId, userId);
+  const user = await repository.getUser(actor.tenantId, userId);
+  return user ? withEffectiveAccess(user) : null;
 }
 
 export async function createAdminUser(
@@ -33,7 +45,7 @@ export async function createAdminUser(
   metadata: RequestAuditMetadata,
 ) {
   const passwordHash = await bcrypt.hash(input.temporaryPassword, BCRYPT_ROUNDS);
-  return repository.createUser(makeAuditContext(actor, metadata), { ...input, passwordHash });
+  return withEffectiveAccess(await repository.createUser(makeAuditContext(actor, metadata), { ...input, passwordHash }));
 }
 
 export async function updateAdminUser(
@@ -43,7 +55,7 @@ export async function updateAdminUser(
   input: UpdateUserInput,
   metadata: RequestAuditMetadata,
 ) {
-  return repository.updateUser(makeAuditContext(actor, metadata), userId, input);
+  return withEffectiveAccess(await repository.updateUser(makeAuditContext(actor, metadata), userId, input));
 }
 
 export async function resetAdminUserPassword(
@@ -54,5 +66,5 @@ export async function resetAdminUserPassword(
   metadata: RequestAuditMetadata,
 ) {
   const passwordHash = await bcrypt.hash(temporaryPassword, BCRYPT_ROUNDS);
-  return repository.resetPassword(makeAuditContext(actor, metadata), userId, passwordHash);
+  return withEffectiveAccess(await repository.resetPassword(makeAuditContext(actor, metadata), userId, passwordHash));
 }

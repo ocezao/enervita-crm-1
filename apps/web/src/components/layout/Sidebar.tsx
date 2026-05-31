@@ -6,10 +6,8 @@ import {
   Zap,
   Settings,
   BarChart3,
-  Link2,
+  Megaphone,
   FileText,
-  Sun,
-  ShieldCheck,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { userHasAnyPermission } from '../../auth/permissions';
@@ -24,9 +22,8 @@ const navItems = [
   { icon: FileText, label: 'Propostas', path: '/proposals', requiredAny: ['page.proposals', 'proposal.view'] },
   { icon: Zap, label: 'Automações', path: '/automations', requiredAny: ['page.automations', 'automation.manage'] },
   { icon: BarChart3, label: 'Analytics', path: '/analytics', requiredAny: ['page.analytics', 'analytics.view', 'tracking.view'] },
-  { icon: Link2, label: 'Webhooks', path: '/webhooks', requiredAny: ['page.webhooks', 'webhook.manage', 'webhook.test'] },
-  { icon: Settings, label: 'Configurações', path: '/settings', requiredAny: ['page.settings', 'settings.manage'] },
-  { icon: ShieldCheck, label: 'Usuários e Permissões', path: '/users', requiredAny: ['page.users', 'user.manage'] },
+  { icon: Megaphone, label: 'Campanhas', path: '/ads', requiredAny: ['page.ads', 'ads.view'] },
+  { icon: Settings, label: 'Configurações', path: '/settings', requiredAny: ['page.settings', 'settings.manage', 'user.manage'] },
 ];
 
 export const Sidebar = () => {
@@ -35,18 +32,16 @@ export const Sidebar = () => {
   const initials = user?.name?.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'US';
 
   return (
-    <aside className="w-64 h-screen border-r border-gray-100 bg-white flex flex-col fixed left-0 top-0 z-20">
-      <div className="p-6 flex items-center gap-3">
-        <div className="bg-solar-orange p-1.5 rounded-lg">
-          <Sun className="text-white" size={24} fill="currentColor" />
-        </div>
-        <div>
-          <h2 className="font-display font-bold text-lg leading-tight text-graphite">Cockpit</h2>
-          <p className="text-[10px] uppercase tracking-widest text-solar-orange font-bold">Enervita Energia</p>
-        </div>
+    <aside data-crm-sidebar className="w-64 h-screen border-r border-gray-100 bg-white flex flex-col fixed left-0 top-0 z-20">
+      <div className="px-6 py-5 flex items-center justify-center border-b border-gray-50">
+        <img
+          src="/brand/logo-enervita.webp"
+          alt="Enervita"
+          className="h-11 w-auto max-w-[170px] object-contain"
+        />
       </div>
 
-      <nav className="flex-1 px-4 py-4 space-y-1">
+      <nav data-crm-sidebar-nav className="flex-1 px-4 py-4 space-y-1">
         {visibleItems.map((item) => (
           <NavLink
             key={item.path}
@@ -58,13 +53,13 @@ export const Sidebar = () => {
                 : 'text-gray-500 hover:bg-gray-50 hover:text-graphite'
             )}
           >
-            <item.icon size={20} className={cn('transition-colors', 'group-hover:text-solar-orange')} />
-            {item.label}
+            <item.icon size={20} className={cn('transition-colors shrink-0', 'group-hover:text-solar-orange')} />
+            <span data-crm-sidebar-label>{item.label}</span>
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-4 border-t border-gray-50">
+      <div data-crm-sidebar-user className="p-4 border-t border-gray-50">
         <div className="bg-mint-light/50 p-4 rounded-2xl flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-energy-green flex items-center justify-center text-white font-bold text-sm">
             {initials}

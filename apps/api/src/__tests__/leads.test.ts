@@ -55,6 +55,12 @@ function makeLead(overrides: Partial<Lead> = {}): Lead {
     utmSource: null,
     utmMedium: null,
     utmCampaign: null,
+    utmContent: null,
+    utmTerm: null,
+    fbp: null,
+    fbc: null,
+    fbclid: null,
+    gclid: null,
     estimatedTicket: null,
     sdrOwnerId: null,
     priority: 'media',
@@ -63,6 +69,7 @@ function makeLead(overrides: Partial<Lead> = {}): Lead {
     metadata: {},
     createdAt: '2026-05-29T00:00:00.000Z',
     updatedAt: '2026-05-29T00:00:00.000Z',
+    tags: [],
     contact: {
       id: `contact-${id}`,
       name: 'Lead Teste',
@@ -80,8 +87,10 @@ function makeLead(overrides: Partial<Lead> = {}): Lead {
 }
 
 type FakeOptions = {
-  onList?: (tenantId: string, allowedStages: PipelineStageKey[] | null) => void;
+  onList?: (tenantId: string, allowedStages: PipelineStageKey[] | null, filters?: unknown) => void;
+  onCreate?: (context: AuditContext, input: CreateLeadInput) => void;
   onChangeStage?: (context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, targetStage: PipelineStageKey) => void;
+  onSetTags?: (context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, input: { tags: string[] }) => void;
 };
 
 function makeLeadsRepository(initialLeads: Lead[] = [makeLead()], options: FakeOptions = {}): LeadsRepository {
@@ -93,18 +102,29 @@ function makeLeadsRepository(initialLeads: Lead[] = [makeLead()], options: FakeO
   }
 
   return {
-    async listLeads(tenantId, allowedStages) {
-      options.onList?.(tenantId, allowedStages);
+    async listLeads(tenantId, allowedStages, filters) {
+      options.onList?.(tenantId, allowedStages, filters);
       return leads.filter((lead) => visible(lead, tenantId, allowedStages));
     },
     async getLead(tenantId, leadId, allowedStages) {
       return leads.find((lead) => lead.id === leadId && visible(lead, tenantId, allowedStages)) ?? null;
     },
     async createLead(context, input: CreateLeadInput) {
+      options.onCreate?.(context, input);
       const lead = makeLead({
         id: 'created-created-4aaa-8aaa-aaaaaaaaaaaa',
         tenantId: context.tenantId,
         stage: input.stage,
+        leadSource: input.leadSource ?? null,
+        utmSource: input.utmSource ?? null,
+        utmMedium: input.utmMedium ?? null,
+        utmCampaign: input.utmCampaign ?? null,
+        utmContent: input.utmContent ?? null,
+        utmTerm: input.utmTerm ?? null,
+        fbp: input.fbp ?? null,
+        fbc: input.fbc ?? null,
+        fbclid: input.fbclid ?? null,
+        gclid: input.gclid ?? null,
         contact: { ...makeLead().contact, name: input.contact.name, email: input.contact.email ?? null },
       });
       leads.push(lead);
@@ -125,6 +145,12 @@ function makeLeadsRepository(initialLeads: Lead[] = [makeLead()], options: FakeO
       lead.stage = targetStage;
       history.push({ tenantId: context.tenantId, leadId, fromStage, toStage: targetStage });
       return lead;
+    },
+    async setLeadTags(context, leadId, allowedStages, input) {
+      options.onSetTags?.(context, leadId, allowedStages, input);
+      const lead = leads.find((item) => item.id === leadId && visible(item, context.tenantId, allowedStages));
+      if (!lead) throw new LeadsNotFoundError('Lead not found');
+      return { ...lead, tags: input.tags.map((tag, index) => ({ id: `tag-${index}`, name: tag, slug: tag.toLowerCase().replace(/[^a-z0-9]+/g, '-'), color: null })) } as Lead;
     },
     async countStageHistory(tenantId, leadId) {
       return history.filter((row) => row.tenantId === tenantId && row.leadId === leadId).length;
@@ -205,6 +231,60 @@ test('GET /api/leads returns all stages for admin users', async (t) => {
   assert.equal(response.json().leads.length, 2);
 });
 
+
+
+test('GET /api/leads accepts internal tag filters and keeps stage scope', async (t) => {
+  const actor = makeAuthUser({ roles: ['sdr'], permissions: ['lead.view'], allowedStages: ['novo_lead'] });
+  let capturedFilters: unknown;
+  let capturedStages: PipelineStageKey[] | null | undefined;
+  const app = createApp({
+    userRepository: makeUserRepository(actor),
+    leadsRepository: makeLeadsRepository([makeLead({ stage: 'novo_lead' })], {
+      onList: (_tenantId, allowedStages, filters) => {
+        capturedStages = allowedStages;
+        capturedFilters = filters;
+      },
+    }),
+    sessionSecret: SESSION_SECRET,
+  });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({ method: 'GET', url: '/api/leads?tags=VIP,urgente&tagMode=all', headers: { cookie } });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(capturedStages, ['novo_lead']);
+  assert.deepEqual(capturedFilters, { tags: ['vip', 'urgente'], tagMode: 'all' });
+});
+
+test('PATCH /api/leads/:id/tags requires lead.edit and updates internal tags', async (t) => {
+  const actor = makeAuthUser({ roles: ['sdr'], permissions: ['lead.view', 'lead.edit'], allowedStages: ['novo_lead'] });
+  let capturedTags: string[] = [];
+  const app = createApp({
+    userRepository: makeUserRepository(actor),
+    leadsRepository: makeLeadsRepository([makeLead({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', stage: 'novo_lead' })], {
+      onSetTags: (_context, _leadId, allowedStages, input) => {
+        assert.deepEqual(allowedStages, ['novo_lead']);
+        capturedTags = input.tags;
+      },
+    }),
+    sessionSecret: SESSION_SECRET,
+  });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({
+    method: 'PATCH',
+    url: '/api/leads/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/tags',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: { tags: ['VIP', 'Urgente', 'VIP'] },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(capturedTags, ['vip', 'urgente']);
+  assert.deepEqual(response.json().lead.tags.map((tag: { slug: string }) => tag.slug), ['vip', 'urgente']);
+});
+
 test('GET /api/leads/:id returns 404 for disallowed current stage without leaking existence', async (t) => {
   const actor = makeAuthUser({ roles: ['sdr'], permissions: ['lead.view'], allowedStages: ['novo_lead'] });
   const app = createApp({
@@ -257,6 +337,44 @@ test('PATCH /api/leads/:id/stage rejects target stage outside allowedStages', as
 
 
 
+
+test('POST /api/leads preserves attribution identifiers needed for Meta and Google matching', async (t) => {
+  let captured: CreateLeadInput | null = null;
+  const app = createApp({
+    userRepository: makeUserRepository(makeAuthUser()),
+    leadsRepository: makeLeadsRepository([], { onCreate: (_context, input) => { captured = input; } }),
+    sessionSecret: SESSION_SECRET,
+  });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const payload = {
+    contact: { name: 'Lead Atribuido', email: 'lead@example.com' },
+    leadSource: 'site',
+    utmSource: 'meta',
+    utmMedium: 'paid_social',
+    utmCampaign: 'campanha-maio',
+    utmContent: 'criativo-a',
+    utmTerm: 'energia-solar',
+    fbp: 'fb.1.1710000000000.123456789',
+    fbc: 'fb.1.1710000000000.AbCdEf',
+    fbclid: 'AbCdEf',
+    gclid: 'test-gclid',
+  };
+  const response = await app.inject({ method: 'POST', url: '/api/leads', headers: { cookie, 'content-type': 'application/json' }, payload });
+
+  assert.equal(response.statusCode, 201);
+  assert.ok(captured);
+  const capturedInput = captured as CreateLeadInput;
+  assert.equal(capturedInput.utmContent, payload.utmContent);
+  assert.equal(capturedInput.utmTerm, payload.utmTerm);
+  assert.equal(capturedInput.fbp, payload.fbp);
+  assert.equal(capturedInput.fbc, payload.fbc);
+  assert.equal(capturedInput.fbclid, payload.fbclid);
+  assert.equal(capturedInput.gclid, payload.gclid);
+  assert.equal(response.json().lead.fbp, payload.fbp);
+  assert.equal(response.json().lead.fbc, payload.fbc);
+});
 
 test('POST /api/leads rejects invalid sdrOwnerId with 400', async (t) => {
   const app = createApp({ userRepository: makeUserRepository(makeAuthUser()), leadsRepository: makeLeadsRepository(), sessionSecret: SESSION_SECRET });

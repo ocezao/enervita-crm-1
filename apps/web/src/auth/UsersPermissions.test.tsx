@@ -77,33 +77,35 @@ describe('administração de usuários e permissões', () => {
     window.history.pushState({}, '', '/');
   });
 
-  it('mostra o menu de usuários para administrador', async () => {
+  it('remove usuários do menu principal e mantém acesso por Configurações', async () => {
     vi.stubGlobal('fetch', mockFetchForUser(admin));
 
     render(<App />);
 
-    expect(await screen.findByRole('link', { name: /usuários e permissões/i })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /configurações/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /usuários e permissões/i })).not.toBeInTheDocument();
   });
 
-  it('oculta o menu e bloqueia acesso direto para usuário sem permissão', async () => {
+  it('oculta usuários em configurações para usuário sem permissão', async () => {
     vi.stubGlobal('fetch', mockFetchForUser(restricted));
-    window.history.pushState({}, '', '/users');
+    window.history.pushState({}, '', '/settings?tab=users');
 
     render(<App />);
 
     expect(await screen.findByRole('heading', { name: /sem permissão/i })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /usuários e permissões/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /^usuários e permissões$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^usuários$/i })).not.toBeInTheDocument();
   });
 
-  it('renderiza catálogo e usuários mockados e salva payload com permissions e allowedStages', async () => {
+  it('renderiza usuários dentro de Configurações e salva payload com permissions e allowedStages', async () => {
     const fetchMock = mockFetchForUser(manager);
     vi.stubGlobal('fetch', fetchMock);
-    window.history.pushState({}, '', '/users');
+    window.history.pushState({}, '', '/settings?tab=users');
 
     render(<App />);
 
-    expect(await screen.findByRole('heading', { name: /^usuários e permissões$/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /usuários e acessos/i })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /usuários e permissões/i })).not.toBeInTheDocument();
     expect(await screen.findByText('Ana Admin')).toBeInTheDocument();
     expect(screen.getByText('Visualizar leads')).toBeInTheDocument();
     expect(screen.getByText('Novo lead')).toBeInTheDocument();
@@ -122,10 +124,42 @@ describe('administração de usuários e permissões', () => {
     });
   });
 
-  it('chama o endpoint correto para reset de senha', async () => {
+  it('cria novo usuário com permissões e etapas pela seção de configurações', async () => {
     const fetchMock = mockFetchForUser(manager);
     vi.stubGlobal('fetch', fetchMock);
-    window.history.pushState({}, '', '/users');
+    window.history.pushState({}, '', '/settings?tab=users');
+
+    render(<App />);
+
+    await screen.findByText('Ana Admin');
+    await userEvent.click(screen.getByRole('button', { name: /^novo usuário$/i }));
+    await userEvent.type(screen.getByLabelText(/^nome$/i), 'Novo Consultor');
+    await userEvent.type(screen.getByLabelText(/^e-mail$/i), 'novo@example.com');
+    await userEvent.type(screen.getByLabelText(/^senha temporária$/i), 'SenhaTemporaria123!');
+    await userEvent.type(screen.getByLabelText(/^cargo$/i), 'Consultor');
+    await userEvent.type(screen.getByLabelText(/^departamento$/i), 'Comercial');
+    await userEvent.click(screen.getByText('Visualizar leads'));
+    await userEvent.click(screen.getByText('Novo lead'));
+    await userEvent.click(screen.getByRole('button', { name: /salvar usuário/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/users', expect.objectContaining({ method: 'POST' }));
+    });
+    const createCall = fetchMock.mock.calls.find(([url, init]) => url === '/api/users' && init?.method === 'POST');
+    expect(JSON.parse(String(createCall?.[1]?.body))).toMatchObject({
+      name: 'Novo Consultor',
+      email: 'novo@example.com',
+      temporaryPassword: 'SenhaTemporaria123!',
+      permissions: ['lead.view'],
+      allowedStages: ['novo_lead'],
+      profile: { jobTitle: 'Consultor', department: 'Comercial' },
+    });
+  });
+
+  it('chama o endpoint correto para reset de senha pela seção de configurações', async () => {
+    const fetchMock = mockFetchForUser(manager);
+    vi.stubGlobal('fetch', fetchMock);
+    window.history.pushState({}, '', '/settings?tab=users');
 
     render(<App />);
 

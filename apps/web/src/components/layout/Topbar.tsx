@@ -28,18 +28,17 @@ export const Topbar = () => {
       </div>
 
       <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" className="relative rounded-xl" aria-label="Notificações">
+        <Button variant="outline" size="icon" className="relative rounded-xl opacity-50" aria-label="Notificações em breve" disabled title="Notificações em breve">
           <Bell size={20} className="text-gray-500" />
-          <span className="absolute top-2 right-2 w-2 h-2 bg-alert-red rounded-full border-2 border-white"></span>
         </Button>
         <div className="hidden md:flex flex-col items-end leading-tight">
           <span className="text-sm font-semibold text-graphite">{user?.name ?? 'Operador'}</span>
           <span className="text-xs text-gray-400">{user?.email}</span>
         </div>
         <div className="h-8 w-[1px] bg-gray-100 mx-2"></div>
-        <Button variant="primary" className="gap-2 rounded-xl">
+        <Button variant="primary" className="gap-2 rounded-xl" onClick={() => navigate('/leads')} title="Abrir lista de leads">
           <Plus size={18} />
-          <span>Novo Lead</span>
+          <span>Leads</span>
         </Button>
         <Button variant="ghost" className="gap-2 rounded-xl" onClick={handleLogout}>
           <LogOut size={18} />

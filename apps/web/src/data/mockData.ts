@@ -73,7 +73,8 @@ export const mockLeads: Lead[] = [
     offer: 'Assinatura Residencial',
     projectedSavings: 180,
     priority: 'alta',
-    contact: mockContacts[0]
+    contact: mockContacts[0],
+    tags: []
   },
   {
     id: 'l2',
@@ -94,7 +95,8 @@ export const mockLeads: Lead[] = [
     offer: 'Assinatura Comercial',
     projectedSavings: 110,
     priority: 'media',
-    contact: mockContacts[1]
+    contact: mockContacts[1],
+    tags: []
   },
   {
     id: 'l3',
@@ -112,7 +114,8 @@ export const mockLeads: Lead[] = [
     offer: 'UFV Própria',
     projectedSavings: 450,
     priority: 'urgente',
-    contact: mockContacts[2]
+    contact: mockContacts[2],
+    tags: []
   },
   {
     id: 'l4',
@@ -130,7 +133,8 @@ export const mockLeads: Lead[] = [
     offer: 'Assinatura Comercial',
     projectedSavings: 280,
     priority: 'media',
-    contact: mockContacts[3]
+    contact: mockContacts[3],
+    tags: []
   },
   {
     id: 'l5',
@@ -148,7 +152,8 @@ export const mockLeads: Lead[] = [
     offer: 'Assinatura Residencial',
     projectedSavings: 75,
     priority: 'baixa',
-    contact: mockContacts[4]
+    contact: mockContacts[4],
+    tags: []
   }
 ];
 

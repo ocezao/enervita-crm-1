@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import bcrypt from "bcryptjs";
 import { createApp } from "../app.ts";
+import { PERMISSION_KEYS, PIPELINE_STAGE_KEYS } from "@enervita/shared";
 import type { AuthUser, UserRepository } from "../modules/auth/userRepository.ts";
 import type { AdminUser, AuditContext, UsersRepository } from "../modules/users/repository.ts";
 import type { CreateUserInput, UpdateUserInput } from "../modules/users/validation.ts";
@@ -157,6 +158,31 @@ test("GET /api/users lists sanitized users for admin", async (t) => {
   assert.equal(body.users.length, 1);
   assert.equal(JSON.stringify(body).includes("password"), false);
   assert.deepEqual(body.users[0].permissions, ["lead.view"]);
+});
+
+test("GET /api/users exposes effective permissions and stages for admin-role users", async (t) => {
+  const adminRecord = makeAdminUser({
+    roles: ["admin"],
+    permissions: [],
+    allowedStages: [],
+  });
+  const usersRepository: UsersRepository = {
+    async listUsers() { return [adminRecord]; },
+    async getUser() { return adminRecord; },
+    async createUser() { return adminRecord; },
+    async updateUser() { return adminRecord; },
+    async resetPassword() { return adminRecord; },
+  };
+  const app = createApp({ userRepository: makeUserRepository(makeAuthUser()), usersRepository, sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({ method: "GET", url: "/api/users", headers: { cookie } });
+
+  assert.equal(response.statusCode, 200);
+  const body = response.json();
+  assert.deepEqual(body.users[0].permissions, [...PERMISSION_KEYS]);
+  assert.deepEqual(body.users[0].allowedStages, [...PIPELINE_STAGE_KEYS]);
 });
 
 test("POST /api/users validates permission and stage keys", async (t) => {

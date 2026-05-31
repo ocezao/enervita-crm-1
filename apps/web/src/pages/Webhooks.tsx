@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useWebhooks } from '../hooks/useCrm';
 import { PageHeader } from '../components/ui/LayoutComponents';
+import { Link } from 'react-router-dom';
 import { Card, Button, Badge, type BadgeVariant } from '../components/ui/Base';
 import { Link2, ExternalLink, Activity, Terminal, Shield, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { formatDate } from '../lib/utils';
@@ -66,9 +67,9 @@ export default function Webhooks() {
         title="Desenvolvedores & API"
         description="Conecte a Enervita com suas ferramentas favoritas."
         actions={
-          <Button variant="outline" size="sm" className="gap-2">
+          <Link to="/settings?tab=integrations"><Button variant="outline" size="sm" className="gap-2">
             <Shield size={16} /> Gerenciar Chaves API
-          </Button>
+          </Button></Link>
         }
       />
 
@@ -80,7 +81,7 @@ export default function Webhooks() {
                 <Link2 size={20} className="text-solar-orange" />
                 Webhooks Ativos
               </h3>
-              <Button variant="primary" size="sm">Novo Webhook</Button>
+              <Button variant="primary" size="sm" disabled title="Cadastro técnico em breve" className="opacity-60">Novo Webhook em breve</Button>
             </div>
 
             <div className="space-y-4">
@@ -106,7 +107,7 @@ export default function Webhooks() {
                     ))}
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-50">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-50">
                     <div className="flex gap-4">
                       <div className="text-center">
                         <p className="text-[9px] text-gray-400 uppercase font-bold">Success Rate</p>
@@ -119,12 +120,12 @@ export default function Webhooks() {
                     </div>
                     <div className="flex gap-2">
                       <Button aria-label={`Testar webhook ${webhook.name}`} variant="ghost" size="icon" className="h-8 w-8" onClick={() => void handleTest(webhook.id)} disabled={testingId === webhook.id}><RefreshCw size={14} /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8"><ExternalLink size={14} /></Button>
+                      <Link to="/settings?tab=integrations" aria-label="Abrir integrações"><Button variant="ghost" size="icon" className="h-8 w-8"><ExternalLink size={14} /></Button></Link>
                     </div>
-                    {testResults[webhook.id] && (
-                      <p className="mt-3 text-xs text-energy-success font-medium">{testResults[webhook.id]}</p>
-                    )}
                   </div>
+                  {testResults[webhook.id] && (
+                    <p className="mt-3 rounded-lg bg-energy-success/10 px-3 py-2 text-xs font-medium text-energy-success">{testResults[webhook.id]}</p>
+                  )}
                 </div>
               ))}
             </div>
@@ -160,7 +161,7 @@ export default function Webhooks() {
           <Card className="p-6 bg-mint-light/30 border-energy-green/10">
             <h3 className="font-bold text-graphite mb-4 flex items-center gap-2">
               <Terminal size={18} className="text-energy-deep" />
-              API Planejada
+              API operacional e planejada
             </h3>
             <div className="space-y-3">
               <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
@@ -176,11 +177,11 @@ export default function Webhooks() {
                 <p className="text-xs text-gray-500">Atualizar dados ou etapa</p>
               </div>
               <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">POST /api/events</p>
-                <p className="text-xs text-gray-500">Registrar tracking event</p>
+                <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">Tracking events internos</p>
+                <p className="text-xs text-gray-500">Fila interna tracking_events + dispatcher Meta CAPI; endpoint público dedicado fica para uma fase posterior</p>
               </div>
             </div>
-            <Button variant="outline" className="w-full mt-6 text-xs">Acessar Documentação</Button>
+            <Link to="/settings?tab=integrations"><Button variant="outline" className="w-full mt-6 text-xs">Acessar Documentação</Button></Link>
           </Card>
 
           <Card className="p-6">

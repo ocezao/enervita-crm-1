@@ -4,7 +4,7 @@ import type { PublicUser } from '../auth/userRepository.ts';
 import type { AuditContext } from '../users/repository.ts';
 import type { LeadsRepository } from './repository.ts';
 import { LeadsOperationError } from './repository.ts';
-import type { CreateLeadInput, StageChangeInput, UpdateLeadInput } from './validation.ts';
+import type { CreateLeadInput, LeadListFilters, SetLeadTagsInput, StageChangeInput, UpdateLeadInput } from './validation.ts';
 
 export type RequestAuditMetadata = {
   ipAddress?: string;
@@ -34,8 +34,8 @@ function ensureMarkLostAllowed(actor: PublicUser, stage: PipelineStageKey): void
   }
 }
 
-export async function listLeads(repository: LeadsRepository, actor: PublicUser) {
-  return repository.listLeads(actor.tenantId, scopedStages(actor));
+export async function listLeads(repository: LeadsRepository, actor: PublicUser, filters?: LeadListFilters) {
+  return repository.listLeads(actor.tenantId, scopedStages(actor), filters);
 }
 
 export async function getLead(repository: LeadsRepository, actor: PublicUser, leadId: string) {
@@ -57,4 +57,9 @@ export async function changeLeadStage(repository: LeadsRepository, actor: Public
   ensureStageAllowed(actor, input.stage);
   ensureMarkLostAllowed(actor, input.stage);
   return repository.changeStage(makeAuditContext(actor, metadata), leadId, scopedStages(actor), input.stage, input.notes, input.lostReason);
+}
+
+
+export async function setLeadTags(repository: LeadsRepository, actor: PublicUser, leadId: string, input: SetLeadTagsInput, metadata: RequestAuditMetadata) {
+  return repository.setLeadTags(makeAuditContext(actor, metadata), leadId, scopedStages(actor), input);
 }

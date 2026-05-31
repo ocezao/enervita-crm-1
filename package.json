@@ -19,6 +19,9 @@
     "test:seed-admin": "node apps/api/scripts/check-seed-admin.mjs",
     "dev:api": "npm run dev --workspace @enervita/api",
     "test:api": "npm run test --workspace @enervita/api",
-    "typecheck:api": "npm run typecheck --workspace @enervita/api"
+    "typecheck:api": "npm run typecheck --workspace @enervita/api",
+    "test": "npm run test:api && npm run test --workspace @enervita/web",
+    "verify:production": "npm run typecheck:api && npm run test:api && npm run lint --workspace @enervita/web && npm run test --workspace @enervita/web && npm run build --workspace @enervita/web && npm run test:migration",
+    "dispatch:meta-capi": "npm run dispatch:meta-capi --workspace @enervita/api"
   }
 }

@@ -14,6 +14,10 @@ import { registerIntegrationsRoutes } from './modules/integrations/integrations.
 import { createPgIntegrationsRepository, createStaticIntegrationsRepository, type IntegrationsRepository } from './modules/integrations/repository.ts';
 import { createPgProposalsRepository, type ProposalsRepository } from './modules/proposals/repository.ts';
 import { registerProposalsRoutes } from './modules/proposals/proposals.routes.ts';
+import { registerAdsRoutes } from './modules/ads/ads.routes.ts';
+import { createPgAdsRepository, createStaticAdsRepository, type AdsRepository } from './modules/ads/repository.ts';
+import { registerAnalyticsRoutes } from './modules/analytics/analytics.routes.ts';
+import { createPgAnalyticsRepository, createStaticAnalyticsRepository, type AnalyticsRepository } from './modules/analytics/repository.ts';
 
 export type CreateAppOptions = {
   userRepository?: UserRepository;
@@ -23,6 +27,8 @@ export type CreateAppOptions = {
   dashboardRepository?: DashboardRepository;
   proposalsRepository?: ProposalsRepository;
   integrationsRepository?: IntegrationsRepository;
+  adsRepository?: AdsRepository;
+  analyticsRepository?: AnalyticsRepository;
   sessionSecret?: string;
   secureCookies?: boolean;
 };
@@ -36,7 +42,9 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   const engagementRepository = options.engagementRepository ?? createPgEngagementRepository(env.databaseUrl);
   const dashboardRepository = options.dashboardRepository ?? createPgDashboardRepository(env.databaseUrl);
   const proposalsRepository = options.proposalsRepository ?? createPgProposalsRepository(env.databaseUrl);
-  const integrationsRepository = options.integrationsRepository ?? (options.userRepository ? createStaticIntegrationsRepository() : createPgIntegrationsRepository(env.databaseUrl));
+  const integrationsRepository = options.integrationsRepository ?? (options.userRepository ? createStaticIntegrationsRepository() : createPgIntegrationsRepository(env.databaseUrl, env.n8nDatabaseUrl));
+  const adsRepository = options.adsRepository ?? (options.userRepository ? createStaticAdsRepository() : createPgAdsRepository(env.databaseUrl, env.metaAds));
+  const analyticsRepository = options.analyticsRepository ?? (options.userRepository ? createStaticAnalyticsRepository() : createPgAnalyticsRepository(env.databaseUrl));
   const sessionSecret = options.sessionSecret ?? env.sessionSecret;
   const secureCookies = options.secureCookies ?? env.nodeEnv === 'production';
 
@@ -49,6 +57,8 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   void registerDashboardRoutes(app, { userRepository, dashboardRepository, sessionSecret });
   void registerIntegrationsRoutes(app, { userRepository, integrationsRepository, sessionSecret });
   void registerProposalsRoutes(app, { userRepository, proposalsRepository, sessionSecret });
+  void registerAdsRoutes(app, { userRepository, adsRepository, sessionSecret });
+  void registerAnalyticsRoutes(app, { userRepository, analyticsRepository, sessionSecret });
 
   app.addHook('onClose', async () => {
     await userRepository.close?.();
@@ -58,6 +68,8 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
     await dashboardRepository.close?.();
     await proposalsRepository.close?.();
     await integrationsRepository.close?.();
+    await adsRepository.close?.();
+    await analyticsRepository.close?.();
   });
 
   return app;

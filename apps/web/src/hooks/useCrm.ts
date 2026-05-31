@@ -1,17 +1,26 @@
 import { useState, useEffect } from 'react';
 import { api } from '../lib/api/crmApi';
-import { Lead, LeadStage, Task, DashboardMetrics, AutomationRule, AutomationRun, Webhook, WebhookDelivery, WebhookTestResult, Activity, Proposal, CreateProposalPayload, TrackingEvent } from '../lib/api/types';
+import { Lead, LeadStage, Task, DashboardMetrics, AutomationRule, AutomationRun, N8nWorkflow, N8nWorkflowToggleResult, Webhook, WebhookDelivery, WebhookTestResult, Activity, Proposal, CreateProposalPayload, TrackingEvent, AdsOverview, CrmAnalyticsOverview } from '../lib/api/types';
 
-export function useLeads() {
+export function useLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' }) {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
+  const tagsKey = (filters?.tags ?? []).join(',');
+  const tagMode = filters?.tagMode ?? 'any';
 
   useEffect(() => {
-    api.listLeads().then(data => {
+    let active = true;
+    const tags = tagsKey ? tagsKey.split(',').filter(Boolean) : [];
+    api.listLeads({ tags, tagMode }).then(data => {
+      if (!active) return;
       setLeads(data);
       setLoading(false);
+    }).catch(() => {
+      if (!active) return;
+      setLoading(false);
     });
-  }, []);
+    return () => { active = false; };
+  }, [tagsKey, tagMode]);
 
   const updateStage = async (id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string }) => {
     const updated = await api.updateLeadStage(id, stage, options);
@@ -32,8 +41,7 @@ export function useLeadDetail(id: string | undefined) {
     if (!id) return;
     Promise.resolve()
       .then(() => {
-        setLoading(true);
-        return Promise.all([
+            return Promise.all([
           api.getLead(id),
           api.listActivities(id),
           api.listTasksForLead(id)
@@ -65,7 +73,14 @@ export function useLeadDetail(id: string | undefined) {
     return updated;
   };
 
-  return { lead, activities, tasks, loading, addActivity, addTask, completeTask };
+  const setTags = async (tags: string[]) => {
+    if (!id) return undefined;
+    const updated = await api.setLeadTags(id, tags);
+    setLead(updated);
+    return updated;
+  };
+
+  return { lead, activities, tasks, loading, addActivity, addTask, completeTask, setTags };
 }
 
 export function useTasks() {
@@ -79,13 +94,19 @@ export function useTasks() {
     });
   }, []);
 
+  const createTask = async (payload: Partial<Task>) => {
+    const fresh = await api.createTask(payload);
+    setTasks(prev => [fresh, ...prev]);
+    return fresh;
+  };
+
   const completeTask = async (id: string) => {
     const updated = await api.completeTask(id);
     setTasks(prev => prev.map(t => t.id === id ? updated : t));
     return updated;
   };
 
-  return { tasks, loading, completeTask };
+  return { tasks, loading, createTask, completeTask };
 }
 
 export function useDashboardMetrics() {
@@ -102,16 +123,73 @@ export function useDashboardMetrics() {
   return { metrics, loading };
 }
 
+
+export function useAnalyticsOverview(filters: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage }) {
+  const [overview, setOverview] = useState<CrmAnalyticsOverview | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { days, period, startDate, endDate, source, campaign, stage } = filters;
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+        try {
+        const data = await api.getAnalyticsOverview({ days, period, startDate, endDate, source, campaign, stage });
+        if (!cancelled) {
+          setOverview(data);
+          setError(null);
+        }
+      } catch (err: unknown) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Erro ao carregar analytics');
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [days, period, startDate, endDate, source, campaign, stage]);
+
+  return { overview, loading, error };
+}
+
 export function useAutomations() {
   const [automations, setAutomations] = useState<AutomationRule[]>([]);
   const [lastRun, setLastRun] = useState<AutomationRun | null>(null);
+  const [n8nWorkflows, setN8nWorkflows] = useState<N8nWorkflow[]>([]);
+  const [n8nMessage, setN8nMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [togglingWorkflowId, setTogglingWorkflowId] = useState<string | null>(null);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<string | null>(null);
+
+  const refreshAutomations = async (options: { silent?: boolean } = {}) => {
+    if (!options.silent) setRefreshing(true);
+    const [automationResult, workflowResult] = await Promise.allSettled([api.listAutomations(), api.listN8nWorkflows()]);
+    if (automationResult.status === 'fulfilled') setAutomations(automationResult.value);
+    else setError(automationResult.reason instanceof Error ? automationResult.reason.message : 'Erro ao carregar automações');
+    if (workflowResult.status === 'fulfilled') {
+      setN8nWorkflows(workflowResult.value);
+      setLastSyncedAt(new Date().toISOString());
+      setError(null);
+    } else {
+      setError('Fluxos n8n indisponíveis no momento; regras internas carregadas.');
+    }
+    if (!options.silent) setRefreshing(false);
+  };
 
   useEffect(() => {
-    api.listAutomations().then(data => {
-      setAutomations(data);
-      setLoading(false);
-    });
+    let cancelled = false;
+    const load = async () => {
+        await refreshAutomations({ silent: true });
+      if (!cancelled) setLoading(false);
+    };
+    void load();
+    const interval = window.setInterval(() => { void refreshAutomations({ silent: true }); }, 60000);
+    const onFocus = () => { void refreshAutomations({ silent: true }); };
+    window.addEventListener('focus', onFocus);
+    return () => { cancelled = true; window.clearInterval(interval); window.removeEventListener('focus', onFocus); };
   }, []);
 
   const runAutomation = async (id: string) => {
@@ -121,7 +199,19 @@ export function useAutomations() {
     return run;
   };
 
-  return { automations, loading, runAutomation, lastRun };
+  const toggleN8nWorkflow = async (id: string, active: boolean): Promise<N8nWorkflowToggleResult> => {
+    setTogglingWorkflowId(id);
+    try {
+      const result = await api.setN8nWorkflowActive(id, active);
+      setN8nMessage(result.message);
+      setN8nWorkflows(prev => prev.map(workflow => workflow.id === id ? result.workflow : workflow));
+      return result;
+    } finally {
+      setTogglingWorkflowId(null);
+    }
+  };
+
+  return { automations, n8nWorkflows, loading, error, runAutomation, lastRun, toggleN8nWorkflow, togglingWorkflowId, n8nMessage, refreshAutomations, refreshing, lastSyncedAt };
 }
 
 export function useWebhooks() {
@@ -146,7 +236,6 @@ export function useWebhooks() {
 
   return { webhooks, deliveries, loading, testWebhook };
 }
-
 
 export function useProposals() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
@@ -181,4 +270,72 @@ export function useLeadTrackingEvents(id: string | undefined) {
   }, [id]);
 
   return { events, loading };
+}
+
+export function useAdsOverview() {
+  const [overview, setOverview] = useState<AdsOverview | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+
+  const refresh = async () => {
+    try {
+      const data = await api.getAdsOverview();
+      setOverview(data);
+      setError(null);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar mídia paga');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const load = async () => {
+        try {
+        const data = await api.getAdsOverview();
+        if (!cancelled) {
+          setOverview(data);
+          setError(null);
+        }
+      } catch (err: unknown) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Erro ao carregar mídia paga');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void load();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const syncMetaAds = async () => {
+    setSyncing(true);
+    setError(null);
+    setSyncMessage(null);
+    try {
+      const { result, overview } = await api.syncMetaAds();
+      setOverview(overview);
+      setSyncMessage(`Meta sincronizado: ${result.campaigns} campanhas, ${result.adSets} conjuntos, ${result.ads} anúncios.`);
+      return result;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Erro ao sincronizar Meta Ads';
+      setError(message);
+      throw err;
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return { overview, loading, syncing, error, syncMessage, refresh, syncMetaAds };
 }

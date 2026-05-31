@@ -1,186 +1,269 @@
-import { PageHeader } from '../components/ui/LayoutComponents';
-import { Card, Button } from '../components/ui/Base';
-import { 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  AreaChart, 
-  Area
+import { useMemo, useState } from 'react';
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
-import { TrendingUp, Target } from 'lucide-react';
+import { Activity, AlertTriangle, BarChart3, DatabaseZap, Filter, Layers3, LineChart, RefreshCw, ShieldCheck, Target, TrendingUp } from 'lucide-react';
+import { PageHeader } from '../components/ui/LayoutComponents';
+import { Badge, Button, Card } from '../components/ui/Base';
+import { DateRangeFilter, rangeForPeriod, type DateRangeState } from '../components/ui/DateRangeFilter';
+import { useAnalyticsOverview } from '../hooks/useCrm';
 import { formatCurrency } from '../lib/utils';
+import type { AnalyticsKpi, LeadStage } from '../lib/api/types';
 
-const funnelData = [
-  { stage: 'Leads Brutos', count: 120, conversion: '100%' },
-  { stage: 'Qualificados', count: 45, conversion: '37.5%' },
-  { stage: 'Proposta Enviada', count: 20, conversion: '44.4%' },
-  { stage: 'Fechados', count: 8, conversion: '40%' },
+const COLORS = ['#F58220', '#2EAD5B', '#0E7A3D', '#2A332D', '#F7C948', '#54A3FF'];
+
+const stageOptions: Array<{ value: LeadStage | 'all'; label: string }> = [
+  { value: 'all', label: 'Todas as etapas' },
+  { value: 'novo_lead', label: 'Novo lead' },
+  { value: 'qualificacao', label: 'Qualificação' },
+  { value: 'atendimento_iniciado', label: 'Atendimento iniciado' },
+  { value: 'conta_recebida', label: 'Conta recebida' },
+  { value: 'diagnostico', label: 'Diagnóstico' },
+  { value: 'proposta_enviada', label: 'Proposta enviada' },
+  { value: 'contrato_enervita', label: 'Contrato Enervita' },
+  { value: 'perdido', label: 'Perdido' },
 ];
 
-const conversionOverTime = [
-  { date: '18/05', leads: 12, sales: 1 },
-  { date: '19/05', leads: 18, sales: 2 },
-  { date: '20/05', leads: 15, sales: 1 },
-  { date: '21/05', leads: 22, sales: 3 },
-  { date: '22/05', leads: 25, sales: 0 },
-  { date: '23/05', leads: 19, sales: 1 },
-  { date: '24/05', leads: 30, sales: 2 },
-];
+type Filters = {
+  range: DateRangeState;
+  source: string;
+  campaign: string;
+  stage: LeadStage | 'all';
+};
+
+function kpiToneClass(tone: AnalyticsKpi['tone']) {
+  const tones = {
+    green: 'bg-energy-green/10 text-energy-green',
+    orange: 'bg-solar-orange/10 text-solar-orange',
+    blue: 'bg-blue-50 text-blue-600',
+    red: 'bg-alert-red/10 text-alert-red',
+    slate: 'bg-gray-100 text-graphite',
+  };
+  return tones[tone] ?? tones.slate;
+}
+
+function shortDate(value: string) {
+  const [, month, day] = value.split('-');
+  return `${day}/${month}`;
+}
+
+function formatDateTime(value: string | null | undefined) {
+  if (!value) return 'Sem envio';
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+}
 
 export default function Analytics() {
+  const [filters, setFilters] = useState<Filters>({ range: rangeForPeriod('30'), source: '', campaign: '', stage: 'all' });
+  const query = useMemo(() => ({
+    days: Number(filters.range.period) || undefined,
+    period: filters.range.period,
+    startDate: filters.range.startDate,
+    endDate: filters.range.endDate,
+    source: filters.source || undefined,
+    campaign: filters.campaign || undefined,
+    stage: filters.stage === 'all' ? undefined : filters.stage,
+  }), [filters]);
+  const { overview, loading, error } = useAnalyticsOverview(query);
+
+  const sourceOptions = useMemo(() => overview?.trafficSources.map((item) => item.source).filter(Boolean) ?? [], [overview]);
+  const campaignOptions = useMemo(() => overview?.campaigns.map((item) => item.campaign).filter((item) => item && item !== 'sem_campaign') ?? [], [overview]);
+
+  if (loading || !overview) {
+    return <div className="animate-pulse text-sm text-gray-500">Carregando analytics real do CRM...</div>;
+  }
+
+  const pieData = overview.trafficSources.map((item) => ({ name: item.label, value: item.leads }));
+
   return (
     <div className="space-y-8">
-      <PageHeader 
-        title="Analytics Comercial" 
-        description="Analise o desempenho de ponta a ponta da sua operação."
+      <PageHeader
+        title="Analytics de Tracking"
+        description="Leads, UTMs, sinais Meta/Google, propostas e eventos reais do CRM Enervita."
         actions={
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">Últimos 30 dias</Button>
-            <Button variant="primary" size="sm">Baixar Relatório</Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => window.location.reload()}>
+              <RefreshCw size={14} /> Atualizar
+            </Button>
           </div>
         }
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <Card className="p-6">
-          <p className="text-xs font-bold text-gray-400 uppercase mb-1">Custo por Lead (CPL)</p>
-          <h3 className="text-2xl font-bold text-graphite">R$ 18,40</h3>
-          <p className="text-xs text-energy-success font-medium mt-2 flex items-center gap-1">
-            <TrendingUp size={12} /> -5.2% vs mês anterior
-          </p>
+      {error && (
+        <Card className="p-4 border-alert-red/30 bg-alert-red/5 text-alert-red text-sm flex items-center gap-2">
+          <AlertTriangle size={18} /> {error}
         </Card>
-        <Card className="p-6">
-          <p className="text-xs font-bold text-gray-400 uppercase mb-1">Taxa de Conversão</p>
-          <h3 className="text-2xl font-bold text-graphite">6.7%</h3>
-          <p className="text-xs text-energy-success font-medium mt-2 flex items-center gap-1">
-            <TrendingUp size={12} /> +1.1% vs mês anterior
-          </p>
-        </Card>
-        <Card className="p-6">
-          <p className="text-xs font-bold text-gray-400 uppercase mb-1">Tempo Médio 1º Contato</p>
-          <h3 className="text-2xl font-bold text-graphite">14 min</h3>
-          <p className="text-xs text-alert-red font-medium mt-2 flex items-center gap-1">
-            <TrendingUp size={12} className="rotate-180" /> +2 min vs mês anterior
-          </p>
-        </Card>
-        <Card className="p-6">
-          <p className="text-xs font-bold text-gray-400 uppercase mb-1">ROAS Estimado</p>
-          <h3 className="text-2xl font-bold text-graphite">12.4x</h3>
-          <p className="text-xs text-energy-success font-medium mt-2 flex items-center gap-1">
-            <TrendingUp size={12} /> +2.1x vs mês anterior
-          </p>
-        </Card>
+      )}
+
+      <Card className="p-5">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter size={18} className="text-solar-orange" />
+          <h3 className="font-bold text-graphite">Filtros avançados</h3>
+          <Badge variant="solar">PostgreSQL real</Badge>
+        </div>
+        <div className="grid grid-cols-1 xl:grid-cols-[1.25fr_1fr_1fr_1fr] gap-4">
+          <DateRangeFilter value={filters.range} onChange={(range) => setFilters((prev) => ({ ...prev, range }))} className="xl:grid-cols-3" />
+          <label className="space-y-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Origem / UTM source</span>
+            <input list="analytics-sources" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="Todas" value={filters.source} onChange={(event) => setFilters((prev) => ({ ...prev, source: event.target.value }))} />
+            <datalist id="analytics-sources">{sourceOptions.map((item) => <option key={item} value={item} />)}</datalist>
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Campanha</span>
+            <input list="analytics-campaigns" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="Todas" value={filters.campaign} onChange={(event) => setFilters((prev) => ({ ...prev, campaign: event.target.value }))} />
+            <datalist id="analytics-campaigns">{campaignOptions.map((item) => <option key={item} value={item} />)}</datalist>
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Etapa</span>
+            <select className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" value={filters.stage} onChange={(event) => setFilters((prev) => ({ ...prev, stage: event.target.value as LeadStage | 'all' }))}>
+              {stageOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+            </select>
+          </label>
+        </div>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+        {overview.kpis.map((kpi) => (
+          <Card key={kpi.key} className="p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">{kpi.label}</p>
+                <h3 className="text-2xl font-display font-bold text-graphite mt-2">{kpi.displayValue}</h3>
+                <p className="text-xs text-gray-500 mt-2 leading-relaxed">{kpi.helper}</p>
+              </div>
+              <div className={`p-2.5 rounded-xl ${kpiToneClass(kpi.tone)}`}><BarChart3 size={18} /></div>
+            </div>
+          </Card>
+        ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h3 className="font-bold text-graphite mb-6 flex items-center gap-2">
-            <Target size={20} className="text-solar-orange" />
-            Funil de Vendas (Últimos 30 dias)
-          </h3>
-          <div className="space-y-4">
-            {funnelData.map((item, i) => (
-              <div key={item.stage} className="relative">
-                <div 
-                  className="h-12 bg-solar-orange/10 border-l-4 border-solar-orange rounded-r-lg flex items-center justify-between px-4"
-                  style={{ width: `${100 - (i * 15)}%` }}
-                >
-                  <span className="text-sm font-bold text-graphite">{item.stage}</span>
-                  <span className="text-sm font-bold text-solar-orange">{item.count}</span>
-                </div>
-                {i < funnelData.length - 1 && (
-                  <div className="flex justify-center py-1">
-                    <span className="text-[10px] font-bold text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full border border-gray-100">
-                      Conv: {funnelData[i+1].conversion}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <Card className="p-6 xl:col-span-2">
+          <h3 className="font-bold text-graphite mb-6 flex items-center gap-2"><LineChart size={20} className="text-solar-orange" /> Volume diário rastreado</h3>
+          <div className="h-[330px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={overview.daily.map((item) => ({ ...item, label: shortDate(item.date) }))}>
+                <defs>
+                  <linearGradient id="analyticsLeads" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#F58220" stopOpacity={0.3}/><stop offset="95%" stopColor="#F58220" stopOpacity={0}/></linearGradient>
+                  <linearGradient id="analyticsTracked" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#2EAD5B" stopOpacity={0.25}/><stop offset="95%" stopColor="#2EAD5B" stopOpacity={0}/></linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
+                <Tooltip />
+                <Area type="monotone" dataKey="leads" name="Leads" stroke="#F58220" fill="url(#analyticsLeads)" strokeWidth={2} />
+                <Area type="monotone" dataKey="trackedLeads" name="Com rastreio" stroke="#2EAD5B" fill="url(#analyticsTracked)" strokeWidth={2} />
+                <Area type="monotone" dataKey="trackingEvents" name="Eventos" stroke="#2A332D" fillOpacity={0} strokeWidth={2} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </Card>
 
         <Card className="p-6">
-          <h3 className="font-bold text-graphite mb-6 flex items-center gap-2">
-            <TrendingUp size={20} className="text-energy-green" />
-            Performance Diária
-          </h3>
-          <div className="h-[300px]">
+          <h3 className="font-bold text-graphite mb-6 flex items-center gap-2"><Target size={20} className="text-energy-green" /> Funil CRM</h3>
+          <div className="space-y-3">
+            {overview.funnel.map((item, index) => {
+              const max = Math.max(...overview.funnel.map((step) => step.value), 1);
+              return (
+                <div key={item.key}>
+                  <div className="flex items-center justify-between text-xs mb-1"><span className="font-bold text-graphite">{item.label}</span><span className="text-gray-500">{item.value}</span></div>
+                  <div className="h-3 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-solar-orange" style={{ width: `${Math.max(4, (item.value / max) * 100)}%` }} /></div>
+                  {index > 0 && <p className="text-[10px] text-gray-400 mt-1">Conv. etapa anterior: {item.rateFromPrevious ?? 0}%</p>}
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <Card className="p-6 xl:col-span-2">
+          <h3 className="font-bold text-graphite mb-6 flex items-center gap-2"><TrendingUp size={20} className="text-solar-orange" /> Origem, rastreio e conversão</h3>
+          <div className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={conversionOverTime}>
-                <defs>
-                  <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#F58220" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#F58220" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+              <BarChart data={overview.trafficSources}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
-                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize: 12}} />
-                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12}} />
+                <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 11 }} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
                 <Tooltip />
-                <Area type="monotone" dataKey="leads" stroke="#F58220" fillOpacity={1} fill="url(#colorLeads)" />
-              </AreaChart>
+                <Bar dataKey="leads" name="Leads" fill="#F58220" radius={[4,4,0,0]} />
+                <Bar dataKey="trackedLeads" name="Com rastreio" fill="#2EAD5B" radius={[4,4,0,0]} />
+                <Bar dataKey="won" name="Contratos" fill="#2A332D" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+        <Card className="p-6">
+          <h3 className="font-bold text-graphite mb-6 flex items-center gap-2"><Layers3 size={20} className="text-energy-green" /> Mix de origens</h3>
+          <div className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={pieData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={86} paddingAngle={4}>
+                  {pieData.map((_entry, index) => <Cell key={index} fill={COLORS[index % COLORS.length]} />)}
+                </Pie>
+                <Tooltip />
+              </PieChart>
             </ResponsiveContainer>
           </div>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="p-6 lg:col-span-1">
-          <h3 className="font-bold text-sm uppercase tracking-widest text-gray-400 mb-6">Eficiência por SDR</h3>
-          <div className="space-y-6">
-            {[
-              { name: 'Carlos SDR', deals: 12, rate: '15%' },
-              { name: 'Ana SDR', deals: 9, rate: '12%' },
-              { name: 'Bruna SDR', deals: 7, rate: '9%' },
-            ].map((sdr) => (
-              <div key={sdr.name}>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-bold text-graphite">{sdr.name}</span>
-                  <span className="text-xs font-bold text-energy-green">{sdr.deals} fechamentos</span>
-                </div>
-                <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                  <div className="bg-energy-green h-full" style={{ width: sdr.rate }}></div>
-                </div>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <Card className="p-6">
+          <h3 className="font-bold text-graphite mb-4 flex items-center gap-2"><ShieldCheck size={20} className="text-energy-green" /> Qualidade do tracking</h3>
+          <div className="space-y-4">
+            {overview.signals.map((signal) => (
+              <div key={signal.key}>
+                <div className="flex justify-between text-sm mb-1"><span className="font-bold text-graphite">{signal.label}</span><span className="text-gray-500">{signal.count} leads • {signal.coverageRate}%</span></div>
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-energy-green" style={{ width: `${signal.coverageRate}%` }} /></div>
               </div>
             ))}
           </div>
+          <div className="mt-6 space-y-2">
+            {overview.notes.map((note) => <p key={note} className="text-xs text-gray-500 bg-gray-50 rounded-xl px-3 py-2">{note}</p>)}
+          </div>
         </Card>
 
-        <Card className="p-6 lg:col-span-2">
-           <h3 className="font-bold text-sm uppercase tracking-widest text-gray-400 mb-6">Top Campanhas por ROAS</h3>
-           <div className="overflow-x-auto">
-             <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-gray-100 text-gray-400">
-                    <th className="pb-3 font-bold">Campanha</th>
-                    <th className="pb-3 font-bold">Investimento</th>
-                    <th className="pb-3 font-bold">Leads</th>
-                    <th className="pb-3 font-bold">Vendas</th>
-                    <th className="pb-3 font-bold">ROAS</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {[
-                    { name: 'Solar_SP_Verao', spent: 1500, leads: 82, sales: 4, roas: '18.2x' },
-                    { name: 'Assinatura_Comercial_RJ', spent: 2200, leads: 115, sales: 3, roas: '9.4x' },
-                    { name: 'Incentivo_Solar_Sul', spent: 800, leads: 34, sales: 2, roas: '14.1x' },
-                  ].map((camp, i) => (
-                    <tr key={i} className="hover:bg-gray-50/50">
-                      <td className="py-4 font-bold text-graphite">{camp.name}</td>
-                      <td className="py-4 text-gray-500">{formatCurrency(camp.spent)}</td>
-                      <td className="py-4 text-gray-500">{camp.leads}</td>
-                      <td className="py-4 text-gray-500">{camp.sales}</td>
-                      <td className="py-4 font-bold text-energy-success">{camp.roas}</td>
-                    </tr>
-                  ))}
-                </tbody>
-             </table>
-           </div>
+        <Card className="p-6">
+          <h3 className="font-bold text-graphite mb-4 flex items-center gap-2"><DatabaseZap size={20} className="text-solar-orange" /> Eventos por plataforma</h3>
+          {overview.trackingStatus.length === 0 ? (
+            <div className="rounded-2xl bg-alert-red/5 border border-alert-red/10 p-5 text-sm text-gray-600">Nenhum registro em tracking_events para os filtros atuais. A cobertura de UTM/click-id dos leads já aparece ao lado; eventos CAPI/Ads aparecerão aqui assim que forem enviados.</div>
+          ) : (
+            <div className="space-y-3">
+              {overview.trackingStatus.map((item) => (
+                <div key={item.platform} className="rounded-2xl border border-gray-100 p-4">
+                  <div className="flex items-center justify-between"><span className="font-bold text-graphite capitalize">{item.platform}</span><Badge variant={item.failed > 0 ? 'error' : 'success'}>{item.total} eventos</Badge></div>
+                  <p className="text-xs text-gray-500 mt-2">Enviados: {item.sent} • Fila: {item.queued} • Falhas: {item.failed} • Último: {formatDateTime(item.lastSentAt)}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
+
+      <Card className="p-6">
+        <h3 className="font-bold text-graphite mb-5 flex items-center gap-2"><Activity size={20} className="text-solar-orange" /> Campanhas e leads recentes</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead><tr className="border-b border-gray-100 text-gray-400"><th className="pb-3">Campanha</th><th className="pb-3">Origem</th><th className="pb-3">Leads</th><th className="pb-3">Rastreados</th><th className="pb-3">Propostas</th><th className="pb-3">Contratos</th><th className="pb-3">Pipeline</th></tr></thead>
+            <tbody className="divide-y divide-gray-50">
+              {overview.campaigns.map((campaign) => (
+                <tr key={`${campaign.source}-${campaign.campaign}`} className="hover:bg-gray-50/60"><td className="py-3 font-bold text-graphite">{campaign.campaign}</td><td className="py-3 text-gray-500">{campaign.source}</td><td className="py-3 text-gray-500">{campaign.leads}</td><td className="py-3 text-energy-green font-bold">{campaign.trackedLeads}</td><td className="py-3 text-gray-500">{campaign.proposals}</td><td className="py-3 text-gray-500">{campaign.won}</td><td className="py-3 text-gray-500">{formatCurrency(campaign.estimatedTicket)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 }

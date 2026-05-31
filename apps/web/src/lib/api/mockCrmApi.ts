@@ -12,7 +12,10 @@ import {
   Proposal,
   CreateProposalPayload,
   TrackingEvent,
-  LeadStage
+  AdsOverview,
+  AdsSyncResult,
+  LeadStage,
+  CrmAnalyticsOverview
 } from './types';
 import {
   mockLeads,
@@ -42,6 +45,16 @@ export class MockCrmApi implements CrmApi {
     lead.stage = stage;
     lead.updatedAt = new Date().toISOString();
     return { ...lead };
+  }
+
+
+  async setLeadTags(id: string, tags: string[]): Promise<Lead> {
+    await delay(150);
+    const lead = mockLeads.find(l => l.id === id);
+    if (!lead) throw new Error('Lead not found');
+    lead.tags = tags.map((tag, index) => ({ id: `mock-tag-${index}`, name: tag, slug: tag.toLowerCase().replace(/[^a-z0-9]+/g, '-'), color: null }));
+    lead.updatedAt = new Date().toISOString();
+    return { ...lead, tags: [...lead.tags] };
   }
 
   async listProposals(): Promise<Proposal[]> {
@@ -178,6 +191,53 @@ export class MockCrmApi implements CrmApi {
     };
   }
 
+
+  async getAnalyticsOverview(filters: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage } = {}): Promise<CrmAnalyticsOverview> {
+    await delay(250);
+    const days = filters.days ?? 30;
+    const defaultStart = new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const startDate = filters.startDate ?? defaultStart;
+    const endDate = filters.endDate ?? new Date().toISOString().slice(0, 10);
+    const since = new Date(`${startDate}T00:00:00.000Z`).getTime();
+    const scoped = mockLeads.filter((lead) => {
+      if (new Date(lead.createdAt).getTime() < since || lead.createdAt.slice(0, 10) > endDate) return false;
+      if (filters.stage && lead.stage !== filters.stage) return false;
+      if (filters.source && (lead.utmSource ?? lead.leadSource ?? '').toLowerCase() !== filters.source.toLowerCase()) return false;
+      if (filters.campaign && (lead.utmCampaign ?? '').toLowerCase() !== filters.campaign.toLowerCase()) return false;
+      return true;
+    });
+    const tracked = scoped.filter((lead) => lead.utmSource || lead.utmMedium || lead.utmCampaign || lead.utmContent || lead.utmTerm).length;
+    const won = scoped.filter((lead) => lead.stage === 'contrato_enervita').length;
+    const bySource = new Map<string, typeof scoped>();
+    for (const lead of scoped) {
+      const key = lead.utmSource || lead.leadSource || 'desconhecido';
+      bySource.set(key, [...(bySource.get(key) ?? []), lead]);
+    }
+    const stages: LeadStage[] = ['novo_lead', 'qualificacao', 'atendimento_iniciado', 'conta_recebida', 'diagnostico', 'proposta_enviada', 'contrato_enervita', 'perdido'];
+    return {
+      filters: { days, period: filters.period ?? `last_${days}_days`, startDate, endDate, source: filters.source, campaign: filters.campaign, stage: filters.stage },
+      generatedAt: new Date().toISOString(),
+      kpis: [
+        { key: 'totalLeads', label: 'Leads capturados', value: scoped.length, displayValue: String(scoped.length), helper: 'Mock local usado só em desenvolvimento', tone: 'blue' },
+        { key: 'trackedLeads', label: 'Leads com rastreio', value: tracked, displayValue: `${tracked} / ${scoped.length ? Math.round((tracked / scoped.length) * 100) : 0}%`, helper: 'UTMs preservadas no lead', tone: 'green' },
+        { key: 'wonRate', label: 'Conversão contrato', value: scoped.length ? (won / scoped.length) * 100 : 0, displayValue: `${scoped.length ? Math.round((won / scoped.length) * 100) : 0}%`, helper: 'Leads em contrato', tone: 'green' },
+        { key: 'estimatedPipeline', label: 'Pipeline estimado', value: scoped.reduce((sum, lead) => sum + lead.estimatedTicket, 0), displayValue: `R$ ${scoped.reduce((sum, lead) => sum + lead.estimatedTicket, 0).toLocaleString('pt-BR')}`, helper: 'Ticket estimado', tone: 'slate' },
+      ],
+      daily: Array.from({ length: Math.min(days, 14) }, (_, index) => ({ date: new Date(Date.now() - (Math.min(days, 14) - 1 - index) * 86400000).toISOString().slice(0, 10), leads: index % 3, trackedLeads: index % 2, proposals: index % 2, won: index % 5 === 0 ? 1 : 0, trackingEvents: index % 4 })),
+      funnel: stages.map((stage) => ({ key: stage, label: stage.replace(/_/g, ' '), value: scoped.filter((lead) => lead.stage === stage).length, rateFromPrevious: null })),
+      trafficSources: [...bySource.entries()].map(([source, leads]) => ({ source, label: source, leads: leads.length, trackedLeads: leads.filter((lead) => lead.utmSource || lead.utmCampaign).length, proposals: leads.filter((lead) => lead.stage === 'proposta_enviada').length, won: leads.filter((lead) => lead.stage === 'contrato_enervita').length, estimatedTicket: leads.reduce((sum, lead) => sum + lead.estimatedTicket, 0), conversionRate: leads.length ? Math.round((leads.filter((lead) => lead.stage === 'contrato_enervita').length / leads.length) * 1000) / 10 : 0 })),
+      campaigns: scoped.map((lead) => ({ campaign: lead.utmCampaign || 'sem_campaign', source: lead.utmSource || lead.leadSource || 'desconhecido', medium: lead.utmMedium || 'sem_medium', leads: 1, trackedLeads: lead.utmSource || lead.utmCampaign ? 1 : 0, proposals: lead.stage === 'proposta_enviada' ? 1 : 0, won: lead.stage === 'contrato_enervita' ? 1 : 0, estimatedTicket: lead.estimatedTicket, conversionRate: lead.stage === 'contrato_enervita' ? 100 : 0 })),
+      signals: [
+        { key: 'utm_source', label: 'UTM source', count: scoped.filter((lead) => lead.utmSource).length, coverageRate: scoped.length ? Math.round((scoped.filter((lead) => lead.utmSource).length / scoped.length) * 1000) / 10 : 0 },
+        { key: 'utm_campaign', label: 'UTM campaign', count: scoped.filter((lead) => lead.utmCampaign).length, coverageRate: scoped.length ? Math.round((scoped.filter((lead) => lead.utmCampaign).length / scoped.length) * 1000) / 10 : 0 },
+      ],
+      trackingStatus: [],
+      eventNames: [],
+      recentLeads: scoped.slice(0, 10).map((lead) => ({ id: lead.id, name: lead.contact?.name ?? lead.id, stage: lead.stage, source: lead.utmSource || lead.leadSource, campaign: lead.utmCampaign || 'sem campaign', signals: [lead.utmSource ? 'utm_source' : '', lead.utmCampaign ? 'utm_campaign' : ''].filter(Boolean), createdAt: lead.createdAt })),
+      notes: ['MockCrmApi usado apenas quando o app não está conectado ao backend real.'],
+    };
+  }
+
   async listAutomations(): Promise<AutomationRule[]> {
     await delay(400);
     return [...mockAutomations];
@@ -194,6 +254,58 @@ export class MockCrmApi implements CrmApi {
       startedAt: new Date().toISOString(),
       finishedAt: new Date().toISOString(),
     };
+  }
+
+  async getAdsOverview(): Promise<AdsOverview> {
+    await delay(200);
+    const detectedCampaigns = mockLeads
+      .filter((lead) => lead.utmCampaign || lead.utmSource)
+      .map((lead) => ({
+        platform: (lead.utmSource ?? '').toLowerCase().includes('google') ? 'google_ads' as const : (lead.utmSource ?? '').toLowerCase().includes('facebook') || (lead.utmSource ?? '').toLowerCase().includes('meta') || (lead.utmSource ?? '').toLowerCase().includes('instagram') ? 'meta' as const : 'unknown' as const,
+        utmSource: lead.utmSource ?? null,
+        utmCampaign: lead.utmCampaign ?? null,
+        utmContent: lead.utmContent ?? null,
+        leads: 1,
+        firstLeadAt: lead.createdAt,
+        lastLeadAt: lead.createdAt,
+      }));
+
+    return {
+      accounts: [
+        { id: 'mock-meta', platform: 'meta', accountName: 'Meta Ads - Enervita', externalAccountId: null, status: 'pending_credentials', credentialHint: 'Aguardando system user token, ad account id e pixel/dataset id', lastSyncAt: null, syncError: null, metadata: {} },
+        { id: 'mock-google', platform: 'google_ads', accountName: 'Google Ads - Enervita', externalAccountId: null, status: 'pending_credentials', credentialHint: 'Aguardando customer id, developer token e OAuth/refresh token', lastSyncAt: null, syncError: null, metadata: {} },
+      ],
+      campaigns: [],
+      detectedCampaigns,
+      summary: { connectedAccounts: 0, pendingCredentialAccounts: 2, activeCampaigns: 0, activeAdSets: 0, activeAds: 0, detectedUtmCampaigns: detectedCampaigns.length },
+      credentialRequirements: {
+        meta: ['Business Manager autorizado', 'System User Token com ads_read/read_insights', 'Ad Account ID', 'Pixel/Dataset ID para cruzar eventos'],
+        google_ads: ['Customer ID da conta', 'Developer token', 'OAuth client/refresh token', 'MCC/conta autorizada para leitura'],
+      },
+    };
+  }
+
+
+  async syncMetaAds(): Promise<{ result: AdsSyncResult; overview: AdsOverview }> {
+    const overview = await this.getAdsOverview();
+    return { result: { platform: "meta", accountId: "act_mock", pixelId: "872374598469267", pixelName: "Enervita - Site", campaigns: overview.campaigns.length, adSets: 0, ads: 0, customAudiences: 0, syncedAt: new Date().toISOString() }, overview };
+  }
+  async listN8nWorkflows() {
+    return [{
+      id: 'env-crm-preview-webhook-homologacao',
+      name: 'Enervita | CRM Custom Webhooks - Homologação',
+      description: 'Recebe eventos do CRM custom e responde ao CRM para homologar a integração com n8n.',
+      active: true,
+      status: 'active' as const,
+      triggerSummary: 'Webhook',
+      nodeSummary: ['Webhook', 'Resposta webhook'],
+      webhookPaths: ['POST /webhook/lead-created'],
+    }];
+  }
+
+  async setN8nWorkflowActive(id: string, active: boolean) {
+    const workflow = (await this.listN8nWorkflows())[0];
+    return { workflow: { ...workflow, id, active, status: active ? 'active' as const : 'paused' as const }, message: active ? 'Workflow despausado no modo mock.' : 'Workflow pausado no modo mock.' };
   }
 
   async listWebhooks(): Promise<Webhook[]> {

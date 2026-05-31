@@ -1,137 +1,144 @@
+import { useMemo, useState } from 'react';
 import { useLeads } from '../hooks/useCrm';
 import { PageHeader } from '../components/ui/LayoutComponents';
 import { Button, Card, Badge } from '../components/ui/Base';
 import { StageBadge, PriorityBadge } from '../components/ui/StatusBadges';
-import { Search, Filter, MoreHorizontal, Eye, MessageSquare } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, Eye, MessageSquare, Download, Users, Flame, Clock, X } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 import { userHasPermission } from '../auth/permissions';
+import type { Lead, LeadStage } from '../lib/api/types';
+import { countAudienceReadyLeads, exportLeadsForAudience } from '../lib/api/leadAudienceExport';
+
+function whatsappUrl(lead: Lead): string | null {
+  const digits = String(lead.contact?.phone ?? '').replace(/\D/g, '');
+  if (!digits) return null;
+  const withCountry = digits.startsWith('55') ? digits : `55${digits}`;
+  const text = encodeURIComponent(`Olá ${lead.contact?.name || ''}, aqui é da Enervita. Podemos falar sobre sua economia de energia?`);
+  return `https://wa.me/${withCountry}?text=${text}`;
+}
+
+const stageFilters: Array<{ id: 'todos' | LeadStage; label: string }> = [
+  { id: 'todos', label: 'Todos' },
+  { id: 'novo_lead', label: 'Novo lead' },
+  { id: 'qualificacao', label: 'Qualificação' },
+  { id: 'proposta_enviada', label: 'Proposta' },
+  { id: 'contrato_enervita', label: 'Contrato' },
+];
+
+function initials(name = '') {
+  return name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'LD';
+}
 
 export default function Leads() {
-  const { leads, loading } = useLeads();
+  const [tagQuery, setTagQuery] = useState('');
+  const [tagMode, setTagMode] = useState<'any' | 'all'>('any');
+  const activeTags = useMemo(() => Array.from(new Set(tagQuery.split(',').map((tag) => tag.trim().toLowerCase()).filter(Boolean))), [tagQuery]);
+  const { leads, loading } = useLeads(activeTags.length ? { tags: activeTags, tagMode } : undefined);
   const { user } = useAuth();
+  const navigate = useNavigate();
   const canExportCsv = userHasPermission(user, 'csv.export');
+  const [query, setQuery] = useState('');
+  const [stage, setStage] = useState<'todos' | LeadStage>('todos');
+
+  const tagCatalog = useMemo(() => Array.from(new Set(leads.flatMap((lead) => (lead.tags ?? []).map((tag) => tag.slug)))).sort(), [leads]);
+
+  const filteredLeads = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return leads.filter((lead) => {
+      const tagValues = (lead.tags ?? []).flatMap((item) => [item.slug, item.name]).map((value) => value.toLowerCase());
+      return (stage === 'todos' || lead.stage === stage)
+        && (!q || [lead.contact?.name, lead.contact?.company, lead.contact?.email, lead.leadSource, lead.qualificationStatus, ...tagValues].some((value) => String(value ?? '').toLowerCase().includes(q)));
+    });
+  }, [leads, query, stage]);
+
+  const audienceReadyCount = countAudienceReadyLeads(filteredLeads);
+
+  const qualified = leads.filter((lead) => ['qualificado', 'em_andamento', 'concluido'].includes(String(lead.qualificationStatus).toLowerCase())).length;
+  const waiting = leads.filter(l => l.stage === 'novo_lead').length;
+  const hot = leads.filter(l => l.priority === 'alta' || l.priority === 'urgente').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-[1500px] mx-auto overflow-hidden">
       <PageHeader
         title="Leads"
-        description="Gerencie todos os seus leads e oportunidades em um só lugar."
+        description="Mesa comercial para localizar, priorizar e abrir oportunidades sem perder contexto."
         actions={
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="gap-2">
-              <Filter size={16} /> Filtros
-            </Button>
-            {canExportCsv && <Button variant="primary" size="sm">Exportar CSV</Button>}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => { setQuery(''); setStage('todos'); setTagQuery(''); setTagMode('any'); }}><X size={16} /> Limpar</Button>
+            {canExportCsv && (
+              <div className="flex flex-wrap gap-2">
+                <Button variant="primary" size="sm" className="gap-2" onClick={() => exportLeadsForAudience(filteredLeads, 'crm')}><Download size={16} /> CSV CRM</Button>
+                <Button variant="outline" size="sm" className="gap-2" onClick={() => exportLeadsForAudience(filteredLeads, 'meta_ads')} disabled={audienceReadyCount === 0}><Download size={16} /> Meta Ads</Button>
+                <Button variant="outline" size="sm" className="gap-2 opacity-60" disabled title="Exportação Google Ads fica para a fase de conexões Google"><Download size={16} /> Google Ads em breve</Button>
+              </div>
+            )}
           </div>
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="p-4 bg-solar-orange/5 border-solar-orange/10">
-          <p className="text-xs font-bold text-solar-orange uppercase tracking-wider">Total de Leads</p>
-          <h4 className="text-2xl font-bold text-graphite mt-1">{leads.length}</h4>
-        </Card>
-        <Card className="p-4 bg-energy-green/5 border-energy-green/10">
-          <p className="text-xs font-bold text-energy-green uppercase tracking-wider">Qualificados</p>
-          <h4 className="text-2xl font-bold text-graphite mt-1">
-            {leads.filter(l => l.qualificationStatus === 'Qualificado').length}
-          </h4>
-        </Card>
-        <Card className="p-4 bg-graphite/5 border-graphite/10">
-          <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Aguardando Contato</p>
-          <h4 className="text-2xl font-bold text-graphite mt-1">
-            {leads.filter(l => l.stage === 'novo_lead').length}
-          </h4>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="p-5 bg-solar-orange/5 border-solar-orange/10"><Users className="text-solar-orange" size={20} /><p className="mt-3 text-xs font-bold text-solar-orange uppercase tracking-wider">Total de Leads</p><h4 className="text-3xl font-black text-graphite mt-1">{leads.length}</h4></Card>
+        <Card className="p-5 bg-energy-green/5 border-energy-green/10"><Flame className="text-energy-green" size={20} /><p className="mt-3 text-xs font-bold text-energy-green uppercase tracking-wider">Qualificados</p><h4 className="text-3xl font-black text-graphite mt-1">{qualified}</h4></Card>
+        <Card className="p-5 bg-graphite/5 border-graphite/10"><Clock className="text-graphite" size={20} /><p className="mt-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Aguardando Contato</p><h4 className="text-3xl font-black text-graphite mt-1">{waiting}</h4></Card>
+        <Card className="p-5 bg-alert-red/5 border-alert-red/10"><Flame className="text-alert-red" size={20} /><p className="mt-3 text-xs font-bold text-alert-red uppercase tracking-wider">Prioridade alta</p><h4 className="text-3xl font-black text-graphite mt-1">{hot}</h4></Card>
       </div>
 
       <Card className="overflow-hidden">
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input
-              placeholder="Buscar por nome, empresa ou e-mail..."
-              className="w-full bg-white border border-gray-200 rounded-lg py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30"
-            />
+        <div className="p-4 border-b border-gray-100 bg-gray-50/50 space-y-4">
+          <div className="flex flex-col lg:flex-row gap-3 lg:items-center justify-between">
+            <div className="relative w-full lg:max-w-lg">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nome, empresa, e-mail ou origem..." className="w-full bg-white border border-gray-200 rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+            </div>
+            <div className="flex flex-wrap gap-2">{stageFilters.map((item) => <Button key={item.id} variant={stage === item.id ? 'primary' : 'outline'} size="sm" onClick={() => setStage(item.id)}>{item.label}</Button>)}</div>
+          </div>
+          <div className="rounded-2xl border border-gray-100 bg-white p-3">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+              <label className="flex flex-1 items-center gap-2 text-sm text-gray-500"><Filter size={14} /> Tags internas
+                <input aria-label="Filtrar por tag" value={tagQuery} onChange={(event) => setTagQuery(event.target.value)} placeholder="Ex.: vip, urgente, follow-up" className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                <select aria-label="Modo do filtro de tags" value={tagMode} onChange={(event) => setTagMode(event.target.value as 'any' | 'all')} className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-600"><option value="any">qualquer tag</option><option value="all">todas as tags</option></select>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {tagCatalog.length === 0 ? <span className="text-xs text-gray-400">Nenhuma tag cadastrada ainda</span> : tagCatalog.slice(0, 12).map((tag) => <button key={tag} type="button" onClick={() => setTagQuery(tag)} className="rounded-full bg-solar-orange/10 px-3 py-1 text-xs font-bold text-solar-orange hover:bg-solar-orange/20">#{tag}</button>)}
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead>
-              <tr className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
-                <th className="px-6 py-4 font-bold">Lead</th>
-                <th className="px-6 py-4 font-bold">Status / Etapa</th>
-                <th className="px-6 py-4 font-bold">Prioridade</th>
-                <th className="px-6 py-4 font-bold">Valor Conta</th>
-                <th className="px-6 py-4 font-bold">Origem</th>
-                <th className="px-6 py-4 font-bold">Ações</th>
-              </tr>
-            </thead>
+          <table className="w-full min-w-[920px] text-left">
+            <thead><tr className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100"><th className="px-6 py-4">Lead</th><th className="px-6 py-4">Status / Etapa</th><th className="px-6 py-4">Prioridade</th><th className="px-6 py-4">Valor Conta</th><th className="px-6 py-4">Origem</th><th className="px-6 py-4">Tags</th><th className="px-6 py-4 text-right">Ações</th></tr></thead>
             <tbody className="divide-y divide-gray-50">
-              {loading ? (
-                <tr><td colSpan={6} className="px-6 py-8 text-center text-gray-500">Carregando leads...</td></tr>
-              ) : leads.map((lead) => (
-                <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-solar-orange/10 flex items-center justify-center text-solar-orange font-bold text-sm">
-                        {lead.contact?.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-graphite group-hover:text-solar-orange transition-colors">
-                          {lead.contact?.name}
-                        </p>
-                        <p className="text-xs text-gray-400">{lead.contact?.company}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col gap-1">
-                      <StageBadge stage={lead.stage} />
-                      <span className="text-[10px] text-gray-400 font-medium ml-1">{lead.qualificationStatus}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <PriorityBadge priority={lead.priority} />
-                  </td>
-                  <td className="px-6 py-4">
-                    <p className="text-sm font-bold text-graphite">{formatCurrency(lead.energyBillValue)}</p>
-                    <p className="text-[10px] text-gray-400">Econ. {formatCurrency(lead.projectedSavings)}</p>
-                  </td>
-                  <td className="px-6 py-4">
-                    <Badge variant="default" className="bg-gray-100 text-gray-500 lowercase">{lead.leadSource}</Badge>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Link to={`/leads/${lead.id}`}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-                          <Eye size={16} className="text-gray-500" />
-                        </Button>
-                      </Link>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-                        <MessageSquare size={16} className="text-gray-500" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg">
-                        <MoreHorizontal size={16} className="text-gray-500" />
-                      </Button>
-                    </div>
-                  </td>
+              {loading ? <tr><td colSpan={7} className="px-6 py-10 text-center text-gray-500">Carregando leads...</td></tr> : filteredLeads.length === 0 ? <tr><td colSpan={7} className="px-6 py-12 text-center text-gray-500">Nenhum lead encontrado com os filtros atuais.</td></tr> : filteredLeads.map((lead) => (
+                <tr
+                  key={lead.id}
+                  role="link"
+                  tabIndex={0}
+                  aria-label={`Abrir perfil de ${lead.contact?.name || 'lead sem nome'}`}
+                  onClick={() => navigate(`/leads/${lead.id}`)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      navigate(`/leads/${lead.id}`);
+                    }
+                  }}
+                  className="hover:bg-gray-50/50 transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-solar-orange/30"
+                >
+                  <td className="px-6 py-4 max-w-[300px]"><div className="flex items-center gap-3 min-w-0"><div className="w-11 h-11 rounded-2xl bg-solar-orange/10 flex items-center justify-center text-solar-orange font-black text-sm shrink-0">{initials(lead.contact?.name)}</div><div className="min-w-0"><p className="text-sm font-black text-graphite group-hover:text-solar-orange transition-colors truncate">{lead.contact?.name || 'Lead sem nome'}</p><p className="text-xs text-gray-400 truncate">{lead.contact?.company || lead.contact?.email || 'Sem empresa'}</p></div></div></td>
+                  <td className="px-6 py-4"><div className="flex flex-col gap-1 items-start"><StageBadge stage={lead.stage} /><span className="text-[10px] text-gray-400 font-medium ml-1 truncate max-w-[160px]">{lead.qualificationStatus}</span></div></td>
+                  <td className="px-6 py-4"><PriorityBadge priority={lead.priority} /></td>
+                  <td className="px-6 py-4"><p className="text-sm font-black text-graphite">{formatCurrency(lead.energyBillValue)}</p><p className="text-[10px] text-gray-400">Econ. {formatCurrency(lead.projectedSavings)}</p></td>
+                  <td className="px-6 py-4 max-w-[180px]"><Badge variant="default" className="bg-gray-100 text-gray-500 lowercase normal-case max-w-full truncate inline-block">{lead.leadSource}</Badge></td>
+                  <td className="px-6 py-4 max-w-[220px]"><div className="flex flex-wrap gap-1">{(lead.tags ?? []).length === 0 ? <span className="text-xs text-gray-300">Sem tags</span> : lead.tags.map((tag) => <Badge key={tag.slug} variant="default" className="bg-solar-orange/10 text-solar-orange lowercase normal-case">#{tag.slug}</Badge>)}</div></td>
+                  <td className="px-6 py-4"><div className="flex items-center justify-end gap-1 opacity-100 transition-opacity" onClick={(event) => event.stopPropagation()}><Link to={`/leads/${lead.id}`}><Button aria-label="Abrir lead" variant="ghost" size="icon" className="h-8 w-8 rounded-lg"><Eye size={16} className="text-gray-500" /></Button></Link>{whatsappUrl(lead) ? <a aria-label={`Enviar WhatsApp para ${lead.contact?.name || 'lead'}`} href={whatsappUrl(lead) ?? undefined} target="_blank" rel="noreferrer" className="inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-gray-100"><MessageSquare size={16} className="text-gray-500" /></a> : <Button aria-label="WhatsApp indisponível sem telefone" variant="ghost" size="icon" className="h-8 w-8 rounded-lg opacity-40" disabled><MessageSquare size={16} className="text-gray-500" /></Button>}<Button aria-label="Mais ações em breve" variant="ghost" size="icon" className="h-8 w-8 rounded-lg opacity-50" disabled><MoreHorizontal size={16} className="text-gray-500" /></Button></div></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
-        <div className="p-4 border-t border-gray-100 bg-gray-50/30 flex items-center justify-between">
-          <p className="text-xs text-gray-500">Mostrando {leads.length} de {leads.length} leads</p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" disabled>Anterior</Button>
-            <Button variant="outline" size="sm" disabled>Próximo</Button>
-          </div>
-        </div>
+        <div className="p-4 border-t border-gray-100 bg-gray-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><p className="text-xs text-gray-500">Mostrando {filteredLeads.length} de {leads.length} leads{activeTags.length ? ` filtrados por ${activeTags.join(', ')} (${tagMode === 'all' ? 'todas' : 'qualquer'})` : ''}</p><p className="text-xs text-gray-400">{audienceReadyCount} lead(s) têm e-mail ou telefone para público Meta/Google.</p></div>
       </Card>
     </div>
   );

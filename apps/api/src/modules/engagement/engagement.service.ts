@@ -24,8 +24,13 @@ function scopedStages(actor: PublicUser) {
   return getStageScopeForUser(actor);
 }
 
+function canSeeAllTasks(actor: PublicUser) {
+  return actor.roles.includes('admin') || actor.permissions.includes('task.create') || actor.permissions.includes('user.manage');
+}
+
 export async function listTasks(repository: EngagementRepository, actor: PublicUser) {
-  return repository.listTasks(actor.tenantId, scopedStages(actor));
+  const tasks = await repository.listTasks(actor.tenantId, scopedStages(actor));
+  return canSeeAllTasks(actor) ? tasks : tasks.filter((task) => task.ownerId === actor.id);
 }
 
 export async function listTasksForLead(repository: EngagementRepository, actor: PublicUser, leadId: string) {

@@ -32,6 +32,12 @@ export type CreateLeadInput = {
   utmSource?: string | null;
   utmMedium?: string | null;
   utmCampaign?: string | null;
+  utmContent?: string | null;
+  utmTerm?: string | null;
+  fbp?: string | null;
+  fbc?: string | null;
+  fbclid?: string | null;
+  gclid?: string | null;
   estimatedTicket?: number | null;
   sdrOwnerId?: string | null;
   priority?: PriorityLevel;
@@ -46,6 +52,12 @@ export type UpdateLeadInput = {
   utmSource?: string | null;
   utmMedium?: string | null;
   utmCampaign?: string | null;
+  utmContent?: string | null;
+  utmTerm?: string | null;
+  fbp?: string | null;
+  fbc?: string | null;
+  fbclid?: string | null;
+  gclid?: string | null;
   estimatedTicket?: number | null;
   sdrOwnerId?: string | null;
   priority?: PriorityLevel;
@@ -58,6 +70,17 @@ export type StageChangeInput = {
   stage: PipelineStageKey;
   notes?: string | null;
   lostReason?: string | null;
+};
+
+export type LeadTagMode = 'any' | 'all';
+
+export type LeadListFilters = {
+  tags: string[];
+  tagMode: LeadTagMode;
+};
+
+export type SetLeadTagsInput = {
+  tags: string[];
 };
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -149,6 +172,12 @@ export function validateCreateLeadBody(body: unknown): CreateLeadInput {
     utmSource: optionalString(body.utmSource, 'utmSource'),
     utmMedium: optionalString(body.utmMedium, 'utmMedium'),
     utmCampaign: optionalString(body.utmCampaign, 'utmCampaign'),
+    utmContent: optionalString(body.utmContent, 'utmContent'),
+    utmTerm: optionalString(body.utmTerm, 'utmTerm'),
+    fbp: optionalString(body.fbp, 'fbp'),
+    fbc: optionalString(body.fbc, 'fbc'),
+    fbclid: optionalString(body.fbclid, 'fbclid'),
+    gclid: optionalString(body.gclid, 'gclid'),
     estimatedTicket: optionalNumber(body.estimatedTicket, 'estimatedTicket'),
     sdrOwnerId: optionalUuid(body.sdrOwnerId, 'sdrOwnerId'),
     priority: parsePriority(body.priority),
@@ -166,6 +195,12 @@ export function validateUpdateLeadBody(body: unknown): UpdateLeadInput {
     utmSource: optionalString(body.utmSource, 'utmSource'),
     utmMedium: optionalString(body.utmMedium, 'utmMedium'),
     utmCampaign: optionalString(body.utmCampaign, 'utmCampaign'),
+    utmContent: optionalString(body.utmContent, 'utmContent'),
+    utmTerm: optionalString(body.utmTerm, 'utmTerm'),
+    fbp: optionalString(body.fbp, 'fbp'),
+    fbc: optionalString(body.fbc, 'fbc'),
+    fbclid: optionalString(body.fbclid, 'fbclid'),
+    gclid: optionalString(body.gclid, 'gclid'),
     estimatedTicket: optionalNumber(body.estimatedTicket, 'estimatedTicket'),
     sdrOwnerId: optionalUuid(body.sdrOwnerId, 'sdrOwnerId'),
     priority: parsePriority(body.priority),
@@ -183,4 +218,42 @@ export function validateStageChangeBody(body: unknown): StageChangeInput {
     notes: optionalString(body.notes, 'notes'),
     lostReason: optionalString(body.lostReason, 'lostReason'),
   };
+}
+
+
+function normalizeTag(value: unknown, field: string): string {
+  if (typeof value !== 'string') throw new ValidationError(`${field} must be a string`);
+  const normalized = value
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  if (!normalized) throw new ValidationError(`${field} must not be empty`);
+  if (normalized.length > 40) throw new ValidationError(`${field} must be at most 40 characters`);
+  return normalized;
+}
+
+function uniqueTags(values: unknown[], field: string): string[] {
+  const tags = Array.from(new Set(values.map((value, index) => normalizeTag(value, `${field}[${index}]`))));
+  if (tags.length > 20) throw new ValidationError(`${field} must have at most 20 tags`);
+  return tags;
+}
+
+export function validateListLeadsQuery(query: unknown): LeadListFilters {
+  if (!isObject(query)) return { tags: [], tagMode: 'any' };
+  const rawTags = query.tags;
+  const tags = rawTags === undefined
+    ? []
+    : uniqueTags(Array.isArray(rawTags) ? rawTags : String(rawTags).split(','), 'tags');
+  const tagMode = query.tagMode === undefined ? 'any' : query.tagMode;
+  if (tagMode !== 'any' && tagMode !== 'all') throw new ValidationError('tagMode must be any or all');
+  return { tags, tagMode };
+}
+
+export function validateSetLeadTagsBody(body: unknown): SetLeadTagsInput {
+  if (!isObject(body)) throw new ValidationError('Request body must be an object');
+  if (!Array.isArray(body.tags)) throw new ValidationError('tags must be an array');
+  return { tags: uniqueTags(body.tags, 'tags') };
 }

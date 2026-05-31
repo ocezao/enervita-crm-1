@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { UserForm } from '../components/users/UserForm';
 import { UserList } from '../components/users/UserList';
-import { Button } from '../components/ui/Base';
+import { Badge, Button, Card } from '../components/ui/Base';
 import { PageHeader } from '../components/ui/LayoutComponents';
 import { permissionsApi, type PermissionsCatalog } from '../lib/api/permissionsApi';
 import { usersApi, type AdminUser, type CreateUserPayload, type UserPayload } from '../lib/api/usersApi';
 
-export default function UsersPermissions() {
+type UsersPermissionsProps = { embedded?: boolean };
+
+export default function UsersPermissions({ embedded = false }: UsersPermissionsProps) {
   const [catalog, setCatalog] = useState<PermissionsCatalog | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [selected, setSelected] = useState<AdminUser | null>(null);
@@ -78,11 +80,27 @@ export default function UsersPermissions() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Usuários e Permissões"
-        description="Administre acesso às páginas, funções e etapas do funil."
-        actions={<Button variant="outline" onClick={() => setSelected(null)}>Novo usuário</Button>}
-      />
+      {!embedded && (
+        <PageHeader
+          title="Usuários e acessos"
+          description="Administre quem acessa o CRM, quais páginas cada pessoa vê e em quais etapas do funil pode atuar."
+          actions={<Button variant="outline" onClick={() => setSelected(null)}>Novo usuário</Button>}
+        />
+      )}
+
+      {embedded && (
+        <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5 p-6 md:p-8">
+          <div className="absolute -right-16 -top-20 h-44 w-44 rounded-full bg-solar-orange/10 blur-3xl" />
+          <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-3xl">
+              <Badge variant="solar">Controle de acessos</Badge>
+              <h2 className="mt-3 text-2xl md:text-3xl font-black text-graphite tracking-tight">Usuários e acessos</h2>
+              <p className="mt-2 text-sm md:text-base text-gray-600 leading-relaxed">Liste todos os usuários, crie novos acessos, edite pessoas existentes e defina permissões por página, ação e etapa do funil comercial.</p>
+            </div>
+            <Button variant="outline" onClick={() => setSelected(null)} className="bg-white/80">Novo usuário</Button>
+          </div>
+        </Card>
+      )}
 
       {error && <div role="alert" className="rounded-xl border border-alert-red/20 bg-alert-red/5 px-4 py-3 text-sm text-alert-red">{error}</div>}
       {success && <div role="status" className="rounded-xl border border-energy-success/20 bg-mint-light/50 px-4 py-3 text-sm text-energy-success">{success}</div>}

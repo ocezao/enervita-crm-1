@@ -2,8 +2,8 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { requirePermission } from '../../middleware/requireAuth.ts';
 import type { PublicUser, UserRepository } from '../auth/userRepository.ts';
 import { LeadsNotFoundError, LeadsOperationError, type LeadsRepository } from './repository.ts';
-import { changeLeadStage, createLead, getLead, listLeads, updateLead } from './leads.service.ts';
-import { validateCreateLeadBody, validateStageChangeBody, validateUpdateLeadBody, validateUuid, ValidationError } from './validation.ts';
+import { changeLeadStage, createLead, getLead, listLeads, setLeadTags, updateLead } from './leads.service.ts';
+import { validateCreateLeadBody, validateListLeadsQuery, validateSetLeadTagsBody, validateStageChangeBody, validateUpdateLeadBody, validateUuid, ValidationError } from './validation.ts';
 
 type LeadsRouteOptions = {
   userRepository: UserRepository;
@@ -41,7 +41,8 @@ export async function registerLeadsRoutes(app: FastifyInstance, options: LeadsRo
 
   app.get('/api/leads', { preHandler: viewPreHandler }, async (request, reply) => {
     try {
-      const leads = await listLeads(options.leadsRepository, authenticatedUser(request));
+      const filters = validateListLeadsQuery(request.query);
+      const leads = await listLeads(options.leadsRepository, authenticatedUser(request), filters);
       return { leads };
     } catch (error) {
       return handleLeadsError(error, reply);
@@ -76,6 +77,18 @@ export async function registerLeadsRoutes(app: FastifyInstance, options: LeadsRo
       const id = validateUuid(rawId, "id");
       const input = validateUpdateLeadBody(request.body);
       const lead = await updateLead(options.leadsRepository, authenticatedUser(request), id, input, auditMetadata(request));
+      return { lead };
+    } catch (error) {
+      return handleLeadsError(error, reply);
+    }
+  });
+
+  app.patch('/api/leads/:id/tags', { preHandler: editPreHandler }, async (request, reply) => {
+    try {
+      const { id: rawId } = request.params as { id: string };
+      const id = validateUuid(rawId, "id");
+      const input = validateSetLeadTagsBody(request.body);
+      const lead = await setLeadTags(options.leadsRepository, authenticatedUser(request), id, input, auditMetadata(request));
       return { lead };
     } catch (error) {
       return handleLeadsError(error, reply);

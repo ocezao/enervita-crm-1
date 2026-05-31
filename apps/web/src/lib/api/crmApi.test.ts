@@ -24,6 +24,8 @@ describe('crmApi HTTP client', () => {
             notes: 'Lead real',
             createdAt: '2026-05-29T00:00:00.000Z',
             updatedAt: '2026-05-29T01:00:00.000Z',
+            tags: [{ id: 'tag-1', name: 'VIP', slug: 'vip', color: null }],
+            tags: [{ id: 'tag-1', name: 'VIP', slug: 'vip', color: null }],
             contact: {
               id: 'contact-1',
               name: 'Maria Solar',
@@ -53,7 +55,46 @@ describe('crmApi HTTP client', () => {
       energyBillValue: 0,
       projectedSavings: 0,
       contact: { name: 'Maria Solar', company: 'Padaria Sol' },
+      tags: [{ id: 'tag-1', name: 'VIP', slug: 'vip', color: null }],
     });
+  });
+
+  it('serializes lead tag filters and updates internal tags', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ leads: [] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ lead: { id: 'lead-1', contactId: 'contact-1', stage: 'novo_lead', qualificationStatus: null, leadSource: 'site', estimatedTicket: null, priority: 'media', tags: [{ id: 'tag-1', name: 'vip', slug: 'vip', color: null }], createdAt: '2026-05-29T00:00:00.000Z', updatedAt: '2026-05-29T01:00:00.000Z', contact: { id: 'contact-1', name: 'Maria Solar', email: null, phone: null, company: null, source: null, consent: true, createdAt: '2026-05-29T00:00:00.000Z' } } }) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.listLeads({ tags: ['vip', 'urgente'], tagMode: 'all' });
+    const updated = await api.setLeadTags('lead-1', ['vip']);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/leads?tags=vip%2Curgente&tagMode=all', { credentials: 'include' });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/leads/lead-1/tags', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags: ['vip'] }),
+    });
+    expect(updated.tags.map((tag) => tag.slug)).toEqual(['vip']);
+  });
+
+  it('serializes lead tag filters and updates internal tags', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ leads: [] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ lead: { id: 'lead-1', contactId: 'contact-1', stage: 'novo_lead', qualificationStatus: null, leadSource: 'site', estimatedTicket: null, priority: 'media', tags: [{ id: 'tag-1', name: 'vip', slug: 'vip', color: null }], createdAt: '2026-05-29T00:00:00.000Z', updatedAt: '2026-05-29T01:00:00.000Z', contact: { id: 'contact-1', name: 'Maria Solar', email: null, phone: null, company: null, source: null, consent: true, createdAt: '2026-05-29T00:00:00.000Z' } } }) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.listLeads({ tags: ['vip', 'urgente'], tagMode: 'all' });
+    const updated = await api.setLeadTags('lead-1', ['vip']);
+
+    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/leads?tags=vip%2Curgente&tagMode=all', { credentials: 'include' });
+    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/leads/lead-1/tags', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tags: ['vip'] }),
+    });
+    expect(updated.tags.map((tag) => tag.slug)).toEqual(['vip']);
   });
 
   it('updates lead stage through the backend endpoint using session cookies', async () => {

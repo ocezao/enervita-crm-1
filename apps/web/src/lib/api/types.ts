@@ -34,6 +34,13 @@ export interface Contact {
   metadata?: Record<string, unknown>;
 }
 
+export interface LeadTag {
+  id: string;
+  name: string;
+  slug: string;
+  color?: string | null;
+}
+
 export interface Lead {
   id: string;
   contactId: string;
@@ -46,6 +53,10 @@ export interface Lead {
   utmCampaign?: string;
   utmContent?: string;
   utmTerm?: string;
+  fbp?: string;
+  fbc?: string;
+  fbclid?: string;
+  gclid?: string;
   estimatedTicket: number;
   sdrOwner: string;
   firstResponseAt?: string;
@@ -60,7 +71,9 @@ export interface Lead {
   offer: string;
   projectedSavings: number;
   priority: Priority;
+  metadata?: Record<string, unknown>;
   contact?: Contact; // Join result
+  tags: LeadTag[];
 }
 
 export interface Task {
@@ -70,6 +83,7 @@ export interface Task {
   status: 'pendente' | 'concluido' | 'atrasado';
   priority: Priority;
   owner: string;
+  ownerId?: string;
   dueDate: string;
   notes?: string;
   createdAt: string;
@@ -138,6 +152,116 @@ export type CreateProposalPayload = {
   notes?: string;
 };
 
+
+export type AdsPlatform = 'meta' | 'google_ads';
+
+export interface AdsAccount {
+  id: string;
+  platform: AdsPlatform;
+  accountName: string;
+  externalAccountId: string | null;
+  status: 'pending_credentials' | 'connected' | 'error' | 'disabled';
+  credentialHint: string | null;
+  lastSyncAt: string | null;
+  syncError: string | null;
+  metadata: Record<string, unknown>;
+}
+
+export interface AdCreative {
+  id: string;
+  externalAdId: string | null;
+  name: string;
+  effectiveStatus: string;
+  creativeName: string | null;
+  spendAmount: number;
+  impressions: number;
+  clicks: number;
+  leads: number;
+  lastSeenAt: string | null;
+  thumbnailUrl: string | null;
+  title: string | null;
+  body: string | null;
+  destinationUrl: string | null;
+  metadata: Record<string, unknown>;
+}
+
+export interface AdSet {
+  id: string;
+  externalAdSetId: string | null;
+  name: string;
+  effectiveStatus: string;
+  budgetAmount: number | null;
+  spendAmount: number;
+  impressions: number;
+  clicks: number;
+  leads: number;
+  lastSeenAt: string | null;
+  optimizationGoal: string | null;
+  billingEvent: string | null;
+  audienceSummary: string | null;
+  metadata: Record<string, unknown>;
+  ads: AdCreative[];
+}
+
+export interface AdCampaign {
+  id: string;
+  platform: AdsPlatform;
+  externalCampaignId: string | null;
+  name: string;
+  objective: string | null;
+  effectiveStatus: string;
+  budgetAmount: number | null;
+  spendAmount: number;
+  impressions: number;
+  clicks: number;
+  leads: number;
+  lastSeenAt: string | null;
+  buyingType: string | null;
+  bidStrategy: string | null;
+  budgetRemaining: number | null;
+  metadata: Record<string, unknown>;
+  adSets: AdSet[];
+}
+
+export interface DetectedCampaign {
+  platform: AdsPlatform | 'unknown';
+  utmSource: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  leads: number;
+  firstLeadAt: string;
+  lastLeadAt: string;
+}
+
+export interface AdsSyncResult {
+  platform: "meta";
+  accountId: string;
+  pixelId: string;
+  pixelName: string;
+  campaigns: number;
+  adSets: number;
+  ads: number;
+  customAudiences: number;
+  syncedAt: string;
+  skipped?: boolean;
+  reason?: string;
+}
+
+export interface AdsOverview {
+  accounts: AdsAccount[];
+  campaigns: AdCampaign[];
+  detectedCampaigns: DetectedCampaign[];
+  summary: {
+    connectedAccounts: number;
+    pendingCredentialAccounts: number;
+    activeCampaigns: number;
+    activeAdSets: number;
+    activeAds: number;
+    detectedUtmCampaigns: number;
+  };
+  credentialRequirements: Record<AdsPlatform, string[]>;
+}
+
 export interface SyncMapping {
   id: string;
   sourceSystem: string;
@@ -158,6 +282,26 @@ export interface AutomationRule {
   active: boolean;
   lastRunAt?: string;
   status?: 'planned' | 'active' | 'paused';
+}
+
+
+export interface N8nWorkflow {
+  id: string;
+  name: string;
+  description: string;
+  active: boolean;
+  status: 'active' | 'paused' | 'archived';
+  triggerSummary: string;
+  nodeSummary: string[];
+  webhookPaths: string[];
+  updatedAt?: string;
+  versionId?: string | null;
+  activeVersionId?: string | null;
+}
+
+export interface N8nWorkflowToggleResult {
+  workflow: N8nWorkflow;
+  message: string;
 }
 
 export interface AutomationRun {
@@ -211,4 +355,101 @@ export interface DashboardMetrics {
   leadsByStage: { stage: LeadStage; count: number }[];
   conversionsByPlatform: { platform: string; count: number }[];
   recentEvents: Activity[];
+}
+
+
+export interface AnalyticsKpi {
+  key: string;
+  label: string;
+  value: number;
+  displayValue: string;
+  helper: string;
+  tone: 'green' | 'orange' | 'blue' | 'red' | 'slate';
+}
+
+export interface AnalyticsDailyPoint {
+  date: string;
+  leads: number;
+  trackedLeads: number;
+  proposals: number;
+  won: number;
+  trackingEvents: number;
+}
+
+export interface AnalyticsFunnelStep {
+  key: LeadStage;
+  label: string;
+  value: number;
+  rateFromPrevious: number | null;
+}
+
+export interface AnalyticsTrafficSource {
+  source: string;
+  label: string;
+  leads: number;
+  trackedLeads: number;
+  proposals: number;
+  won: number;
+  estimatedTicket: number;
+  conversionRate: number;
+}
+
+export interface AnalyticsCampaign {
+  campaign: string;
+  source: string;
+  medium: string;
+  leads: number;
+  trackedLeads: number;
+  proposals: number;
+  won: number;
+  estimatedTicket: number;
+  conversionRate: number;
+}
+
+export interface AnalyticsSignal {
+  key: string;
+  label: string;
+  count: number;
+  coverageRate: number;
+}
+
+export interface AnalyticsTrackingStatus {
+  platform: string;
+  sent: number;
+  queued: number;
+  failed: number;
+  total: number;
+  lastSentAt: string | null;
+}
+
+export interface AnalyticsEventName {
+  eventName: string;
+  platform: string;
+  count: number;
+  lastSeenAt: string | null;
+}
+
+export interface AnalyticsRecentLead {
+  id: string;
+  name: string;
+  stage: LeadStage;
+  source: string;
+  campaign: string;
+  signals: string[];
+  createdAt: string;
+}
+
+export interface CrmAnalyticsOverview {
+  filters: { days: number; period?: string; startDate: string; endDate: string; source?: string; campaign?: string; stage?: LeadStage };
+  generatedAt: string;
+  kpis: AnalyticsKpi[];
+  daily: AnalyticsDailyPoint[];
+  funnel: AnalyticsFunnelStep[];
+  trafficSources: AnalyticsTrafficSource[];
+  campaigns: AnalyticsCampaign[];
+  signals: AnalyticsSignal[];
+  trackingStatus: AnalyticsTrackingStatus[];
+  eventNames: AnalyticsEventName[];
+  recentLeads: AnalyticsRecentLead[];
+  notes: string[];
 }

@@ -3,6 +3,9 @@ export const migrationFiles = [
   'infra/migrations/002_user_stage_permissions.sql',
   'infra/migrations/003_proposals.sql',
   'infra/migrations/004_controlled_integrations.sql',
+  'infra/migrations/005_ads_overview.sql',
+  'infra/migrations/006_ad_platform_account_metadata.sql',
+  'infra/migrations/007_lead_tags.sql',
 ];
 
 export const migrationFile = migrationFiles[0];
@@ -32,6 +35,12 @@ export const requiredTables = [
   'audit_logs',
   'integration_tokens',
   'proposals',
+  'ad_platform_accounts',
+  'ad_campaigns',
+  'ad_sets',
+  'ads',
+  'lead_tags',
+  'lead_tag_assignments',
 ];
 
 export const requiredColumns = {
@@ -84,7 +93,13 @@ export const requiredColumns = {
   consent_records: ['id', 'tenant_id', 'contact_id', 'consent_type', 'granted', 'source', 'ip_address', 'user_agent', 'evidence', 'occurred_at'],
   audit_logs: ['id', 'tenant_id', 'actor_user_id', 'entity_type', 'entity_id', 'action', 'before_data', 'after_data', 'ip_address', 'user_agent', 'created_at'],
   integration_tokens: ['id', 'tenant_id', 'provider', 'label', 'encrypted_secret', 'scopes', 'status', 'created_by', 'created_at', 'updated_at'],
+  ad_platform_accounts: ['id', 'tenant_id', 'platform', 'account_name', 'status', 'created_at', 'updated_at'],
+  ad_campaigns: ['id', 'tenant_id', 'account_id', 'platform', 'name', 'effective_status', 'spend_amount', 'impressions', 'clicks', 'leads', 'created_at', 'updated_at'],
+  ad_sets: ['id', 'tenant_id', 'campaign_id', 'platform', 'name', 'effective_status', 'spend_amount', 'impressions', 'clicks', 'leads', 'created_at', 'updated_at'],
+  ads: ['id', 'tenant_id', 'ad_set_id', 'platform', 'name', 'effective_status', 'spend_amount', 'impressions', 'clicks', 'leads', 'created_at', 'updated_at'],
   proposals: ['id', 'tenant_id', 'lead_id', 'title', 'status', 'monthly_bill_value', 'estimated_kwh', 'discount_percentage', 'projected_monthly_savings', 'projected_annual_savings', 'valid_until', 'sent_at', 'accepted_at', 'lost_at', 'lost_reason', 'notes', 'metadata', 'created_by', 'created_at', 'updated_at'],
+  lead_tags: ['id', 'tenant_id', 'name', 'slug', 'color', 'created_by', 'created_at', 'updated_at'],
+  lead_tag_assignments: ['tenant_id', 'lead_id', 'tag_id', 'assigned_by', 'assigned_at'],
 };
 
 export const requiredEnums = ['lead_stage', 'priority_level', 'task_status', 'activity_type', 'delivery_status', 'permission_effect', 'proposal_status'];
@@ -97,7 +112,13 @@ export const requiredNotNullColumns = {
   stage_permissions: ['tenant_id', 'role_id', 'permission_id'],
   user_stage_permissions: ['tenant_id', 'permission_id'],
   audit_logs: ['tenant_id'],
+  ad_platform_accounts: ['tenant_id', 'platform', 'account_name', 'status', 'created_at', 'updated_at'],
+  ad_campaigns: ['tenant_id', 'account_id', 'platform', 'name', 'effective_status', 'impressions', 'clicks', 'leads', 'created_at', 'updated_at'],
+  ad_sets: ['tenant_id', 'campaign_id', 'platform', 'name', 'effective_status', 'impressions', 'clicks', 'leads', 'created_at', 'updated_at'],
+  ads: ['tenant_id', 'ad_set_id', 'platform', 'name', 'effective_status', 'impressions', 'clicks', 'leads', 'created_at', 'updated_at'],
   proposals: ['tenant_id', 'lead_id'],
+  lead_tags: ['tenant_id', 'name', 'slug', 'created_at', 'updated_at'],
+  lead_tag_assignments: ['tenant_id', 'lead_id', 'tag_id', 'assigned_at'],
 };
 
 export const requiredConstraints = [
@@ -135,4 +156,11 @@ export const requiredConstraints = [
   'integration_tokens_created_by_tenant_fk',
   'proposals_lead_tenant_fk',
   'proposals_created_by_tenant_fk',
+  'lead_tags_tenant_slug_unique',
+  'lead_tags_id_tenant_unique',
+  'lead_tags_tenant_fk',
+  'lead_tags_created_by_tenant_fk',
+  'lead_tag_assignments_lead_tenant_fk',
+  'lead_tag_assignments_tag_tenant_fk',
+  'lead_tag_assignments_assigned_by_tenant_fk',
 ];

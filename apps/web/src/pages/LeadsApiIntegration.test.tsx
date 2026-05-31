@@ -19,6 +19,7 @@ vi.mock('recharts', async () => {
 });
 
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import App from '../App';
 
 const user = {
@@ -55,6 +56,7 @@ describe('Leads page real API integration', () => {
               leadSource: 'site',
               estimatedTicket: '900',
               priority: 'alta',
+              metadata: { formName: 'Formulário Site', city: 'Foz do Iguaçu', state: 'PR', unitType: 'Empresa', message: 'Quero economizar energia' },
               createdAt: '2026-05-29T00:00:00.000Z',
               updatedAt: '2026-05-29T01:00:00.000Z',
               contact: { id: 'contact-1', name: 'Lead Real API', email: 'lead@example.com', phone: null, company: 'Empresa Real', source: 'site', consent: true, createdAt: '2026-05-29T00:00:00.000Z' },
@@ -62,6 +64,11 @@ describe('Leads page real API integration', () => {
           ],
         });
       }
+      if (url === '/api/leads/lead-real-1') {
+        return jsonResponse({ lead: { id: 'lead-real-1', contactId: 'contact-1', stage: 'novo_lead', qualificationStatus: 'qualificado', leadSource: 'site', estimatedTicket: '900', priority: 'alta', metadata: { formName: 'Formulário Site', city: 'Foz do Iguaçu', state: 'PR', unitType: 'Empresa', message: 'Quero economizar energia' }, createdAt: '2026-05-29T00:00:00.000Z', updatedAt: '2026-05-29T01:00:00.000Z', contact: { id: 'contact-1', name: 'Lead Real API', email: 'lead@example.com', phone: null, company: 'Empresa Real', source: 'site', consent: true, createdAt: '2026-05-29T00:00:00.000Z' } } });
+      }
+      if (url === '/api/leads/lead-real-1/activities') return jsonResponse({ activities: [] });
+      if (url === '/api/leads/lead-real-1/tasks') return jsonResponse({ tasks: [] });
       return jsonResponse({ error: 'Not found' }, 404);
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -70,9 +77,17 @@ describe('Leads page real API integration', () => {
 
     expect(await screen.findByText('Lead Real API')).toBeInTheDocument();
     expect(screen.getByText('Empresa Real')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /abrir perfil de lead real api/i })).toBeInTheDocument();
     expect(screen.queryByText('Exportar CSV')).not.toBeInTheDocument();
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/leads', { credentials: 'include' });
+    });
+
+    await userEvent.click(screen.getByRole('link', { name: /abrir perfil de lead real api/i }));
+    expect(await screen.findByText('Informações de cadastro')).toBeInTheDocument();
+    expect(await screen.findByText('Foz do Iguaçu / PR')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalledWith('/api/leads/lead-real-1', { credentials: 'include' });
     });
   });
 });

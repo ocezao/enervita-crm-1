@@ -1,4 +1,4 @@
-import { PERMISSION_DEFINITIONS } from '@enervita/shared';
+import { PERMISSION_DEFINITIONS, PERMISSION_KEYS, PIPELINE_STAGE_KEYS } from '@enervita/shared';
 import pg, { type PoolClient } from 'pg';
 import type { CreateUserInput, UpdateUserInput } from './validation.ts';
 
@@ -58,15 +58,18 @@ function normalizeStringArray(value: unknown): string[] {
 
 function rowToAdminUser(row: Record<string, unknown>): AdminUser {
   const profileId = row.profileId as string | null;
+  const roles = normalizeStringArray(row.roles);
+  const isAdmin = roles.includes('admin');
+
   return {
     id: row.id as string,
     tenantId: row.tenantId as string,
     name: row.name as string,
     email: row.email as string,
     status: row.status as 'active' | 'inactive',
-    roles: normalizeStringArray(row.roles),
-    permissions: normalizeStringArray(row.permissions),
-    allowedStages: normalizeStringArray(row.allowedStages),
+    roles,
+    permissions: isAdmin ? [...PERMISSION_KEYS] : normalizeStringArray(row.permissions),
+    allowedStages: isAdmin ? [...PIPELINE_STAGE_KEYS] : normalizeStringArray(row.allowedStages),
     profile: profileId
       ? {
           id: profileId,
