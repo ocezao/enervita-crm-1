@@ -16,6 +16,8 @@ export type QueuedMetaTrackingEvent = {
   contact?: {
     email: string | null;
     phone: string | null;
+    name?: string | null;
+    metadata?: JsonObject;
     consent: boolean;
   };
 };
@@ -89,7 +91,35 @@ function normalizedEmail(value: string | null | undefined): string | null {
 
 function normalizedPhone(value: string | null | undefined): string | null {
   const digits = value?.replace(/\D/g, '') ?? '';
-  return digits || null;
+  if (!digits) return null;
+  if ((digits.length === 10 || digits.length === 11) && !digits.startsWith('55')) return `55${digits}`;
+  return digits;
+}
+
+function normalizedText(value: string | null | undefined): string | null {
+  const text = value
+    ?.trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9 ]+/g, '')
+    .replace(/\s+/g, ' ');
+  return text || null;
+}
+
+function nameParts(value: string | null | undefined): { firstName: string | null; lastName: string | null } {
+  const text = normalizedText(value);
+  if (!text) return { firstName: null, lastName: null };
+  const parts = text.split(' ').filter(Boolean);
+  return { firstName: parts[0] ?? null, lastName: parts.length > 1 ? parts[parts.length - 1] : null };
+}
+
+function metadataString(metadata: JsonObject, ...keys: string[]): string | null {
+  for (const key of keys) {
+    const value = metadata[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return null;
 }
 
 function numericValue(value: unknown): number | undefined {
@@ -117,22 +147,40 @@ export function buildMetaCapiEvent(event: QueuedMetaTrackingEvent): MetaCapiEven
   const payload = objectValue(event.payload);
   const attribution = objectValue(payload.attribution);
   const utm = objectValue(payload.utm);
-  const contact = event.contact ?? { email: null, phone: null, consent: false };
+  const request = objectValue(payload.request);
+  const location = objectValue(payload.location);
+  const contact = event.contact ?? { email: null, phone: null, name: null, metadata: {}, consent: false };
+  const contactMetadata = objectValue(contact.metadata);
   const userData: Record<string, string> = {};
 
   const externalIdSource = event.leadId ?? stringValue(payload.leadId) ?? event.id;
   userData.external_id = sha256(externalIdSource);
 
-  const fbp = stringValue(attribution.fbp);
-  const fbc = stringValue(attribution.fbc);
+  const fbp = stringValue(attribution.fbp) ?? metadataString(contactMetadata, 'fbp');
+  const fbclid = stringValue(attribution.fbclid) ?? metadataString(contactMetadata, 'fbclid');
+  const fbc = stringValue(attribution.fbc) ?? metadataString(contactMetadata, 'fbc') ?? (fbclid ? `fb.1.${eventTimestampSeconds(event.createdAt)}.${fbclid}` : null);
   if (fbp) userData.fbp = fbp;
   if (fbc) userData.fbc = fbc;
+
+  const clientIpAddress = stringValue(request.clientIpAddress) ?? stringValue(request.client_ip_address);
+  const clientUserAgent = stringValue(request.clientUserAgent) ?? stringValue(request.client_user_agent) ?? stringValue(request.userAgent);
+  if (clientIpAddress) userData.client_ip_address = clientIpAddress;
+  if (clientUserAgent) userData.client_user_agent = clientUserAgent;
 
   if (contact.consent) {
     const email = normalizedEmail(contact.email);
     const phone = normalizedPhone(contact.phone);
+    const { firstName, lastName } = nameParts(contact.name);
+    const city = normalizedText(stringValue(location.city) ?? metadataString(contactMetadata, 'city', 'cidade'));
+    const state = normalizedText(stringValue(location.state) ?? metadataString(contactMetadata, 'state', 'estado'));
+    const country = normalizedText(stringValue(location.country) ?? metadataString(contactMetadata, 'country', 'pais') ?? 'br');
     if (email) userData.em = sha256(email);
     if (phone) userData.ph = sha256(phone);
+    if (firstName) userData.fn = sha256(firstName);
+    if (lastName) userData.ln = sha256(lastName);
+    if (city) userData.ct = sha256(city);
+    if (state) userData.st = sha256(state);
+    if (country) userData.country = sha256(country);
   }
 
   const estimatedTicket = numericValue(payload.estimatedTicket);
@@ -141,6 +189,7 @@ export function buildMetaCapiEvent(event: QueuedMetaTrackingEvent): MetaCapiEven
     action: stringValue(payload.action) ?? undefined,
     stage: stringValue(payload.stage) ?? undefined,
     from_stage: stringValue(payload.fromStage) ?? undefined,
+    transition_direction: stringValue(payload.transitionDirection) ?? undefined,
     source: stringValue(payload.source) ?? undefined,
     priority: stringValue(payload.priority) ?? undefined,
     tags: stringArray(payload.tags),
@@ -150,7 +199,9 @@ export function buildMetaCapiEvent(event: QueuedMetaTrackingEvent): MetaCapiEven
     utm_content: stringValue(utm.content) ?? undefined,
     utm_term: stringValue(utm.term) ?? undefined,
     fbclid_present: Boolean(stringValue(attribution.fbclid)),
-    gclid_present: Boolean(stringValue(attribution.gclid)),
+    gclid_present: Boolean(stringValue(attribution.gclid) ?? metadataString(contactMetadata, 'gclid')),
+    event_source: 'crm',
+    lead_event_source: stringValue(payload.leadEventSource) ?? 'Enervita Custom CRM',
   };
   if (estimatedTicket !== undefined) customData.value = estimatedTicket;
   customData.currency = 'BRL';
@@ -238,6 +289,8 @@ function rowToQueuedMetaEvent(row: Record<string, unknown>): QueuedMetaTrackingE
     contact: {
       email: row.contactEmail as string | null,
       phone: row.contactPhone as string | null,
+      name: row.contactName as string | null,
+      metadata: objectValue(row.contactMetadata),
       consent: row.contactConsent === true,
     },
   };
@@ -252,7 +305,7 @@ export function createPgMetaDispatchRepository(databaseUrl: string, maxAttempts 
       const result = await pool.query(
         `select te.id, te.tenant_id as "tenantId", te.lead_id as "leadId", te.event_name as "eventName",
                 te.payload, te.attempts, te.created_at::text as "createdAt",
-                c.email as "contactEmail", c.phone as "contactPhone", coalesce(c.consent, false) as "contactConsent"
+                c.email as "contactEmail", c.phone as "contactPhone", c.name as "contactName", c.metadata as "contactMetadata", coalesce(c.consent, false) as "contactConsent"
            from tracking_events te
            left join leads l on l.tenant_id = te.tenant_id and l.id = te.lead_id
            left join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id

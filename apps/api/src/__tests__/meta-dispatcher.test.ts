@@ -21,6 +21,9 @@ const baseEvent: QueuedMetaTrackingEvent = {
     fromStage: 'conta_recebida',
     source: 'meta_ads',
     utm: { source: 'facebook', campaign: 'solar-sp-capital' },
+    request: { clientIpAddress: '203.0.113.10', clientUserAgent: 'Hermes QA Browser' },
+    location: { city: 'São Paulo', state: 'SP', country: 'BR' },
+    leadEventSource: 'Enervita Custom CRM',
     attribution: { fbp: 'fb.1.1710000000.123', fbc: 'fb.1.1710000000.ABC' },
     tags: ['vip', 'urgente'],
     priority: 'alta',
@@ -31,6 +34,8 @@ const baseEvent: QueuedMetaTrackingEvent = {
   contact: {
     email: ' Cliente@Example.COM ',
     phone: '+55 (11) 99999-0000',
+    name: 'Cliente Solar Teste',
+    metadata: { city: 'São Paulo', state: 'SP' },
     consent: true,
   },
 };
@@ -63,10 +68,19 @@ test('buildMetaCapiEvent creates a production-safe CAPI payload with hashed user
   assert.match(String(event.user_data.em), /^[a-f0-9]{64}$/);
   assert.match(String(event.user_data.ph), /^[a-f0-9]{64}$/);
   assert.match(String(event.user_data.external_id), /^[a-f0-9]{64}$/);
+  assert.match(String(event.user_data.fn), /^[a-f0-9]{64}$/);
+  assert.match(String(event.user_data.ln), /^[a-f0-9]{64}$/);
+  assert.match(String(event.user_data.ct), /^[a-f0-9]{64}$/);
+  assert.match(String(event.user_data.st), /^[a-f0-9]{64}$/);
+  assert.match(String(event.user_data.country), /^[a-f0-9]{64}$/);
+  assert.equal(event.user_data.client_ip_address, '203.0.113.10');
+  assert.equal(event.user_data.client_user_agent, 'Hermes QA Browser');
   assert.equal(event.custom_data.stage, 'diagnostico');
   assert.equal(event.custom_data.from_stage, 'conta_recebida');
   assert.deepEqual(event.custom_data.tags, ['vip', 'urgente']);
   assert.equal(event.custom_data.utm_campaign, 'solar-sp-capital');
+  assert.equal(event.custom_data.event_source, 'crm');
+  assert.equal(event.custom_data.lead_event_source, 'Enervita Custom CRM');
 });
 
 test('dispatchQueuedMetaEvents posts queued events and marks them sent without exposing tokens', async () => {

@@ -215,12 +215,72 @@ async function writeAudit(client: PoolClient, context: AuditContext, entityId: s
 
 const META_STAGE_EVENTS: Partial<Record<PipelineStageKey, string>> = {
   novo_lead: 'Lead',
+  qualificacao: 'EnervitaPreQualifiedLead',
+  atendimento_iniciado: 'EnervitaOpportunity',
   conta_recebida: 'EnervitaBillReceived',
   diagnostico: 'EnervitaQualifiedLead',
   proposta_enviada: 'ProposalSent',
   contrato_enervita: 'WonLead',
   perdido: 'LeadUnqualified',
 };
+
+const META_STAGE_ORDER: Record<PipelineStageKey, number> = {
+  novo_lead: 1,
+  qualificacao: 2,
+  atendimento_iniciado: 3,
+  conta_recebida: 4,
+  diagnostico: 5,
+  proposta_enviada: 6,
+  contrato_enervita: 7,
+  perdido: 8,
+};
+
+function transitionDirection(action: 'created' | 'stage_changed' | 'tags_updated', stage: PipelineStageKey, fromStage?: PipelineStageKey | null): 'created' | 'forward' | 'backward' | 'lateral' | 'tags_updated' {
+  if (action === 'created') return 'created';
+  if (action === 'tags_updated') return 'tags_updated';
+  if (!fromStage || fromStage === stage) return 'lateral';
+  return META_STAGE_ORDER[stage] > META_STAGE_ORDER[fromStage] ? 'forward' : 'backward';
+}
+
+function nestedString(value: unknown, path: string[]): string | null {
+  let current: unknown = value;
+  for (const key of path) {
+    if (!current || typeof current !== 'object' || Array.isArray(current)) return null;
+    current = (current as Record<string, unknown>)[key];
+  }
+  return typeof current === 'string' && current.trim() ? current.trim() : null;
+}
+
+function firstString(...values: Array<unknown>): string | null {
+  for (const value of values) {
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+function crmSignalMetadata(lead: Lead, context: AuditContext): Record<string, unknown> {
+  const leadMetadata = jsonObject(lead.metadata);
+  const contactMetadata = jsonObject(lead.contact.metadata);
+  const request = {
+    clientIpAddress: firstString(context.ipAddress, nestedString(leadMetadata, ['request', 'clientIpAddress']), nestedString(contactMetadata, ['request', 'clientIpAddress'])),
+    clientUserAgent: firstString(context.userAgent, nestedString(leadMetadata, ['request', 'clientUserAgent']), nestedString(contactMetadata, ['request', 'clientUserAgent']), nestedString(leadMetadata, ['request', 'userAgent']), nestedString(contactMetadata, ['request', 'userAgent'])),
+  };
+  const location = {
+    city: firstString(leadMetadata.city, leadMetadata.cidade, contactMetadata.city, contactMetadata.cidade),
+    state: firstString(leadMetadata.state, leadMetadata.estado, contactMetadata.state, contactMetadata.estado),
+    country: firstString(leadMetadata.country, leadMetadata.pais, contactMetadata.country, contactMetadata.pais, 'BR'),
+  };
+  return {
+    request,
+    location,
+    contact: {
+      name: lead.contact.name,
+      company: lead.contact.company,
+      source: lead.contact.source,
+    },
+    leadEventSource: 'Enervita Custom CRM',
+  };
+}
 
 async function queueMetaStageEvent(client: PoolClient, context: AuditContext, lead: Lead, action: 'created' | 'stage_changed' | 'tags_updated', fromStage?: PipelineStageKey | null): Promise<void> {
   const eventName = META_STAGE_EVENTS[lead.stage];
@@ -231,6 +291,7 @@ async function queueMetaStageEvent(client: PoolClient, context: AuditContext, le
     leadId: lead.id,
     stage: lead.stage,
     fromStage: fromStage ?? null,
+    transitionDirection: transitionDirection(action, lead.stage, fromStage),
     source: lead.leadSource,
     utm: {
       source: lead.utmSource,
@@ -249,6 +310,7 @@ async function queueMetaStageEvent(client: PoolClient, context: AuditContext, le
     priority: lead.priority,
     estimatedTicket: lead.estimatedTicket,
     actorUserId: context.actorUserId,
+    ...crmSignalMetadata(lead, context),
   };
   await client.query(
     `insert into tracking_events (tenant_id, lead_id, platform, event_name, status, payload, next_retry_at)
@@ -299,7 +361,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
           `insert into leads (tenant_id, contact_id, stage, qualification_status, lead_source, utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbp, fbc, fbclid, gclid, estimated_ticket, sdr_owner_id, priority, notes, metadata)
            values ($1, $2, $3::lead_stage, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, coalesce($17::priority_level, 'media'), $18, coalesce($19::jsonb, '{}'::jsonb))
            returning id`,
-          [context.tenantId, contactId, input.stage, input.qualificationStatus ?? null, input.leadSource ?? null, input.utmSource ?? null, input.utmMedium ?? null, input.utmCampaign ?? null, input.utmContent ?? null, input.utmTerm ?? null, input.fbp ?? null, input.fbc ?? null, input.fbclid ?? null, input.gclid ?? null, input.estimatedTicket ?? null, input.sdrOwnerId ?? null, input.priority ?? null, input.notes ?? null, input.metadata ? JSON.stringify(input.metadata) : null],
+          [context.tenantId, contactId, input.stage, input.qualificationStatus ?? null, input.leadSource ?? null, input.utmSource ?? null, input.utmMedium ?? null, input.utmCampaign ?? null, input.utmContent ?? null, input.utmTerm ?? null, input.fbp ?? firstString(input.metadata?.fbp, nestedString(input.metadata, ['attribution', 'fbp']), input.contact.metadata?.fbp), input.fbc ?? firstString(input.metadata?.fbc, nestedString(input.metadata, ['attribution', 'fbc']), input.contact.metadata?.fbc), input.fbclid ?? firstString(input.metadata?.fbclid, nestedString(input.metadata, ['attribution', 'fbclid']), input.contact.metadata?.fbclid), input.gclid ?? firstString(input.metadata?.gclid, nestedString(input.metadata, ['attribution', 'gclid']), input.contact.metadata?.gclid), input.estimatedTicket ?? null, input.sdrOwnerId ?? null, input.priority ?? null, input.notes ?? null, input.metadata ? JSON.stringify(input.metadata) : null],
         );
         const leadId = leadResult.rows[0].id as string;
         await client.query(
