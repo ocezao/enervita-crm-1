@@ -45,6 +45,7 @@ export type UsersRepository = {
   createUser(context: AuditContext, input: CreateUserInput & { passwordHash: string }): Promise<AdminUser>;
   updateUser(context: AuditContext, userId: string, input: UpdateUserInput): Promise<AdminUser>;
   resetPassword(context: AuditContext, userId: string, passwordHash: string): Promise<AdminUser>;
+  deleteUser(context: AuditContext, userId: string): Promise<AdminUser>;
   close?(): Promise<void>;
 };
 
@@ -242,9 +243,10 @@ async function selectOne(client: PoolClient, tenantId: string, userId: string): 
   return result.rows[0] ? rowToAdminUser(result.rows[0]) : null;
 }
 
-async function ensureCanDeactivate(client: PoolClient, context: AuditContext, targetUserId: string, nextStatus?: 'active' | 'inactive'): Promise<void> {
-  if (nextStatus !== 'inactive') return;
-  if (targetUserId === context.actorUserId) throw new UsersOperationError('Cannot deactivate your own user');
+async function ensureOtherActiveAdmin(client: PoolClient, context: AuditContext, targetUserId: string, action: 'deactivate' | 'delete'): Promise<void> {
+  if (targetUserId === context.actorUserId) {
+    throw new UsersOperationError(action === 'delete' ? 'Cannot delete your own user' : 'Cannot deactivate your own user');
+  }
 
   const roleResult = await client.query(
     `select count(*)::int as count
@@ -254,7 +256,20 @@ async function ensureCanDeactivate(client: PoolClient, context: AuditContext, ta
       where u.tenant_id = $1 and u.status = 'active' and r.name = 'admin' and u.id <> $2`,
     [context.tenantId, targetUserId],
   );
-  if ((roleResult.rows[0]?.count ?? 0) < 1) throw new UsersOperationError('Cannot deactivate the last active admin');
+  if ((roleResult.rows[0]?.count ?? 0) < 1) {
+    throw new UsersOperationError(action === 'delete' ? 'Cannot delete the last active admin' : 'Cannot deactivate the last active admin');
+  }
+}
+
+async function ensureCanDeactivate(client: PoolClient, context: AuditContext, targetUserId: string, nextStatus?: 'active' | 'inactive'): Promise<void> {
+  if (nextStatus !== 'inactive') return;
+  await ensureOtherActiveAdmin(client, context, targetUserId, 'deactivate');
+}
+
+async function ensureCanDelete(client: PoolClient, context: AuditContext, targetUserId: string, target: AdminUser): Promise<void> {
+  if (target.roles.includes('admin') || target.status === 'active') {
+    await ensureOtherActiveAdmin(client, context, targetUserId, 'delete');
+  }
 }
 
 export function createPgUsersRepository(databaseUrl: string): UsersRepository {
@@ -396,6 +411,25 @@ export function createPgUsersRepository(databaseUrl: string): UsersRepository {
         await writeAudit(client, context, userId, 'user.password_reset', before, after);
         await client.query('commit');
         return after;
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+    async deleteUser(context, userId) {
+      const client = await pool.connect();
+      try {
+        await client.query('begin');
+        const before = await selectOne(client, context.tenantId, userId);
+        if (!before) throw new UsersNotFoundError('User not found');
+        await ensureCanDelete(client, context, userId, before);
+        await writeAudit(client, context, userId, 'user.deleted', before, null);
+        const deleted = await client.query('delete from users where tenant_id = $1 and id = $2 returning id', [context.tenantId, userId]);
+        if (deleted.rowCount !== 1) throw new UsersNotFoundError('User not found after delete');
+        await client.query('commit');
+        return before;
       } catch (error) {
         await client.query('rollback');
         throw error;

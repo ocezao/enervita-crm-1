@@ -77,4 +77,8 @@ export const usersApi = {
     const body = await request<{ user: AdminUser }>(`/api/users/${id}/reset-password`, { method: "POST", body: JSON.stringify({ temporaryPassword }) }, "Não foi possível redefinir senha.");
     return body.user;
   },
+  async remove(id: string): Promise<AdminUser> {
+    const body = await request<{ user: AdminUser }>(`/api/users/${id}`, { method: "DELETE" }, "Não foi possível deletar usuário.");
+    return body.user;
+  },
 };

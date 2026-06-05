@@ -47,10 +47,10 @@ export type TrackingEventSummary = {
 };
 
 export type ProposalsRepository = {
-  listProposals(tenantId: string): Promise<Proposal[]>;
-  listProposalsForLead(tenantId: string, leadId: string): Promise<Proposal[]>;
-  createProposal(context: AuditContext, input: ProposalInput): Promise<Proposal>;
-  listTrackingEventsForLead(tenantId: string, leadId: string, options?: { excludePlatforms?: string[] }): Promise<TrackingEventSummary[]>;
+  listProposals(tenantId: string, ownerUserId: string | null): Promise<Proposal[]>;
+  listProposalsForLead(tenantId: string, leadId: string, ownerUserId: string | null): Promise<Proposal[]>;
+  createProposal(context: AuditContext, input: ProposalInput, ownerUserId: string | null): Promise<Proposal>;
+  listTrackingEventsForLead(tenantId: string, leadId: string, options?: { excludePlatforms?: string[]; ownerUserId?: string | null }): Promise<TrackingEventSummary[]>;
   close?(): Promise<void>;
 };
 
@@ -126,6 +126,16 @@ const proposalSelect = `select p.id,
                           join leads l on l.tenant_id = p.tenant_id and l.id = p.lead_id
                           join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id`;
 
+
+function ownerClause(ownerUserId: string | null | undefined, offset: number): string {
+  return ownerUserId ? ` and l.sdr_owner_id = $${offset}::uuid` : '';
+}
+
+function ownerParams(ownerUserId: string | null | undefined): unknown[] {
+  return ownerUserId ? [ownerUserId] : [];
+}
+
+
 async function writeAudit(client: pg.PoolClient, context: AuditContext, entityType: string, entityId: string, action: string, afterData: unknown): Promise<void> {
   await client.query(
     `insert into audit_logs (tenant_id, actor_user_id, entity_type, entity_id, action, after_data, ip_address, user_agent)
@@ -137,18 +147,22 @@ async function writeAudit(client: pg.PoolClient, context: AuditContext, entityTy
 export function createPgProposalsRepository(databaseUrl: string): ProposalsRepository {
   const pool = new Pool({ connectionString: databaseUrl });
   return {
-    async listProposals(tenantId) {
-      const result = await pool.query(`${proposalSelect} where p.tenant_id = $1 order by p.created_at desc`, [tenantId]);
+    async listProposals(tenantId, ownerUserId) {
+      const result = await pool.query(`${proposalSelect} where p.tenant_id = $1${ownerClause(ownerUserId, 2)} order by p.created_at desc`, [tenantId, ...ownerParams(ownerUserId)]);
       return result.rows.map(rowToProposal);
     },
-    async listProposalsForLead(tenantId, leadId) {
-      const result = await pool.query(`${proposalSelect} where p.tenant_id = $1 and p.lead_id = $2 order by p.created_at desc`, [tenantId, leadId]);
+    async listProposalsForLead(tenantId, leadId, ownerUserId) {
+      const result = await pool.query(`${proposalSelect} where p.tenant_id = $1 and p.lead_id = $2${ownerClause(ownerUserId, 3)} order by p.created_at desc`, [tenantId, leadId, ...ownerParams(ownerUserId)]);
       return result.rows.map(rowToProposal);
     },
-    async createProposal(context, input) {
+    async createProposal(context, input, ownerUserId) {
       const client = await pool.connect();
       try {
         await client.query('begin');
+        if (ownerUserId) {
+          const visible = await client.query('select 1 from leads l where l.tenant_id = $1 and l.id = $2 and l.sdr_owner_id = $3::uuid limit 1', [context.tenantId, input.leadId, ownerUserId]);
+          if (visible.rowCount !== 1) throw new Error('Lead not found');
+        }
         const inserted = await client.query(
           `insert into proposals (tenant_id, lead_id, title, status, monthly_bill_value, estimated_kwh, discount_percentage, projected_monthly_savings, projected_annual_savings, valid_until, notes)
            values ($1, $2, $3, 'draft', $4, $5, $6, $7, $8, $9, $10)
@@ -185,8 +199,9 @@ export function createPgProposalsRepository(databaseUrl: string): ProposalsRepos
                 created_at::text as "createdAt"
            from tracking_events
           where tenant_id = $1 and lead_id = $2 and not (platform = any($3::text[]))
+            and ($4::uuid is null or exists (select 1 from leads l where l.tenant_id = tracking_events.tenant_id and l.id = tracking_events.lead_id and l.sdr_owner_id = $4::uuid))
           order by created_at desc`,
-        [tenantId, leadId, excluded],
+        [tenantId, leadId, excluded, options?.ownerUserId ?? null],
       );
       return result.rows.map(rowToTrackingEvent);
     },

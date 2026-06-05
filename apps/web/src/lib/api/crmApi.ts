@@ -19,13 +19,18 @@ import {
   LeadTag,
   Priority,
   CrmAnalyticsOverview,
+  LeadHistoryEntry,
 } from './types';
 
 export interface CrmApi {
   listLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' }): Promise<Lead[]>;
   getLead(id: string): Promise<Lead | undefined>;
+  updateLead(id: string, payload: UpdateLeadPayload): Promise<Lead>;
   updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string }): Promise<Lead>;
   setLeadTags(id: string, tags: string[]): Promise<Lead>;
+  bulkSetLeadTags(leadIds: string[], tags: string[]): Promise<Lead[]>;
+  deleteLead(id: string): Promise<void>;
+  bulkDeleteLeads(leadIds: string[]): Promise<number>;
 
   listProposals(): Promise<Proposal[]>;
   listProposalsForLead(leadId: string): Promise<Proposal[]>;
@@ -39,6 +44,7 @@ export interface CrmApi {
 
   listActivities(leadId: string): Promise<Activity[]>;
   createActivity(payload: Partial<Activity>): Promise<Activity>;
+  listLeadHistory(leadId: string): Promise<LeadHistoryEntry[]>;
 
   listDashboardMetrics(): Promise<DashboardMetrics>;
   getAnalyticsOverview(filters?: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage }): Promise<CrmAnalyticsOverview>;
@@ -55,6 +61,29 @@ export interface CrmApi {
   getAdsOverview(): Promise<AdsOverview>;
   syncMetaAds(): Promise<{ result: AdsSyncResult; overview: AdsOverview }>;
 }
+
+export type UpdateLeadPayload = {
+  contact?: {
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+    company?: string | null;
+    source?: string | null;
+    consent?: boolean;
+    metadata?: Record<string, unknown>;
+  };
+  qualificationStatus?: string | null;
+  leadSource?: string | null;
+  utmSource?: string | null;
+  utmMedium?: string | null;
+  utmCampaign?: string | null;
+  utmContent?: string | null;
+  utmTerm?: string | null;
+  estimatedTicket?: number | null;
+  priority?: Priority;
+  notes?: string | null;
+  metadata?: Record<string, unknown>;
+};
 
 type BackendContact = {
   id?: string;
@@ -87,6 +116,8 @@ type BackendLead = {
   gclid?: string | null;
   estimatedTicket?: string | number | null;
   sdrOwnerId?: string | null;
+  sdrOwner?: string | null;
+  nextActionAt?: string | null;
   priority?: string | null;
   notes?: string | null;
   metadata?: Record<string, unknown> | null;
@@ -151,6 +182,8 @@ type BackendActivity = {
   createdAt: string;
 };
 
+type BackendLeadHistoryEntry = LeadHistoryEntry;
+
 type ApiErrorBody = { error?: string };
 
 function numeric(value: unknown, fallback = 0): number {
@@ -205,7 +238,8 @@ function mapLead(raw: BackendLead): Lead {
     fbclid: raw.fbclid ?? undefined,
     gclid: raw.gclid ?? undefined,
     estimatedTicket: numeric(raw.estimatedTicket),
-    sdrOwner: raw.sdrOwnerId ?? 'Sem responsável',
+    sdrOwner: raw.sdrOwner ?? raw.sdrOwnerId ?? 'Sem responsável',
+    nextActionAt: raw.nextActionAt ?? null,
     notes: raw.notes ?? undefined,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
@@ -287,6 +321,26 @@ function mapActivity(raw: BackendActivity): Activity {
   };
 }
 
+function mapLeadHistoryEntry(raw: BackendLeadHistoryEntry): LeadHistoryEntry {
+  return {
+    id: raw.id,
+    action: raw.action,
+    occurredAt: raw.occurredAt,
+    actor: {
+      id: raw.actor.id,
+      name: raw.actor.name,
+      email: raw.actor.email,
+    },
+    summary: raw.summary,
+    changes: Array.isArray(raw.changes) ? raw.changes.map((change) => ({
+      field: change.field,
+      label: change.label,
+      before: change.before ?? null,
+      after: change.after ?? null,
+    })) : [],
+  };
+}
+
 async function parseError(response: Response): Promise<string> {
   try {
     const body = (await response.json()) as ApiErrorBody;
@@ -320,6 +374,15 @@ export class HttpCrmApi implements CrmApi {
     return mapLead(body.lead);
   }
 
+  async updateLead(id: string, payload: UpdateLeadPayload): Promise<Lead> {
+    const body = await requestJson<{ lead: BackendLead }>(`/api/leads/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return mapLead(body.lead);
+  }
+
   async updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string }): Promise<Lead> {
     const body = await requestJson<{ lead: BackendLead }>(`/api/leads/${encodeURIComponent(id)}/stage`, {
       method: 'PATCH',
@@ -336,6 +399,28 @@ export class HttpCrmApi implements CrmApi {
       body: JSON.stringify({ tags }),
     });
     return mapLead(body.lead);
+  }
+
+  async bulkSetLeadTags(leadIds: string[], tags: string[]): Promise<Lead[]> {
+    const body = await requestJson<{ leads: BackendLead[] }>('/api/leads/bulk/tags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadIds, tags }),
+    });
+    return body.leads.map(mapLead);
+  }
+
+  async deleteLead(id: string): Promise<void> {
+    await requestJson<{ deleted: number }>(`/api/leads/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  }
+
+  async bulkDeleteLeads(leadIds: string[]): Promise<number> {
+    const body = await requestJson<{ deleted: number }>('/api/leads/bulk/delete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ leadIds }),
+    });
+    return body.deleted;
   }
 
   async listProposals(): Promise<Proposal[]> {
@@ -413,6 +498,11 @@ export class HttpCrmApi implements CrmApi {
       }),
     });
     return mapActivity(body.activity);
+  }
+
+  async listLeadHistory(leadId: string): Promise<LeadHistoryEntry[]> {
+    const body = await requestJson<{ history: BackendLeadHistoryEntry[] }>(`/api/leads/${encodeURIComponent(leadId)}/history`);
+    return body.history.map(mapLeadHistoryEntry);
   }
 
   async listDashboardMetrics(): Promise<DashboardMetrics> {

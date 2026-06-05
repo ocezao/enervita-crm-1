@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-solar-orange: #F58220;
+  --color-solar-orange: #C05800;
   --color-energy-green: #2EAD5B;
   --color-energy-deep: #0E7A3D;
   --color-energy-success: #22A06B;
@@ -12,18 +12,82 @@
   --color-mint-light: #EAF6EE;
   --color-alert-red: #D94A38;
   --color-alert-amber: #F5A524;
-  
+
   --font-sans: "Inter", "system-ui", "sans-serif";
   --font-display: "Lexend", "sans-serif";
 }
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-warm-white text-graphite font-sans;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-display;
+  }
+}
+
+@layer components {
+  .crm-button::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: radial-gradient(circle at 50% 0%, rgb(255 255 255 / 0.28), transparent 42%);
+    opacity: 0;
+    transform: translateY(35%) scale(0.75);
+    transition: opacity 180ms ease, transform 220ms ease;
+    pointer-events: none;
+  }
+
+  .crm-button:hover::after,
+  .crm-button:focus-visible::after {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  .crm-button-outline::after,
+  .crm-button-ghost::after {
+    background: radial-gradient(circle at 50% 0%, rgb(192 88 0 / 0.12), transparent 46%);
+  }
+
+  .crm-scroll-panel {
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(192 88 0 / 0.45) rgb(239 230 212 / 0.45);
+  }
+
+  .crm-scroll-panel::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .crm-scroll-panel::-webkit-scrollbar-track,
+  body::-webkit-scrollbar-track {
+    background: rgb(239 230 212 / 0.45);
+    border-radius: 999px;
+  }
+
+  .crm-scroll-panel::-webkit-scrollbar-thumb,
+  body::-webkit-scrollbar-thumb {
+    border: 2px solid rgb(250 247 240 / 0.9);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgb(192 88 0 / 0.78), rgb(46 173 91 / 0.62));
+  }
+
+  .crm-scroll-panel::-webkit-scrollbar-thumb:hover,
+  body::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, rgb(192 88 0 / 0.95), rgb(46 173 91 / 0.78));
   }
 }
 
@@ -47,6 +111,17 @@ html[data-crm-motion="reduced"] *::after {
   animation-iteration-count: 1 !important;
   scroll-behavior: auto !important;
   transition-duration: 0.01ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 html[data-crm-contrast="high"] body {

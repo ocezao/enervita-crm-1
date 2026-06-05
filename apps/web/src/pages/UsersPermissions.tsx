@@ -61,6 +61,28 @@ export default function UsersPermissions({ embedded = false }: UsersPermissionsP
     }
   }
 
+  async function handleDeleteUser() {
+    if (!selected) return;
+    const confirmed = window.confirm(`Deletar o usuário ${selected.name}? Esta ação remove o acesso dele do CRM.`);
+    if (!confirmed) return;
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      await usersApi.remove(selected.id);
+      setUsers((current) => {
+        const next = current.filter((user) => user.id !== selected.id);
+        setSelected(next[0] ?? null);
+        return next;
+      });
+      setSuccess('Usuário deletado com sucesso.');
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : 'Não foi possível deletar usuário.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleResetPassword(temporaryPassword: string) {
     if (!selected) return;
     setSaving(true);
@@ -110,7 +132,7 @@ export default function UsersPermissions({ embedded = false }: UsersPermissionsP
       {!loading && catalog && (
         <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
           <UserList users={users} selectedId={selected?.id} onSelect={setSelected} onNew={() => setSelected(null)} />
-          <UserForm key={selected?.id ?? 'new-user'} catalog={catalog} user={selected} saving={saving} onSubmit={handleSubmit} onResetPassword={selected ? handleResetPassword : undefined} />
+          <UserForm key={selected?.id ?? 'new-user'} catalog={catalog} user={selected} saving={saving} onSubmit={handleSubmit} onResetPassword={selected ? handleResetPassword : undefined} onDelete={selected ? handleDeleteUser : undefined} />
         </div>
       )}
     </div>

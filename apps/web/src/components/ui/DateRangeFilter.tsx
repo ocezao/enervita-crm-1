@@ -43,10 +43,10 @@ export function isWithinDateRange(value: string | null | undefined, range: DateR
 export function DateRangeFilter({ value, onChange, className = '' }: DateRangeFilterProps) {
   const label = useMemo(() => `${value.startDate.split('-').reverse().join('/')} até ${value.endDate.split('-').reverse().join('/')}`, [value.startDate, value.endDate]);
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 ${className}`}>
-      <label className="space-y-1">
+    <div className={`grid grid-cols-1 md:grid-cols-3 gap-3 ${className}`}>
+      <label className="min-w-0 space-y-1">
         <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Período</span>
-        <select className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white" value={value.period} onChange={(event) => onChange(rangeForPeriod(event.target.value as PeriodValue))}>
+        <select className="w-full min-w-0 rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white" value={value.period} onChange={(event) => onChange(rangeForPeriod(event.target.value as PeriodValue))}>
           <option value="7">Últimos 7 dias</option>
           <option value="30">Últimos 30 dias</option>
           <option value="90">Últimos 90 dias</option>
@@ -57,13 +57,13 @@ export function DateRangeFilter({ value, onChange, className = '' }: DateRangeFi
           <option value="custom">Datas específicas</option>
         </select>
       </label>
-      <label className="space-y-1">
+      <label className="min-w-0 space-y-1">
         <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Início</span>
-        <input type="date" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white" value={value.startDate} onChange={(event) => onChange({ ...value, period: 'custom', startDate: event.target.value })} />
+        <input type="date" className="w-full min-w-0 rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white" value={value.startDate} onChange={(event) => onChange({ ...value, period: 'custom', startDate: event.target.value })} />
       </label>
-      <label className="space-y-1">
+      <label className="min-w-0 space-y-1">
         <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Fim</span>
-        <input type="date" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white" value={value.endDate} onChange={(event) => onChange({ ...value, period: 'custom', endDate: event.target.value })} />
+        <input type="date" className="w-full min-w-0 rounded-xl border border-gray-200 px-3 py-2 text-sm bg-white" value={value.endDate} onChange={(event) => onChange({ ...value, period: 'custom', endDate: event.target.value })} />
         <span className="block text-[10px] text-gray-400">{label}</span>
       </label>
     </div>

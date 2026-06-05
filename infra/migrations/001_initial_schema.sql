@@ -49,7 +49,7 @@ end $$;
 do $$
 begin
   if not exists (select 1 from pg_type where typname = 'delivery_status') then
-    create type delivery_status as enum ('queued', 'sent', 'failed');
+    create type delivery_status as enum ('queued', 'sent', 'failed', 'discarded');
   end if;
 end $$;
 

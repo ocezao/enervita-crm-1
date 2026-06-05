@@ -14,6 +14,9 @@ export async function getAuthenticatedUser(
   const session = verifySessionToken(token, sessionSecret);
   if (!session) return null;
 
+  const revokedAt = await userRepository.getSessionRevokedAtEpoch?.(session.userId);
+  if (revokedAt !== null && revokedAt !== undefined && session.iat <= revokedAt) return null;
+
   const user = await userRepository.findActiveUserById(session.userId);
   return user ? toPublicUser(user) : null;
 }

@@ -1,0 +1,120 @@
+{
+  "runId": "qa-2026-06-04T02-56-43-132Z",
+  "base": "https://crm.enervita.com.br",
+  "startedAt": "2026-06-04T02:56:43.132Z",
+  "steps": [
+    {
+      "name": "login_admin",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "name": "me_authenticated",
+      "ok": true,
+      "status": 200,
+      "permissions": 38
+    },
+    {
+      "name": "create_synthetic_lead",
+      "ok": true,
+      "status": 201,
+      "stage": "novo_lead"
+    },
+    {
+      "name": "tag_synthetic_lead",
+      "ok": true,
+      "status": 200,
+      "tagsCount": 2
+    },
+    {
+      "name": "list_filter_lead_by_tag",
+      "ok": true,
+      "status": 200,
+      "matched": 1
+    },
+    {
+      "name": "open_lead_detail",
+      "ok": true,
+      "status": 200,
+      "stage": "novo_lead"
+    },
+    {
+      "name": "change_lead_stage",
+      "ok": true,
+      "status": 200,
+      "stage": "qualificacao"
+    },
+    {
+      "name": "edit_lead_fields",
+      "ok": true,
+      "status": 200,
+      "priority": "alta"
+    },
+    {
+      "name": "create_task_for_lead",
+      "ok": true,
+      "status": 201,
+      "taskStatus": "pendente"
+    },
+    {
+      "name": "list_tasks_for_lead",
+      "ok": true,
+      "status": 200,
+      "tasks": 1
+    },
+    {
+      "name": "complete_task",
+      "ok": false,
+      "status": 400
+    },
+    {
+      "name": "create_activity_timeline",
+      "ok": true,
+      "status": 201
+    },
+    {
+      "name": "list_activity_timeline",
+      "ok": true,
+      "status": 200,
+      "activities": 1
+    },
+    {
+      "name": "create_proposal_for_lead",
+      "ok": true,
+      "status": 201,
+      "proposalStatus": "draft"
+    },
+    {
+      "name": "list_proposals_for_lead",
+      "ok": true,
+      "status": 200,
+      "proposals": 1
+    },
+    {
+      "name": "list_non_google_tracking_events",
+      "ok": true,
+      "status": 200,
+      "events": 3
+    }
+  ],
+  "ids": {
+    "leadId": "c0a57a14-7853-4534-8f70-f5d74df87d0b",
+    "taskId": "4e94116c-6990-4769-8d64-3f320dd0a529",
+    "activityId": "8cb1afa5-e4df-4e8f-b8c1-8b81a26c3977",
+    "proposalId": "f80d01e7-6010-4ab6-bcf1-8a86799800bd"
+  },
+  "cleanup": [
+    {
+      "name": "delete_synthetic_lead",
+      "ok": false,
+      "status": 400
+    },
+    {
+      "name": "verify_lead_deleted",
+      "ok": false,
+      "status": 200
+    }
+  ],
+  "finishedAt": "2026-06-04T02:56:44.910Z",
+  "ok": false
+}

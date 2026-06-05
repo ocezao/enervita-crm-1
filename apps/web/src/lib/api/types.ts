@@ -58,10 +58,10 @@ export interface Lead {
   fbclid?: string;
   gclid?: string;
   estimatedTicket: number;
-  sdrOwner: string;
+  sdrOwner: string | null;
   firstResponseAt?: string;
   lastContactAt?: string;
-  nextActionAt?: string;
+  nextActionAt: string | null;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -103,12 +103,32 @@ export interface Activity {
   createdAt: string;
 }
 
+export interface LeadHistoryChange {
+  field: string;
+  label: string;
+  before: string | number | boolean | null;
+  after: string | number | boolean | null;
+}
+
+export interface LeadHistoryEntry {
+  id: string;
+  action: string;
+  occurredAt: string;
+  actor: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  summary: string;
+  changes: LeadHistoryChange[];
+}
+
 export interface TrackingEvent {
   id: string;
   leadId: string;
   platform: 'site' | 'meta' | 'ga4' | 'google_ads';
   eventName: string;
-  status: 'queued' | 'sent' | 'failed';
+  status: 'queued' | 'sent' | 'failed' | 'discarded';
   sentAt?: string;
   attempts: number;
   nextRetryAt?: string;
@@ -332,7 +352,7 @@ export interface WebhookDelivery {
   webhookId: string;
   webhookName?: string;
   eventType: string;
-  status: 'queued' | 'sent' | 'failed';
+  status: 'queued' | 'sent' | 'failed' | 'discarded';
   httpStatus: number | null;
   attempts: number;
   createdAt: string;
@@ -418,6 +438,7 @@ export interface AnalyticsTrackingStatus {
   sent: number;
   queued: number;
   failed: number;
+  discarded: number;
   total: number;
   lastSentAt: string | null;
 }

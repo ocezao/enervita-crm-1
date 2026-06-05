@@ -13,7 +13,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { Activity, AlertTriangle, BarChart3, DatabaseZap, Filter, Layers3, LineChart, RefreshCw, ShieldCheck, Target, TrendingUp } from 'lucide-react';
+import { Activity, AlertTriangle, BarChart3, DatabaseZap, ExternalLink, Filter, Layers3, LineChart, RefreshCw, ShieldCheck, Target, TrendingUp } from 'lucide-react';
 import { PageHeader } from '../components/ui/LayoutComponents';
 import { Badge, Button, Card } from '../components/ui/Base';
 import { DateRangeFilter, rangeForPeriod, type DateRangeState } from '../components/ui/DateRangeFilter';
@@ -88,8 +88,8 @@ export default function Analytics() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Analytics de Tracking"
-        description="Leads, UTMs, sinais Meta/Google, propostas e eventos reais do CRM Enervita."
+        title="Analytics comercial"
+        description="Leads, campanhas, sinais Meta/Google, propostas e eventos reais do CRM Enervita."
         actions={
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" className="gap-2" onClick={() => window.location.reload()}>
@@ -105,16 +105,38 @@ export default function Analytics() {
         </Card>
       )}
 
+      <Card className="overflow-hidden border-solar-orange/20 bg-gradient-to-r from-solar-orange/10 via-white to-energy-green/10 p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="rounded-2xl bg-white p-3 text-solar-orange shadow-sm">
+              <ExternalLink size={22} />
+            </div>
+            <div>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <h3 className="text-lg font-black text-graphite">Painel externo de analytics</h3>
+                <Badge variant="solar">analytics.enervita.com.br</Badge>
+              </div>
+              <p className="max-w-3xl text-sm leading-relaxed text-gray-600">
+                Acesse o ambiente dedicado de analytics da Enervita em uma nova aba para acompanhar relatórios avançados fora do CRM.
+              </p>
+            </div>
+          </div>
+          <a href="https://analytics.enervita.com.br/" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-graphite px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-graphite/90" aria-label="Abrir analytics externo">
+            Abrir analytics externo <ExternalLink size={16} />
+          </a>
+        </div>
+      </Card>
+
       <Card className="p-5">
         <div className="flex items-center gap-2 mb-4">
           <Filter size={18} className="text-solar-orange" />
-          <h3 className="font-bold text-graphite">Filtros avançados</h3>
-          <Badge variant="solar">PostgreSQL real</Badge>
+          <h3 className="font-bold text-graphite">Filtros de análise</h3>
+          <Badge variant="solar">Dados do CRM</Badge>
         </div>
         <div className="grid grid-cols-1 xl:grid-cols-[1.25fr_1fr_1fr_1fr] gap-4">
           <DateRangeFilter value={filters.range} onChange={(range) => setFilters((prev) => ({ ...prev, range }))} className="xl:grid-cols-3" />
           <label className="space-y-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Origem / UTM source</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-gray-400">Origem da campanha</span>
             <input list="analytics-sources" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" placeholder="Todas" value={filters.source} onChange={(event) => setFilters((prev) => ({ ...prev, source: event.target.value }))} />
             <datalist id="analytics-sources">{sourceOptions.map((item) => <option key={item} value={item} />)}</datalist>
           </label>
@@ -220,7 +242,7 @@ export default function Analytics() {
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <Card className="p-6">
-          <h3 className="font-bold text-graphite mb-4 flex items-center gap-2"><ShieldCheck size={20} className="text-energy-green" /> Qualidade do tracking</h3>
+          <h3 className="font-bold text-graphite mb-4 flex items-center gap-2"><ShieldCheck size={20} className="text-energy-green" /> Qualidade do rastreio</h3>
           <div className="space-y-4">
             {overview.signals.map((signal) => (
               <div key={signal.key}>
@@ -237,13 +259,13 @@ export default function Analytics() {
         <Card className="p-6">
           <h3 className="font-bold text-graphite mb-4 flex items-center gap-2"><DatabaseZap size={20} className="text-solar-orange" /> Eventos por plataforma</h3>
           {overview.trackingStatus.length === 0 ? (
-            <div className="rounded-2xl bg-alert-red/5 border border-alert-red/10 p-5 text-sm text-gray-600">Nenhum registro em tracking_events para os filtros atuais. A cobertura de UTM/click-id dos leads já aparece ao lado; eventos CAPI/Ads aparecerão aqui assim que forem enviados.</div>
+            <div className="rounded-2xl bg-alert-red/5 border border-alert-red/10 p-5 text-sm text-gray-600">Nenhum evento de campanha para os filtros atuais. A cobertura de origem dos leads já aparece ao lado; novos envios aparecerão aqui assim que forem processados.</div>
           ) : (
             <div className="space-y-3">
               {overview.trackingStatus.map((item) => (
                 <div key={item.platform} className="rounded-2xl border border-gray-100 p-4">
                   <div className="flex items-center justify-between"><span className="font-bold text-graphite capitalize">{item.platform}</span><Badge variant={item.failed > 0 ? 'error' : 'success'}>{item.total} eventos</Badge></div>
-                  <p className="text-xs text-gray-500 mt-2">Enviados: {item.sent} • Fila: {item.queued} • Falhas: {item.failed} • Último: {formatDateTime(item.lastSentAt)}</p>
+                  <p className="text-xs text-gray-500 mt-2">Enviados: {item.sent} • Fila: {item.queued} • Substituídos: {item.discarded} • Falhas: {item.failed} • Último: {formatDateTime(item.lastSentAt)}</p>
                 </div>
               ))}
             </div>
@@ -253,7 +275,19 @@ export default function Analytics() {
 
       <Card className="p-6">
         <h3 className="font-bold text-graphite mb-5 flex items-center gap-2"><Activity size={20} className="text-solar-orange" /> Campanhas e leads recentes</h3>
-        <div className="overflow-x-auto">
+        <div className="md:hidden divide-y divide-gray-100 rounded-2xl border border-gray-100 overflow-hidden">
+          {overview.campaigns.map((campaign) => (
+            <article key={`${campaign.source}-${campaign.campaign}`} className="p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="font-bold text-graphite truncate">{campaign.campaign}</p><p className="text-xs text-gray-500 truncate">{campaign.source}</p></div><Badge variant="success">{campaign.trackedLeads}/{campaign.leads} rastreados</Badge></div>
+              <div className="grid grid-cols-2 gap-3 text-xs text-gray-500">
+                <div><span className="block font-bold text-gray-400 uppercase">Propostas</span>{campaign.proposals}</div>
+                <div><span className="block font-bold text-gray-400 uppercase">Contratos</span>{campaign.won}</div>
+                <div className="col-span-2"><span className="block font-bold text-gray-400 uppercase">Pipeline</span>{formatCurrency(campaign.estimatedTicket)}</div>
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="hidden md:block crm-scroll-panel overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead><tr className="border-b border-gray-100 text-gray-400"><th className="pb-3">Campanha</th><th className="pb-3">Origem</th><th className="pb-3">Leads</th><th className="pb-3">Rastreados</th><th className="pb-3">Propostas</th><th className="pb-3">Contratos</th><th className="pb-3">Pipeline</th></tr></thead>
             <tbody className="divide-y divide-gray-50">

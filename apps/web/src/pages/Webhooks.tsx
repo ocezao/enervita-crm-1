@@ -3,7 +3,7 @@ import { useWebhooks } from '../hooks/useCrm';
 import { PageHeader } from '../components/ui/LayoutComponents';
 import { Link } from 'react-router-dom';
 import { Card, Button, Badge, type BadgeVariant } from '../components/ui/Base';
-import { Link2, ExternalLink, Activity, Terminal, Shield, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { Link2, ExternalLink, Activity, Shield, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { formatDate } from '../lib/utils';
 import type { WebhookDelivery } from '../lib/api/types';
 
@@ -64,11 +64,11 @@ export default function Webhooks() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Desenvolvedores & API"
-        description="Conecte a Enervita com suas ferramentas favoritas."
+        title="Integrações"
+        description="Acompanhe integrações que conectam o CRM da Enervita aos fluxos comerciais."
         actions={
           <Link to="/settings?tab=integrations"><Button variant="outline" size="sm" className="gap-2">
-            <Shield size={16} /> Gerenciar Chaves API
+            <Shield size={16} /> Gerenciar acessos
           </Button></Link>
         }
       />
@@ -79,9 +79,9 @@ export default function Webhooks() {
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-graphite flex items-center gap-2">
                 <Link2 size={20} className="text-solar-orange" />
-                Webhooks Ativos
+                Integrações ativas
               </h3>
-              <Button variant="primary" size="sm" disabled title="Cadastro técnico em breve" className="opacity-60">Novo Webhook em breve</Button>
+              <Button variant="primary" size="sm" disabled title="Cadastro em revisão" className="opacity-60">Nova integração</Button>
             </div>
 
             <div className="space-y-4">
@@ -92,7 +92,7 @@ export default function Webhooks() {
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h4 className="font-bold text-sm text-graphite">{webhook.name}</h4>
-                      <code className="text-[10px] text-gray-400 break-all">{webhook.url}</code>
+                      <span className="text-[10px] text-gray-400">Destino seguro configurado</span>
                     </div>
                     <Badge variant={webhookBadgeVariant(webhook.status)}>
                       {webhookStatusLabel(webhook.status)}
@@ -110,16 +110,16 @@ export default function Webhooks() {
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-50">
                     <div className="flex gap-4">
                       <div className="text-center">
-                        <p className="text-[9px] text-gray-400 uppercase font-bold">Success Rate</p>
+                        <p className="text-[9px] text-gray-400 uppercase font-bold">Taxa de sucesso</p>
                         <p className="text-sm font-bold text-energy-success">{webhook.successRate}%</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-[9px] text-gray-400 uppercase font-bold">Last Delivery</p>
+                        <p className="text-[9px] text-gray-400 uppercase font-bold">Última entrega</p>
                         <p className="text-sm font-bold text-graphite">{webhook.lastDeliveryAt ? formatDate(webhook.lastDeliveryAt) : '-'}</p>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button aria-label={`Testar webhook ${webhook.name}`} variant="ghost" size="icon" className="h-8 w-8" onClick={() => void handleTest(webhook.id)} disabled={testingId === webhook.id}><RefreshCw size={14} /></Button>
+                      <Button aria-label={`Validar integração ${webhook.name}`} variant="ghost" size="icon" className="h-8 w-8" onClick={() => void handleTest(webhook.id)} disabled={testingId === webhook.id}><RefreshCw size={14} /></Button>
                       <Link to="/settings?tab=integrations" aria-label="Abrir integrações"><Button variant="ghost" size="icon" className="h-8 w-8"><ExternalLink size={14} /></Button></Link>
                     </div>
                   </div>
@@ -134,11 +134,11 @@ export default function Webhooks() {
           <Card className="p-6">
             <h3 className="font-bold text-graphite mb-4 flex items-center gap-2">
               <Activity size={20} className="text-energy-green" />
-              Logs Recentes (dispatcher controlado)
+              Entregas recentes das integrações
             </h3>
-            <div className="bg-graphite rounded-xl p-4 font-mono text-xs text-energy-green overflow-x-auto space-y-2">
+            <div className="bg-graphite rounded-xl p-4 font-mono text-xs text-energy-green crm-scroll-panel overflow-x-auto space-y-2">
               {deliveries.length === 0 ? (
-                <p className="opacity-50"># Nenhuma entrega registrada ainda no preview</p>
+                <p className="opacity-50">Nenhuma entrega registrada ainda</p>
               ) : deliveries.slice(0, 6).map((delivery) => (
                 <div key={delivery.id} className="rounded-lg border border-white/10 bg-white/5 p-3 text-[11px] text-mint-light">
                   <div className="flex flex-wrap items-center gap-2">
@@ -152,7 +152,7 @@ export default function Webhooks() {
                   )}
                 </div>
               ))}
-              <p className="opacity-50 mt-4"># Dispatcher seguro: só envia HTTP para hosts explicitamente permitidos por allowlist</p>
+              <p className="opacity-50 mt-4">Segurança: entregas externas seguem uma lista de destinos permitidos</p>
             </div>
           </Card>
         </div>
@@ -160,25 +160,25 @@ export default function Webhooks() {
         <div className="space-y-6">
           <Card className="p-6 bg-mint-light/30 border-energy-green/10">
             <h3 className="font-bold text-graphite mb-4 flex items-center gap-2">
-              <Terminal size={18} className="text-energy-deep" />
-              API operacional e planejada
+              <Link2 size={18} className="text-energy-deep" />
+              Integrações comerciais
             </h3>
             <div className="space-y-3">
               <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">GET /api/leads</p>
-                <p className="text-xs text-gray-500">Listar todos os leads</p>
+                <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">Leitura de leads</p>
+                <p className="text-xs text-gray-500">Consulta segura das oportunidades autorizadas</p>
               </div>
               <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">POST /api/leads</p>
-                <p className="text-xs text-gray-500">Criar novo lead (Site/Ads)</p>
+                <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">Entrada de leads</p>
+                <p className="text-xs text-gray-500">Receber oportunidades vindas do site e campanhas</p>
               </div>
               <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">PATCH /api/leads/:id</p>
-                <p className="text-xs text-gray-500">Atualizar dados ou etapa</p>
+                <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">Atualização comercial</p>
+                <p className="text-xs text-gray-500">Atualizar dados ou etapa com permissão</p>
               </div>
               <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
-                <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">Tracking events internos</p>
-                <p className="text-xs text-gray-500">Fila interna tracking_events + dispatcher Meta CAPI; endpoint público dedicado fica para uma fase posterior</p>
+                <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">Eventos comerciais</p>
+                <p className="text-xs text-gray-500">Fila segura para sinais de campanha e conversão</p>
               </div>
             </div>
             <Link to="/settings?tab=integrations"><Button variant="outline" className="w-full mt-6 text-xs">Acessar Documentação</Button></Link>
@@ -191,15 +191,15 @@ export default function Webhooks() {
             </div>
             <div className="space-y-3">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">API Gateway</span>
+                <span className="text-gray-500">Entrada segura</span>
                 <span className="text-energy-success font-bold">99.9%</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Webhooks Queue</span>
-                <span className="text-energy-success font-bold">Dispatcher controlado</span>
+                <span className="text-gray-500">Fila de integrações</span>
+                <span className="text-energy-success font-bold">Ativa</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Tracking Engine</span>
+                <span className="text-gray-500">Rastreio comercial</span>
                 <span className="text-energy-success font-bold">Controlada</span>
               </div>
             </div>

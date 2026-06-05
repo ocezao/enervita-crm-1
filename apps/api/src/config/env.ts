@@ -10,6 +10,13 @@ export type MetaAdsEnv = {
   testEventCode: string;
 };
 
+export type AiConfig = {
+  provider: 'openrouter';
+  apiKey: string;
+  model: string;
+  baseUrl: string;
+};
+
 export type AppEnv = {
   nodeEnv: string;
   host: string;
@@ -18,6 +25,7 @@ export type AppEnv = {
   sessionSecret: string;
   metaAds: MetaAdsEnv;
   n8nDatabaseUrl: string;
+  ai: AiConfig;
 };
 
 const DEFAULT_PORT = 4000;
@@ -76,5 +84,11 @@ export function readEnv(env: NodeJS.ProcessEnv = process.env): AppEnv {
       testEventCode: trimEnv(env.META_TEST_EVENT_CODE),
     },
     n8nDatabaseUrl: trimEnv(env.N8N_DATABASE_URL),
+    ai: {
+      provider: 'openrouter',
+      apiKey: trimEnv(env.OPENROUTER_API_KEY),
+      model: trimEnv(env.OPENROUTER_MODEL) || 'deepseek/deepseek-chat-v3-0324',
+      baseUrl: trimEnv(env.OPENROUTER_BASE_URL) || 'https://openrouter.ai/api/v1',
+    },
   };
 }

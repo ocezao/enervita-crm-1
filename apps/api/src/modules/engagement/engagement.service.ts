@@ -1,5 +1,5 @@
 import { getStageScopeForUser } from '../permissions/permission.service.ts';
-import type { PublicUser } from '../auth/userRepository.ts';
+import { isAdminUser, type PublicUser } from '../auth/userRepository.ts';
 import type { AuditContext } from '../users/repository.ts';
 import type { EngagementRepository } from './repository.ts';
 import type { ActivityInput, TaskInput } from './validation.ts';
@@ -24,39 +24,43 @@ function scopedStages(actor: PublicUser) {
   return getStageScopeForUser(actor);
 }
 
+function scopedOwner(actor: PublicUser): string | null {
+  return isAdminUser(actor) ? null : actor.id;
+}
+
 function canSeeAllTasks(actor: PublicUser) {
   return actor.roles.includes('admin') || actor.permissions.includes('task.create') || actor.permissions.includes('user.manage');
 }
 
 export async function listTasks(repository: EngagementRepository, actor: PublicUser) {
-  const tasks = await repository.listTasks(actor.tenantId, scopedStages(actor));
+  const tasks = await repository.listTasks(actor.tenantId, scopedStages(actor), scopedOwner(actor));
   return canSeeAllTasks(actor) ? tasks : tasks.filter((task) => task.ownerId === actor.id);
 }
 
 export async function listTasksForLead(repository: EngagementRepository, actor: PublicUser, leadId: string) {
-  const tasks = await repository.listTasksForLead(actor.tenantId, leadId, scopedStages(actor));
+  const tasks = await repository.listTasksForLead(actor.tenantId, leadId, scopedStages(actor), scopedOwner(actor));
   if (!tasks) throw new EngagementNotFoundError('Lead not found');
   return tasks;
 }
 
 export async function createTask(repository: EngagementRepository, actor: PublicUser, input: TaskInput, metadata: RequestAuditMetadata) {
-  const task = await repository.createTask(makeAuditContext(actor, metadata), input, scopedStages(actor));
+  const task = await repository.createTask(makeAuditContext(actor, metadata), input, scopedStages(actor), scopedOwner(actor));
   if (!task) throw new EngagementNotFoundError('Lead not found');
   return task;
 }
 
 export async function completeTask(repository: EngagementRepository, actor: PublicUser, taskId: string, metadata: RequestAuditMetadata) {
-  const task = await repository.completeTask(makeAuditContext(actor, metadata), taskId, scopedStages(actor));
+  const task = await repository.completeTask(makeAuditContext(actor, metadata), taskId, scopedStages(actor), scopedOwner(actor));
   if (!task) throw new EngagementNotFoundError('Task not found');
   return task;
 }
 
 export async function listActivities(repository: EngagementRepository, actor: PublicUser, leadId: string) {
-  return repository.listActivities(actor.tenantId, leadId, scopedStages(actor));
+  return repository.listActivities(actor.tenantId, leadId, scopedStages(actor), scopedOwner(actor));
 }
 
 export async function createActivity(repository: EngagementRepository, actor: PublicUser, input: ActivityInput, metadata: RequestAuditMetadata) {
-  const activity = await repository.createActivity(makeAuditContext(actor, metadata), input, scopedStages(actor));
+  const activity = await repository.createActivity(makeAuditContext(actor, metadata), input, scopedStages(actor), scopedOwner(actor));
   if (!activity) throw new EngagementNotFoundError('Lead not found');
   return activity;
 }

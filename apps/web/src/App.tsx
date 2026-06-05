@@ -1,25 +1,38 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthProvider';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AppShell } from './components/layout/AppShell';
-import Dashboard from './pages/Dashboard';
-import Leads from './pages/Leads';
-import Pipeline from './pages/Pipeline';
-import LeadDetail from './pages/LeadDetail';
-import Tasks from './pages/Tasks';
-import Proposals from './pages/Proposals';
-import Automations from './pages/Automations';
-import Webhooks from './pages/Webhooks';
-import Analytics from './pages/Analytics';
-import Ads from './pages/Ads';
-import Settings from './pages/Settings';
 import Login from './pages/Login';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Leads = lazy(() => import('./pages/Leads'));
+const Pipeline = lazy(() => import('./pages/Pipeline'));
+const LeadDetail = lazy(() => import('./pages/LeadDetail'));
+const Tasks = lazy(() => import('./pages/Tasks'));
+const Proposals = lazy(() => import('./pages/Proposals'));
+const Automations = lazy(() => import('./pages/Automations'));
+const Webhooks = lazy(() => import('./pages/Webhooks'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const Ads = lazy(() => import('./pages/Ads'));
+const AiAssistant = lazy(() => import('./pages/AiAssistant'));
+const Settings = lazy(() => import('./pages/Settings'));
+const Profile = lazy(() => import('./pages/Profile'));
+
+function PageFallback() {
+  return (
+    <div className="flex min-h-[240px] items-center justify-center text-sm font-semibold text-gray-500" role="status">
+      Carregando módulo...
+    </div>
+  );
+}
 
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
+        <Suspense fallback={<PageFallback />}>
+          <Routes>
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
@@ -33,12 +46,15 @@ function App() {
               <Route path="/webhooks" element={<ProtectedRoute requiredAnyPermission={["page.webhooks", "webhook.manage", "webhook.test"]}><Webhooks /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute requiredAnyPermission={["page.analytics", "analytics.view", "tracking.view"]}><Analytics /></ProtectedRoute>} />
               <Route path="/ads" element={<ProtectedRoute requiredAnyPermission={["page.ads", "ads.view"]}><Ads /></ProtectedRoute>} />
+              <Route path="/ai" element={<ProtectedRoute requiredAnyPermission={["page.ai_assistant"]}><AiAssistant /></ProtectedRoute>} />
+              <Route path="/profile" element={<Profile />} />
               <Route path="/settings" element={<ProtectedRoute requiredAnyPermission={["page.settings", "settings.manage", "user.manage"]}><Settings /></ProtectedRoute>} />
               <Route path="/users" element={<ProtectedRoute requiredAnyPermission={["user.manage"]}><Navigate to="/settings?tab=users" replace /></ProtectedRoute>} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   );

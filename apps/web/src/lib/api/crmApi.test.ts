@@ -134,6 +134,45 @@ describe('crmApi HTTP client', () => {
     await expect(api.getLead('missing')).resolves.toBeUndefined();
   });
 
+  it('lists lead history and maps backend history fields for the UI', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        history: [
+          {
+            id: 'history-1',
+            action: 'lead.updated',
+            occurredAt: '2026-05-29T14:30:00.000Z',
+            actor: { id: 'user-1', name: 'Ana Operadora', email: 'ana@example.com' },
+            summary: 'Lead atualizado manualmente',
+            changes: [
+              { field: 'stage', label: 'Etapa', before: 'novo_lead', after: 'qualificacao' },
+              { field: 'notes', label: 'Observações', before: null, after: 'Conta recebida' },
+            ],
+          },
+        ],
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const history = await api.listLeadHistory('lead-1');
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/leads/lead-1/history', { credentials: 'include' });
+    expect(history).toEqual([
+      {
+        id: 'history-1',
+        action: 'lead.updated',
+        occurredAt: '2026-05-29T14:30:00.000Z',
+        actor: { id: 'user-1', name: 'Ana Operadora', email: 'ana@example.com' },
+        summary: 'Lead atualizado manualmente',
+        changes: [
+          { field: 'stage', label: 'Etapa', before: 'novo_lead', after: 'qualificacao' },
+          { field: 'notes', label: 'Observações', before: null, after: 'Conta recebida' },
+        ],
+      },
+    ]);
+  });
+
   it('lists and completes tasks through real task endpoints', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce({

@@ -17,6 +17,7 @@ type Props = {
   saving: boolean;
   onSubmit: (payload: CreateUserPayload | UserPayload) => Promise<void>;
   onResetPassword?: (temporaryPassword: string) => Promise<void>;
+  onDelete?: () => Promise<void>;
 };
 
 const emptyState: FormState = {
@@ -63,7 +64,7 @@ function toPayload(state: FormState, editing: boolean): CreateUserPayload | User
   return editing ? base : { ...base, temporaryPassword: state.temporaryPassword };
 }
 
-export function UserForm({ catalog, user, saving, onSubmit, onResetPassword }: Props) {
+export function UserForm({ catalog, user, saving, onSubmit, onResetPassword, onDelete }: Props) {
   const [state, setState] = useState<FormState>(() => stateFromUser(user));
   const [resetPassword, setResetPassword] = useState('');
   const editing = Boolean(user);
@@ -78,6 +79,11 @@ export function UserForm({ catalog, user, saving, onSubmit, onResetPassword }: P
     if (!resetPassword.trim() || !onResetPassword) return;
     await onResetPassword(resetPassword);
     setResetPassword('');
+  }
+
+  async function handleDelete() {
+    if (!onDelete) return;
+    await onDelete();
   }
 
   return (
@@ -136,6 +142,17 @@ export function UserForm({ catalog, user, saving, onSubmit, onResetPassword }: P
           <div className="mt-3 flex gap-2">
             <input aria-label="Senha temporária para reset" type="password" value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
             <Button type="button" variant="outline" onClick={handleResetPassword} disabled={saving || !resetPassword.trim()}>Redefinir senha</Button>
+          </div>
+        </div>
+      )}
+
+
+      {editing && onDelete && (
+        <div className="mt-4 rounded-xl border border-alert-red/20 bg-alert-red/5 p-4">
+          <h3 className="text-sm font-bold text-alert-red">Deletar usuário</h3>
+          <p className="mt-1 text-xs text-gray-500">Remove o acesso deste usuário do CRM. O sistema impede deletar o próprio usuário e protege o último admin ativo.</p>
+          <div className="mt-3 flex justify-end">
+            <Button type="button" variant="outline" onClick={handleDelete} disabled={saving} className="border-alert-red/30 text-alert-red hover:bg-alert-red/10">Deletar usuário</Button>
           </div>
         </div>
       )}

@@ -9,6 +9,7 @@ import {
 } from './repository.ts';
 import {
   createAdminUser,
+  deleteAdminUser,
   getAdminUser,
   listAdminUsers,
   resetAdminUserPassword,
@@ -91,6 +92,16 @@ export async function registerUsersRoutes(app: FastifyInstance, options: UsersRo
       const { id } = request.params as { id: string };
       const input = validateUpdateUserBody(request.body);
       const user = await updateAdminUser(options.usersRepository, authenticatedUser(request), id, input, auditMetadata(request));
+      return { user };
+    } catch (error) {
+      return handleUsersError(error, reply);
+    }
+  });
+
+  app.delete('/api/users/:id', { preHandler }, async (request, reply) => {
+    try {
+      const { id } = request.params as { id: string };
+      const user = await deleteAdminUser(options.usersRepository, authenticatedUser(request), id, auditMetadata(request));
       return { user };
     } catch (error) {
       return handleUsersError(error, reply);

@@ -1,7 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { getAuthenticatedUser, requireAuth } from '../../middleware/requireAuth.ts';
 import { buildPermissionsCatalog } from '../permissions/permission.service.ts';
-import { loginWithPassword } from './auth.service.ts';
+import { changeOwnPassword, loginWithPassword, updateOwnProfile, uploadOwnAvatar } from './auth.service.ts';
+import { handleAvatarUploadError, parseAvatarUpload, sendLocalAvatarFile } from './avatarUpload.ts';
+import { handleProfileValidationError, validateOwnPasswordBody, validateOwnProfileBody } from './profile.validation.ts';
 import { createSessionToken, serializeClearSessionCookie, serializeSessionCookie } from './session.ts';
 import type { UserRepository } from './userRepository.ts';
 
@@ -82,7 +84,9 @@ export async function registerAuthRoutes(app: FastifyInstance, options: AuthRout
     return { user: result.user };
   });
 
-  app.post('/api/auth/logout', async (_request, reply) => {
+  app.post('/api/auth/logout', async (request, reply) => {
+    const user = await getAuthenticatedUser(request, options.userRepository, options.sessionSecret);
+    if (user) await options.userRepository.revokeSessions?.(user.id);
     reply.header('set-cookie', serializeClearSessionCookie(options.secureCookies));
     return { ok: true };
   });
@@ -92,6 +96,47 @@ export async function registerAuthRoutes(app: FastifyInstance, options: AuthRout
     if (!user) return reply.code(401).send({ error: 'Authentication required' });
     return { user };
   });
+
+  app.patch('/api/me', async (request, reply) => {
+    const user = await getAuthenticatedUser(request, options.userRepository, options.sessionSecret);
+    if (!user) return reply.code(401).send({ error: 'Authentication required' });
+    try {
+      const input = validateOwnProfileBody(request.body);
+      const updatedUser = await updateOwnProfile(options.userRepository, user.id, input);
+      if (!updatedUser) return reply.code(401).send({ error: 'Authentication required' });
+      return { user: updatedUser };
+    } catch (error) {
+      return handleProfileValidationError(error, reply);
+    }
+  });
+
+  app.post('/api/me/password', async (request, reply) => {
+    const user = await getAuthenticatedUser(request, options.userRepository, options.sessionSecret);
+    if (!user) return reply.code(401).send({ error: 'Authentication required' });
+    try {
+      const input = validateOwnPasswordBody(request.body);
+      const result = await changeOwnPassword(options.userRepository, user.id, input.currentPassword, input.newPassword);
+      if (!result.ok) return reply.code(result.statusCode).send({ error: result.error });
+      return { ok: true };
+    } catch (error) {
+      return handleProfileValidationError(error, reply);
+    }
+  });
+
+  app.post('/api/me/avatar', { bodyLimit: 5 * 1024 * 1024 + 16_384 }, async (request, reply) => {
+    const user = await getAuthenticatedUser(request, options.userRepository, options.sessionSecret);
+    if (!user) return reply.code(401).send({ error: 'Authentication required' });
+    try {
+      const avatar = parseAvatarUpload(request.headers['content-type'], request.body);
+      const updatedUser = await uploadOwnAvatar(options.userRepository, user.id, avatar);
+      if (!updatedUser) return reply.code(401).send({ error: 'Authentication required' });
+      return { user: updatedUser };
+    } catch (error) {
+      return handleAvatarUploadError(error, reply);
+    }
+  });
+
+  app.get('/uploads/avatars/:fileName', sendLocalAvatarFile);
 
   app.get(
     '/api/permissions/catalog',

@@ -1,4 +1,4 @@
-import { CrmApi } from './crmApi';
+import { CrmApi, type UpdateLeadPayload } from './crmApi';
 import {
   Lead,
   Task,
@@ -15,7 +15,8 @@ import {
   AdsOverview,
   AdsSyncResult,
   LeadStage,
-  CrmAnalyticsOverview
+  CrmAnalyticsOverview,
+  LeadHistoryEntry
 } from './types';
 import {
   mockLeads,
@@ -38,6 +39,40 @@ export class MockCrmApi implements CrmApi {
     return mockLeads.find(l => l.id === id);
   }
 
+
+  async updateLead(id: string, payload: UpdateLeadPayload): Promise<Lead> {
+    await delay(200);
+    const lead = mockLeads.find(l => l.id === id);
+    if (!lead) throw new Error('Lead not found');
+    if (payload.contact) {
+      lead.contact = {
+        ...(lead.contact ?? { id: lead.contactId, name: '', email: '', phone: '', company: '', source: '', consent: true, createdAt: lead.createdAt }),
+        name: payload.contact.name ?? lead.contact?.name ?? '',
+        email: payload.contact.email ?? lead.contact?.email ?? '',
+        phone: payload.contact.phone ?? lead.contact?.phone ?? '',
+        company: payload.contact.company ?? lead.contact?.company ?? '',
+        source: payload.contact.source ?? lead.contact?.source ?? '',
+        consent: payload.contact.consent ?? lead.contact?.consent ?? true,
+        metadata: payload.contact.metadata ?? lead.contact?.metadata,
+      };
+    }
+    if (payload.leadSource !== undefined) lead.leadSource = payload.leadSource ?? '';
+    if (payload.qualificationStatus !== undefined) lead.qualificationStatus = payload.qualificationStatus ?? 'aguardando';
+    if (payload.priority !== undefined) lead.priority = payload.priority;
+    if (payload.notes !== undefined) lead.notes = payload.notes ?? undefined;
+    if (payload.estimatedTicket !== undefined) lead.estimatedTicket = payload.estimatedTicket ?? 0;
+    if (payload.metadata !== undefined) {
+      lead.metadata = payload.metadata;
+      lead.energyBillValue = Number(payload.metadata.energyBillValue ?? lead.energyBillValue ?? 0);
+      lead.averageConsumptionKwh = Number(payload.metadata.averageConsumptionKwh ?? lead.averageConsumptionKwh ?? 0);
+      lead.concessionaria = String(payload.metadata.concessionaria ?? lead.concessionaria ?? '');
+      lead.offer = String(payload.metadata.offer ?? lead.offer ?? '');
+      lead.projectedSavings = Number(payload.metadata.projectedSavings ?? lead.projectedSavings ?? 0);
+    }
+    lead.updatedAt = new Date().toISOString();
+    return { ...lead, contact: lead.contact ? { ...lead.contact } : undefined, metadata: { ...(lead.metadata ?? {}) } };
+  }
+
   async updateLeadStage(id: string, stage: LeadStage): Promise<Lead> {
     await delay(400);
     const lead = mockLeads.find(l => l.id === id);
@@ -55,6 +90,36 @@ export class MockCrmApi implements CrmApi {
     lead.tags = tags.map((tag, index) => ({ id: `mock-tag-${index}`, name: tag, slug: tag.toLowerCase().replace(/[^a-z0-9]+/g, '-'), color: null }));
     lead.updatedAt = new Date().toISOString();
     return { ...lead, tags: [...lead.tags] };
+  }
+
+  async bulkSetLeadTags(leadIds: string[], tags: string[]): Promise<Lead[]> {
+    await delay(200);
+    const ids = new Set(leadIds);
+    return mockLeads.filter((lead) => ids.has(lead.id)).map((lead) => {
+      lead.tags = tags.map((tag, index) => ({ id: `mock-tag-${index}`, name: tag, slug: tag.toLowerCase().replace(/[^a-z0-9]+/g, '-'), color: null }));
+      lead.updatedAt = new Date().toISOString();
+      return { ...lead, tags: [...lead.tags] };
+    });
+  }
+
+  async deleteLead(id: string): Promise<void> {
+    await delay(150);
+    const index = mockLeads.findIndex((lead) => lead.id === id);
+    if (index === -1) throw new Error('Lead not found');
+    mockLeads.splice(index, 1);
+  }
+
+  async bulkDeleteLeads(leadIds: string[]): Promise<number> {
+    await delay(200);
+    const ids = new Set(leadIds);
+    let deleted = 0;
+    for (let index = mockLeads.length - 1; index >= 0; index -= 1) {
+      if (ids.has(mockLeads[index].id)) {
+        mockLeads.splice(index, 1);
+        deleted += 1;
+      }
+    }
+    return deleted;
   }
 
   async listProposals(): Promise<Proposal[]> {
@@ -160,6 +225,22 @@ export class MockCrmApi implements CrmApi {
     };
     mockActivities.push(newActivity);
     return newActivity;
+  }
+
+  async listLeadHistory(leadId: string): Promise<LeadHistoryEntry[]> {
+    await delay(150);
+    const lead = mockLeads.find((item) => item.id === leadId);
+    if (!lead) return [];
+    return [
+      {
+        id: `mock-history-${leadId}`,
+        action: 'lead.created',
+        occurredAt: lead.createdAt,
+        actor: { id: 'mock-system', name: 'Sistema Enervita', email: 'sistema@enervita.local' },
+        summary: `Lead criado via ${lead.leadSource || 'origem não informada'}`,
+        changes: [],
+      },
+    ];
   }
 
   async listDashboardMetrics(): Promise<DashboardMetrics> {
@@ -293,8 +374,8 @@ export class MockCrmApi implements CrmApi {
   async listN8nWorkflows() {
     return [{
       id: 'env-crm-preview-webhook-homologacao',
-      name: 'Enervita | CRM Custom Webhooks - Homologação',
-      description: 'Recebe eventos do CRM custom e responde ao CRM para homologar a integração com n8n.',
+      name: 'Enervita | CRM Custom Webhooks',
+      description: 'Recebe eventos do CRM custom e confirma a integração com os fluxos comerciais.',
       active: true,
       status: 'active' as const,
       triggerSummary: 'Webhook',
@@ -322,7 +403,7 @@ export class MockCrmApi implements CrmApi {
     await delay(1000);
     return {
       success: true,
-      message: 'Entrega de teste registrada na fila controlada (Mock)',
+      message: 'Validação registrada na fila com segurança.',
       delivery: {
         id: 'mock-delivery-1',
         webhookId: id,

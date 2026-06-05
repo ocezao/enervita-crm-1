@@ -44,12 +44,12 @@ export type Activity = {
 };
 
 export type EngagementRepository = {
-  listTasks(tenantId: string, allowedStages: PipelineStageKey[] | null): Promise<Task[]>;
-  listTasksForLead(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null): Promise<Task[] | null>;
-  createTask(context: AuditContext, input: TaskInput, allowedStages?: PipelineStageKey[] | null): Promise<Task | null>;
-  completeTask(context: AuditContext, taskId: string, allowedStages: PipelineStageKey[] | null): Promise<Task | null>;
-  listActivities(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null): Promise<Activity[]>;
-  createActivity(context: AuditContext, input: ActivityInput, allowedStages: PipelineStageKey[] | null): Promise<Activity | null>;
+  listTasks(tenantId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<Task[]>;
+  listTasksForLead(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<Task[] | null>;
+  createTask(context: AuditContext, input: TaskInput, allowedStages?: PipelineStageKey[] | null, ownerUserId?: string | null): Promise<Task | null>;
+  completeTask(context: AuditContext, taskId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<Task | null>;
+  listActivities(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<Activity[]>;
+  createActivity(context: AuditContext, input: ActivityInput, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<Activity | null>;
   close?(): Promise<void>;
 };
 
@@ -136,10 +136,18 @@ function stageParams(allowedStages: PipelineStageKey[] | null): unknown[] {
   return allowedStages === null ? [] : [allowedStages];
 }
 
-async function leadIsVisible(client: PoolClient, tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null): Promise<boolean> {
+function ownerClause(ownerUserId: string | null, offset: number): string {
+  return ownerUserId === null ? '' : ` and l.sdr_owner_id = $${offset}::uuid`;
+}
+
+function ownerParams(ownerUserId: string | null): unknown[] {
+  return ownerUserId === null ? [] : [ownerUserId];
+}
+
+async function leadIsVisible(client: PoolClient, tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<boolean> {
   const result = await client.query(
-    `select 1 from leads l where l.tenant_id = $1 and l.id = $2${stageClause('l', allowedStages, 3)} limit 1`,
-    [tenantId, leadId, ...stageParams(allowedStages)],
+    `select 1 from leads l where l.tenant_id = $1 and l.id = $2${stageClause('l', allowedStages, 3)}${ownerClause(ownerUserId, 3 + stageParams(allowedStages).length)} limit 1`,
+    [tenantId, leadId, ...stageParams(allowedStages), ...ownerParams(ownerUserId)],
   );
   return result.rowCount === 1;
 }
@@ -156,19 +164,19 @@ export function createPgEngagementRepository(databaseUrl: string): EngagementRep
   const pool = new Pool({ connectionString: databaseUrl });
 
   return {
-    async listTasks(tenantId, allowedStages) {
+    async listTasks(tenantId, allowedStages, ownerUserId) {
       const result = await pool.query(
         `${taskSelect}
-          where t.tenant_id = $1${stageClause('l', allowedStages, 2, true)}
+          where t.tenant_id = $1${stageClause('l', allowedStages, 2, true)}${ownerClause(ownerUserId, 2 + stageParams(allowedStages).length)}
           order by coalesce(t.due_date, t.created_at) asc, t.created_at desc`,
-        [tenantId, ...stageParams(allowedStages)],
+        [tenantId, ...stageParams(allowedStages), ...ownerParams(ownerUserId)],
       );
       return result.rows.map(rowToTask);
     },
-    async listTasksForLead(tenantId, leadId, allowedStages) {
+    async listTasksForLead(tenantId, leadId, allowedStages, ownerUserId) {
       const client = await pool.connect();
       try {
-        if (!(await leadIsVisible(client, tenantId, leadId, allowedStages))) return null;
+        if (!(await leadIsVisible(client, tenantId, leadId, allowedStages, ownerUserId))) return null;
         const result = await client.query(
           `${taskSelect}
             where t.tenant_id = $1 and t.lead_id = $2${stageClause('l', allowedStages, 3)}
@@ -180,11 +188,11 @@ export function createPgEngagementRepository(databaseUrl: string): EngagementRep
         client.release();
       }
     },
-    async createTask(context, input, allowedStages = null) {
+    async createTask(context, input, allowedStages = null, ownerUserId = null) {
       const client = await pool.connect();
       try {
         await client.query('begin');
-        if (input.leadId && !(await leadIsVisible(client, context.tenantId, input.leadId, allowedStages))) {
+        if (input.leadId && !(await leadIsVisible(client, context.tenantId, input.leadId, allowedStages, ownerUserId))) {
           await client.query("rollback");
           return null;
         }
@@ -208,15 +216,15 @@ export function createPgEngagementRepository(databaseUrl: string): EngagementRep
         client.release();
       }
     },
-    async completeTask(context, taskId, allowedStages) {
+    async completeTask(context, taskId, allowedStages, ownerUserId) {
       const client = await pool.connect();
       try {
         await client.query('begin');
         const beforeResult = await client.query(
           `${taskSelect}
-            where t.tenant_id = $1 and t.id = $2${stageClause('l', allowedStages, 3, true)}
+            where t.tenant_id = $1 and t.id = $2${stageClause('l', allowedStages, 3, true)}${ownerClause(ownerUserId, 3 + stageParams(allowedStages).length)}
             for update of t`,
-          [context.tenantId, taskId, ...stageParams(allowedStages)],
+          [context.tenantId, taskId, ...stageParams(allowedStages), ...ownerParams(ownerUserId)],
         );
         const before = beforeResult.rows[0] ? rowToTask(beforeResult.rows[0]) : null;
         if (!before) {
@@ -236,20 +244,20 @@ export function createPgEngagementRepository(databaseUrl: string): EngagementRep
         client.release();
       }
     },
-    async listActivities(tenantId, leadId, allowedStages) {
+    async listActivities(tenantId, leadId, allowedStages, ownerUserId) {
       const result = await pool.query(
         `${activitySelect}
-          where a.tenant_id = $1 and a.lead_id = $2${stageClause('l', allowedStages, 3)}
+          where a.tenant_id = $1 and a.lead_id = $2${stageClause('l', allowedStages, 3)}${ownerClause(ownerUserId, 3 + stageParams(allowedStages).length)}
           order by a.occurred_at desc, a.created_at desc`,
-        [tenantId, leadId, ...stageParams(allowedStages)],
+        [tenantId, leadId, ...stageParams(allowedStages), ...ownerParams(ownerUserId)],
       );
       return result.rows.map(rowToActivity);
     },
-    async createActivity(context, input, allowedStages) {
+    async createActivity(context, input, allowedStages, ownerUserId) {
       const client = await pool.connect();
       try {
         await client.query('begin');
-        if (!(await leadIsVisible(client, context.tenantId, input.leadId, allowedStages))) {
+        if (!(await leadIsVisible(client, context.tenantId, input.leadId, allowedStages, ownerUserId))) {
           await client.query("rollback");
           return null;
         }

@@ -19,8 +19,8 @@ services:
   api:
     image: node:20-bookworm-slim
     container_name: enervita-custom-crm-api
-    working_dir: /app
-    command: sh -lc "npm run dev:api"
+    working_dir: /app/apps/api
+    command: sh -lc "node --import tsx src/server.ts"
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
@@ -42,6 +42,38 @@ services:
       META_TEST_EVENT_CODE: ${META_TEST_EVENT_CODE:-}
       META_ASSET_SCOPE: ${META_ASSET_SCOPE:-}
       N8N_DATABASE_URL: postgres://${N8N_DB_USER:-n8n}:${N8N_DB_PASSWORD:-n8n}@enervita-n8n-db:5432/${N8N_DB_NAME:-n8n}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-deepseek/deepseek-chat-v3-0324}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+    volumes:
+      - ./:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - default
+      - enervita_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:43123/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+
+  operational-lead-sync:
+    image: node:20-bookworm-slim
+    container_name: enervita-custom-crm-operational-lead-sync
+    working_dir: /app
+    command: sh -lc "while true; do node scripts/sync-operational-leads-to-custom-crm.mjs; sleep $${OPERATIONAL_LEAD_SYNC_INTERVAL_SECONDS:-300}; done"
+    environment:
+      NODE_ENV: production
+      CUSTOM_DATABASE_URL: postgres://enervita:enervita@postgres:5432/enervita_crm
+      OPERATIONAL_DATABASE_URL: ${OPERATIONAL_DATABASE_URL:?OPERATIONAL_DATABASE_URL required}
+      OPERATIONAL_LEAD_SYNC_INTERVAL_SECONDS: ${OPERATIONAL_LEAD_SYNC_INTERVAL_SECONDS:-300}
+      OPERATIONAL_LEAD_SYNC_MIN_CREATED_AT: ${OPERATIONAL_LEAD_SYNC_MIN_CREATED_AT:-2026-05-30T00:00:00-03:00}
+      TENANT_SLUG: enervita
     volumes:
       - ./:/app
     depends_on:
@@ -91,6 +123,12 @@ services:
     networks:
       - default
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:43124/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   proxy:
     image: node:20-bookworm-slim
@@ -111,6 +149,12 @@ services:
       - default
       - enervita_net
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:43210/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 volumes:
   enervita_crm_postgres_data:

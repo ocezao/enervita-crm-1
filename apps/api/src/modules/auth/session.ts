@@ -5,6 +5,7 @@ const DEFAULT_SESSION_TTL_SECONDS = 60 * 60 * 8;
 
 type SessionPayload = {
   userId: string;
+  iat: number;
   exp: number;
 };
 
@@ -28,9 +29,11 @@ function safeEqual(left: string, right: string): boolean {
 }
 
 export function createSessionToken(userId: string, secret: string, ttlSeconds = DEFAULT_SESSION_TTL_SECONDS): string {
+  const issuedAtMs = Date.now();
   const payload: SessionPayload = {
     userId,
-    exp: Math.floor(Date.now() / 1000) + ttlSeconds,
+    iat: issuedAtMs,
+    exp: Math.floor(issuedAtMs / 1000) + ttlSeconds,
   };
   const encodedPayload = base64UrlEncode(JSON.stringify(payload));
   const signature = signPayload(encodedPayload, secret);
@@ -48,9 +51,10 @@ export function verifySessionToken(token: string | undefined, secret: string): S
 
   try {
     const payload = JSON.parse(base64UrlDecode(encodedPayload)) as Partial<SessionPayload>;
-    if (typeof payload.userId !== 'string' || typeof payload.exp !== 'number') return null;
-    if (payload.exp <= Math.floor(Date.now() / 1000)) return null;
-    return { userId: payload.userId, exp: payload.exp };
+    const { userId, iat, exp } = payload;
+    if (typeof userId !== 'string' || typeof iat !== 'number' || typeof exp !== 'number') return null;
+    if (exp <= Math.floor(Date.now() / 1000)) return null;
+    return { userId, iat, exp };
   } catch {
     return null;
   }

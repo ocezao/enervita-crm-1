@@ -58,6 +58,15 @@ export async function updateAdminUser(
   return withEffectiveAccess(await repository.updateUser(makeAuditContext(actor, metadata), userId, input));
 }
 
+export async function deleteAdminUser(
+  repository: UsersRepository,
+  actor: PublicUser,
+  userId: string,
+  metadata: RequestAuditMetadata,
+) {
+  return withEffectiveAccess(await repository.deleteUser(makeAuditContext(actor, metadata), userId));
+}
+
 export async function resetAdminUserPassword(
   repository: UsersRepository,
   actor: PublicUser,

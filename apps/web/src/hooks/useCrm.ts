@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { api } from '../lib/api/crmApi';
-import { Lead, LeadStage, Task, DashboardMetrics, AutomationRule, AutomationRun, N8nWorkflow, N8nWorkflowToggleResult, Webhook, WebhookDelivery, WebhookTestResult, Activity, Proposal, CreateProposalPayload, TrackingEvent, AdsOverview, CrmAnalyticsOverview } from '../lib/api/types';
+import { api, type UpdateLeadPayload } from '../lib/api/crmApi';
+import { Lead, LeadStage, Task, DashboardMetrics, AutomationRule, AutomationRun, N8nWorkflow, N8nWorkflowToggleResult, Webhook, WebhookDelivery, WebhookTestResult, Activity, Proposal, CreateProposalPayload, TrackingEvent, AdsOverview, CrmAnalyticsOverview, LeadHistoryEntry } from '../lib/api/types';
 
 export function useLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' }) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -8,17 +8,32 @@ export function useLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' })
   const tagsKey = (filters?.tags ?? []).join(',');
   const tagMode = filters?.tagMode ?? 'any';
 
+  const loadLeads = async () => {
+    setLoading(true);
+    const tags = tagsKey ? tagsKey.split(',').filter(Boolean) : [];
+    const data = await api.listLeads({ tags, tagMode });
+    setLeads(data);
+    setLoading(false);
+    return data;
+  };
+
   useEffect(() => {
     let active = true;
     const tags = tagsKey ? tagsKey.split(',').filter(Boolean) : [];
-    api.listLeads({ tags, tagMode }).then(data => {
-      if (!active) return;
-      setLeads(data);
-      setLoading(false);
-    }).catch(() => {
-      if (!active) return;
-      setLoading(false);
-    });
+    void Promise.resolve()
+      .then(() => {
+        if (active) setLoading(true);
+        return api.listLeads({ tags, tagMode });
+      })
+      .then(data => {
+        if (!active) return;
+        setLeads(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setLoading(false);
+      });
     return () => { active = false; };
   }, [tagsKey, tagMode]);
 
@@ -28,13 +43,33 @@ export function useLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' })
     return updated;
   };
 
-  return { leads, loading, updateStage };
+  const bulkSetTags = async (leadIds: string[], tags: string[]) => {
+    const updated = await api.bulkSetLeadTags(leadIds, tags);
+    const updatedById = new Map(updated.map((lead) => [lead.id, lead]));
+    setLeads(prev => prev.map(lead => updatedById.get(lead.id) ?? lead));
+    return updated;
+  };
+
+  const deleteLead = async (id: string) => {
+    await api.deleteLead(id);
+    setLeads(prev => prev.filter(lead => lead.id !== id));
+  };
+
+  const bulkDelete = async (leadIds: string[]) => {
+    const deleted = await api.bulkDeleteLeads(leadIds);
+    const ids = new Set(leadIds);
+    setLeads(prev => prev.filter(lead => !ids.has(lead.id)));
+    return deleted;
+  };
+
+  return { leads, loading, updateStage, bulkSetTags, deleteLead, bulkDelete, refresh: loadLeads };
 }
 
 export function useLeadDetail(id: string | undefined) {
   const [lead, setLead] = useState<Lead | undefined>();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [history, setHistory] = useState<LeadHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,13 +79,15 @@ export function useLeadDetail(id: string | undefined) {
             return Promise.all([
           api.getLead(id),
           api.listActivities(id),
-          api.listTasksForLead(id)
+          api.listTasksForLead(id),
+          api.listLeadHistory(id)
         ]);
       })
-      .then(([l, a, t]) => {
+      .then(([l, a, t, h]) => {
         setLead(l);
         setActivities(a);
         setTasks(t);
+        setHistory(h);
         setLoading(false);
       });
   }, [id]);
@@ -73,6 +110,19 @@ export function useLeadDetail(id: string | undefined) {
     return updated;
   };
 
+  const updateLead = async (payload: UpdateLeadPayload) => {
+    if (!id) return undefined;
+    const updated = await api.updateLead(id, payload);
+    setLead(updated);
+    return updated;
+  };
+
+  const deleteLead = async () => {
+    if (!id) return;
+    await api.deleteLead(id);
+    setLead(undefined);
+  };
+
   const setTags = async (tags: string[]) => {
     if (!id) return undefined;
     const updated = await api.setLeadTags(id, tags);
@@ -80,7 +130,7 @@ export function useLeadDetail(id: string | undefined) {
     return updated;
   };
 
-  return { lead, activities, tasks, loading, addActivity, addTask, completeTask, setTags };
+  return { lead, activities, tasks, history, loading, addActivity, addTask, completeTask, updateLead, deleteLead, setTags };
 }
 
 export function useTasks() {
@@ -174,7 +224,7 @@ export function useAutomations() {
       setLastSyncedAt(new Date().toISOString());
       setError(null);
     } else {
-      setError('Fluxos n8n indisponíveis no momento; regras internas carregadas.');
+      setError('Fluxos integrados indisponíveis no momento; regras internas carregadas.');
     }
     if (!options.silent) setRefreshing(false);
   };
@@ -193,7 +243,7 @@ export function useAutomations() {
   }, []);
 
   const runAutomation = async (id: string) => {
-    const run = await api.runAutomation(id, { reason: 'homologacao-controlada-ui' });
+    const run = await api.runAutomation(id, { reason: 'crm-ui-validation' });
     setLastRun(run);
     setAutomations(prev => prev.map(rule => rule.id === id ? { ...rule, lastRunAt: run.finishedAt ?? run.startedAt } : rule));
     return run;

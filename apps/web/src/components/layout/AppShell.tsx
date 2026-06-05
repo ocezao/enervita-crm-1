@@ -14,7 +14,7 @@ export const AppShell = () => {
       <Sidebar />
       <div data-crm-content className="pl-64 flex flex-col min-h-screen">
         <Topbar />
-        <main data-crm-app-main className="flex-1 p-8">
+        <main data-crm-app-main className="crm-scroll-panel flex-1 p-8">
           <Outlet />
         </main>
       </div>

@@ -83,6 +83,12 @@ export type SetLeadTagsInput = {
   tags: string[];
 };
 
+export type LeadIdsInput = {
+  leadIds: string[];
+};
+
+export type BulkSetLeadTagsInput = LeadIdsInput & SetLeadTagsInput;
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -241,6 +247,13 @@ function uniqueTags(values: unknown[], field: string): string[] {
   return tags;
 }
 
+function uniqueLeadIds(values: unknown[], field: string): string[] {
+  const ids = Array.from(new Set(values.map((value, index) => validateUuid(value, `${field}[${index}]`))));
+  if (ids.length === 0) throw new ValidationError(`${field} must have at least one lead`);
+  if (ids.length > 500) throw new ValidationError(`${field} must have at most 500 leads`);
+  return ids;
+}
+
 export function validateListLeadsQuery(query: unknown): LeadListFilters {
   if (!isObject(query)) return { tags: [], tagMode: 'any' };
   const rawTags = query.tags;
@@ -256,4 +269,17 @@ export function validateSetLeadTagsBody(body: unknown): SetLeadTagsInput {
   if (!isObject(body)) throw new ValidationError('Request body must be an object');
   if (!Array.isArray(body.tags)) throw new ValidationError('tags must be an array');
   return { tags: uniqueTags(body.tags, 'tags') };
+}
+
+export function validateLeadIdsBody(body: unknown): LeadIdsInput {
+  if (!isObject(body)) throw new ValidationError('Request body must be an object');
+  if (!Array.isArray(body.leadIds)) throw new ValidationError('leadIds must be an array');
+  return { leadIds: uniqueLeadIds(body.leadIds, 'leadIds') };
+}
+
+export function validateBulkSetLeadTagsBody(body: unknown): BulkSetLeadTagsInput {
+  if (!isObject(body)) throw new ValidationError('Request body must be an object');
+  if (!Array.isArray(body.leadIds)) throw new ValidationError('leadIds must be an array');
+  if (!Array.isArray(body.tags)) throw new ValidationError('tags must be an array');
+  return { leadIds: uniqueLeadIds(body.leadIds, 'leadIds'), tags: uniqueTags(body.tags, 'tags') };
 }

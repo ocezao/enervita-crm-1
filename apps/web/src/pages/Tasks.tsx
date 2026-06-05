@@ -65,9 +65,10 @@ function TaskCard({ task, canCompleteTask, onComplete }: { task: Task; canComple
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <Badge variant={task.status === 'atrasado' ? 'error' : task.status === 'concluido' ? 'success' : 'info'}>{task.status}</Badge>
-        <div className="flex items-center gap-2 text-xs text-gray-400 min-w-0">
+        <div className="flex items-center gap-2 text-xs text-gray-400 min-w-0" aria-label={`Responsável: ${task.owner || 'sem responsável'}`}>
           <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 shrink-0"><User size={13} /></div>
-          <span className="truncate">{task.owner}</span>
+          <span className="font-bold text-gray-500 shrink-0">Responsável</span>
+          <span className="truncate">{task.owner || 'Sem responsável'}</span>
         </div>
       </div>
     </div>
@@ -162,14 +163,14 @@ export default function Tasks() {
       {message && <Card className="p-4 bg-energy-success/5 border-energy-success/20 text-energy-success text-sm font-semibold">{message}</Card>}
 
       {showCreate && (
-        <Card className="p-5 border-solar-orange/20 bg-solar-orange/5">
-          <div className="flex flex-col lg:flex-row lg:items-end gap-3">
-            <label className="flex-1 space-y-1"><span className="text-xs font-bold text-gray-500 uppercase">Tarefa</span><input value={newTask.title} onChange={(event) => setNewTask(prev => ({ ...prev, title: event.target.value }))} placeholder="Ex.: Ligar para lead de conta alta" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm" /></label>
-            <label className="space-y-1"><span className="text-xs font-bold text-gray-500 uppercase">Atribuir para</span><select value={newTask.ownerId || user?.id || ''} onChange={(event) => setNewTask(prev => ({ ...prev, ownerId: event.target.value }))} className="w-full lg:w-56 bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm">{assignmentUsers.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            <label className="space-y-1"><span className="text-xs font-bold text-gray-500 uppercase">Prioridade</span><select value={newTask.priority} onChange={(event) => setNewTask(prev => ({ ...prev, priority: event.target.value }))} className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm"><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
-            <label className="space-y-1"><span className="text-xs font-bold text-gray-500 uppercase">Vencimento</span><input type="datetime-local" value={newTask.dueDate} onChange={(event) => setNewTask(prev => ({ ...prev, dueDate: event.target.value }))} className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm" /></label>
-            <Button variant="primary" size="sm" onClick={handleCreateTask}>Criar e atribuir</Button>
-            <Button variant="ghost" size="sm" onClick={() => setShowCreate(false)}>Cancelar</Button>
+        <Card className="p-5 border-solar-orange/20 bg-solar-orange/5 overflow-visible">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_220px_150px_220px_auto_auto] xl:items-end gap-3">
+            <label className="min-w-0 space-y-1 md:col-span-2 xl:col-span-1"><span className="text-xs font-bold text-gray-500 uppercase">Tarefa</span><input value={newTask.title} onChange={(event) => setNewTask(prev => ({ ...prev, title: event.target.value }))} placeholder="Ex.: Ligar para lead de conta alta" className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm" /></label>
+            <label className="min-w-0 space-y-1"><span className="text-xs font-bold text-gray-500 uppercase">Atribuir para</span><select value={newTask.ownerId || user?.id || ''} onChange={(event) => setNewTask(prev => ({ ...prev, ownerId: event.target.value }))} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm">{assignmentUsers.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label className="min-w-0 space-y-1"><span className="text-xs font-bold text-gray-500 uppercase">Prioridade</span><select value={newTask.priority} onChange={(event) => setNewTask(prev => ({ ...prev, priority: event.target.value }))} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm"><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
+            <label className="min-w-0 space-y-1"><span className="text-xs font-bold text-gray-500 uppercase">Vencimento</span><input type="datetime-local" value={newTask.dueDate} onChange={(event) => setNewTask(prev => ({ ...prev, dueDate: event.target.value }))} className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm" /></label>
+            <Button variant="primary" size="sm" className="w-full xl:w-auto whitespace-nowrap" onClick={handleCreateTask}>Criar e atribuir</Button>
+            <Button variant="ghost" size="sm" className="w-full xl:w-auto whitespace-nowrap" onClick={() => setShowCreate(false)}>Cancelar</Button>
           </div>
           <textarea value={newTask.notes} onChange={(event) => setNewTask(prev => ({ ...prev, notes: event.target.value }))} placeholder="Observação opcional para quem vai executar a tarefa..." className="mt-3 w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm" />
         </Card>
@@ -214,20 +215,21 @@ export default function Tasks() {
       </div>
 
       <Card className="p-4 overflow-visible">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="relative flex-1 min-w-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por tarefa, lead, responsável ou prioridade..." className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+        <div className="grid grid-cols-1 xl:grid-cols-[minmax(260px,1fr)_auto] gap-4">
+          <div className="relative min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
+            <label className="sr-only" htmlFor="tasks-search">Buscar tarefas</label>
+            <input id="tasks-search" aria-label="Buscar tarefas por título, lead, responsável ou prioridade" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por tarefa, lead, responsável ou prioridade..." className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 xl:justify-end">
             {(Object.keys(filterLabels) as TaskFilter[]).map((filter) => (
-              <Button key={filter} size="sm" variant={activeFilter === filter ? 'primary' : 'outline'} onClick={() => setActiveFilter(filter)}>{filterLabels[filter]}</Button>
+              <Button key={filter} size="sm" variant={activeFilter === filter ? 'primary' : 'outline'} onClick={() => setActiveFilter(filter)} className="whitespace-nowrap">{filterLabels[filter]}</Button>
             ))}
-            <Button size="sm" variant="ghost" className="gap-2" onClick={() => { setQuery(''); setActiveFilter('todas'); setDateRange(rangeForPeriod('30')); }}><Filter size={14} /> Limpar</Button>
+            <Button size="sm" variant="ghost" className="gap-2 whitespace-nowrap" onClick={() => { setQuery(''); setActiveFilter('todas'); setDateRange(rangeForPeriod('30')); }}><Filter size={14} /> Limpar</Button>
           </div>
-          <div className="lg:col-span-2 border-t border-gray-100 pt-4">
+          <div className="xl:col-span-2 border-t border-gray-100 pt-4 min-w-0">
             <p className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">Tarefas com vencimento no período</p>
-            <DateRangeFilter value={dateRange} onChange={setDateRange} />
+            <DateRangeFilter value={dateRange} onChange={setDateRange} className="max-w-4xl" />
           </div>
         </div>
       </Card>

@@ -29,6 +29,7 @@ export type MetaCapiEvent = {
   action_source: 'system_generated';
   user_data: Record<string, string>;
   custom_data: JsonObject;
+  opt_out?: boolean;
 };
 
 export type MetaCapiHttpResponse = {
@@ -117,9 +118,22 @@ function nameParts(value: string | null | undefined): { firstName: string | null
 function metadataString(metadata: JsonObject, ...keys: string[]): string | null {
   for (const key of keys) {
     const value = metadata[key];
-    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === 'string' && value.trim() && value.trim().toLowerCase() !== 'present') return value.trim();
   }
   return null;
+}
+
+function nestedString(value: unknown, path: string[]): string | null {
+  let current: unknown = value;
+  for (const key of path) {
+    if (!current || typeof current !== 'object' || Array.isArray(current)) return null;
+    current = (current as Record<string, unknown>)[key];
+  }
+  return typeof current === 'string' && current.trim() && current.trim().toLowerCase() !== 'present' ? current.trim() : null;
+}
+
+function booleanValue(value: unknown): boolean | null {
+  return typeof value === 'boolean' ? value : null;
 }
 
 function numericValue(value: unknown): number | undefined {
@@ -131,6 +145,28 @@ function numericValue(value: unknown): number | undefined {
 function eventTimestampSeconds(value: string): number {
   const parsed = new Date(value).getTime();
   return Math.floor((Number.isFinite(parsed) ? parsed : Date.now()) / 1000);
+}
+
+function metaEventTimestampSeconds(event: QueuedMetaTrackingEvent, payload: JsonObject): number {
+  const timestamp = stringValue(payload.eventTime)
+    ?? stringValue(payload.event_time)
+    ?? stringValue(payload.crmEventTime)
+    ?? stringValue(payload.stageChangedAt)
+    ?? event.createdAt;
+  return eventTimestampSeconds(timestamp);
+}
+
+function standardEventName(name: string): string {
+  const map: Record<string, string> = {
+    EnervitaPreQualifiedLead: 'Lead',
+    EnervitaOpportunity: 'Lead',
+    EnervitaBillReceived: 'Lead',
+    EnervitaQualifiedLead: 'Lead',
+    ProposalSent: 'Lead',
+    WonLead: 'Purchase',
+    LeadUnqualified: 'Lead',
+  };
+  return map[name] ?? name;
 }
 
 export function redactMetaText(input: unknown, maxLength = DEFAULT_RESPONSE_BODY_LIMIT): string {
@@ -156,14 +192,14 @@ export function buildMetaCapiEvent(event: QueuedMetaTrackingEvent): MetaCapiEven
   const externalIdSource = event.leadId ?? stringValue(payload.leadId) ?? event.id;
   userData.external_id = sha256(externalIdSource);
 
-  const fbp = stringValue(attribution.fbp) ?? metadataString(contactMetadata, 'fbp');
-  const fbclid = stringValue(attribution.fbclid) ?? metadataString(contactMetadata, 'fbclid');
-  const fbc = stringValue(attribution.fbc) ?? metadataString(contactMetadata, 'fbc') ?? (fbclid ? `fb.1.${eventTimestampSeconds(event.createdAt)}.${fbclid}` : null);
+  const fbp = stringValue(attribution.fbp) ?? metadataString(contactMetadata, 'fbp') ?? nestedString(contactMetadata, ['attribution', 'fbp']);
+  const fbclid = stringValue(attribution.fbclid) ?? metadataString(contactMetadata, 'fbclid') ?? nestedString(contactMetadata, ['attribution', 'fbclid']);
+  const fbc = stringValue(attribution.fbc) ?? metadataString(contactMetadata, 'fbc') ?? nestedString(contactMetadata, ['attribution', 'fbc']) ?? (fbclid ? `fb.1.${eventTimestampSeconds(event.createdAt)}.${fbclid}` : null);
   if (fbp) userData.fbp = fbp;
   if (fbc) userData.fbc = fbc;
 
   const clientIpAddress = stringValue(request.clientIpAddress) ?? stringValue(request.client_ip_address);
-  const clientUserAgent = stringValue(request.clientUserAgent) ?? stringValue(request.client_user_agent) ?? stringValue(request.userAgent);
+  const clientUserAgent = stringValue(request.clientUserAgent) ?? stringValue(request.client_user_agent) ?? stringValue(request.userAgent) ?? nestedString(contactMetadata, ['request', 'userAgent']);
   if (clientIpAddress) userData.client_ip_address = clientIpAddress;
   if (clientUserAgent) userData.client_user_agent = clientUserAgent;
 
@@ -184,6 +220,11 @@ export function buildMetaCapiEvent(event: QueuedMetaTrackingEvent): MetaCapiEven
   }
 
   const estimatedTicket = numericValue(payload.estimatedTicket);
+  const eventTime = metaEventTimestampSeconds(event, payload);
+  const eventName = standardEventName(event.eventName);
+  const originalEventName = event.eventName !== eventName ? event.eventName : undefined;
+  const gdprConsent = booleanValue(contactMetadata.gdpr) ?? booleanValue(contactMetadata.lgpdConsentimento) ?? booleanValue(contactMetadata.lgpd_consentimento);
+  const marketingConsent = booleanValue(nestedString(contactMetadata, ['consent', 'marketing'])) ?? booleanValue((objectValue(contactMetadata.consent)).marketing);
   const customData: JsonObject = {
     lead_id: event.leadId ?? stringValue(payload.leadId) ?? undefined,
     action: stringValue(payload.action) ?? undefined,
@@ -192,6 +233,9 @@ export function buildMetaCapiEvent(event: QueuedMetaTrackingEvent): MetaCapiEven
     transition_direction: stringValue(payload.transitionDirection) ?? undefined,
     source: stringValue(payload.source) ?? undefined,
     priority: stringValue(payload.priority) ?? undefined,
+    crm_event_name: originalEventName,
+    content_name: stringValue(payload.stage) ?? undefined,
+    content_category: 'crm_stage',
     tags: stringArray(payload.tags),
     utm_source: stringValue(utm.source) ?? undefined,
     utm_medium: stringValue(utm.medium) ?? undefined,
@@ -203,6 +247,10 @@ export function buildMetaCapiEvent(event: QueuedMetaTrackingEvent): MetaCapiEven
     event_source: 'crm',
     lead_event_source: stringValue(payload.leadEventSource) ?? 'Enervita Custom CRM',
   };
+  if (gdprConsent !== null || marketingConsent !== null || contact.consent !== undefined) {
+    customData.data_processing_options = [];
+    customData.lgpd_marketing_consent = marketingConsent ?? contact.consent;
+  }
   if (estimatedTicket !== undefined) customData.value = estimatedTicket;
   customData.currency = 'BRL';
 
@@ -211,12 +259,13 @@ export function buildMetaCapiEvent(event: QueuedMetaTrackingEvent): MetaCapiEven
   }
 
   return {
-    event_name: event.eventName,
-    event_time: eventTimestampSeconds(event.createdAt),
+    event_name: eventName,
+    event_time: eventTime,
     event_id: `crm:${event.id}`,
     action_source: 'system_generated',
     user_data: userData,
     custom_data: customData,
+    ...(contact.consent === false ? { opt_out: true } : {}),
   };
 }
 

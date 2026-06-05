@@ -59,7 +59,8 @@ function makeRepository(events: QueuedMetaTrackingEvent[]): MetaDispatchReposito
 test('buildMetaCapiEvent creates a production-safe CAPI payload with hashed user data and CRM custom data', () => {
   const event = buildMetaCapiEvent(baseEvent);
 
-  assert.equal(event.event_name, 'EnervitaQualifiedLead');
+  assert.equal(event.event_name, 'Lead');
+  assert.equal(event.custom_data.crm_event_name, 'EnervitaQualifiedLead');
   assert.equal(event.event_id, `crm:${baseEvent.id}`);
   assert.equal(event.action_source, 'system_generated');
   assert.equal(event.event_time, 1780228800);
@@ -81,6 +82,8 @@ test('buildMetaCapiEvent creates a production-safe CAPI payload with hashed user
   assert.equal(event.custom_data.utm_campaign, 'solar-sp-capital');
   assert.equal(event.custom_data.event_source, 'crm');
   assert.equal(event.custom_data.lead_event_source, 'Enervita Custom CRM');
+  assert.equal(event.custom_data.content_name, 'diagnostico');
+  assert.equal(event.custom_data.content_category, 'crm_stage');
 });
 
 test('dispatchQueuedMetaEvents posts queued events and marks them sent without exposing tokens', async () => {

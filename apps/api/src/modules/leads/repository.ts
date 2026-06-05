@@ -43,6 +43,8 @@ export type Lead = {
   gclid: string | null;
   estimatedTicket: string | null;
   sdrOwnerId: string | null;
+  sdrOwner: string | null;
+  nextActionAt: string | null;
   priority: string;
   notes: string | null;
   lostReason: string | null;
@@ -53,13 +55,34 @@ export type Lead = {
   tags: LeadTag[];
 };
 
+export type LeadHistoryChange = {
+  field: 'stage' | 'priority' | 'qualificationStatus' | 'leadSource' | 'estimatedTicket' | 'notes' | 'tags';
+  label: string;
+  before: unknown;
+  after: unknown;
+};
+
+export type LeadHistoryEvent = {
+  id: string;
+  action: string;
+  occurredAt: string;
+  summary: string;
+  actor: { id: string; name: string; email: string } | null;
+  changes: LeadHistoryChange[];
+  stage: PipelineStageKey | null;
+};
+
 export type LeadsRepository = {
-  listLeads(tenantId: string, allowedStages: PipelineStageKey[] | null, filters?: LeadListFilters): Promise<Lead[]>;
-  getLead(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null): Promise<Lead | null>;
+  listLeads(tenantId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, filters?: LeadListFilters): Promise<Lead[]>;
+  getLead(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<Lead | null>;
+  listLeadHistory(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<LeadHistoryEvent[]>;
   createLead(context: AuditContext, input: CreateLeadInput): Promise<Lead>;
-  updateLead(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, input: UpdateLeadInput): Promise<Lead>;
-  changeStage(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, targetStage: PipelineStageKey, notes?: string | null, lostReason?: string | null): Promise<Lead>;
-  setLeadTags(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, input: SetLeadTagsInput): Promise<Lead>;
+  updateLead(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: UpdateLeadInput): Promise<Lead>;
+  changeStage(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, targetStage: PipelineStageKey, notes?: string | null, lostReason?: string | null): Promise<Lead>;
+  setLeadTags(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: SetLeadTagsInput): Promise<Lead>;
+  bulkSetLeadTags(context: AuditContext, leadIds: string[], allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: SetLeadTagsInput): Promise<Lead[]>;
+  deleteLead(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<void>;
+  bulkDeleteLeads(context: AuditContext, leadIds: string[], allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<{ deleted: number }>;
   countStageHistory?(tenantId: string, leadId: string): Promise<number>;
   close?(): Promise<void>;
 };
@@ -84,6 +107,83 @@ function tagArray(value: unknown): LeadTag[] {
     .filter((tag) => tag.id && tag.slug);
 }
 
+function historyJsonObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+}
+
+function historyStage(...values: unknown[]): PipelineStageKey | null {
+  for (const value of values) {
+    if (typeof value === 'string') return value as PipelineStageKey;
+  }
+  return null;
+}
+
+function historyTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === 'string') return item;
+      if (item && typeof item === 'object' && !Array.isArray(item)) {
+        const row = item as Record<string, unknown>;
+        return typeof row.slug === 'string' ? row.slug : typeof row.name === 'string' ? row.name : null;
+      }
+      return null;
+    })
+    .filter((item): item is string => Boolean(item));
+}
+
+const HISTORY_FIELD_LABELS: Record<LeadHistoryChange['field'], string> = {
+  stage: 'Etapa',
+  priority: 'Prioridade',
+  qualificationStatus: 'Status de qualificação',
+  leadSource: 'Origem',
+  estimatedTicket: 'Ticket estimado',
+  notes: 'Observações',
+  tags: 'Tags',
+};
+
+const HISTORY_ACTION_SUMMARIES: Record<string, string> = {
+  'lead.created': 'Lead criado',
+  'lead.updated': 'Lead atualizado',
+  'lead.stage_changed': 'Etapa alterada',
+  'lead.tags_updated': 'Tags atualizadas',
+  'lead.deleted': 'Lead excluído',
+};
+
+function historyValue(data: Record<string, unknown> | null, field: LeadHistoryChange['field']): unknown {
+  if (!data) return null;
+  if (field === 'tags') return historyTags(data.tags);
+  return data[field] ?? null;
+}
+
+function valuesEqual(before: unknown, after: unknown): boolean {
+  return JSON.stringify(before) === JSON.stringify(after);
+}
+
+function rowToLeadHistoryEvent(row: Record<string, unknown>): LeadHistoryEvent {
+  const before = historyJsonObject(row.beforeData);
+  const after = historyJsonObject(row.afterData);
+  const fields: LeadHistoryChange['field'][] = ['stage', 'priority', 'qualificationStatus', 'leadSource', 'estimatedTicket', 'notes', 'tags'];
+  const changes = fields
+    .map((field) => ({ field, label: HISTORY_FIELD_LABELS[field], before: historyValue(before, field), after: historyValue(after, field) }))
+    .filter((change) => !valuesEqual(change.before, change.after));
+  return {
+    id: row.id as string,
+    action: row.action as string,
+    occurredAt: row.occurredAt as string,
+    summary: HISTORY_ACTION_SUMMARIES[row.action as string] ?? String(row.action ?? 'Alteração'),
+    actor: row.actorId ? { id: row.actorId as string, name: row.actorName as string, email: row.actorEmail as string } : null,
+    changes,
+    stage: historyStage(after?.stage, before?.stage),
+  };
+}
+
+function rowHistoryStage(row: Record<string, unknown>): PipelineStageKey | null {
+  const before = historyJsonObject(row.beforeData);
+  const after = historyJsonObject(row.afterData);
+  return historyStage(after?.stage, before?.stage);
+}
+
 function rowToLead(row: Record<string, unknown>): Lead {
   return {
     id: row.id as string,
@@ -103,6 +203,8 @@ function rowToLead(row: Record<string, unknown>): Lead {
     gclid: row.gclid as string | null,
     estimatedTicket: row.estimatedTicket as string | null,
     sdrOwnerId: row.sdrOwnerId as string | null,
+    sdrOwner: row.sdrOwner as string | null,
+    nextActionAt: row.nextActionAt as string | null,
     priority: row.priority as string,
     notes: row.notes as string | null,
     lostReason: row.lostReason as string | null,
@@ -142,6 +244,8 @@ const leadSelect = `select l.id,
                           l.gclid,
                           l.estimated_ticket::text as "estimatedTicket",
                           l.sdr_owner_id as "sdrOwnerId",
+                          owner_user.name as "sdrOwner",
+                          l.next_action_at::text as "nextActionAt",
                           l.priority::text as priority,
                           l.notes,
                           l.lost_reason as "lostReason",
@@ -160,6 +264,7 @@ const leadSelect = `select l.id,
                           coalesce(tag_rows.tags, '[]'::jsonb) as tags
                      from leads l
                      join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id
+                     left join users owner_user on owner_user.tenant_id = l.tenant_id and owner_user.id = l.sdr_owner_id
                      left join lateral (
                        select jsonb_agg(jsonb_build_object('id', lt.id::text, 'name', lt.name, 'slug', lt.slug, 'color', lt.color) order by lt.name) as tags
                          from lead_tag_assignments lta
@@ -173,6 +278,42 @@ function stageClause(allowedStages: PipelineStageKey[] | null, offset: number): 
 
 function stageParams(allowedStages: PipelineStageKey[] | null): unknown[] {
   return allowedStages === null ? [] : [allowedStages];
+}
+
+function ownerClause(ownerUserId: string | null, offset: number): string {
+  return ownerUserId === null ? '' : ` and l.sdr_owner_id = $${offset}::uuid`;
+}
+
+function ownerParams(ownerUserId: string | null): unknown[] {
+  return ownerUserId === null ? [] : [ownerUserId];
+}
+
+async function resolveSdrOwnerId(client: PoolClient, tenantId: string, requestedOwnerId?: string | null): Promise<string | null> {
+  if (requestedOwnerId) return requestedOwnerId;
+  const result = await client.query(
+    `select u.id::text as id
+       from users u
+       join user_roles ur on ur.tenant_id = u.tenant_id and ur.user_id = u.id
+       join roles r on r.tenant_id = ur.tenant_id and r.id = ur.role_id
+      where u.tenant_id = $1
+        and u.status = 'active'
+        and r.name in ('sdr', 'vendedor', 'seller', 'closer')
+        and not exists (
+          select 1
+            from user_roles admin_ur
+            join roles admin_r on admin_r.tenant_id = admin_ur.tenant_id and admin_r.id = admin_ur.role_id
+           where admin_ur.tenant_id = u.tenant_id
+             and admin_ur.user_id = u.id
+             and admin_r.name = 'admin'
+        )
+      group by u.id, u.name
+      order by (select count(*) from leads l where l.tenant_id = u.tenant_id and l.sdr_owner_id = u.id) asc,
+               u.name asc,
+               u.id asc
+      limit 1`,
+    [tenantId],
+  );
+  return (result.rows[0]?.id as string | undefined) ?? null;
 }
 
 function tagFilterClause(filters: LeadListFilters | undefined, offset: number): { clause: string; params: unknown[] } {
@@ -195,12 +336,13 @@ function tagFilterClause(filters: LeadListFilters | undefined, offset: number): 
   };
 }
 
-async function selectOne(client: PoolClient, tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, forUpdate = false): Promise<Lead | null> {
+async function selectOne(client: PoolClient, tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, forUpdate = false): Promise<Lead | null> {
+  const params = [tenantId, leadId, ...stageParams(allowedStages), ...ownerParams(ownerUserId)];
   const result = await client.query(
     `${leadSelect}
-      where l.tenant_id = $1 and l.id = $2${stageClause(allowedStages, 3)}
+      where l.tenant_id = $1 and l.id = $2${stageClause(allowedStages, 3)}${ownerClause(ownerUserId, 3 + stageParams(allowedStages).length)}
       limit 1${forUpdate ? ' for update of l, c' : ''}`,
-    [tenantId, leadId, ...stageParams(allowedStages)],
+    params,
   );
   return result.rows[0] ? rowToLead(result.rows[0]) : null;
 }
@@ -258,12 +400,45 @@ function firstString(...values: Array<unknown>): string | null {
   return null;
 }
 
-function crmSignalMetadata(lead: Lead, context: AuditContext): Record<string, unknown> {
+function firstNumber(...values: Array<unknown>): number | null {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === 'string' && value.trim()) {
+      const compact = value.trim().replace(/[^\d.,-]/g, '');
+      const normalized = compact.includes(',') ? compact.replace(/\./g, '').replace(',', '.') : compact;
+      const parsed = Number(normalized);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
+  return null;
+}
+
+function qualificationMetadata(lead: Lead): Record<string, unknown> {
   const leadMetadata = jsonObject(lead.metadata);
   const contactMetadata = jsonObject(lead.contact.metadata);
+  return {
+    status: lead.qualificationStatus,
+    priority: lead.priority,
+    estimatedTicket: firstNumber(lead.estimatedTicket),
+    energyBillValue: firstNumber(leadMetadata.energyBillValue, leadMetadata.billValue, leadMetadata.contaMediaMensal, leadMetadata.monthlyBillValue),
+    averageConsumptionKwh: firstNumber(leadMetadata.averageConsumptionKwh, leadMetadata.consumoMedioKwh, leadMetadata.estimatedKwh),
+    concessionaria: firstString(leadMetadata.concessionaria, contactMetadata.concessionaria),
+    offer: firstString(leadMetadata.offer, leadMetadata.ofertaEnervita, leadMetadata.oferta),
+    projectedSavings: firstNumber(leadMetadata.projectedSavings, leadMetadata.economiaMensalProjetada, leadMetadata.projectedMonthlySavings),
+    score: firstNumber(leadMetadata.qualificationScore, leadMetadata.score, leadMetadata.leadScore),
+    reason: firstString(leadMetadata.qualificationReason, leadMetadata.motivoQualificacao, leadMetadata.diagnosisReason),
+  };
+}
+
+function crmSignalMetadata(lead: Lead, _context: AuditContext): Record<string, unknown> {
+  const leadMetadata = jsonObject(lead.metadata);
+  const contactMetadata = jsonObject(lead.contact.metadata);
+  const rawIpStored = Boolean(nestedString(leadMetadata, ['request', 'clientIpAddress']) || nestedString(contactMetadata, ['request', 'clientIpAddress']));
   const request = {
-    clientIpAddress: firstString(context.ipAddress, nestedString(leadMetadata, ['request', 'clientIpAddress']), nestedString(contactMetadata, ['request', 'clientIpAddress'])),
-    clientUserAgent: firstString(context.userAgent, nestedString(leadMetadata, ['request', 'clientUserAgent']), nestedString(contactMetadata, ['request', 'clientUserAgent']), nestedString(leadMetadata, ['request', 'userAgent']), nestedString(contactMetadata, ['request', 'userAgent'])),
+    // Meta CAPI customer_information should describe the customer, not the CRM operator.
+    // Do not fall back to context.ipAddress/context.userAgent here: stage changes are usually triggered by an admin inside the CRM.
+    clientIpAddress: rawIpStored ? firstString(nestedString(leadMetadata, ['request', 'clientIpAddress']), nestedString(contactMetadata, ['request', 'clientIpAddress'])) : null,
+    clientUserAgent: firstString(nestedString(leadMetadata, ['request', 'clientUserAgent']), nestedString(contactMetadata, ['request', 'clientUserAgent']), nestedString(leadMetadata, ['request', 'userAgent']), nestedString(contactMetadata, ['request', 'userAgent'])),
   };
   const location = {
     city: firstString(leadMetadata.city, leadMetadata.cidade, contactMetadata.city, contactMetadata.cidade),
@@ -282,11 +457,8 @@ function crmSignalMetadata(lead: Lead, context: AuditContext): Record<string, un
   };
 }
 
-async function queueMetaStageEvent(client: PoolClient, context: AuditContext, lead: Lead, action: 'created' | 'stage_changed' | 'tags_updated', fromStage?: PipelineStageKey | null): Promise<void> {
-  const eventName = META_STAGE_EVENTS[lead.stage];
-  if (!eventName) return;
-  if (action === 'stage_changed' && fromStage === lead.stage) return;
-  const payload = {
+function buildMetaStageEventPayload(lead: Lead, context: AuditContext, action: 'created' | 'stage_changed' | 'tags_updated', fromStage?: PipelineStageKey | null): Record<string, unknown> {
+  return {
     action,
     leadId: lead.id,
     stage: lead.stage,
@@ -308,15 +480,54 @@ async function queueMetaStageEvent(client: PoolClient, context: AuditContext, le
     },
     tags: lead.tags.map((tag) => tag.slug),
     priority: lead.priority,
+    qualificationStatus: lead.qualificationStatus,
+    qualification: qualificationMetadata(lead),
     estimatedTicket: lead.estimatedTicket,
     actorUserId: context.actorUserId,
     ...crmSignalMetadata(lead, context),
   };
+}
+
+export function buildMetaStageEventPayloadForTest(lead: Lead, context: AuditContext, action: 'created' | 'stage_changed' | 'tags_updated', fromStage?: PipelineStageKey | null): Record<string, unknown> {
+  return buildMetaStageEventPayload(lead, context, action, fromStage);
+}
+
+const MANUAL_STAGE_CHANGE_CAPI_DELAY_MINUTES = 10;
+
+async function debounceQueuedManualStageChangeEvents(client: PoolClient, context: AuditContext, leadId: string): Promise<void> {
+  await client.query(
+    `update tracking_events
+        set status = 'discarded'::delivery_status,
+            error_message = 'superseded by a newer manual Kanban stage change before debounce window elapsed',
+            next_retry_at = null,
+            updated_at = now()
+      where tenant_id = $1
+        and lead_id = $2
+        and platform = 'meta'
+        and status = 'queued'
+        and payload->>'action' = 'stage_changed'
+        and next_retry_at is not null
+        and next_retry_at > now()`,
+    [context.tenantId, leadId],
+  );
+}
+
+async function queueMetaStageEvent(client: PoolClient, context: AuditContext, lead: Lead, action: 'created' | 'stage_changed' | 'tags_updated', fromStage?: PipelineStageKey | null): Promise<void> {
+  const eventName = META_STAGE_EVENTS[lead.stage];
+  if (!eventName) return;
+  if (action === 'stage_changed' && fromStage === lead.stage) return;
+  if (action === 'stage_changed') await debounceQueuedManualStageChangeEvents(client, context, lead.id);
+  const payload = buildMetaStageEventPayload(lead, context, action, fromStage);
+  const nextRetryAtSql = action === 'stage_changed' ? `now() + interval '${MANUAL_STAGE_CHANGE_CAPI_DELAY_MINUTES} minutes'` : 'now()';
   await client.query(
     `insert into tracking_events (tenant_id, lead_id, platform, event_name, status, payload, next_retry_at)
-     values ($1, $2, 'meta', $3, 'queued', $4::jsonb, now())`,
+     values ($1, $2, 'meta', $3, 'queued', $4::jsonb, ${nextRetryAtSql})`,
     [context.tenantId, lead.id, eventName, JSON.stringify(payload)],
   );
+}
+
+export function queueMetaStageEventForTest(client: PoolClient, context: AuditContext, lead: Lead, action: 'created' | 'stage_changed' | 'tags_updated', fromStage?: PipelineStageKey | null): Promise<void> {
+  return queueMetaStageEvent(client, context, lead, action, fromStage);
 }
 
 async function insertContact(client: PoolClient, tenantId: string, input: ContactInput): Promise<string> {
@@ -333,21 +544,52 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
   const pool = new Pool({ connectionString: databaseUrl });
 
   return {
-    async listLeads(tenantId, allowedStages, filters) {
-      const params = [tenantId, ...stageParams(allowedStages)];
-      const tagFilter = tagFilterClause(filters, params.length + 1);
+    async listLeads(tenantId, allowedStages, ownerUserId, filters) {
+      const baseParams = [tenantId, ...stageParams(allowedStages), ...ownerParams(ownerUserId)];
+      const tagFilter = tagFilterClause(filters, baseParams.length + 1);
       const result = await pool.query(
         `${leadSelect}
-          where l.tenant_id = $1${stageClause(allowedStages, 2)}${tagFilter.clause}
+          where l.tenant_id = $1${stageClause(allowedStages, 2)}${ownerClause(ownerUserId, 2 + stageParams(allowedStages).length)}${tagFilter.clause}
           order by l.updated_at desc, l.created_at desc`,
-        [...params, ...tagFilter.params],
+        [...baseParams, ...tagFilter.params],
       );
       return result.rows.map(rowToLead);
     },
-    async getLead(tenantId, leadId, allowedStages) {
+    async getLead(tenantId, leadId, allowedStages, ownerUserId) {
       const client = await pool.connect();
       try {
-        return await selectOne(client, tenantId, leadId, allowedStages);
+        return await selectOne(client, tenantId, leadId, allowedStages, ownerUserId);
+      } finally {
+        client.release();
+      }
+    },
+    async listLeadHistory(tenantId, leadId, allowedStages, ownerUserId) {
+      const client = await pool.connect();
+      try {
+        const currentLead = await selectOne(client, tenantId, leadId, null, null);
+        if (currentLead && allowedStages !== null && !allowedStages.includes(currentLead.stage)) throw new LeadsNotFoundError('Lead not found');
+        if (currentLead && ownerUserId !== null && currentLead.sdrOwnerId !== ownerUserId) throw new LeadsNotFoundError('Lead not found');
+        const result = await client.query(
+          `select a.id::text as id,
+                  a.action,
+                  a.before_data as "beforeData",
+                  a.after_data as "afterData",
+                  a.created_at::text as "occurredAt",
+                  u.id::text as "actorId",
+                  u.name as "actorName",
+                  u.email as "actorEmail"
+             from audit_logs a
+             left join users u on u.tenant_id = a.tenant_id and u.id = a.actor_user_id
+            where a.tenant_id = $1 and a.entity_type = 'lead' and a.entity_id = $2
+            order by a.created_at desc, a.id desc`,
+          [tenantId, leadId],
+        );
+        const scopedRows = allowedStages === null ? result.rows : result.rows.filter((row) => {
+          const stage = rowHistoryStage(row);
+          return stage !== null && allowedStages.includes(stage);
+        });
+        if (!currentLead && scopedRows.length === 0) throw new LeadsNotFoundError('Lead not found');
+        return scopedRows.map(rowToLeadHistoryEvent);
       } finally {
         client.release();
       }
@@ -357,11 +599,12 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
       try {
         await client.query('begin');
         const contactId = await insertContact(client, context.tenantId, input.contact);
+        const sdrOwnerId = await resolveSdrOwnerId(client, context.tenantId, input.sdrOwnerId);
         const leadResult = await client.query(
           `insert into leads (tenant_id, contact_id, stage, qualification_status, lead_source, utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbp, fbc, fbclid, gclid, estimated_ticket, sdr_owner_id, priority, notes, metadata)
            values ($1, $2, $3::lead_stage, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, coalesce($17::priority_level, 'media'), $18, coalesce($19::jsonb, '{}'::jsonb))
            returning id`,
-          [context.tenantId, contactId, input.stage, input.qualificationStatus ?? null, input.leadSource ?? null, input.utmSource ?? null, input.utmMedium ?? null, input.utmCampaign ?? null, input.utmContent ?? null, input.utmTerm ?? null, input.fbp ?? firstString(input.metadata?.fbp, nestedString(input.metadata, ['attribution', 'fbp']), input.contact.metadata?.fbp), input.fbc ?? firstString(input.metadata?.fbc, nestedString(input.metadata, ['attribution', 'fbc']), input.contact.metadata?.fbc), input.fbclid ?? firstString(input.metadata?.fbclid, nestedString(input.metadata, ['attribution', 'fbclid']), input.contact.metadata?.fbclid), input.gclid ?? firstString(input.metadata?.gclid, nestedString(input.metadata, ['attribution', 'gclid']), input.contact.metadata?.gclid), input.estimatedTicket ?? null, input.sdrOwnerId ?? null, input.priority ?? null, input.notes ?? null, input.metadata ? JSON.stringify(input.metadata) : null],
+          [context.tenantId, contactId, input.stage, input.qualificationStatus ?? null, input.leadSource ?? null, input.utmSource ?? null, input.utmMedium ?? null, input.utmCampaign ?? null, input.utmContent ?? null, input.utmTerm ?? null, input.fbp ?? firstString(input.metadata?.fbp, nestedString(input.metadata, ['attribution', 'fbp']), input.contact.metadata?.fbp), input.fbc ?? firstString(input.metadata?.fbc, nestedString(input.metadata, ['attribution', 'fbc']), input.contact.metadata?.fbc), input.fbclid ?? firstString(input.metadata?.fbclid, nestedString(input.metadata, ['attribution', 'fbclid']), input.contact.metadata?.fbclid), input.gclid ?? firstString(input.metadata?.gclid, nestedString(input.metadata, ['attribution', 'gclid']), input.contact.metadata?.gclid), input.estimatedTicket ?? null, sdrOwnerId, input.priority ?? null, input.notes ?? null, input.metadata ? JSON.stringify(input.metadata) : null],
         );
         const leadId = leadResult.rows[0].id as string;
         await client.query(
@@ -369,9 +612,10 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
            values ($1, $2, null, $3::lead_stage, $4, 'lead.created')`,
           [context.tenantId, leadId, input.stage, context.actorUserId],
         );
-        const lead = await selectOne(client, context.tenantId, leadId, null);
+        const lead = await selectOne(client, context.tenantId, leadId, null, null);
         if (!lead) throw new LeadsNotFoundError('Lead not found after create');
         await writeAudit(client, context, leadId, 'lead.created', null, lead);
+        if (sdrOwnerId) await writeAudit(client, context, leadId, 'lead.assigned', null, lead);
         await queueMetaStageEvent(client, context, lead, 'created', null);
         await client.query('commit');
         return lead;
@@ -382,11 +626,11 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         client.release();
       }
     },
-    async updateLead(context, leadId, allowedStages, input) {
+    async updateLead(context, leadId, allowedStages, ownerUserId, input) {
       const client = await pool.connect();
       try {
         await client.query('begin');
-        const before = await selectOne(client, context.tenantId, leadId, allowedStages, true);
+        const before = await selectOne(client, context.tenantId, leadId, allowedStages, ownerUserId, true);
         if (!before) throw new LeadsNotFoundError('Lead not found');
         if (input.contact) {
           await client.query(
@@ -408,7 +652,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
             where tenant_id = $1 and id = $2`,
           [context.tenantId, leadId, input.qualificationStatus ?? null, input.leadSource ?? null, input.utmSource ?? null, input.utmMedium ?? null, input.utmCampaign ?? null, input.utmContent ?? null, input.utmTerm ?? null, input.fbp ?? null, input.fbc ?? null, input.fbclid ?? null, input.gclid ?? null, input.estimatedTicket ?? null, input.sdrOwnerId ?? null, input.priority ?? null, input.notes ?? null, input.lostReason ?? null, input.metadata ? JSON.stringify(input.metadata) : null],
         );
-        const after = await selectOne(client, context.tenantId, leadId, null);
+        const after = await selectOne(client, context.tenantId, leadId, null, null);
         if (!after) throw new LeadsNotFoundError('Lead not found after update');
         await writeAudit(client, context, leadId, 'lead.updated', before, after);
         await client.query('commit');
@@ -420,11 +664,11 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         client.release();
       }
     },
-    async changeStage(context, leadId, allowedStages, targetStage, notes, lostReason) {
+    async changeStage(context, leadId, allowedStages, ownerUserId, targetStage, notes, lostReason) {
       const client = await pool.connect();
       try {
         await client.query('begin');
-        const before = await selectOne(client, context.tenantId, leadId, allowedStages, true);
+        const before = await selectOne(client, context.tenantId, leadId, allowedStages, ownerUserId, true);
         if (!before) throw new LeadsNotFoundError('Lead not found');
         await client.query(
           `update leads
@@ -437,7 +681,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
            values ($1, $2, $3::lead_stage, $4::lead_stage, $5, $6)`,
           [context.tenantId, leadId, before.stage, targetStage, context.actorUserId, notes ?? null],
         );
-        const after = await selectOne(client, context.tenantId, leadId, null);
+        const after = await selectOne(client, context.tenantId, leadId, null, null);
         if (!after) throw new LeadsNotFoundError('Lead not found after stage change');
         await writeAudit(client, context, leadId, 'lead.stage_changed', before, after);
         await queueMetaStageEvent(client, context, after, 'stage_changed', before.stage);
@@ -451,11 +695,11 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
       }
     },
 
-    async setLeadTags(context, leadId, allowedStages, input) {
+    async setLeadTags(context, leadId, allowedStages, ownerUserId, input) {
       const client = await pool.connect();
       try {
         await client.query('begin');
-        const before = await selectOne(client, context.tenantId, leadId, allowedStages, true);
+        const before = await selectOne(client, context.tenantId, leadId, allowedStages, ownerUserId, true);
         if (!before) throw new LeadsNotFoundError('Lead not found');
         await client.query('delete from lead_tag_assignments where tenant_id = $1 and lead_id = $2', [context.tenantId, leadId]);
         for (const slug of input.tags) {
@@ -473,7 +717,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
             [context.tenantId, leadId, tagResult.rows[0].id, context.actorUserId],
           );
         }
-        const after = await selectOne(client, context.tenantId, leadId, null);
+        const after = await selectOne(client, context.tenantId, leadId, null, null);
         if (!after) throw new LeadsNotFoundError('Lead not found after tag update');
         await writeAudit(client, context, leadId, 'lead.tags_updated', before, after);
         await queueMetaStageEvent(client, context, after, 'tags_updated', before.stage);
@@ -486,6 +730,109 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         client.release();
       }
     },
+    async bulkSetLeadTags(context, leadIds, allowedStages, ownerUserId, input) {
+      const client = await pool.connect();
+      try {
+        await client.query('begin');
+        const beforeParams = [context.tenantId, leadIds, ...stageParams(allowedStages), ...ownerParams(ownerUserId)];
+        const beforeResult = await client.query(
+          `${leadSelect}
+            where l.tenant_id = $1 and l.id = any($2::uuid[])${stageClause(allowedStages, 3)}${ownerClause(ownerUserId, 3 + stageParams(allowedStages).length)}
+            order by l.updated_at desc, l.created_at desc
+            for update of l, c`,
+          beforeParams,
+        );
+        const beforeLeads = beforeResult.rows.map(rowToLead);
+        const visibleIds = beforeLeads.map((lead) => lead.id);
+        if (visibleIds.length === 0) {
+          await client.query('commit');
+          return [];
+        }
+        await client.query('delete from lead_tag_assignments where tenant_id = $1 and lead_id = any($2::uuid[])', [context.tenantId, visibleIds]);
+        for (const slug of input.tags) {
+          const tagResult = await client.query(
+            `insert into lead_tags (tenant_id, name, slug, created_by)
+             values ($1, $2, $2, $3)
+             on conflict (tenant_id, slug) do update set updated_at = now()
+             returning id`,
+            [context.tenantId, slug, context.actorUserId],
+          );
+          await client.query(
+            `insert into lead_tag_assignments (tenant_id, lead_id, tag_id, assigned_by)
+             select $1, unnest($2::uuid[]), $3, $4
+             on conflict do nothing`,
+            [context.tenantId, visibleIds, tagResult.rows[0].id, context.actorUserId],
+          );
+        }
+        const afterResult = await client.query(
+          `${leadSelect}
+            where l.tenant_id = $1 and l.id = any($2::uuid[])
+            order by l.updated_at desc, l.created_at desc`,
+          [context.tenantId, visibleIds],
+        );
+        const afterLeads = afterResult.rows.map(rowToLead);
+        const beforeById = new Map(beforeLeads.map((lead) => [lead.id, lead]));
+        for (const after of afterLeads) {
+          await writeAudit(client, context, after.id, 'lead.tags_updated', beforeById.get(after.id) ?? null, after);
+          await queueMetaStageEvent(client, context, after, 'tags_updated', beforeById.get(after.id)?.stage ?? after.stage);
+        }
+        await client.query('commit');
+        return afterLeads;
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async deleteLead(context, leadId, allowedStages, ownerUserId) {
+      const client = await pool.connect();
+      try {
+        await client.query('begin');
+        const before = await selectOne(client, context.tenantId, leadId, allowedStages, ownerUserId, true);
+        if (!before) throw new LeadsNotFoundError('Lead not found');
+        await writeAudit(client, context, leadId, 'lead.deleted', before, null);
+        await client.query('delete from leads where tenant_id = $1 and id = $2', [context.tenantId, leadId]);
+        await client.query('commit');
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async bulkDeleteLeads(context, leadIds, allowedStages, ownerUserId) {
+      const client = await pool.connect();
+      try {
+        await client.query('begin');
+        const beforeParams = [context.tenantId, leadIds, ...stageParams(allowedStages), ...ownerParams(ownerUserId)];
+        const beforeResult = await client.query(
+          `${leadSelect}
+            where l.tenant_id = $1 and l.id = any($2::uuid[])${stageClause(allowedStages, 3)}${ownerClause(ownerUserId, 3 + stageParams(allowedStages).length)}
+            order by l.updated_at desc, l.created_at desc
+            for update of l, c`,
+          beforeParams,
+        );
+        const beforeLeads = beforeResult.rows.map(rowToLead);
+        const visibleIds = beforeLeads.map((lead) => lead.id);
+        for (const before of beforeLeads) {
+          await writeAudit(client, context, before.id, 'lead.deleted', before, null);
+        }
+        if (visibleIds.length > 0) {
+          await client.query('delete from leads where tenant_id = $1 and id = any($2::uuid[])', [context.tenantId, visibleIds]);
+        }
+        await client.query('commit');
+        return { deleted: visibleIds.length };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
     async close() {
       await pool.end();
     },

@@ -71,12 +71,12 @@ const modeCopy: Record<WorkspaceMode, { title: string; subtitle: string; icon: M
   },
   gestor: {
     title: 'Mesa do gestor',
-    subtitle: 'Layout estilo Ads Manager: lista de campanhas no centro, filtros à esquerda e detalhes à direita.',
+    subtitle: 'Lista de campanhas no centro, filtros à esquerda e detalhes à direita.',
     icon: SlidersHorizontal,
   },
   tecnico: {
-    title: 'Planilha técnica',
-    subtitle: 'Tabelas densas para auditoria: campanhas, grupos e anúncios com IDs, status bruto e campos da API.',
+    title: 'Auditoria avançada',
+    subtitle: 'Tabelas detalhadas para conferência: campanhas, grupos e anúncios com identificadores e métricas originais.',
     icon: Database,
   },
 };
@@ -182,7 +182,7 @@ function creativeHeadline(ad: AdCreative) {
 }
 
 function creativeBody(ad: AdCreative) {
-  return ad.body ?? 'Texto público não retornado pela Meta. Abra o modo técnico para conferir o nome interno.';
+  return ad.body ?? 'Texto público ainda não disponível neste anúncio.';
 }
 
 function allAds(campaign: AdCampaign) {
@@ -369,7 +369,7 @@ function CampaignTable({ campaigns, selectedId, setSelectedId }: { campaigns: Ad
   return (
     <Card className="overflow-hidden">
       <div className="border-b border-gray-100 bg-gray-50 px-4 py-3"><p className="text-xs font-black uppercase tracking-wide text-gray-400">Campanhas</p></div>
-      <div className="max-h-[760px] overflow-auto">
+      <div className="max-h-[760px] crm-scroll-panel overflow-auto">
         <table className="w-full text-left text-sm">
           <thead className="sticky top-0 z-10 bg-white text-xs uppercase tracking-wide text-gray-400"><tr><th className="p-3">Nome</th><th className="p-3">Objetivo</th><th className="p-3">Status</th><th className="p-3 text-right">Investido</th><th className="p-3 text-right">Leads</th><th className="p-3"></th></tr></thead>
           <tbody className="divide-y divide-gray-50">{campaigns.map((campaign) => <tr key={campaign.id} onClick={() => setSelectedId(campaign.id)} className={`cursor-pointer hover:bg-orange-50/50 ${selectedId === campaign.id ? 'bg-orange-50' : ''}`}><td className="p-3"><p className="max-w-[360px] truncate font-bold text-graphite">{campaign.name}</p><p className="text-xs text-gray-400">{campaign.adSets.length} grupos · {allAds(campaign).length} anúncios</p></td><td className="p-3 text-gray-600">{explainObjective(campaign.objective).label}</td><td className="p-3"><Badge variant={statusVariant(campaign.effectiveStatus)}>{statusLabel(campaign.effectiveStatus)}</Badge></td><td className="p-3 text-right font-bold text-graphite">{formatCurrency(campaign.spendAmount)}</td><td className="p-3 text-right font-bold text-graphite">{campaign.leads}</td><td className="p-3"><ChevronRight size={16} className="text-gray-300" /></td></tr>)}</tbody>
@@ -384,7 +384,7 @@ function CampaignInspector({ campaign }: { campaign: AdCampaign | undefined }) {
   const objective = explainObjective(campaign.objective);
   const ads = allAds(campaign);
   return (
-    <Card className="sticky top-6 max-h-[820px] overflow-auto p-5">
+    <Card className="sticky top-6 max-h-[820px] crm-scroll-panel overflow-auto p-5">
       <div className="flex items-start justify-between gap-3"><div><Badge variant={statusVariant(campaign.effectiveStatus)}>{statusLabel(campaign.effectiveStatus)}</Badge><h3 className="mt-3 text-lg font-black text-graphite">{campaign.name}</h3><p className="mt-2 text-sm leading-relaxed text-gray-500"><strong className="text-graphite">{objective.label}.</strong> {objective.description}</p></div></div>
       <div className="mt-5 grid grid-cols-2 gap-2"><MetricPill label="Investido" value={formatCurrency(campaign.spendAmount)} icon={Wallet} /><MetricPill label="Leads" value={campaign.leads} icon={MessageCircle} /><MetricPill label="Cliques" value={formatNumber(campaign.clicks)} icon={MousePointerClick} /><MetricPill label="Impressões" value={formatNumber(campaign.impressions)} icon={Eye} /></div>
       <div className="mt-5 grid gap-3"><Field label="Estratégia" value={campaign.bidStrategy ? (bidStrategyLabels[campaign.bidStrategy] ?? humanizeToken(campaign.bidStrategy)) : 'Não informada'} /><Field label="Orçamento" value={campaign.budgetAmount === null ? 'Não informado' : formatCurrency(campaign.budgetAmount)} /></div>
@@ -398,7 +398,7 @@ function ManagerWorkspace({ campaigns, selectedId, setSelectedId, filters, setFi
   const selected = campaigns.find((campaign) => campaign.id === selectedId) ?? campaigns[0];
   return (
     <div className="grid gap-5 xl:grid-cols-[230px_minmax(0,1fr)_360px]">
-      <aside className="space-y-4"><Card className="p-4"><p className="text-xs font-black uppercase tracking-wide text-gray-400">Visões rápidas</p><div className="mt-3 space-y-2">{visibleStatusFilters.map((status) => <button key={status} type="button" onClick={() => setFilters({ ...filters, status })} className={`w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition ${filters.status === status ? 'bg-graphite text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}>{statusFilterLabels[status]}</button>)}</div></Card><Card className="p-4"><p className="text-xs font-black uppercase tracking-wide text-gray-400">Inspiração aplicada</p><p className="mt-2 text-sm leading-relaxed text-gray-500">Layout baseado em Ads Manager/Airtable: filtros laterais, tabela principal e painel de detalhe persistente.</p></Card></aside>
+      <aside className="space-y-4"><Card className="p-4"><p className="text-xs font-black uppercase tracking-wide text-gray-400">Visões rápidas</p><div className="mt-3 space-y-2">{visibleStatusFilters.map((status) => <button key={status} type="button" onClick={() => setFilters({ ...filters, status })} className={`w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition ${filters.status === status ? 'bg-graphite text-white' : 'bg-gray-50 text-gray-600 hover:bg-gray-100'}`}>{statusFilterLabels[status]}</button>)}</div></Card><Card className="p-4"><p className="text-xs font-black uppercase tracking-wide text-gray-400">Como usar</p><p className="mt-2 text-sm leading-relaxed text-gray-500">Use os filtros laterais, selecione uma campanha e acompanhe os detalhes no painel à direita.</p></Card></aside>
       <CampaignTable campaigns={campaigns} selectedId={selected?.id ?? null} setSelectedId={setSelectedId} />
       <CampaignInspector campaign={selected} />
     </div>
@@ -411,7 +411,7 @@ function TechTable({ campaigns, tab, setTab }: { campaigns: AdCampaign[]; tab: E
   return (
     <Card className="overflow-hidden">
       <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 p-3">{(['campaigns', 'adsets', 'ads'] as EntityTab[]).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-xl px-3 py-2 text-xs font-black ${tab === item ? 'bg-graphite text-white' : 'bg-white text-gray-500'}`}>{item === 'campaigns' ? 'Campanhas' : item === 'adsets' ? 'Grupos' : 'Anúncios'}</button>)}</div>
-      <div className="overflow-auto">
+      <div className="crm-scroll-panel overflow-auto">
         {tab === 'campaigns' && <table className="w-full whitespace-nowrap text-left text-xs"><thead className="bg-white text-gray-400"><tr><th className="p-3">ID</th><th className="p-3">Nome</th><th className="p-3">Status bruto</th><th className="p-3">Objetivo bruto</th><th className="p-3 text-right">Spend</th><th className="p-3 text-right">Leads</th></tr></thead><tbody className="divide-y divide-gray-50">{campaigns.map((campaign) => <tr key={campaign.id}><td className="p-3 font-mono text-gray-500">{campaign.externalCampaignId ?? '—'}</td><td className="p-3 font-bold text-graphite">{campaign.name}</td><td className="p-3">{campaign.effectiveStatus}</td><td className="p-3">{campaign.objective ?? '—'}</td><td className="p-3 text-right">{campaign.spendAmount}</td><td className="p-3 text-right">{campaign.leads}</td></tr>)}</tbody></table>}
         {tab === 'adsets' && <table className="w-full whitespace-nowrap text-left text-xs"><thead className="bg-white text-gray-400"><tr><th className="p-3">ID grupo</th><th className="p-3">Grupo</th><th className="p-3">Campanha</th><th className="p-3">Status</th><th className="p-3">Otimização</th><th className="p-3">Cobrança</th></tr></thead><tbody className="divide-y divide-gray-50">{adSets.map(({ campaign, set }) => <tr key={set.id}><td className="p-3 font-mono text-gray-500">{set.externalAdSetId ?? '—'}</td><td className="p-3 font-bold text-graphite">{set.name}</td><td className="p-3">{campaign.name}</td><td className="p-3">{set.effectiveStatus}</td><td className="p-3">{set.optimizationGoal ?? '—'}</td><td className="p-3">{set.billingEvent ?? '—'}</td></tr>)}</tbody></table>}
         {tab === 'ads' && <table className="w-full whitespace-nowrap text-left text-xs"><thead className="bg-white text-gray-400"><tr><th className="p-3">ID anúncio</th><th className="p-3">Anúncio</th><th className="p-3">Grupo</th><th className="p-3">Status</th><th className="p-3 text-right">Spend</th><th className="p-3 text-right">Leads</th><th className="p-3">Destino</th></tr></thead><tbody className="divide-y divide-gray-50">{ads.map(({ set, ad }) => <tr key={ad.id}><td className="p-3 font-mono text-gray-500">{ad.externalAdId ?? '—'}</td><td className="p-3 font-bold text-graphite">{ad.name}</td><td className="p-3">{set.name}</td><td className="p-3">{ad.effectiveStatus}</td><td className="p-3 text-right">{ad.spendAmount}</td><td className="p-3 text-right">{ad.leads}</td><td className="p-3">{ad.destinationUrl ? <a href={ad.destinationUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-solar-orange"><ExternalLink size={12} /> abrir</a> : '—'}</td></tr>)}</tbody></table>}
@@ -452,12 +452,12 @@ export default function Ads() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Campanhas e Anúncios" description="Somente campanhas Meta ativas com conjunto ativo e anúncio ativo; desativadas não aparecem no CRM." actions={<Button variant="outline" size="sm" className="gap-2" onClick={() => void syncMetaAds()} disabled={syncing}><RefreshCw size={14} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Sincronizando Meta...' : 'Atualizar dados do Meta'}</Button>} />
+      <PageHeader title="Campanhas e Anúncios" description="Campanhas ativas da Meta com conjunto e anúncio ativos para leitura comercial da Enervita." actions={<Button variant="outline" size="sm" className="gap-2" onClick={() => void syncMetaAds()} disabled={syncing}><RefreshCw size={14} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Sincronizando Meta...' : 'Atualizar dados do Meta'}</Button>} />
       {error && <div className="rounded-2xl border border-alert-red/20 bg-alert-red/10 p-5 flex gap-3 text-alert-red"><AlertTriangle size={22} /> <span className="text-sm">{error}</span></div>}
       {syncMessage && <div className="rounded-2xl border border-energy-success/20 bg-mint-light/50 p-5 flex gap-3 text-energy-success"><CheckCircle2 size={22} /> <span className="text-sm">{syncMessage}</span></div>}
 
       <Card className="bg-gradient-to-br from-[#101820] via-graphite to-[#173f32] p-6 text-white">
-        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-center"><div><Badge variant="solar" className="bg-white/10 text-orange-100"><span className="inline-flex items-center gap-1"><Sparkles size={12} /> Referência: Ads Manager + Airtable + dashboard executivo</span></Badge><h2 className="mt-3 text-2xl font-black">Não são mais “modos parecidos”: são três layouts diferentes.</h2><p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/75">Painel simples para leitura, mesa do gestor para operar e planilha técnica para auditoria. A base já vem filtrada: campanha, conjunto e anúncio precisam estar ativos.</p></div><div className="grid grid-cols-3 gap-3 text-center"><div className="rounded-2xl bg-white/10 p-4"><p className="text-2xl font-black">{formatNumber(filteredCampaigns.length)}</p><p className="text-xs text-white/65">campanhas visíveis</p></div><div className="rounded-2xl bg-white/10 p-4"><p className="text-2xl font-black">{formatCurrency(totals.spend)}</p><p className="text-xs text-white/65">investido filtrado</p></div><div className="rounded-2xl bg-white/10 p-4"><p className="text-2xl font-black">{formatNumber(totals.leads)}</p><p className="text-xs text-white/65">leads filtrados</p></div></div></div>
+        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-center"><div><Badge variant="solar" className="bg-white/10 text-orange-100"><span className="inline-flex items-center gap-1"><Sparkles size={12} /> Leitura executiva de mídia paga</span></Badge><h2 className="mt-3 text-2xl font-black">Três formas de acompanhar as campanhas.</h2><p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/75">Painel simples para leitura, mesa do gestor para operar e visão de auditoria para conferência. A base já vem filtrada: campanha, conjunto e anúncio precisam estar ativos.</p></div><div className="grid grid-cols-3 gap-3 text-center"><div className="rounded-2xl bg-white/10 p-4"><p className="text-2xl font-black">{formatNumber(filteredCampaigns.length)}</p><p className="text-xs text-white/65">campanhas visíveis</p></div><div className="rounded-2xl bg-white/10 p-4"><p className="text-2xl font-black">{formatCurrency(totals.spend)}</p><p className="text-xs text-white/65">investido filtrado</p></div><div className="rounded-2xl bg-white/10 p-4"><p className="text-2xl font-black">{formatNumber(totals.leads)}</p><p className="text-xs text-white/65">leads filtrados</p></div></div></div>
       </Card>
 
       <ModeSwitch mode={mode} setMode={setMode} />

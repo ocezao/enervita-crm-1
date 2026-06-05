@@ -1,5 +1,6 @@
 import { PERMISSION_KEYS, PIPELINE_STAGE_KEYS } from '@enervita/shared';
 import pg from 'pg';
+import { saveAvatarToLocalUploads, type AvatarFileInput } from './avatarUpload.ts';
 
 const { Pool } = pg;
 
@@ -8,6 +9,7 @@ export type AuthUser = {
   tenantId: string;
   name: string;
   email: string;
+  avatarUrl?: string | null;
   passwordHash: string;
   roles: string[];
   permissions: string[];
@@ -20,6 +22,11 @@ export type UserRepository = {
   findActiveUserByEmail(email: string): Promise<AuthUser | null>;
   findActiveUserById(userId: string): Promise<AuthUser | null>;
   recordLogin(userId: string): Promise<void>;
+  getSessionRevokedAtEpoch?(userId: string): Promise<number | null>;
+  revokeSessions?(userId: string): Promise<void>;
+  updateOwnProfile?(userId: string, input: { name?: string; email?: string; avatarUrl?: string | null }): Promise<AuthUser | null>;
+  updateOwnPassword?(userId: string, passwordHash: string): Promise<AuthUser | null>;
+  saveOwnAvatar?(userId: string, input: AvatarFileInput): Promise<AuthUser | null>;
   close?(): Promise<void>;
 };
 
@@ -35,6 +42,7 @@ export function toPublicUser(user: AuthUser): PublicUser {
     tenantId: user.tenantId,
     name: user.name,
     email: user.email,
+    avatarUrl: user.avatarUrl ?? null,
     roles: user.roles,
     permissions: isAdmin ? [...PERMISSION_KEYS] : user.permissions,
     allowedStages: isAdmin ? [...PIPELINE_STAGE_KEYS] : user.allowedStages,
@@ -50,6 +58,7 @@ export function createPgUserRepository(databaseUrl: string): UserRepository {
               u.tenant_id as "tenantId",
               u.name,
               u.email,
+              nullif(u.metadata->>'avatarUrl', '') as "avatarUrl",
               u.password_hash as "passwordHash",
               coalesce(array_agg(distinct r.name) filter (where r.name is not null), array[]::text[]) as roles,
               coalesce(array_agg(distinct p.key) filter (
@@ -91,7 +100,7 @@ export function createPgUserRepository(databaseUrl: string): UserRepository {
         where ${whereClause}
           and u.status = 'active'
           and u.password_hash is not null
-        group by u.id, u.tenant_id, u.name, u.email, u.password_hash
+        group by u.id, u.tenant_id, u.name, u.email, u.metadata, u.password_hash
         limit 1`,
       [value],
     );
@@ -109,6 +118,61 @@ export function createPgUserRepository(databaseUrl: string): UserRepository {
     },
     async recordLogin(userId: string) {
       await pool.query('update users set last_login_at = now(), updated_at = now() where id = $1', [userId]);
+    },
+    async getSessionRevokedAtEpoch(userId: string) {
+      const result = await pool.query(
+        `select nullif(metadata->>'sessionRevokedAtEpoch', '')::bigint as "sessionRevokedAtEpoch"
+           from users
+          where id = $1 and status = 'active'
+          limit 1`,
+        [userId],
+      );
+      const value = result.rows[0]?.sessionRevokedAtEpoch;
+      return value == null ? null : Number(value);
+    },
+    async revokeSessions(userId: string) {
+      await pool.query(
+        `update users
+            set metadata = jsonb_set(coalesce(metadata, '{}'::jsonb), '{sessionRevokedAtEpoch}', to_jsonb(floor(extract(epoch from clock_timestamp()) * 1000)::bigint), true),
+                updated_at = now()
+          where id = $1 and status = 'active'`,
+        [userId],
+      );
+    },
+    async updateOwnProfile(userId: string, input: { name?: string; email?: string; avatarUrl?: string | null }) {
+      const current = await this.findActiveUserById(userId);
+      if (!current) return null;
+      await pool.query(
+        `update users
+            set name = coalesce($2, name),
+                email = coalesce($3, email),
+                metadata = case
+                  when $4::text is null then metadata - 'avatarUrl'
+                  when $4::text = '__KEEP_AVATAR__' then metadata
+                  else jsonb_set(metadata, '{avatarUrl}', to_jsonb($4::text), true)
+                end,
+                updated_at = now()
+          where id = $1`,
+        [userId, input.name ?? null, input.email ?? null, input.avatarUrl === undefined ? '__KEEP_AVATAR__' : input.avatarUrl],
+      );
+      return this.findActiveUserById(userId);
+    },
+    async updateOwnPassword(userId: string, passwordHash: string) {
+      await pool.query('update users set password_hash = $2, updated_at = now() where id = $1 and status = \'active\'', [userId, passwordHash]);
+      return this.findActiveUserById(userId);
+    },
+    async saveOwnAvatar(userId: string, input: AvatarFileInput) {
+      const current = await this.findActiveUserById(userId);
+      if (!current) return null;
+      const avatarUrl = await saveAvatarToLocalUploads(userId, input);
+      await pool.query(
+        `update users
+            set metadata = jsonb_set(metadata, '{avatarUrl}', to_jsonb($2::text), true),
+                updated_at = now()
+          where id = $1 and status = 'active'`,
+        [userId, avatarUrl],
+      );
+      return this.findActiveUserById(userId);
     },
     async close() {
       await pool.end();

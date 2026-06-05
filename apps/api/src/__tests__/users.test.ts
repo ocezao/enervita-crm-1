@@ -69,6 +69,7 @@ type FakeRepositoryOptions = {
   onCreate?: (context: AuditContext, input: CreateUserInput & { passwordHash: string }) => void;
   onUpdate?: (context: AuditContext, userId: string, input: UpdateUserInput) => void;
   onReset?: (context: AuditContext, userId: string, passwordHash: string) => void;
+  onDelete?: (context: AuditContext, userId: string) => void;
 };
 
 function makeUsersRepository(options: FakeRepositoryOptions = {}): UsersRepository {
@@ -108,6 +109,10 @@ function makeUsersRepository(options: FakeRepositoryOptions = {}): UsersReposito
     },
     async resetPassword(context, userId, passwordHash) {
       options.onReset?.(context, userId, passwordHash);
+      return makeAdminUser({ id: userId });
+    },
+    async deleteUser(context, userId) {
+      options.onDelete?.(context, userId);
       return makeAdminUser({ id: userId });
     },
   };
@@ -172,6 +177,7 @@ test("GET /api/users exposes effective permissions and stages for admin-role use
     async createUser() { return adminRecord; },
     async updateUser() { return adminRecord; },
     async resetPassword() { return adminRecord; },
+    async deleteUser() { return adminRecord; },
   };
   const app = createApp({ userRepository: makeUserRepository(makeAuthUser()), usersRepository, sessionSecret: SESSION_SECRET });
   t.after(async () => app.close());
@@ -286,5 +292,34 @@ test("POST /api/users/:id/reset-password hashes password and never returns hash"
 
   assert.equal(response.statusCode, 200);
   assert.equal(await bcrypt.compare("NovaSenhaTemporaria123!", capturedHash), true);
+  assert.equal(JSON.stringify(response.json()).includes("password"), false);
+});
+
+
+test("DELETE /api/users/:id deletes user and returns sanitized deleted record", async (t) => {
+  const captured: { userId?: string; actorId?: string } = {};
+  const app = createApp({
+    userRepository: makeUserRepository(makeAuthUser()),
+    usersRepository: makeUsersRepository({
+      onDelete(context, userId) {
+        captured.userId = userId;
+        captured.actorId = context.actorUserId;
+      },
+    }),
+    sessionSecret: SESSION_SECRET,
+  });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({
+    method: "DELETE",
+    url: "/api/users/33333333-3333-4333-8333-333333333333",
+    headers: { cookie },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(captured.userId, "33333333-3333-4333-8333-333333333333");
+  assert.equal(captured.actorId, "11111111-1111-4111-8111-111111111111");
+  assert.equal(response.json().user.id, "33333333-3333-4333-8333-333333333333");
   assert.equal(JSON.stringify(response.json()).includes("password"), false);
 });

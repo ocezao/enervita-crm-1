@@ -31,4 +31,36 @@ export const authApi = {
     const response = await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     if (!response.ok) throw new Error(await parseError(response, 'Não foi possível sair.'));
   },
+  async updateProfile(payload: { name?: string; email?: string; avatarUrl?: string | null }): Promise<AuthUser> {
+    const response = await fetch('/api/me', {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error(await parseError(response, 'Não foi possível atualizar perfil.'));
+    const body = (await response.json()) as LoginResponse;
+    return body.user;
+  },
+  async uploadAvatar(file: File): Promise<AuthUser> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    const response = await fetch('/api/me/avatar', {
+      method: 'POST',
+      credentials: 'include',
+      body: formData,
+    });
+    if (!response.ok) throw new Error(await parseError(response, 'Não foi possível enviar a foto.'));
+    const body = (await response.json()) as LoginResponse;
+    return body.user;
+  },
+  async changePassword(payload: { currentPassword: string; newPassword: string }): Promise<void> {
+    const response = await fetch('/api/me/password', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error(await parseError(response, 'Não foi possível alterar senha.'));
+  },
 };

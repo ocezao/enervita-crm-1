@@ -56,7 +56,7 @@ describe('Operational integrations pages', () => {
     expect(await screen.findByText('Enviado')).toBeInTheDocument();
     expect(screen.getByText(/HTTP 200/)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: /testar webhook n8n - lead criado/i }));
+    await userEvent.click(screen.getByRole('button', { name: /validar integração n8n - lead criado/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/webhooks/n8n-lead-created/test', { credentials: 'include', method: 'POST' });
@@ -88,9 +88,9 @@ describe('Operational integrations pages', () => {
     expect(screen.getByText('Eventos monitorados')).toBeInTheDocument();
     expect(screen.getByText('Checklist de prontidão para produção')).toBeInTheDocument();
     expect(screen.getByText(/Segredo configurado:/)).toBeInTheDocument();
-    expect(screen.getAllByText(/Gerador de chaves de API/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Gerador de chaves de acesso/).length).toBeGreaterThan(0);
 
-    await userEvent.click(screen.getByRole('button', { name: /executar teste controlado alerta de lead sem follow-up/i }));
+    await userEvent.click(screen.getByRole('button', { name: /validar automação alerta de lead sem follow-up/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith('/api/automations/lead-no-followup-12h/run', expect.objectContaining({ method: 'POST' }));

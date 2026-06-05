@@ -44,12 +44,29 @@ export default function Proposals() {
           <h3 className="text-2xl font-bold text-energy-success mt-1">{formatCurrency(openValue)}</h3>
         </Card>
         <Card className="p-5">
-          <p className="text-xs font-bold text-gray-400 uppercase">Status operacional</p>
-          <h3 className="text-2xl font-bold text-solar-orange mt-1">Homologação</h3>
+          <p className="text-xs font-bold text-gray-400 uppercase">Status comercial</p>
+          <h3 className="text-2xl font-bold text-solar-orange mt-1">Em acompanhamento</h3>
         </Card>
       </div>
 
       <Card className="overflow-hidden">
+        <div className="md:hidden divide-y divide-gray-100">
+          {proposals.map((proposal) => (
+            <article key={proposal.id} className="p-4 space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0"><p className="font-bold text-graphite truncate flex items-center gap-2"><FileText size={16} className="text-solar-orange shrink-0" />{proposal.title}</p><p className="text-xs text-gray-500 truncate">{proposal.leadName ?? proposal.leadId}</p></div>
+                <Badge variant={statusVariants[proposal.status]}>{statusLabels[proposal.status]}</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-xs text-gray-500">
+                <div><span className="block font-bold text-gray-400 uppercase">Conta</span>{formatCurrency(proposal.monthlyBillValue)}</div>
+                <div><span className="block font-bold text-gray-400 uppercase">Desconto</span>{proposal.discountPercentage}%</div>
+                <div className="col-span-2"><span className="block font-bold text-gray-400 uppercase">Economia anual</span><span className="font-bold text-energy-success">{formatCurrency(proposal.projectedAnnualSavings)}</span></div>
+              </div>
+            </article>
+          ))}
+          {!loading && proposals.length === 0 && <div className="px-6 py-12 text-center text-gray-400"><Send className="mx-auto mb-3" />Nenhuma proposta cadastrada ainda.</div>}
+        </div>
+        <div className="hidden md:block crm-scroll-panel overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="bg-gray-50 text-gray-400 uppercase text-xs font-bold">
             <tr>
@@ -81,6 +98,7 @@ export default function Proposals() {
             )}
           </tbody>
         </table>
+        </div>
       </Card>
     </div>
   );

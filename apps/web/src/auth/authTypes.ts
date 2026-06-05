@@ -3,6 +3,7 @@ export type AuthUser = {
   tenantId?: string;
   name: string;
   email: string;
+  avatarUrl?: string | null;
   roles?: string[];
   role?: string;
   permissions: string[];

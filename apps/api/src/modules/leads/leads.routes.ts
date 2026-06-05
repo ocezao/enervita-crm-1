@@ -2,8 +2,8 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { requirePermission } from '../../middleware/requireAuth.ts';
 import type { PublicUser, UserRepository } from '../auth/userRepository.ts';
 import { LeadsNotFoundError, LeadsOperationError, type LeadsRepository } from './repository.ts';
-import { changeLeadStage, createLead, getLead, listLeads, setLeadTags, updateLead } from './leads.service.ts';
-import { validateCreateLeadBody, validateListLeadsQuery, validateSetLeadTagsBody, validateStageChangeBody, validateUpdateLeadBody, validateUuid, ValidationError } from './validation.ts';
+import { bulkDeleteLeads, bulkSetLeadTags, changeLeadStage, createLead, deleteLead, getLead, listLeadHistory, listLeads, setLeadTags, updateLead } from './leads.service.ts';
+import { validateBulkSetLeadTagsBody, validateCreateLeadBody, validateLeadIdsBody, validateListLeadsQuery, validateSetLeadTagsBody, validateStageChangeBody, validateUpdateLeadBody, validateUuid, ValidationError } from './validation.ts';
 
 type LeadsRouteOptions = {
   userRepository: UserRepository;
@@ -44,6 +44,17 @@ export async function registerLeadsRoutes(app: FastifyInstance, options: LeadsRo
       const filters = validateListLeadsQuery(request.query);
       const leads = await listLeads(options.leadsRepository, authenticatedUser(request), filters);
       return { leads };
+    } catch (error) {
+      return handleLeadsError(error, reply);
+    }
+  });
+
+  app.get('/api/leads/:id/history', { preHandler: viewPreHandler }, async (request, reply) => {
+    try {
+      const { id: rawId } = request.params as { id: string };
+      const id = validateUuid(rawId, "id");
+      const history = await listLeadHistory(options.leadsRepository, authenticatedUser(request), id);
+      return { history };
     } catch (error) {
       return handleLeadsError(error, reply);
     }
@@ -90,6 +101,37 @@ export async function registerLeadsRoutes(app: FastifyInstance, options: LeadsRo
       const input = validateSetLeadTagsBody(request.body);
       const lead = await setLeadTags(options.leadsRepository, authenticatedUser(request), id, input, auditMetadata(request));
       return { lead };
+    } catch (error) {
+      return handleLeadsError(error, reply);
+    }
+  });
+
+  app.post('/api/leads/bulk/tags', { preHandler: editPreHandler }, async (request, reply) => {
+    try {
+      const input = validateBulkSetLeadTagsBody(request.body);
+      const leads = await bulkSetLeadTags(options.leadsRepository, authenticatedUser(request), input, auditMetadata(request));
+      return { leads };
+    } catch (error) {
+      return handleLeadsError(error, reply);
+    }
+  });
+
+  app.post('/api/leads/bulk/delete', { preHandler: editPreHandler }, async (request, reply) => {
+    try {
+      const input = validateLeadIdsBody(request.body);
+      const result = await bulkDeleteLeads(options.leadsRepository, authenticatedUser(request), input, auditMetadata(request));
+      return result;
+    } catch (error) {
+      return handleLeadsError(error, reply);
+    }
+  });
+
+  app.delete('/api/leads/:id', { preHandler: editPreHandler }, async (request, reply) => {
+    try {
+      const { id: rawId } = request.params as { id: string };
+      const id = validateUuid(rawId, "id");
+      await deleteLead(options.leadsRepository, authenticatedUser(request), id, auditMetadata(request));
+      return { deleted: 1 };
     } catch (error) {
       return handleLeadsError(error, reply);
     }

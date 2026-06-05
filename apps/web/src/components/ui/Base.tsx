@@ -12,12 +12,12 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
     const variants = {
-      primary: 'bg-solar-orange text-white hover:bg-solar-orange/90 shadow-sm',
-      secondary: 'bg-energy-green text-white hover:bg-energy-green/90 shadow-sm',
-      outline: 'border border-gray-200 bg-transparent hover:bg-gray-50 text-graphite',
-      ghost: 'hover:bg-gray-100 text-graphite',
-      danger: 'bg-alert-red text-white hover:bg-alert-red/90',
-      success: 'bg-energy-success text-white hover:bg-energy-success/90',
+      primary: 'crm-button-primary bg-solar-orange text-white shadow-sm shadow-solar-orange/20 hover:bg-solar-orange/90 hover:shadow-md hover:shadow-solar-orange/25',
+      secondary: 'crm-button-secondary bg-energy-green text-white shadow-sm shadow-energy-green/20 hover:bg-energy-green/90 hover:shadow-md hover:shadow-energy-green/25',
+      outline: 'crm-button-outline border border-gray-200 bg-transparent text-graphite hover:border-solar-orange/30 hover:bg-solar-orange/5 hover:text-solar-orange hover:shadow-sm',
+      ghost: 'crm-button-ghost text-graphite hover:bg-gray-100 hover:text-solar-orange',
+      danger: 'crm-button-danger bg-alert-red text-white shadow-sm shadow-alert-red/20 hover:bg-alert-red/90 hover:shadow-md hover:shadow-alert-red/25',
+      success: 'crm-button-success bg-energy-success text-white shadow-sm shadow-energy-success/20 hover:bg-energy-success/90 hover:shadow-md hover:shadow-energy-success/25',
     };
 
     const sizes = {
@@ -31,7 +31,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          'inline-flex items-center justify-center rounded-lg font-medium transition-all focus:outline-none focus:ring-2 focus:ring-solar-orange/50 disabled:opacity-50 disabled:pointer-events-none active:scale-95',
+          'crm-button group relative isolate overflow-hidden inline-flex items-center justify-center rounded-lg font-medium transition-[transform,box-shadow,background-color,border-color,color] duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-solar-orange/50 focus:ring-offset-2 focus:ring-offset-warm-white disabled:opacity-50 disabled:pointer-events-none active:translate-y-[1px] active:scale-[0.98] hover:-translate-y-0.5 [&>svg]:shrink-0 [&>svg]:transition-transform [&>svg]:duration-200 [&>svg]:ease-out hover:[&>svg]:scale-110',
           variants[variant],
           sizes[size],
           className

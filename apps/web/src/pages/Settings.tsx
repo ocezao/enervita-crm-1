@@ -70,7 +70,7 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Configurações" description="Organize o CRM, a operação, as integrações e os acessos da equipe Enervita." />
+      <PageHeader title="Configurações" description="Organize o CRM, a operação, as webhooks e os acessos da equipe Enervita." />
 
       <div className="flex flex-col md:flex-row gap-8">
         <aside className="w-full md:w-64 space-y-1">
@@ -143,7 +143,7 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
             <AdminMetric label="Leads ativos" value="CRM" tone="solar" />
             <AdminMetric label="SLA comercial" value="Ativo" tone="success" />
             <AdminMetric label="Automações" value={loading ? '...' : adminSummary.activeAutomations} tone="green" />
-            <AdminMetric label="Webhooks" value={loading ? '...' : adminSummary.activeWebhooks} tone={adminSummary.failedDeliveries > 0 ? 'danger' : 'green'} />
+            <AdminMetric label="Integrações" value={loading ? '...' : adminSummary.activeWebhooks} tone={adminSummary.failedDeliveries > 0 ? 'danger' : 'green'} />
           </div>
         </div>
       </Card>
@@ -176,7 +176,7 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
           <Card className="p-6">
             <SectionTitle icon={Target} title="Padrões comerciais" description="Regras simples para manter o funil limpo e previsível." />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
-              <PolicyCard icon={Layers} title="Entrada de novos leads" text="Todo lead novo entra em Novo lead e deve receber origem, cidade, valor de conta e tipo de imóvel quando disponíveis." />
+              <PolicyCard icon={Layers} title="Entrada de novos leads" text="Cada lead novo entra em Novo lead e deve receber origem, cidade, valor de conta e tipo de imóvel quando disponíveis." />
               <PolicyCard icon={BellRing} title="Primeiro contato" text="Gestor deve acompanhar leads sem contato rápido; tarefas vencidas e leads parados aparecem como prioridade." />
               <PolicyCard icon={CheckCircle2} title="Qualificação obrigatória" text="Antes de proposta: telefone, cidade/UF, concessionária, valor de conta e contexto de decisão." />
               <PolicyCard icon={Workflow} title="Governança do funil" text="Mudanças críticas de etapa devem deixar histórico; motivo de perda e próxima ação são regras administrativas." />
@@ -187,7 +187,7 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
             <SectionTitle icon={BellRing} title="Alertas administrativos" description="O que o administrador deve monitorar diariamente." />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5">
               <AlertRule title="Lead sem follow-up" status="Ativo" detail="Sinalizar oportunidades sem próxima tarefa ou sem movimentação recente." />
-              <AlertRule title="Webhook com falha" status={adminSummary.failedDeliveries > 0 ? `${adminSummary.failedDeliveries} falha(s)` : 'Sem falhas'} detail="Monitorar integrações antes que automações parem em silêncio." danger={adminSummary.failedDeliveries > 0} />
+              <AlertRule title="Integração com atenção" status={adminSummary.failedDeliveries > 0 ? `${adminSummary.failedDeliveries} ocorrência(s)` : 'Operação normal'} detail="Monitorar webhooks antes que automações parem em silêncio." danger={adminSummary.failedDeliveries > 0} />
               <AlertRule title="Resumo do gestor" status="Planejado" detail="Resumo diário por e-mail/WhatsApp via automação autorizada." />
             </div>
           </Card>
@@ -200,7 +200,7 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
             <div className="space-y-2">
               <AdminShortcut icon={User} title="Usuários e permissões" description="Liberar páginas, funções e etapas por funcionário." onClick={() => onOpenTab('users')} />
               <AdminShortcut icon={Layers} title="Etapas do funil" description="Revisar SLA, dono, entrada e saída por etapa." onClick={() => onOpenTab('pipeline')} />
-              <AdminShortcut icon={LinkIcon} title="Integrações" description="Acompanhar webhooks, automações e chaves." onClick={() => onOpenTab('integrations')} />
+              <AdminShortcut icon={LinkIcon} title="Integrações" description="Acompanhar automações, entregas e chaves." onClick={() => onOpenTab('integrations')} />
               <AdminShortcut icon={Monitor} title="Aparência" description="Ajustar leitura, marca e modo executivo." onClick={() => onOpenTab('appearance')} />
             </div>
           </Card>
@@ -210,7 +210,7 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
             <ul className="space-y-2 text-xs text-gray-600 leading-relaxed">
               <li>• Menu lateral filtra páginas liberadas.</li>
               <li>• Submenus filtram funções administrativas.</li>
-              <li>• API continua bloqueando ações sensíveis no servidor.</li>
+              <li>• Ações sensíveis continuam bloqueadas no servidor.</li>
               <li>• Administração de usuários exige permissão específica.</li>
             </ul>
           </Card>
@@ -312,7 +312,7 @@ function AppearanceSettingsPanel() {
           <Card className="p-6">
             <SectionTitle icon={SlidersHorizontal} title="2. Personalização básica" description="Controles simples que qualquer gestor entende sem mexer em código." />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
-              <Field label="Nome exibido no CRM" hint="Aparece em preview, relatórios e cabeçalhos futuros."><input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" value={settings.companyName} onChange={event => update('companyName', event.target.value)} /></Field>
+              <Field label="Nome exibido no CRM" hint="Aparece em relatórios e cabeçalhos do sistema."><input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" value={settings.companyName} onChange={event => update('companyName', event.target.value)} /></Field>
               <Field label="Estilo dos cantos" hint="Altera a sensação visual dos cards e modais."><SegmentedControl value={settings.corners} options={[{ value: 'soft', label: 'Suave' }, { value: 'rounded', label: 'Redondo' }, { value: 'sharp', label: 'Reto' }]} onChange={value => update('corners', value as AppearanceSettings['corners'])} /></Field>
               <ColorField label="Cor principal" value={settings.primaryColor} onChange={value => update('primaryColor', value)} />
               <ColorField label="Cor secundária" value={settings.secondaryColor} onChange={value => update('secondaryColor', value)} />
@@ -360,7 +360,7 @@ function SegmentedControl({ value, options, onChange }: { value: string; options
 function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) { return <button onClick={() => onChange(!checked)} className="w-full flex items-center justify-between gap-3 text-left"><span className="text-xs font-bold text-gray-600">{label}</span><span className={`relative h-6 w-11 rounded-full transition-all shrink-0 ${checked ? 'bg-solar-orange' : 'bg-gray-200'}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${checked ? 'left-6' : 'left-1'}`} /></span></button>; }
 function OptionCard({ icon: Icon, title, description, children }: { icon: AnyIcon; title: string; description: string; children: ReactNode }) { return <div className="rounded-2xl border border-gray-100 p-4 bg-gray-50/40 space-y-4"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-white text-solar-orange border border-gray-100"><Icon size={17} /></div><div><p className="font-bold text-sm text-graphite">{title}</p><p className="text-xs text-gray-500 leading-relaxed mt-1">{description}</p></div></div>{children}</div>; }
 function AdvancedToggle({ icon: Icon, title, description, checked, onChange }: { icon: AnyIcon; title: string; description: string; checked: boolean; onChange: (value: boolean) => void }) { return <div className={`rounded-2xl border p-4 transition-all ${checked ? 'border-solar-orange/30 bg-solar-orange/5' : 'border-gray-100 bg-white'}`}><div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><div className={`p-2 rounded-xl ${checked ? 'bg-solar-orange text-white' : 'bg-gray-100 text-gray-500'}`}><Icon size={17} /></div><div><p className="font-bold text-sm text-graphite">{title}</p><p className="text-xs text-gray-500 leading-relaxed mt-1">{description}</p></div></div><div className="w-12"><Toggle checked={checked} label="" onChange={onChange} /></div></div></div>; }
-function AppearancePreview({ settings, completion }: { settings: AppearanceSettings; completion: number }) { const radius = settings.corners === 'sharp' ? '10px' : settings.corners === 'rounded' ? '28px' : '18px'; const cardPadding = settings.density === 'compact' ? '12px' : settings.density === 'spacious' ? '22px' : '16px'; const previewCardClass = settings.cardStyle === 'glass' ? 'bg-white/65 backdrop-blur shadow-sm' : settings.cardStyle === 'flat' ? 'bg-white border border-gray-100' : 'bg-white shadow-sm'; return <Card className="p-5 bg-white"><div className="flex items-center justify-between mb-4"><div><h4 className="text-sm font-black text-graphite">Preview ao vivo</h4><p className="text-xs text-gray-500">Como a equipe perceberá o CRM.</p></div><Badge variant="success">{completion}% pronto</Badge></div><div className="rounded-[24px] border border-gray-100 p-3 shadow-inner" style={{ background: settings.backgroundColor }}><div className="grid grid-cols-[70px_1fr] gap-3 min-h-[300px]"><div className="rounded-[18px] p-3 text-white flex flex-col gap-2" style={{ background: settings.graphiteColor }}><div className="h-8 w-8 rounded-xl bg-white/15" />{['Dash', 'Leads', 'Funil', 'Config'].map((item, index) => <div key={item} className={`h-8 rounded-xl ${index === 3 ? 'bg-white/20' : 'bg-white/8'} flex items-center justify-center text-[9px] font-bold`}>{settings.navigation === 'icons' ? item.slice(0, 1) : item}</div>)}</div><div className="space-y-3"><div className="flex items-center justify-between rounded-2xl bg-white/80 p-3"><div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{settings.companyName}</p><p className="text-sm font-black" style={{ color: settings.graphiteColor }}>Configurações</p></div><div className="h-9 w-9 rounded-full" style={{ background: settings.primaryColor }} /></div><div className="grid grid-cols-2 gap-2">{['Leads', 'Propostas'].map((item, index) => <div key={item} className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><p className="text-[10px] font-bold text-gray-400">{item}</p><p className="text-xl font-black" style={{ color: index === 0 ? settings.primaryColor : settings.secondaryColor }}>{index === 0 ? '148' : '32'}</p></div>)}</div><div className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><div className="flex items-center justify-between mb-3"><p className="text-xs font-black" style={{ color: settings.graphiteColor }}>Funil visual</p>{settings.fontScale !== 'normal' && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white mr-1" style={{ background: settings.primaryColor }}>{settings.fontScale === 'extra' ? 'TEXTO+' : 'TEXTO'}</span>}{settings.executiveMode && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white" style={{ background: settings.secondaryColor }}>EXEC</span>}</div><div className="space-y-2">{[78, 54, 28].map((width, index) => <div key={width} className="h-3 rounded-full bg-gray-100 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${width}%`, background: index === 2 && settings.highlightOverdue ? settings.primaryColor : settings.secondaryColor }} /></div>)}</div></div>{settings.showHints && <div className="rounded-2xl border border-dashed bg-white/70 p-3" style={{ borderColor: settings.primaryColor }}><p className="text-[10px] font-bold" style={{ color: settings.primaryColor }}>Dica ativa</p><p className="text-[10px] text-gray-500">Use filtros salvos para acompanhar campanhas críticas.</p></div>}</div></div></div></Card>; }
+function AppearancePreview({ settings, completion }: { settings: AppearanceSettings; completion: number }) { const radius = settings.corners === 'sharp' ? '10px' : settings.corners === 'rounded' ? '28px' : '18px'; const cardPadding = settings.density === 'compact' ? '12px' : settings.density === 'spacious' ? '22px' : '16px'; const previewCardClass = settings.cardStyle === 'glass' ? 'bg-white/65 backdrop-blur shadow-sm' : settings.cardStyle === 'flat' ? 'bg-white border border-gray-100' : 'bg-white shadow-sm'; return <Card className="p-5 bg-white"><div className="flex items-center justify-between mb-4"><div><h4 className="text-sm font-black text-graphite">Prévia visual</h4><p className="text-xs text-gray-500">Como a equipe perceberá o CRM.</p></div><Badge variant="success">{completion}% pronto</Badge></div><div className="rounded-[24px] border border-gray-100 p-3 shadow-inner" style={{ background: settings.backgroundColor }}><div className="grid grid-cols-[70px_1fr] gap-3 min-h-[300px]"><div className="rounded-[18px] p-3 text-white flex flex-col gap-2" style={{ background: settings.graphiteColor }}><div className="h-8 w-8 rounded-xl bg-white/15" />{['Dash', 'Leads', 'Funil', 'Config'].map((item, index) => <div key={item} className={`h-8 rounded-xl ${index === 3 ? 'bg-white/20' : 'bg-white/8'} flex items-center justify-center text-[9px] font-bold`}>{settings.navigation === 'icons' ? item.slice(0, 1) : item}</div>)}</div><div className="space-y-3"><div className="flex items-center justify-between rounded-2xl bg-white/80 p-3"><div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{settings.companyName}</p><p className="text-sm font-black" style={{ color: settings.graphiteColor }}>Configurações</p></div><div className="h-9 w-9 rounded-full" style={{ background: settings.primaryColor }} /></div><div className="grid grid-cols-2 gap-2">{['Leads', 'Propostas'].map((item, index) => <div key={item} className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><p className="text-[10px] font-bold text-gray-400">{item}</p><p className="text-xl font-black" style={{ color: index === 0 ? settings.primaryColor : settings.secondaryColor }}>{index === 0 ? '148' : '32'}</p></div>)}</div><div className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><div className="flex items-center justify-between mb-3"><p className="text-xs font-black" style={{ color: settings.graphiteColor }}>Funil visual</p>{settings.fontScale !== 'normal' && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white mr-1" style={{ background: settings.primaryColor }}>{settings.fontScale === 'extra' ? 'TEXTO+' : 'TEXTO'}</span>}{settings.executiveMode && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white" style={{ background: settings.secondaryColor }}>EXEC</span>}</div><div className="space-y-2">{[78, 54, 28].map((width, index) => <div key={width} className="h-3 rounded-full bg-gray-100 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${width}%`, background: index === 2 && settings.highlightOverdue ? settings.primaryColor : settings.secondaryColor }} /></div>)}</div></div>{settings.showHints && <div className="rounded-2xl border border-dashed bg-white/70 p-3" style={{ borderColor: settings.primaryColor }}><p className="text-[10px] font-bold" style={{ color: settings.primaryColor }}>Dica ativa</p><p className="text-[10px] text-gray-500">Use filtros salvos para acompanhar campanhas críticas.</p></div>}</div></div></div></Card>; }
 function Insight({ label, text }: { label: string; text: string }) { return <div className="flex gap-3 rounded-xl bg-gray-50 p-3"><span className="min-w-20 text-[10px] font-black text-solar-orange uppercase tracking-wide">{label}</span><span className="leading-relaxed">{text}</span></div>; }
 
 
@@ -388,7 +388,7 @@ function PipelineSettings() {
   const [selectedStage, setSelectedStage] = useState('novo_lead');
 
   const stages: FunnelStageConfig[] = [
-    { key: 'novo_lead', name: '1. Entrada do lead', promise: 'Todo contato novo entra rastreável e com origem clara.', owner: 'Marketing / SDR', sla: 'até 15 min', entry: 'Formulário, WhatsApp, indicação, campanha ou importação manual.', exit: 'Lead válido com canal, oferta e responsável definidos.', automation: 'lead.created → notifica SDR e pode iniciar cadência.', webhook: 'n8n - lead criado', nextAction: 'Conferir origem, telefone, campanha e criar primeira tarefa.', risk: 'Perder origem/campanha ou deixar lead sem dono.', tone: 'bg-solar-orange' },
+    { key: 'novo_lead', name: '1. Entrada do lead', promise: 'Cada contato novo entra rastreável e com origem clara.', owner: 'Marketing / SDR', sla: 'até 15 min', entry: 'Formulário, WhatsApp, indicação, campanha ou importação manual.', exit: 'Lead válido com canal, oferta e responsável definidos.', automation: 'lead.created → notifica SDR e pode iniciar cadência.', webhook: 'lead.created', nextAction: 'Conferir origem, telefone, campanha e criar primeira tarefa.', risk: 'Perder origem/campanha e tratar lead quente tarde demais.', tone: 'bg-solar-orange' },
     { key: 'qualificacao', name: '2. Qualificação', promise: 'Separar oportunidade real de curiosidade antes de consumir time técnico.', owner: 'SDR', sla: 'até 2h úteis', entry: 'Lead novo com contato possível.', exit: 'Perfil, cidade, conta média/interesse e timing definidos.', automation: 'Sem follow-up em 12h → cria alerta/tarefa urgente.', webhook: 'lead.no_followup_12h / automation.run', nextAction: 'Validar necessidade, segmento e melhor rota: assinatura, instalação, bateria ou investimento.', risk: 'Avançar lead sem dados mínimos e inflar proposta perdida.', tone: 'bg-energy-green' },
     { key: 'atendimento_iniciado', name: '3. Atendimento iniciado', promise: 'Primeiro contato consultivo, não só resposta rápida.', owner: 'SDR / Consultor', sla: 'mesmo dia', entry: 'Lead qualificado com responsável.', exit: 'Cliente respondeu e aceitou enviar dados/conta.', automation: 'Tarefa de retorno se não houver resposta.', webhook: 'lead.stage_changed', nextAction: 'Registrar resumo do atendimento e combinar envio da fatura.', risk: 'Conversas fora do CRM sem histórico.', tone: 'bg-graphite' },
     { key: 'conta_recebida', name: '4. Conta recebida', promise: 'Transformar fatura em diagnóstico comercial mensurável.', owner: 'Consultor / Pré-vendas', sla: 'até 24h', entry: 'Fatura, consumo ou dados mínimos recebidos.', exit: 'Consumo, concessionária, impostos e potencial calculados.', automation: 'Checklist de análise e lembrete se a conta ficar parada.', webhook: 'lead.stage_changed', nextAction: 'Conferir concessionária/tarifa e preparar diagnóstico.', risk: 'Erro de cálculo ou falta de validação técnica.', tone: 'bg-solar-orange' },
@@ -419,13 +419,13 @@ function PipelineSettings() {
             <div className="max-w-3xl min-w-0">
               <Badge variant="solar">Configurações &gt; Etapas do Funil</Badge>
               <h3 className="text-2xl md:text-4xl font-black tracking-tight mt-4">Funil comercial Enervita, ponta a ponta</h3>
-              <p className="text-sm md:text-base text-white/75 mt-3 leading-relaxed">Veja o que entra em cada etapa, quem é responsável, qual SLA seguir, quais automações ajudam e quais eventos/webhooks conectam a operação com n8n e relatórios.</p>
+              <p className="text-sm md:text-base text-white/75 mt-3 leading-relaxed">Veja o que entra em cada etapa, quem é responsável, qual SLA seguir, quais automações ajudam e quais eventos conectam a operação aos relatórios.</p>
             </div>
             <div className="grid grid-cols-2 gap-3 min-w-[280px]">
               <div className="rounded-2xl bg-white/10 border border-white/10 p-4"><p className="text-xs text-white/60">Leads ativos</p><p className="text-2xl font-black">{leadsLoading ? '...' : leads.length}</p></div>
               <div className="rounded-2xl bg-white/10 border border-white/10 p-4"><p className="text-xs text-white/60">Tarefas atrasadas</p><p className="text-2xl font-black text-solar-orange">{tasksLoading ? '...' : overdueTasks}</p></div>
               <div className="rounded-2xl bg-white/10 border border-white/10 p-4"><p className="text-xs text-white/60">Automações ativas</p><p className="text-2xl font-black text-mint-light">{automationsLoading ? '...' : activeAutomations}</p></div>
-              <div className="rounded-2xl bg-white/10 border border-white/10 p-4"><p className="text-xs text-white/60">Webhooks ativos</p><p className="text-2xl font-black text-mint-light">{webhooksLoading ? '...' : activeWebhooks}</p></div>
+              <div className="rounded-2xl bg-white/10 border border-white/10 p-4"><p className="text-xs text-white/60">Integrações ativas</p><p className="text-2xl font-black text-mint-light">{webhooksLoading ? '...' : activeWebhooks}</p></div>
             </div>
           </div>
         </div>
@@ -465,7 +465,7 @@ function PipelineSettings() {
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 items-stretch">
               <div className="rounded-2xl bg-white border border-gray-100 p-4"><p className="text-xs text-gray-400 font-bold mb-1">Evento / gatilho</p><p className="font-black text-graphite">{selected.automation}</p></div>
               <div className="hidden lg:flex items-center justify-center"><ArrowRight className="text-solar-orange" /></div>
-              <div className="rounded-2xl bg-white border border-gray-100 p-4"><p className="text-xs text-gray-400 font-bold mb-1">Webhook / integração</p><p className="font-black text-graphite">{selected.webhook}</p></div>
+              <div className="rounded-2xl bg-white border border-gray-100 p-4"><p className="text-xs text-gray-400 font-bold mb-1">Integração</p><p className="font-black text-graphite">{selected.webhook}</p></div>
             </div>
           </div>
         </Card>
@@ -476,7 +476,7 @@ function PipelineSettings() {
             <div className="rounded-2xl bg-gray-50 p-4"><p className="text-xs text-gray-400 font-black uppercase">Responsável</p><p className="text-lg font-black text-graphite mt-1">{selected.owner}</p></div>
             <div className="rounded-2xl bg-gray-50 p-4"><p className="text-xs text-gray-400 font-black uppercase">Leads nesta etapa</p><p className="text-lg font-black text-energy-green mt-1">{leadCountByStage[selected.key] ?? 0}</p></div>
             <div className="rounded-2xl bg-gray-50 p-4"><p className="text-xs text-gray-400 font-black uppercase">Automações relacionadas</p><p className="text-sm font-bold text-graphite mt-1">{matchingAutomations.length ? matchingAutomations.map(a => a.name).join(', ') : 'Sem regra ativa específica'}</p></div>
-            <div className="rounded-2xl bg-gray-50 p-4"><p className="text-xs text-gray-400 font-black uppercase">Webhooks relacionados</p><p className="text-sm font-bold text-graphite mt-1">{matchingWebhooks.length ? matchingWebhooks.map(w => w.name).join(', ') : 'Sem webhook direto'}</p></div>
+            <div className="rounded-2xl bg-gray-50 p-4"><p className="text-xs text-gray-400 font-black uppercase">Integrações relacionadas</p><p className="text-sm font-bold text-graphite mt-1">{matchingWebhooks.length ? matchingWebhooks.map(w => w.name).join(', ') : 'Sem integração direta'}</p></div>
           </div>
         </Card>
       </div>
@@ -494,7 +494,7 @@ function PipelineSettings() {
           </div>
         </Card>
         <Card className="p-6">
-          <SectionTitle icon={BellRing} title="Eventos e webhooks" description="Pontos onde o funil conversa com n8n, fila e logs." />
+          <SectionTitle icon={BellRing} title="Eventos e webhooks" description="Pontos onde o funil conversa com automações, fila e registros." />
           <div className="mt-5 space-y-3">
             {webhooksLoading ? <p className="text-sm text-gray-500">Carregando webhooks...</p> : webhooks.map(webhook => (
               <div key={webhook.id} className="rounded-2xl bg-gray-50 p-4"><div className="flex items-start justify-between gap-2"><p className="font-black text-sm text-graphite">{webhook.name}</p><Badge variant={webhook.status === 'active' ? 'success' : 'warning'}>{webhook.status === 'active' ? 'ativo' : webhook.status}</Badge></div><div className="flex flex-wrap gap-1 mt-3">{webhook.eventTypes.map(event => <span key={event} className="text-[9px] bg-white border border-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-mono">{event}</span>)}</div><p className="text-xs text-gray-500 mt-3">Segredo: <b className={webhook.secretConfigured ? 'text-energy-green' : 'text-alert-red'}>{webhook.secretConfigured ? 'configurado' : 'pendente'}</b></p></div>
@@ -508,7 +508,7 @@ function PipelineSettings() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5 text-sm text-gray-700">
           <div className="rounded-2xl bg-white/80 p-4"><b className="text-graphite">Gestor</b><p className="mt-2">Confere gargalos por etapa, SLA e se automações estão cobrindo os pontos críticos.</p></div>
           <div className="rounded-2xl bg-white/80 p-4"><b className="text-graphite">SDR/Consultor</b><p className="mt-2">Entende o próximo movimento esperado em cada etapa e evita deixar lead sem ação.</p></div>
-          <div className="rounded-2xl bg-white/80 p-4"><b className="text-graphite">Técnico/Automação</b><p className="mt-2">Vê quais eventos e webhooks entram no funil antes de alterar n8n ou regras internas.</p></div>
+          <div className="rounded-2xl bg-white/80 p-4"><b className="text-graphite">Técnico/Automação</b><p className="mt-2">Vê quais eventos e webhooks entram no funil antes de alterar automações ou regras internas.</p></div>
         </div>
       </Card>
     </div>
@@ -552,23 +552,23 @@ function IntegrationsSettings() {
     ['lead.stage_changed', 'Mudança de etapa comercial'],
     ['lead.no_followup_12h', 'Lead sem follow-up por 12h'],
     ['proposal.open_48h', 'Proposta aberta sem retorno por 48h'],
-    ['automation.run', 'Execução manual/controlada de automação'],
-    ['webhook.test', 'Teste controlado de webhook'],
+    ['automation.run', 'Execução manual de automação'],
+    ['webhook.validation', 'Validação de integração'],
   ];
 
   const productionChecklist = [
     { label: 'Regras internas cadastradas', done: automations.length > 0 },
-    { label: 'Webhooks ativos para n8n', done: activeWebhooks > 0 },
+    { label: 'Integrações ativas para automações', done: activeWebhooks > 0 },
     { label: 'Logs de entrega auditáveis', done: deliveries.length > 0 },
-    { label: 'Segredos configurados nos webhooks', done: webhooks.length > 0 && webhooks.every(webhook => webhook.secretConfigured) },
-    { label: 'Gerador de API keys externas', done: false },
-    { label: 'Dispatcher enviando HTTP externo real', done: false },
+    { label: 'Segredos configurados nas webhooks', done: webhooks.length > 0 && webhooks.every(webhook => webhook.secretConfigured) },
+    { label: 'Gerador de chaves externas', done: false },
+    { label: 'Entregas externas habilitadas com segurança', done: false },
   ];
 
   const integrationLayers = [
-    ['Entrada de leads', 'Site, landing pages, formulários e n8n enviando oportunidades para o CRM.'],
-    ['Saída de eventos', 'Webhooks para avisar automações quando lead, tarefa ou proposta mudar.'],
-    ['Acesso externo seguro', 'API keys por integração, com escopos, expiração, rotação e logs.'],
+    ['Entrada de leads', 'Site, landing pages, formulários e automações enviando oportunidades para o CRM.'],
+    ['Saída de eventos', 'Entregas para avisar automações quando lead, tarefa ou proposta mudar.'],
+    ['Acesso externo seguro', 'Chaves por integração, com escopos, expiração, rotação e registros.'],
     ['Conectores de agentes', 'Camada futura para MCP/agentes consultarem contexto sem acesso amplo ao CRM.'],
   ];
 
@@ -576,15 +576,15 @@ function IntegrationsSettings() {
     'Gerar chave por integração, nunca uma chave única global',
     'Exibir o segredo completo somente uma vez, no momento da criação',
     'Salvar apenas hash da chave no backend',
-    'Definir escopos como leads:write, leads:read, tasks:write, webhooks:read',
+    'Definir escopos como leitura/criação de leads, tarefas e webhooks',
     'Permitir expiração, revogação e rotação manual',
     'Registrar último uso, IP/origem e falhas de autenticação',
   ];
 
   const connectorCards = [
     { title: 'Site / Landing pages', status: 'Prioridade', scopes: 'leads:write', text: 'Entrada controlada para criar leads vindos de páginas, formulários e campanhas sem depender de sessão de usuário.' },
-    { title: 'n8n / Automações', status: 'Em configuração', scopes: 'leads:read/write, tasks:write, webhooks:read', text: 'Orquestra follow-up, alertas, criação de tarefas e envio de eventos operacionais.' },
-    { title: 'Agentes / MCP', status: 'Futuro', scopes: 'leads:read, proposals:read, activities:write', text: 'Deve ficar atrás das mesmas chaves e escopos, com tools específicas em vez de acesso irrestrito ao banco.' },
+    { title: 'Automações comerciais', status: 'Em configuração', scopes: 'leads, tarefas e webhooks', text: 'Orquestra follow-up, alertas, criação de tarefas e envio de eventos operacionais.' },
+    { title: 'Agentes / MCP', status: 'Futuro', scopes: 'leads, propostas e atividades', text: 'Deve ficar atrás das mesmas chaves e escopos, com ferramentas específicas em vez de acesso irrestrito ao banco.' },
   ];
 
   return (
@@ -594,12 +594,12 @@ function IntegrationsSettings() {
         <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="max-w-3xl min-w-0">
             <div className="flex items-center gap-3 mb-3"><div className="p-2.5 rounded-2xl bg-energy-green text-white"><LinkIcon size={22} /></div><Badge variant="success">Configurações &gt; Integrações</Badge></div>
-            <h3 className="text-2xl md:text-3xl font-black text-graphite tracking-tight">Integrações, Webhooks e Chaves de API</h3>
-            <p className="text-sm md:text-base text-gray-600 mt-2 leading-relaxed">Centralize apenas o que faz sentido agora: entrada de leads, webhooks para automações, chaves de API por integração e uma base segura para futuros conectores de agentes.</p>
+            <h3 className="text-2xl md:text-3xl font-black text-graphite tracking-tight">Integrações, entregas e chaves de acesso</h3>
+            <p className="text-sm md:text-base text-gray-600 mt-2 leading-relaxed">Centralize apenas o que faz sentido agora: entrada de leads, webhooks para automações, chaves de acesso por integração e uma base segura para futuros conectores de agentes.</p>
           </div>
           <div className="grid grid-cols-2 gap-3 min-w-[260px]">
             <div className="rounded-2xl bg-white/80 border border-gray-100 p-4"><p className="text-xs text-gray-500">Automações ativas</p><p className="text-2xl font-black text-energy-green">{activeAutomations}</p></div>
-            <div className="rounded-2xl bg-white/80 border border-gray-100 p-4"><p className="text-xs text-gray-500">Webhooks ativos</p><p className="text-2xl font-black text-energy-green">{activeWebhooks}</p></div>
+            <div className="rounded-2xl bg-white/80 border border-gray-100 p-4"><p className="text-xs text-gray-500">Integrações ativas</p><p className="text-2xl font-black text-energy-green">{activeWebhooks}</p></div>
             <div className="rounded-2xl bg-white/80 border border-gray-100 p-4"><p className="text-xs text-gray-500">Falhas / fila</p><p className="text-sm font-black text-graphite mt-2">{failedDeliveries} falha(s) • {queuedDeliveries} fila</p></div>
             <div className="rounded-2xl bg-white/80 border border-gray-100 p-4"><p className="text-xs text-gray-500">Produção</p><p className="text-sm font-black text-alert-red mt-2">Parcial</p></div>
           </div>
@@ -608,7 +608,7 @@ function IntegrationsSettings() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <Card className="p-6 xl:col-span-2">
-          <SectionTitle icon={Database} title="Arquitetura de integrações" description="Separar entrada de dados, saída por eventos e acesso externo reduz risco operacional." />
+          <SectionTitle icon={Database} title="Arquitetura de webhooks" description="Separar entrada de dados, saída por eventos e acesso externo reduz risco operacional." />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
             {integrationLayers.map(([title, description]) => (
               <div key={title} className="rounded-2xl border border-gray-100 bg-gray-50/50 p-4">
@@ -617,7 +617,7 @@ function IntegrationsSettings() {
               </div>
             ))}
           </div>
-          <div className="mt-5 rounded-2xl bg-graphite text-mint-light p-5 overflow-x-auto">
+          <div className="mt-5 rounded-2xl bg-graphite text-mint-light p-5 crm-scroll-panel overflow-x-auto">
             <p className="text-xs text-white/50 mb-3">Fluxo recomendado para criação de lead externo</p>
             <pre className="text-xs whitespace-pre-wrap">{`POST /api/leads (autenticado)
 Authorization: Bearer <chave-gerada-para-a-integracao>
@@ -633,18 +633,18 @@ Content-Type: application/json
         </Card>
 
         <Card className="p-6 border-solar-orange/20 bg-solar-orange/5">
-          <SectionTitle icon={ShieldCheck} title="Gerador de chaves de API" description="Sim, precisa ser a próxima peça antes de liberar API externa." />
+          <SectionTitle icon={ShieldCheck} title="Gerador de chaves de acesso" description="Próxima peça antes de liberar webhooks externas." />
           <div className="mt-5 space-y-3 text-sm">
             {keyGeneratorRequirements.map(item => <div key={item} className="flex gap-2 text-gray-700"><CheckCircle2 size={16} className="text-energy-green shrink-0 mt-0.5" /> {item}</div>)}
           </div>
-          <Button variant="primary" className="w-full mt-6 opacity-60" disabled title="Planejamento técnico pendente">Planejamento técnico pendente</Button>
+          <Button variant="primary" className="w-full mt-6 opacity-60" disabled title="Definição em revisão">Definição em revisão</Button>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <Card className="p-6 xl:col-span-2">
           <div className="flex items-center justify-between gap-4 mb-5">
-            <SectionTitle icon={Workflow} title="Automações internas" description="Regras do CRM com gatilhos, condições, ações e teste controlado antes de produção." />
+            <SectionTitle icon={Workflow} title="Automações internas" description="Regras do CRM com gatilhos, condições, ações e validação antes de produção." />
             {lastRun && <Badge variant={lastRun.status === 'success' ? 'success' : lastRun.status === 'failed' ? 'error' : 'warning'}>Último teste: {lastRun.status}</Badge>}
           </div>
           <div className="space-y-4">
@@ -665,7 +665,7 @@ Content-Type: application/json
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 border-t border-gray-50">
                     <div className="text-xs text-gray-500">Última execução: <b className="text-graphite">{automation.lastRunAt ? new Date(automation.lastRunAt).toLocaleString('pt-BR') : 'sem execução'}</b>{queuedFromLastRun !== null && <span> • {queuedFromLastRun} entrega(s) enfileirada(s)</span>}</div>
-                    <Button aria-label={`Executar teste controlado ${automation.name}`} variant="outline" size="sm" className="gap-2" onClick={() => void handleRunAutomation(automation.id)} disabled={runningAutomationId === automation.id}><RotateCcw size={14} /> Teste controlado</Button>
+                    <Button aria-label={`Validar automação ${automation.name}`} variant="outline" size="sm" className="gap-2" onClick={() => void handleRunAutomation(automation.id)} disabled={runningAutomationId === automation.id}><RotateCcw size={14} /> Validar</Button>
                   </div>
                 </div>
               );
@@ -674,7 +674,7 @@ Content-Type: application/json
         </Card>
 
         <Card className="p-6">
-          <SectionTitle icon={BellRing} title="Eventos monitorados" description="Vocabulário operacional que liga automações, webhooks e n8n." />
+          <SectionTitle icon={BellRing} title="Eventos monitorados" description="Vocabulário operacional que liga automações e webhooks." />
           <div className="mt-5 space-y-2">
             {eventCatalog.map(([event, description]) => <div key={event} className="rounded-xl bg-gray-50 p-3"><code className="text-xs font-bold text-graphite">{event}</code><p className="text-xs text-gray-500 mt-1">{description}</p></div>)}
           </div>
@@ -684,21 +684,21 @@ Content-Type: application/json
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <Card className="p-6 xl:col-span-2">
           <div className="flex items-center justify-between gap-4 mb-5">
-            <SectionTitle icon={Workflow} title="Webhooks para automações" description="Entregas controladas para n8n e outras ferramentas quando eventos comerciais acontecem." />
-            <Button variant="outline" size="sm" disabled title="Cadastro técnico em breve" className="opacity-60">Cadastro técnico em breve</Button>
+            <SectionTitle icon={Workflow} title="Integrações para automações" description="Entregas para automações e outras ferramentas quando eventos comerciais acontecem." />
+            <Button variant="outline" size="sm" disabled title="Cadastro em revisão" className="opacity-60">Nova integração</Button>
           </div>
           <div className="space-y-4">
             {loading ? <div className="py-8 text-center text-gray-500">Carregando webhooks...</div> : webhooks.map(webhook => (
               <div key={webhook.id} className="p-4 rounded-2xl border border-gray-100 hover:border-solar-orange/20 transition-all">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
-                  <div className="min-w-0"><h4 className="font-bold text-sm text-graphite">{webhook.name}</h4><code className="text-[10px] text-gray-400 break-all">{webhook.url}</code></div>
+                  <div className="min-w-0"><h4 className="font-bold text-sm text-graphite">{webhook.name}</h4><span className="text-[10px] text-gray-400">Destino seguro configurado</span></div>
                   <Badge variant={webhook.status === 'active' ? 'success' : webhook.status === 'failing' ? 'error' : 'default'}>{webhook.status === 'active' ? 'ativo' : webhook.status === 'failing' ? 'falhando' : webhook.status}</Badge>
                 </div>
                 <div className="flex flex-wrap gap-1 mt-3">{webhook.eventTypes.map(event => <span key={event} className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-mono">{event}</span>)}</div>
-                <div className="mt-3 text-xs text-gray-500">Segredo configurado: <b className={webhook.secretConfigured ? 'text-energy-green' : 'text-alert-red'}>{webhook.secretConfigured ? 'sim' : 'não'}</b> • Teste atual: fila controlada, sem HTTP externo real.</div>
+                <div className="mt-3 text-xs text-gray-500">Segredo configurado: <b className={webhook.secretConfigured ? 'text-energy-green' : 'text-alert-red'}>{webhook.secretConfigured ? 'sim' : 'não'}</b> • Validação atual: registra a entrega na fila antes do envio externo.</div>
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 border-t border-gray-50">
                   <div className="flex gap-5 text-xs"><span className="text-gray-500">Sucesso: <b className="text-energy-green">{webhook.successRate}%</b></span><span className="text-gray-500">Última entrega: <b className="text-graphite">{webhook.lastDeliveryAt ? new Date(webhook.lastDeliveryAt).toLocaleString('pt-BR') : '-'}</b></span></div>
-                  <Button aria-label={`Testar webhook ${webhook.name}`} variant="outline" size="sm" className="gap-2" onClick={() => void handleTest(webhook.id)} disabled={testingId === webhook.id}><RotateCcw size={14} /> Testar</Button>
+                  <Button aria-label={`Validar integração ${webhook.name}`} variant="outline" size="sm" className="gap-2" onClick={() => void handleTest(webhook.id)} disabled={testingId === webhook.id}><RotateCcw size={14} /> Validar</Button>
                 </div>
               </div>
             ))}
@@ -706,7 +706,7 @@ Content-Type: application/json
         </Card>
 
         <Card className="p-6">
-          <SectionTitle icon={BellRing} title="Logs recentes" description="Últimas entregas da fila de webhooks." />
+          <SectionTitle icon={BellRing} title="Registros recentes" description="Últimas entregas da fila de webhooks." />
           <div className="mt-5 space-y-3">
             {deliveries.length === 0 ? <p className="text-sm text-gray-500 py-6">Nenhuma entrega registrada ainda.</p> : deliveries.slice(0, 6).map(delivery => (
               <div key={delivery.id} className="rounded-xl bg-gray-50 p-3 text-xs text-gray-600">
@@ -724,12 +724,12 @@ Content-Type: application/json
           {productionChecklist.map(item => <div key={item.label} className="rounded-xl bg-white/80 border border-white p-3 flex items-start gap-2 text-sm"><CheckCircle2 size={16} className={`${item.done ? 'text-energy-green' : 'text-alert-red'} shrink-0 mt-0.5`} /><span className="text-gray-700">{item.label}</span></div>)}
         </div>
         <div className="mt-5 rounded-2xl bg-white/80 border border-alert-red/10 p-4 text-sm text-gray-700 leading-relaxed">
-          Conclusão: a página fica completa para homologar e operar automações internas controladas. Para produção plena com integrações externas, ainda exige segredos de webhook, dispatcher HTTP real, retry operacional e gerador de API keys.
+          Conclusão: a página já permite acompanhar e validar automações internas. Para produção plena com webhooks externas, ainda exige segredos das webhooks, política de tentativas, monitoramento operacional e gerador de chaves de acesso.
         </div>
       </Card>
 
       <Card className="p-6">
-        <SectionTitle icon={Sparkles} title="Conectores inteligentes / MCP" description="Futuro: agentes só entram depois de API keys, escopos e auditoria funcionando." />
+        <SectionTitle icon={Sparkles} title="Conectores inteligentes / MCP" description="Futuro: agentes só entram depois de Chaves de acesso, escopos e auditoria funcionando." />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-5">
           {connectorCards.map(card => (
             <div key={card.title} className="rounded-2xl border border-gray-100 p-5 bg-gray-50/50">
@@ -741,7 +741,7 @@ Content-Type: application/json
           ))}
         </div>
         <div className="mt-5 rounded-2xl bg-solar-orange/5 border border-solar-orange/10 p-4 text-sm text-gray-600 leading-relaxed">
-          Nesta etapa, MCP/agentes deve ficar como preparação arquitetural, não como promessa de recurso pronto. O caminho correto é liberar primeiro API keys com escopos, depois criar tools específicas para leitura de leads, propostas, tarefas e registro de atividades.
+          Nesta etapa, MCP/agentes deve ficar como preparação arquitetural, não como promessa de recurso pronto. O caminho correto é liberar primeiro Chaves de acesso com escopos, depois criar tools específicas para leitura de leads, propostas, tarefas e registro de atividades.
         </div>
       </Card>
     </div>

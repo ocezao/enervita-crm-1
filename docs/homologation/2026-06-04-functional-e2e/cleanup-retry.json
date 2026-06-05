@@ -1,0 +1,52 @@
+{
+  "steps": [
+    {
+      "name": "login",
+      "ok": true,
+      "status": 200,
+      "body": {}
+    },
+    {
+      "name": "complete_task_retry",
+      "ok": true,
+      "status": 200,
+      "body": {
+        "task": {
+          "id": "4e94116c-6990-4769-8d64-3f320dd0a529",
+          "tenantId": "ad6fc8c8-98d7-4e6a-9b53-d687048dd0ef",
+          "leadId": "c0a57a14-7853-4534-8f70-f5d74df87d0b",
+          "title": "QA tarefa qa-2026-06-04T02-56-43-132Z",
+          "description": null,
+          "status": "concluido",
+          "priority": "alta",
+          "ownerId": "ae27eb5b-6b26-46c8-a5c8-c64715094730",
+          "ownerName": "João Fabrício",
+          "dueDate": "2026-06-05 02:56:44.248+00",
+          "notes": "Tarefa sintética qa-2026-06-04T02-56-43-132Z",
+          "completedAt": "2026-06-04 02:57:05.802755+00",
+          "createdAt": "2026-06-04 02:56:44.269442+00",
+          "updatedAt": "2026-06-04 02:57:05.802755+00",
+          "leadName": "QA Homologacao CRM qa-2026-06-04T02-56-43-132Z",
+          "leadStage": "qualificacao"
+        }
+      }
+    },
+    {
+      "name": "delete_lead_retry",
+      "ok": true,
+      "status": 200,
+      "body": {
+        "deleted": 1
+      }
+    },
+    {
+      "name": "verify_lead_deleted",
+      "ok": false,
+      "status": 404,
+      "body": {
+        "error": "Lead not found"
+      }
+    }
+  ],
+  "ok": true
+}

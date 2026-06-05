@@ -9,7 +9,7 @@ export default {
     extend: {
       colors: {
         solar: {
-          orange: '#F58220',
+          orange: '#C05800',
         },
         energy: {
           green: '#2EAD5B',

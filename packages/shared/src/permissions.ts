@@ -25,6 +25,7 @@ export const PAGE_PERMISSION_KEYS = [
   'page.webhooks',
   'page.analytics',
   'page.ads',
+  'page.ai_assistant',
   'page.settings',
   'page.users',
 ] as const;
@@ -85,6 +86,7 @@ export const PERMISSION_DEFINITIONS = [
   { key: 'page.webhooks', label: 'Acessar webhooks', category: 'navigation', group: 'Páginas', kind: 'page' },
   { key: 'page.analytics', label: 'Acessar analytics', category: 'navigation', group: 'Páginas', kind: 'page' },
   { key: 'page.ads', label: 'Acessar mídia paga', category: 'navigation', group: 'Páginas', kind: 'page' },
+  { key: 'page.ai_assistant', label: 'Acessar Assistente IA', category: 'navigation', group: 'Páginas', kind: 'page' },
   { key: 'page.settings', label: 'Acessar configurações', category: 'navigation', group: 'Páginas', kind: 'page' },
   { key: 'page.users', label: 'Acessar usuários', category: 'navigation', group: 'Páginas', kind: 'page' },
   { key: 'lead.view', label: 'Visualizar leads', category: 'lead', group: 'Leads', kind: 'action' },

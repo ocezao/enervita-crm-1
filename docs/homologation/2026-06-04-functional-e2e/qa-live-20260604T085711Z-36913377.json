@@ -1,0 +1,170 @@
+{
+  "runId": "qa-live-20260604T085711Z-36913377",
+  "base": "https://crm.enervita.com.br",
+  "startedAt": "login_admin",
+  "steps": [
+    {
+      "name": "login_admin",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "name": "admin_cookie_http_only_observed",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "name": "me_authenticated",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "name": "me_permissions_loaded",
+      "ok": true,
+      "status": 200,
+      "permissionsCount": 38
+    },
+    {
+      "name": "logout_replay_old_cookie_rejected",
+      "ok": false,
+      "status": 200
+    },
+    {
+      "name": "relogin_admin_for_e2e",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "name": "create_restricted_user",
+      "ok": true,
+      "status": 201
+    },
+    {
+      "name": "login_restricted_user",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "name": "restricted_user_cannot_list_users",
+      "ok": true,
+      "status": 403
+    },
+    {
+      "name": "create_synthetic_lead",
+      "ok": true,
+      "status": 201
+    },
+    {
+      "name": "tag_synthetic_lead",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "name": "list_filter_lead_by_tag",
+      "ok": true,
+      "status": 200,
+      "matched": 1
+    },
+    {
+      "name": "restricted_user_can_view_allowed_stage",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "name": "change_lead_stage",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "name": "restricted_user_cannot_view_disallowed_stage",
+      "ok": true,
+      "status": 404
+    },
+    {
+      "name": "edit_lead_fields",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "name": "create_task_for_lead",
+      "ok": true,
+      "status": 201
+    },
+    {
+      "name": "list_tasks_for_lead",
+      "ok": true,
+      "status": 200,
+      "tasks": 1
+    },
+    {
+      "name": "complete_task_without_body",
+      "ok": true,
+      "status": 200,
+      "taskStatus": "concluido"
+    },
+    {
+      "name": "create_activity_timeline",
+      "ok": true,
+      "status": 201
+    },
+    {
+      "name": "list_activity_timeline",
+      "ok": true,
+      "status": 200,
+      "activities": 1
+    },
+    {
+      "name": "list_lead_history",
+      "ok": true,
+      "status": 200,
+      "history": 4
+    },
+    {
+      "name": "create_proposal_for_lead",
+      "ok": true,
+      "status": 201
+    },
+    {
+      "name": "list_proposals_for_lead",
+      "ok": true,
+      "status": 200,
+      "proposals": 1
+    },
+    {
+      "name": "list_non_google_tracking_events",
+      "ok": true,
+      "status": 200,
+      "events": 3
+    }
+  ],
+  "createdIdsPresent": {
+    "leadId": true,
+    "taskId": true,
+    "activityId": true,
+    "proposalId": true,
+    "restrictedUserId": true
+  },
+  "cleanup": [
+    {
+      "name": "delete_synthetic_lead",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "name": "verify_lead_deleted",
+      "ok": true,
+      "status": 404
+    },
+    {
+      "name": "delete_restricted_user",
+      "ok": true,
+      "status": 200
+    },
+    {
+      "name": "verify_restricted_user_deleted",
+      "ok": true,
+      "status": 404
+    }
+  ],
+  "ok": false
+}

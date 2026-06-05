@@ -8,6 +8,8 @@ import {
   BarChart3,
   Megaphone,
   FileText,
+  Bot,
+  UserCircle,
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { userHasAnyPermission } from '../../auth/permissions';
@@ -23,6 +25,8 @@ const navItems = [
   { icon: Zap, label: 'Automações', path: '/automations', requiredAny: ['page.automations', 'automation.manage'] },
   { icon: BarChart3, label: 'Analytics', path: '/analytics', requiredAny: ['page.analytics', 'analytics.view', 'tracking.view'] },
   { icon: Megaphone, label: 'Campanhas', path: '/ads', requiredAny: ['page.ads', 'ads.view'] },
+  { icon: Bot, label: 'Assistente IA', path: '/ai', requiredAny: ['page.ai_assistant'] },
+  { icon: UserCircle, label: 'Minha página', path: '/profile' },
   { icon: Settings, label: 'Configurações', path: '/settings', requiredAny: ['page.settings', 'settings.manage', 'user.manage'] },
 ];
 
@@ -61,8 +65,8 @@ export const Sidebar = () => {
 
       <div data-crm-sidebar-user className="p-4 border-t border-gray-50">
         <div className="bg-mint-light/50 p-4 rounded-2xl flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-energy-green flex items-center justify-center text-white font-bold text-sm">
-            {initials}
+          <div className="w-10 h-10 overflow-hidden rounded-full bg-energy-green flex items-center justify-center text-white font-bold text-sm">
+            {user?.avatarUrl ? <img src={user.avatarUrl} alt="Foto do perfil no menu" className="h-full w-full object-cover" /> : initials}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-graphite truncate">{user?.name ?? 'Usuário'}</p>

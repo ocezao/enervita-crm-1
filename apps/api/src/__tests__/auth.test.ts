@@ -12,12 +12,22 @@ type TestUser = {
   tenantId: string;
   name: string;
   email: string;
+  avatarUrl?: string | null;
   passwordHash: string;
   status: 'active' | 'inactive';
   roles: string[];
   permissions: string[];
   allowedStages: string[];
+  sessionRevokedAtEpoch?: number | null;
 };
+
+type AvatarFileInput = {
+  fileName: string;
+  mimeType: string;
+  data: Buffer;
+};
+
+const uploadedAvatars: AvatarFileInput[] = [];
 
 function makeUser(overrides: Partial<TestUser> = {}): TestUser {
   return {
@@ -25,6 +35,7 @@ function makeUser(overrides: Partial<TestUser> = {}): TestUser {
     tenantId: '22222222-2222-2222-2222-222222222222',
     name: 'Admin Enervita',
     email: 'admin@enervita.com.br',
+    avatarUrl: null,
     passwordHash: bcrypt.hashSync('SenhaSegura123!', 4),
     status: 'active',
     roles: ['admin'],
@@ -46,6 +57,35 @@ function makeUserRepository(user: TestUser | null = makeUser()) {
     },
     async recordLogin(userId: string) {
       assert.equal(userId, user?.id);
+    },
+    async getSessionRevokedAtEpoch(userId: string) {
+      if (!user || user.id !== userId) return null;
+      return user.sessionRevokedAtEpoch ?? null;
+    },
+    async revokeSessions(userId: string) {
+      assert.equal(userId, user?.id);
+      if (user) user.sessionRevokedAtEpoch = Date.now();
+    },
+    async updateOwnProfile(userId: string, input: { name?: string; email?: string; avatarUrl?: string | null }) {
+      assert.equal(userId, user?.id);
+      if (!user) return null;
+      if (input.name !== undefined) user.name = input.name;
+      if (input.email !== undefined) user.email = input.email;
+      if (input.avatarUrl !== undefined) user.avatarUrl = input.avatarUrl;
+      return user;
+    },
+    async updateOwnPassword(userId: string, passwordHash: string) {
+      assert.equal(userId, user?.id);
+      if (!user) return null;
+      user.passwordHash = passwordHash;
+      return user;
+    },
+    async saveOwnAvatar(userId: string, input: AvatarFileInput) {
+      assert.equal(userId, user?.id);
+      uploadedAvatars.push(input);
+      if (!user) return null;
+      user.avatarUrl = `/uploads/avatars/${userId}-avatar.png`;
+      return user;
     },
   };
 }
@@ -95,6 +135,7 @@ test('POST /api/auth/login sets an httpOnly session cookie and does not return p
     tenantId: '22222222-2222-2222-2222-222222222222',
     name: 'Admin Enervita',
     email: 'admin@enervita.com.br',
+    avatarUrl: null,
     roles: ['admin'],
     permissions: [...PERMISSION_KEYS],
     allowedStages: [...PIPELINE_STAGE_KEYS],
@@ -131,6 +172,7 @@ test('GET /api/me returns the current user from a valid session cookie', async (
     tenantId: '22222222-2222-2222-2222-222222222222',
     name: 'Admin Enervita',
     email: 'admin@enervita.com.br',
+    avatarUrl: null,
     roles: ['admin'],
     permissions: [...PERMISSION_KEYS],
     allowedStages: [...PIPELINE_STAGE_KEYS],
@@ -149,6 +191,20 @@ test('POST /api/auth/logout clears the session cookie', async (t) => {
   assert.match(setCookie, /^enervita_session=;/);
   assert.match(setCookie, /Max-Age=0/i);
   assert.match(setCookie, /HttpOnly/i);
+});
+
+test('POST /api/auth/logout revokes replay of the old session cookie', async (t) => {
+  const app = createApp({ userRepository: makeUserRepository(), sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const logout = await app.inject({ method: 'POST', url: '/api/auth/logout', headers: { cookie } });
+  assert.equal(logout.statusCode, 200);
+
+  const replay = await app.inject({ method: 'GET', url: '/api/me', headers: { cookie } });
+
+  assert.equal(replay.statusCode, 401);
+  assert.deepEqual(replay.json(), { error: 'Authentication required' });
 });
 
 test('POST /api/auth/login adds Secure when secure cookies are enabled', async (t) => {
@@ -293,6 +349,124 @@ test('GET /api/me returns permissions and allowed stages without password hash',
   assert.deepEqual(body.user.allowedStages, ['novo_lead', 'qualificacao']);
   assert.equal(JSON.stringify(body).includes('passwordHash'), false);
   assert.equal(JSON.stringify(body).includes('password_hash'), false);
+});
+
+
+test('PATCH /api/me lets the logged user update only their own personalization fields', async (t) => {
+  const user = makeUser({ roles: ['sdr'], permissions: ['page.dashboard'], allowedStages: ['novo_lead'] });
+  const app = createApp({ userRepository: makeUserRepository(user), sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({
+    method: 'PATCH',
+    url: '/api/me',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: { name: 'Maria SDR', email: 'maria@enervita.com.br', avatarUrl: 'https://cdn.enervita.test/maria.png', roles: ['admin'], permissions: ['user.manage'] },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(response.json().user, {
+    id: user.id,
+    tenantId: user.tenantId,
+    name: 'Maria SDR',
+    email: 'maria@enervita.com.br',
+    avatarUrl: 'https://cdn.enervita.test/maria.png',
+    roles: ['sdr'],
+    permissions: ['page.dashboard'],
+    allowedStages: ['novo_lead'],
+  });
+});
+
+test('PATCH /api/me rejects invalid self-service personalization payloads', async (t) => {
+  const app = createApp({ userRepository: makeUserRepository(), sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({
+    method: 'PATCH',
+    url: '/api/me',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: { email: 'not-an-email' },
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.deepEqual(response.json(), { error: 'email must be valid' });
+});
+test('POST /api/me/avatar stores a local avatar upload for the logged user only', async (t) => {
+  uploadedAvatars.length = 0;
+  const user = makeUser({ roles: ['sdr'], permissions: ['page.dashboard'] });
+  const app = createApp({ userRepository: makeUserRepository(user), sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const boundary = '----enervita-avatar-test';
+  const payload = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="avatar"; filename="avatar.png"\r\nContent-Type: image/png\r\n\r\n`),
+    Buffer.from('fake image bytes'),
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/me/avatar',
+    headers: { cookie, 'content-type': `multipart/form-data; boundary=${boundary}` },
+    payload,
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().user.avatarUrl, `/uploads/avatars/${user.id}-avatar.png`);
+  assert.equal(uploadedAvatars.length, 1);
+  assert.equal(uploadedAvatars[0]?.fileName, 'avatar.png');
+  assert.equal(uploadedAvatars[0]?.mimeType, 'image/png');
+  assert.deepEqual(uploadedAvatars[0]?.data, Buffer.from('fake image bytes'));
+});
+
+test('POST /api/me/avatar rejects non-image uploads', async (t) => {
+  uploadedAvatars.length = 0;
+  const app = createApp({ userRepository: makeUserRepository(), sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const boundary = '----enervita-avatar-invalid-test';
+  const payload = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="avatar"; filename="avatar.txt"\r\nContent-Type: text/plain\r\n\r\nnot an image\r\n--${boundary}--\r\n`);
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/me/avatar',
+    headers: { cookie, 'content-type': `multipart/form-data; boundary=${boundary}` },
+    payload,
+  });
+
+  assert.equal(response.statusCode, 400);
+  assert.deepEqual(response.json(), { error: 'avatar must be an image file' });
+  assert.equal(uploadedAvatars.length, 0);
+});
+
+test('POST /api/me/password requires the current password before changing the logged user password', async (t) => {
+  const user = makeUser({ roles: ['sdr'], permissions: ['page.dashboard'] });
+  const app = createApp({ userRepository: makeUserRepository(user), sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const rejected = await app.inject({
+    method: 'POST',
+    url: '/api/me/password',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: { currentPassword: 'senha-errada', newPassword: 'NovaSenhaSegura123!' },
+  });
+  assert.equal(rejected.statusCode, 401);
+
+  const accepted = await app.inject({
+    method: 'POST',
+    url: '/api/me/password',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: { currentPassword: 'SenhaSegura123!', newPassword: 'NovaSenhaSegura123!' },
+  });
+
+  assert.equal(accepted.statusCode, 200);
+  assert.deepEqual(accepted.json(), { ok: true });
+  assert.equal(await bcrypt.compare('NovaSenhaSegura123!', user.passwordHash), true);
 });
 
 test('GET /api/permissions/catalog requires login', async (t) => {

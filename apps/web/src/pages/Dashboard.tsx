@@ -97,7 +97,7 @@ export default function Dashboard() {
         <Card className="p-6">
           <h3 className="font-black text-graphite mb-6 flex items-center gap-2"><History size={20} className="text-solar-orange" />Atividades Recentes</h3>
           {recent.length > 0 ? <div className="space-y-4">{recent.map((event) => <div key={event.id} className="flex gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors"><div className="w-10 h-10 rounded-full bg-solar-orange/10 flex items-center justify-center text-solar-orange shrink-0"><FileText size={18} /></div><div className="min-w-0"><p className="text-sm font-medium text-graphite break-words">{event.outcome}</p><p className="text-xs text-gray-400 mt-1">{formatDate(event.occurredAt)}</p></div></div>)}</div> : <div className="rounded-3xl border border-dashed border-gray-200 p-8 text-center text-gray-500">Ainda não há atividades recentes registradas.</div>}
-          <Link to="/analytics"><Button variant="outline" className="w-full mt-6">Ver todo o histórico</Button></Link>
+          <Link to="/analytics"><Button variant="outline" className="w-full mt-6">Ver histórico completo</Button></Link>
         </Card>
 
         <Card className="p-6 bg-graphite text-white overflow-hidden relative">

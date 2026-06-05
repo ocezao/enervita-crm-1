@@ -5,7 +5,7 @@ import type { PipelineStageKey } from '@enervita/shared';
 import { createApp } from '../app.ts';
 import type { AuthUser, UserRepository } from '../modules/auth/userRepository.ts';
 import type { AuditContext } from '../modules/users/repository.ts';
-import { LeadsNotFoundError, type Lead, type LeadsRepository } from '../modules/leads/repository.ts';
+import { buildMetaStageEventPayloadForTest, queueMetaStageEventForTest, LeadsNotFoundError, type Lead, type LeadHistoryEvent, type LeadsRepository } from '../modules/leads/repository.ts';
 import type { CreateLeadInput, UpdateLeadInput } from '../modules/leads/validation.ts';
 
 const SESSION_SECRET = 'test-session-secret-with-32-characters';
@@ -62,7 +62,9 @@ function makeLead(overrides: Partial<Lead> = {}): Lead {
     fbclid: null,
     gclid: null,
     estimatedTicket: null,
-    sdrOwnerId: null,
+    sdrOwnerId: '11111111-1111-4111-8111-111111111111',
+    sdrOwner: 'Admin Enervita',
+    nextActionAt: null,
     priority: 'media',
     notes: null,
     lostReason: null,
@@ -86,28 +88,45 @@ function makeLead(overrides: Partial<Lead> = {}): Lead {
   };
 }
 
+type TestLeadHistoryEvent = LeadHistoryEvent;
+
 type FakeOptions = {
-  onList?: (tenantId: string, allowedStages: PipelineStageKey[] | null, filters?: unknown) => void;
+  onList?: (tenantId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, filters?: unknown) => void;
   onCreate?: (context: AuditContext, input: CreateLeadInput) => void;
-  onChangeStage?: (context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, targetStage: PipelineStageKey) => void;
-  onSetTags?: (context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, input: { tags: string[] }) => void;
+  onGetHistory?: (tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null) => void;
+  onChangeStage?: (context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, targetStage: PipelineStageKey) => void;
+  onSetTags?: (context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: { tags: string[] }) => void;
+  onBulkSetTags?: (context: AuditContext, leadIds: string[], allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: { tags: string[] }) => void;
+  onDelete?: (context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null) => void;
+  onBulkDelete?: (context: AuditContext, leadIds: string[], allowedStages: PipelineStageKey[] | null, ownerUserId: string | null) => void;
 };
 
-function makeLeadsRepository(initialLeads: Lead[] = [makeLead()], options: FakeOptions = {}): LeadsRepository {
+function makeLeadsRepository(initialLeads: Lead[] = [makeLead()], options: FakeOptions = {}, initialHistory: TestLeadHistoryEvent[] = []): LeadsRepository {
   const leads = initialLeads.map((lead) => ({ ...lead, contact: { ...lead.contact } }));
+  const auditHistory = initialHistory.map((event) => ({ ...event, actor: event.actor ? { ...event.actor } : null, changes: event.changes.map((change) => ({ ...change })) }));
   const history: Array<{ tenantId: string; leadId: string; fromStage: PipelineStageKey; toStage: PipelineStageKey }> = [];
 
-  function visible(lead: Lead, tenantId: string, allowedStages: PipelineStageKey[] | null) {
-    return lead.tenantId === tenantId && (allowedStages === null || allowedStages.includes(lead.stage));
+  function visible(lead: Lead, tenantId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null) {
+    return lead.tenantId === tenantId && (allowedStages === null || allowedStages.includes(lead.stage)) && (ownerUserId === null || lead.sdrOwnerId === ownerUserId);
   }
 
   return {
-    async listLeads(tenantId, allowedStages, filters) {
-      options.onList?.(tenantId, allowedStages, filters);
-      return leads.filter((lead) => visible(lead, tenantId, allowedStages));
+    async listLeads(tenantId, allowedStages, ownerUserId, filters) {
+      options.onList?.(tenantId, allowedStages, ownerUserId, filters);
+      return leads.filter((lead) => visible(lead, tenantId, allowedStages, ownerUserId));
     },
-    async getLead(tenantId, leadId, allowedStages) {
-      return leads.find((lead) => lead.id === leadId && visible(lead, tenantId, allowedStages)) ?? null;
+    async getLead(tenantId, leadId, allowedStages, ownerUserId) {
+      return leads.find((lead) => lead.id === leadId && visible(lead, tenantId, allowedStages, ownerUserId)) ?? null;
+    },
+    async listLeadHistory(tenantId, leadId, allowedStages, ownerUserId) {
+      options.onGetHistory?.(tenantId, leadId, allowedStages, ownerUserId);
+      const currentLead = leads.find((lead) => lead.id === leadId && lead.tenantId === tenantId);
+      if (currentLead && !visible(currentLead, tenantId, allowedStages, ownerUserId)) throw new LeadsNotFoundError('Lead not found');
+      const scopedEvents = auditHistory
+        .filter((event) => event.id.startsWith(`${tenantId}:${leadId}:`) && (allowedStages === null || event.stage === null || allowedStages.includes(event.stage)))
+        .sort((left, right) => right.occurredAt.localeCompare(left.occurredAt));
+      if (!currentLead && scopedEvents.length === 0) throw new LeadsNotFoundError('Lead not found');
+      return scopedEvents.map((event): LeadHistoryEvent => ({ ...event, id: event.id.split(':').at(-1) ?? event.id, actor: event.actor ? { ...event.actor } : null, changes: event.changes.map((change) => ({ ...change })) }));
     },
     async createLead(context, input: CreateLeadInput) {
       options.onCreate?.(context, input);
@@ -131,26 +150,46 @@ function makeLeadsRepository(initialLeads: Lead[] = [makeLead()], options: FakeO
       history.push({ tenantId: context.tenantId, leadId: lead.id, fromStage: input.stage, toStage: input.stage });
       return lead;
     },
-    async updateLead(context, leadId, allowedStages, input: UpdateLeadInput) {
-      const lead = leads.find((item) => item.id === leadId && visible(item, context.tenantId, allowedStages));
+    async updateLead(context, leadId, allowedStages, ownerUserId, input: UpdateLeadInput) {
+      const lead = leads.find((item) => item.id === leadId && visible(item, context.tenantId, allowedStages, ownerUserId));
       if (!lead) throw new LeadsNotFoundError('Lead not found');
       if (input.notes !== undefined) lead.notes = input.notes;
       return lead;
     },
-    async changeStage(context, leadId, allowedStages, targetStage) {
-      options.onChangeStage?.(context, leadId, allowedStages, targetStage);
-      const lead = leads.find((item) => item.id === leadId && visible(item, context.tenantId, allowedStages));
+    async changeStage(context, leadId, allowedStages, ownerUserId, targetStage) {
+      options.onChangeStage?.(context, leadId, allowedStages, ownerUserId, targetStage);
+      const lead = leads.find((item) => item.id === leadId && visible(item, context.tenantId, allowedStages, ownerUserId));
       if (!lead) throw new LeadsNotFoundError('Lead not found');
       const fromStage = lead.stage;
       lead.stage = targetStage;
       history.push({ tenantId: context.tenantId, leadId, fromStage, toStage: targetStage });
       return lead;
     },
-    async setLeadTags(context, leadId, allowedStages, input) {
-      options.onSetTags?.(context, leadId, allowedStages, input);
-      const lead = leads.find((item) => item.id === leadId && visible(item, context.tenantId, allowedStages));
+    async setLeadTags(context, leadId, allowedStages, ownerUserId, input) {
+      options.onSetTags?.(context, leadId, allowedStages, ownerUserId, input);
+      const lead = leads.find((item) => item.id === leadId && visible(item, context.tenantId, allowedStages, ownerUserId));
       if (!lead) throw new LeadsNotFoundError('Lead not found');
       return { ...lead, tags: input.tags.map((tag, index) => ({ id: `tag-${index}`, name: tag, slug: tag.toLowerCase().replace(/[^a-z0-9]+/g, '-'), color: null })) } as Lead;
+    },
+    async bulkSetLeadTags(context, leadIds, allowedStages, ownerUserId, input) {
+      options.onBulkSetTags?.(context, leadIds, allowedStages, ownerUserId, input);
+      return leads
+        .filter((lead) => leadIds.includes(lead.id) && visible(lead, context.tenantId, allowedStages, ownerUserId))
+        .map((lead) => ({ ...lead, tags: input.tags.map((tag, index) => ({ id: `tag-${index}`, name: tag, slug: tag.toLowerCase().replace(/[^a-z0-9]+/g, '-'), color: null })) } as Lead));
+    },
+    async deleteLead(context, leadId, allowedStages, ownerUserId) {
+      options.onDelete?.(context, leadId, allowedStages, ownerUserId);
+      const index = leads.findIndex((item) => item.id === leadId && visible(item, context.tenantId, allowedStages, ownerUserId));
+      if (index === -1) throw new LeadsNotFoundError('Lead not found');
+      leads.splice(index, 1);
+    },
+    async bulkDeleteLeads(context, leadIds, allowedStages, ownerUserId) {
+      options.onBulkDelete?.(context, leadIds, allowedStages, ownerUserId);
+      const visibleIds = new Set(leads.filter((lead) => leadIds.includes(lead.id) && visible(lead, context.tenantId, allowedStages, ownerUserId)).map((lead) => lead.id));
+      for (let index = leads.length - 1; index >= 0; index -= 1) {
+        if (visibleIds.has(leads[index].id)) leads.splice(index, 1);
+      }
+      return { deleted: visibleIds.size };
     },
     async countStageHistory(tenantId, leadId) {
       return history.filter((row) => row.tenantId === tenantId && row.leadId === leadId).length;
@@ -231,7 +270,69 @@ test('GET /api/leads returns all stages for admin users', async (t) => {
   assert.equal(response.json().leads.length, 2);
 });
 
+test('GET /api/leads scopes non-admin sellers to their own assigned leads', async (t) => {
+  const sellerId = '11111111-1111-4111-8111-111111111111';
+  const otherSellerId = '33333333-3333-4333-8333-333333333333';
+  const actor = makeAuthUser({ id: sellerId, roles: ['sdr'], permissions: ['lead.view'], allowedStages: ['novo_lead'] });
+  let capturedOwnerUserId: string | null | undefined;
+  const app = createApp({
+    userRepository: makeUserRepository(actor),
+    leadsRepository: makeLeadsRepository([
+      makeLead({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', stage: 'novo_lead', sdrOwnerId: sellerId }),
+      makeLead({ id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', stage: 'novo_lead', sdrOwnerId: otherSellerId }),
+      makeLead({ id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', stage: 'novo_lead', sdrOwnerId: null }),
+    ], { onList: (_tenantId, _allowedStages, ownerUserId) => { capturedOwnerUserId = ownerUserId; } }),
+    sessionSecret: SESSION_SECRET,
+  });
+  t.after(async () => app.close());
 
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({ method: 'GET', url: '/api/leads', headers: { cookie } });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(capturedOwnerUserId, sellerId);
+  assert.deepEqual(response.json().leads.map((lead: Lead) => lead.id), ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa']);
+});
+
+test('GET /api/leads does not scope admins by owner', async (t) => {
+  let capturedOwnerUserId: string | null | undefined;
+  const app = createApp({
+    userRepository: makeUserRepository(makeAuthUser()),
+    leadsRepository: makeLeadsRepository([
+      makeLead({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', sdrOwnerId: '11111111-1111-4111-8111-111111111111' }),
+      makeLead({ id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', sdrOwnerId: '33333333-3333-4333-8333-333333333333' }),
+      makeLead({ id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', sdrOwnerId: null }),
+    ], { onList: (_tenantId, _allowedStages, ownerUserId) => { capturedOwnerUserId = ownerUserId; } }),
+    sessionSecret: SESSION_SECRET,
+  });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({ method: 'GET', url: '/api/leads', headers: { cookie } });
+
+  assert.equal(response.statusCode, 200);
+  assert.equal(capturedOwnerUserId, null);
+  assert.equal(response.json().leads.length, 3);
+});
+
+test('GET /api/leads/:id rejects sellers opening another seller lead by direct URL', async (t) => {
+  const sellerId = '11111111-1111-4111-8111-111111111111';
+  const otherSellerId = '33333333-3333-4333-8333-333333333333';
+  const actor = makeAuthUser({ id: sellerId, roles: ['sdr'], permissions: ['lead.view'], allowedStages: ['novo_lead'] });
+  const app = createApp({
+    userRepository: makeUserRepository(actor),
+    leadsRepository: makeLeadsRepository([
+      makeLead({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', stage: 'novo_lead', sdrOwnerId: otherSellerId }),
+    ]),
+    sessionSecret: SESSION_SECRET,
+  });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({ method: 'GET', url: '/api/leads/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', headers: { cookie } });
+
+  assert.equal(response.statusCode, 404);
+});
 
 test('GET /api/leads accepts internal tag filters and keeps stage scope', async (t) => {
   const actor = makeAuthUser({ roles: ['sdr'], permissions: ['lead.view'], allowedStages: ['novo_lead'] });
@@ -240,7 +341,7 @@ test('GET /api/leads accepts internal tag filters and keeps stage scope', async 
   const app = createApp({
     userRepository: makeUserRepository(actor),
     leadsRepository: makeLeadsRepository([makeLead({ stage: 'novo_lead' })], {
-      onList: (_tenantId, allowedStages, filters) => {
+      onList: (_tenantId, allowedStages, _ownerUserId, filters) => {
         capturedStages = allowedStages;
         capturedFilters = filters;
       },
@@ -263,7 +364,7 @@ test('PATCH /api/leads/:id/tags requires lead.edit and updates internal tags', a
   const app = createApp({
     userRepository: makeUserRepository(actor),
     leadsRepository: makeLeadsRepository([makeLead({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', stage: 'novo_lead' })], {
-      onSetTags: (_context, _leadId, allowedStages, input) => {
+      onSetTags: (_context, _leadId, allowedStages, _ownerUserId, input) => {
         assert.deepEqual(allowedStages, ['novo_lead']);
         capturedTags = input.tags;
       },
@@ -285,6 +386,104 @@ test('PATCH /api/leads/:id/tags requires lead.edit and updates internal tags', a
   assert.deepEqual(response.json().lead.tags.map((tag: { slug: string }) => tag.slug), ['vip', 'urgente']);
 });
 
+test('DELETE /api/leads/:id requires lead.edit and deletes one visible lead', async (t) => {
+  const actor = makeAuthUser({ roles: ['sdr'], permissions: ['lead.view', 'lead.edit'], allowedStages: ['novo_lead'] });
+  let capturedLeadId = '';
+  let capturedStages: PipelineStageKey[] | null | undefined;
+  const repository = makeLeadsRepository([
+    makeLead({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', stage: 'novo_lead' }),
+    makeLead({ id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', stage: 'novo_lead' }),
+  ], {
+    onDelete: (_context, leadId, allowedStages) => {
+      capturedLeadId = leadId;
+      capturedStages = allowedStages;
+    },
+  });
+  const app = createApp({ userRepository: makeUserRepository(actor), leadsRepository: repository, sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({ method: 'DELETE', url: '/api/leads/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', headers: { cookie } });
+  const list = await app.inject({ method: 'GET', url: '/api/leads', headers: { cookie } });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(response.json(), { deleted: 1 });
+  assert.equal(capturedLeadId, 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+  assert.deepEqual(capturedStages, ['novo_lead']);
+  assert.deepEqual(list.json().leads.map((lead: Lead) => lead.id), ['bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb']);
+});
+
+test('POST /api/leads/bulk/delete deletes only selected leads visible in current stage scope', async (t) => {
+  const actor = makeAuthUser({ roles: ['sdr'], permissions: ['lead.view', 'lead.edit'], allowedStages: ['novo_lead'] });
+  let capturedIds: string[] = [];
+  let capturedStages: PipelineStageKey[] | null | undefined;
+  const repository = makeLeadsRepository([
+    makeLead({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', stage: 'novo_lead' }),
+    makeLead({ id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', stage: 'novo_lead' }),
+    makeLead({ id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', stage: 'diagnostico' }),
+  ], {
+    onBulkDelete: (_context, leadIds, allowedStages) => {
+      capturedIds = leadIds;
+      capturedStages = allowedStages;
+    },
+  });
+  const app = createApp({ userRepository: makeUserRepository(actor), leadsRepository: repository, sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/leads/bulk/delete',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: { leadIds: ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'] },
+  });
+  const list = await app.inject({ method: 'GET', url: '/api/leads', headers: { cookie } });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(response.json(), { deleted: 1 });
+  assert.deepEqual(capturedIds, ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc']);
+  assert.deepEqual(capturedStages, ['novo_lead']);
+  assert.deepEqual(list.json().leads.map((lead: Lead) => lead.id), ['bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb']);
+});
+
+test('POST /api/leads/bulk/tags applies normalized internal tags to selected visible leads', async (t) => {
+  const actor = makeAuthUser({ roles: ['sdr'], permissions: ['lead.view', 'lead.edit'], allowedStages: ['novo_lead'] });
+  let capturedIds: string[] = [];
+  let capturedTags: string[] = [];
+  let capturedStages: PipelineStageKey[] | null | undefined;
+  const app = createApp({
+    userRepository: makeUserRepository(actor),
+    leadsRepository: makeLeadsRepository([
+      makeLead({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', stage: 'novo_lead' }),
+      makeLead({ id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', stage: 'novo_lead' }),
+      makeLead({ id: 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', stage: 'diagnostico' }),
+    ], {
+      onBulkSetTags: (_context, leadIds, allowedStages, _ownerUserId, input) => {
+        capturedIds = leadIds;
+        capturedStages = allowedStages;
+        capturedTags = input.tags;
+      },
+    }),
+    sessionSecret: SESSION_SECRET,
+  });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/leads/bulk/tags',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: { leadIds: ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc'], tags: ['VIP', 'Follow up', 'VIP'] },
+  });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(capturedIds, ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc']);
+  assert.deepEqual(capturedStages, ['novo_lead']);
+  assert.deepEqual(capturedTags, ['vip', 'follow-up']);
+  assert.deepEqual(response.json().leads.map((lead: Lead) => lead.id), ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb']);
+  assert.deepEqual(response.json().leads[0].tags.map((tag: { slug: string }) => tag.slug), ['vip', 'follow-up']);
+});
+
 test('GET /api/leads/:id returns 404 for disallowed current stage without leaking existence', async (t) => {
   const actor = makeAuthUser({ roles: ['sdr'], permissions: ['lead.view'], allowedStages: ['novo_lead'] });
   const app = createApp({
@@ -299,6 +498,118 @@ test('GET /api/leads/:id returns 404 for disallowed current stage without leakin
 
   assert.equal(response.statusCode, 404);
   assert.deepEqual(response.json(), { error: 'Lead not found' });
+});
+
+test('GET /api/leads/:id/history requires lead.view and returns safe newest-first audit events', async (t) => {
+  const actor = makeAuthUser({ roles: ['sdr'], permissions: ['lead.view'], allowedStages: ['novo_lead'] });
+  let capturedStages: PipelineStageKey[] | null | undefined;
+  const leadId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const app = createApp({
+    userRepository: makeUserRepository(actor),
+    leadsRepository: makeLeadsRepository(
+      [makeLead({ id: leadId, stage: 'novo_lead' })],
+      { onGetHistory: (_tenantId, _leadId, allowedStages) => { capturedStages = allowedStages; } },
+      [
+        {
+          id: `${TENANT_ID}:${leadId}:older`,
+          action: 'lead.created',
+          occurredAt: '2026-05-29T10:00:00.000Z',
+          summary: 'Lead criado',
+          actor: null,
+          stage: 'novo_lead',
+          changes: [{ field: 'stage', label: 'Etapa', before: null, after: 'novo_lead' }],
+        },
+        {
+          id: `${TENANT_ID}:${leadId}:newer`,
+          action: 'lead.updated',
+          occurredAt: '2026-05-29T11:00:00.000Z',
+          summary: 'Lead atualizado',
+          actor: { id: actor.id, name: actor.name, email: actor.email },
+          stage: 'novo_lead',
+          changes: [
+            { field: 'priority', label: 'Prioridade', before: 'media', after: 'alta' },
+            { field: 'notes', label: 'Observações', before: null, after: 'Retornar amanhã' },
+          ],
+        },
+      ],
+    ),
+    sessionSecret: SESSION_SECRET,
+  });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({ method: 'GET', url: `/api/leads/${leadId}/history`, headers: { cookie } });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(capturedStages, ['novo_lead']);
+  assert.deepEqual(response.json(), {
+    history: [
+      {
+        id: 'newer',
+        action: 'lead.updated',
+        occurredAt: '2026-05-29T11:00:00.000Z',
+        summary: 'Lead atualizado',
+        actor: { id: actor.id, name: actor.name, email: actor.email },
+        stage: 'novo_lead',
+        changes: [
+          { field: 'priority', label: 'Prioridade', before: 'media', after: 'alta' },
+          { field: 'notes', label: 'Observações', before: null, after: 'Retornar amanhã' },
+        ],
+      },
+      {
+        id: 'older',
+        action: 'lead.created',
+        occurredAt: '2026-05-29T10:00:00.000Z',
+        summary: 'Lead criado',
+        actor: null,
+        stage: 'novo_lead',
+        changes: [{ field: 'stage', label: 'Etapa', before: null, after: 'novo_lead' }],
+      },
+    ],
+  });
+  const serialized = JSON.stringify(response.json()).toLowerCase();
+  assert.equal(serialized.includes('before_data'), false);
+  assert.equal(serialized.includes('after_data'), false);
+  assert.equal(serialized.includes('useragent'), false);
+  assert.equal(serialized.includes('ip'), false);
+});
+
+test('GET /api/leads/:id/history hides deleted lead history outside allowed audit stage scope', async (t) => {
+  const actor = makeAuthUser({ roles: ['sdr'], permissions: ['lead.view'], allowedStages: ['novo_lead'] });
+  const leadId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+  const app = createApp({
+    userRepository: makeUserRepository(actor),
+    leadsRepository: makeLeadsRepository([], {}, [
+      {
+        id: `${TENANT_ID}:${leadId}:deleted`,
+        action: 'lead.deleted',
+        occurredAt: '2026-05-29T12:00:00.000Z',
+        summary: 'Lead excluído',
+        actor: { id: actor.id, name: actor.name, email: actor.email },
+        stage: 'diagnostico',
+        changes: [{ field: 'stage', label: 'Etapa', before: 'diagnostico', after: null }],
+      },
+    ]),
+    sessionSecret: SESSION_SECRET,
+  });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({ method: 'GET', url: `/api/leads/${leadId}/history`, headers: { cookie } });
+
+  assert.equal(response.statusCode, 404);
+  assert.deepEqual(response.json(), { error: 'Lead not found' });
+});
+
+test('GET /api/leads/:id/history rejects authenticated users without lead.view', async (t) => {
+  const actor = makeAuthUser({ roles: ['sdr'], permissions: [], allowedStages: ['novo_lead'] });
+  const app = createApp({ userRepository: makeUserRepository(actor), leadsRepository: makeLeadsRepository(), sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({ method: 'GET', url: '/api/leads/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/history', headers: { cookie } });
+
+  assert.equal(response.statusCode, 403);
 });
 
 test('PATCH /api/leads/:id/stage requires lead.stage_change', async (t) => {
@@ -486,4 +797,79 @@ test('GET /api/leads enforces tenant isolation', async (t) => {
 
   assert.equal(response.statusCode, 200);
   assert.deepEqual(response.json().leads.map((lead: Lead) => lead.tenantId), [TENANT_ID]);
+});
+
+test('Meta stage-change payload includes lead qualification data for Kanban moves', () => {
+  const lead = makeLead({
+    stage: 'diagnostico',
+    qualificationStatus: 'qualificado',
+    priority: 'alta',
+    estimatedTicket: '35000.00',
+    metadata: {
+      energyBillValue: 820,
+      averageConsumptionKwh: 640,
+      concessionaria: 'Copel',
+      offer: 'Solar por assinatura',
+      projectedSavings: 246,
+      qualificationScore: 87,
+      qualificationReason: 'Conta alta e perfil elegível',
+    },
+    contact: {
+      ...makeLead().contact,
+      metadata: { cidade: 'Curitiba', estado: 'PR' },
+    },
+  });
+
+  const payload = buildMetaStageEventPayloadForTest(
+    lead,
+    { tenantId: TENANT_ID, actorUserId: '11111111-1111-4111-8111-111111111111' },
+    'stage_changed',
+    'conta_recebida',
+  );
+
+  assert.equal(payload.qualificationStatus, 'qualificado');
+  assert.deepEqual(payload.qualification, {
+    status: 'qualificado',
+    priority: 'alta',
+    estimatedTicket: 35000,
+    energyBillValue: 820,
+    averageConsumptionKwh: 640,
+    concessionaria: 'Copel',
+    offer: 'Solar por assinatura',
+    projectedSavings: 246,
+    score: 87,
+    reason: 'Conta alta e perfil elegível',
+  });
+  assert.equal(payload.transitionDirection, 'forward');
+});
+
+test('manual Kanban stage-change CAPI events wait 10 minutes and supersede pending moves', async () => {
+  const queries: Array<{ sql: string; params: unknown[] }> = [];
+  const client = {
+    async query(sql: string, params: unknown[] = []) {
+      queries.push({ sql, params });
+      return { rows: [] };
+    },
+  };
+  const lead = makeLead({ id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', stage: 'diagnostico' });
+
+  await queueMetaStageEventForTest(
+    client as never,
+    { tenantId: TENANT_ID, actorUserId: '11111111-1111-4111-8111-111111111111' },
+    lead,
+    'stage_changed',
+    'conta_recebida',
+  );
+
+  assert.equal(queries.length, 2);
+  assert.match(queries[0].sql, /status = 'discarded'::delivery_status/);
+  assert.match(queries[0].sql, /next_retry_at > now\(\)/);
+  assert.equal(queries[0].params[0], TENANT_ID);
+  assert.equal(queries[0].params[1], lead.id);
+  assert.match(queries[1].sql, /now\(\) \+ interval '10 minutes'/);
+  assert.equal(queries[1].params[2], 'EnervitaQualifiedLead');
+  const payload = JSON.parse(String(queries[1].params[3]));
+  assert.equal(payload.action, 'stage_changed');
+  assert.equal(payload.stage, 'diagnostico');
+  assert.equal(payload.fromStage, 'conta_recebida');
 });

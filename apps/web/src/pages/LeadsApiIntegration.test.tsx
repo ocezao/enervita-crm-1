@@ -69,14 +69,15 @@ describe('Leads page real API integration', () => {
       }
       if (url === '/api/leads/lead-real-1/activities') return jsonResponse({ activities: [] });
       if (url === '/api/leads/lead-real-1/tasks') return jsonResponse({ tasks: [] });
+      if (url === '/api/leads/lead-real-1/history') return jsonResponse({ history: [] });
       return jsonResponse({ error: 'Not found' }, 404);
     });
     vi.stubGlobal('fetch', fetchMock);
 
     render(<App />);
 
-    expect(await screen.findByText('Lead Real API')).toBeInTheDocument();
-    expect(screen.getByText('Empresa Real')).toBeInTheDocument();
+    expect((await screen.findAllByText('Lead Real API')).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText('Empresa Real')).length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /abrir perfil de lead real api/i })).toBeInTheDocument();
     expect(screen.queryByText('Exportar CSV')).not.toBeInTheDocument();
     await waitFor(() => {

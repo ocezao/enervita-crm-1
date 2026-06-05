@@ -47,8 +47,8 @@ const AUTOMATIONS: AutomationRule[] = [
 const WEBHOOKS: WebhookDefinition[] = [
   {
     id: 'n8n-lead-created',
-    name: 'n8n - lead criado',
-    url: 'https://n8n.enervita.com.br/webhook/lead-created',
+    name: 'Lead criado',
+    url: 'https://integracoes.enervita.com.br/webhook/lead-created',
     eventTypes: ['lead.created'],
     status: 'planned',
     successRate: 0,
@@ -56,8 +56,8 @@ const WEBHOOKS: WebhookDefinition[] = [
   },
   {
     id: 'n8n-stage-changed',
-    name: 'n8n - mudança de etapa',
-    url: 'https://n8n.enervita.com.br/webhook/lead-stage-changed',
+    name: 'Mudança de etapa',
+    url: 'https://integracoes.enervita.com.br/webhook/lead-stage-changed',
     eventTypes: ['lead.stage_changed'],
     status: 'planned',
     successRate: 0,

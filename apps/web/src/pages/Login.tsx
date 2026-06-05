@@ -41,7 +41,7 @@ export default function Login() {
   }
 
   return (
-    <main className="min-h-screen bg-warm-white flex items-center justify-center px-6">
+    <main className="min-h-screen bg-warm-white flex flex-col items-center justify-center gap-4 px-6">
       <section className="w-full max-w-md bg-white rounded-3xl border border-gray-100 shadow-xl p-8">
         <div className="flex items-center gap-3 mb-8">
           <div className="bg-solar-orange p-2 rounded-xl">
