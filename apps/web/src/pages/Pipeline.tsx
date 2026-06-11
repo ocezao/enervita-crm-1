@@ -196,7 +196,7 @@ export default function Pipeline() {
         <div className="mt-3 flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs text-gray-500"><span className="flex items-center gap-2"><Filter size={14} /> {filteredLeads.length} de {visibleRawLeads.length} leads visíveis · {urgentCount} alta/urgente</span><label className="font-bold">Ordenar <select value={sort} onChange={(event) => setSort(event.target.value as SortKey)} className="border border-gray-200 rounded-xl px-2 py-1 bg-white font-medium"><option value="oldest_stage">Mais parados primeiro</option><option value="updated_desc">Atualizados recentemente</option><option value="bill_desc">Maior conta primeiro</option><option value="priority_desc">Prioridade comercial</option></select></label></div>
       </Card>
 
-      <div className="flex-1 min-h-[720px] crm-scroll-panel overflow-x-auto pb-6 -mx-2 px-2"><div className="flex gap-5 h-full min-w-max">
+      <div className="flex-1 min-h-[1080px] crm-scroll-panel overflow-x-auto pb-8 -mx-2 px-2"><div className="flex gap-5 h-full min-w-max">
         {visibleStages.map((stage) => {
           const columnLeads = leadsInStage(stage.id);
           const columnValue = columnLeads.reduce((sum, lead) => sum + (lead.energyBillValue || lead.estimatedTicket || 0), 0);
