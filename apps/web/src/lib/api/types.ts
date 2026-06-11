@@ -63,6 +63,7 @@ export interface Lead {
   lastContactAt?: string;
   nextActionAt: string | null;
   notes?: string;
+  submittedAt?: string; // Real form submission date (Meta created_time, site createdAt, etc.)
   createdAt: string;
   updatedAt: string;
   energyBillValue: number;
@@ -154,6 +155,15 @@ export interface Proposal {
   lostAt?: string;
   lostReason?: string;
   notes?: string;
+  sourceType: 'editor' | 'file';
+  contentHtml?: string;
+  contentText?: string;
+  templateName?: string;
+  isTemplate: boolean;
+  importedFileName?: string;
+  importedFileMimeType?: string;
+  importedFileSize?: number;
+  importedFileDataBase64?: string;
   createdAt: string;
   updatedAt: string;
   leadName?: string;
@@ -170,6 +180,17 @@ export type CreateProposalPayload = {
   projectedAnnualSavings: number;
   validUntil?: string;
   notes?: string;
+  sourceType: 'editor' | 'file';
+  contentHtml?: string;
+  contentText?: string;
+  templateName?: string;
+  isTemplate?: boolean;
+  importedFile?: {
+    name: string;
+    mimeType: string;
+    size: number;
+    dataBase64?: string;
+  };
 };
 
 

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import bcrypt from 'bcryptjs';
 import { createApp } from '../app.ts';
 import type { AuthUser, UserRepository } from '../modules/auth/userRepository.ts';
-import type { Proposal, ProposalsRepository, TrackingEventSummary } from '../modules/proposals/repository.ts';
+import type { Proposal, ProposalStatus, ProposalsRepository, TrackingEventSummary } from '../modules/proposals/repository.ts';
 
 const SESSION_SECRET = 'test-session-secret-1234567890';
 const TENANT_ID = '22222222-2222-4222-8222-222222222222';
@@ -60,6 +60,15 @@ function proposal(overrides: Partial<Proposal> = {}): Proposal {
     updatedAt: '2026-05-29T00:00:00.000Z',
     leadName: 'João Mercado',
     leadStage: 'diagnostico',
+    sourceType: 'editor',
+    contentHtml: '<p>Proposta inicial</p>',
+    contentText: 'Proposta inicial',
+    templateName: null,
+    isTemplate: false,
+    importedFileName: null,
+    importedFileMimeType: null,
+    importedFileSize: null,
+    importedFileDataBase64: null,
     ...overrides,
   };
 }
@@ -106,9 +115,32 @@ function makeProposalsRepository(): ProposalsRepository {
         projectedAnnualSavings: input.projectedAnnualSavings,
         validUntil: input.validUntil ?? null,
         notes: input.notes ?? null,
+        sourceType: input.sourceType,
+        contentHtml: input.contentHtml ?? null,
+        contentText: input.contentText ?? null,
+        templateName: input.templateName ?? null,
+        isTemplate: input.isTemplate,
+        importedFileName: input.importedFile?.name ?? null,
+        importedFileMimeType: input.importedFile?.mimeType ?? null,
+        importedFileSize: input.importedFile?.size ?? null,
       });
       created.push(item);
       return item;
+    },
+    async getProposal(_tenantId, proposalId) {
+      return [proposal(), ...created].find((item) => item.id === proposalId) ?? null;
+    },
+    async listTemplates(_tenantId) {
+      return [proposal({ id: 'ffffffff-ffff-4fff-8fff-ffffffffffff', title: 'Template padrão', isTemplate: true }), ...created.filter((item) => item.isTemplate)];
+    },
+    async updateProposal(_context, proposalId, input) {
+      const items = [proposal(), ...created];
+      const current = items.find((item) => item.id === proposalId) ?? proposal({ id: proposalId });
+      return proposal({ ...current, ...input, status: (input.status ?? current.status) as ProposalStatus, sourceType: input.sourceType ?? current.sourceType, updatedAt: new Date().toISOString() });
+    },
+    async deleteProposal(_context, proposalId) {
+      const index = created.findIndex((item) => item.id === proposalId);
+      if (index >= 0) created.splice(index, 1);
     },
     async listTrackingEventsForLead(_tenantId, leadId, options) {
       return events.filter((item) => {
@@ -165,12 +197,94 @@ test('POST /api/proposals creates a native CRM proposal and keeps it in draft', 
       projectedAnnualSavings: 7680,
       validUntil: '2026-06-30T00:00:00.000Z',
       notes: 'Homologação comercial',
+      sourceType: 'editor',
+      contentHtml: '<h2>Proposta Enervita</h2><p>Texto escrito no editor.</p>',
+      contentText: 'Proposta Enervita\nTexto escrito no editor.',
+      templateName: 'Modelo comercial B2B',
+      isTemplate: true,
     },
   });
 
   assert.equal(response.statusCode, 201);
   assert.equal(response.json().proposal.status, 'draft');
   assert.equal(response.json().proposal.title, 'Proposta Comercial Enervita');
+  assert.equal(response.json().proposal.sourceType, 'editor');
+  assert.equal(response.json().proposal.contentHtml, '<h2>Proposta Enervita</h2><p>Texto escrito no editor.</p>');
+  assert.equal(response.json().proposal.templateName, 'Modelo comercial B2B');
+  assert.equal(response.json().proposal.isTemplate, true);
+});
+
+test('POST /api/proposals accepts imported files attached to a lead', async (t) => {
+  const app = createApp({ userRepository: makeUserRepository(makeAuthUser()), proposalsRepository: makeProposalsRepository(), sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+  const cookie = await loginAndGetCookie(app);
+
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/proposals',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: {
+      leadId: LEAD_ID,
+      title: 'Proposta importada PDF',
+      monthlyBillValue: 3200,
+      estimatedKwh: 2100,
+      discountPercentage: 20,
+      projectedMonthlySavings: 640,
+      projectedAnnualSavings: 7680,
+      sourceType: 'file',
+      importedFile: {
+        name: 'proposta-enervita.pdf',
+        mimeType: 'application/pdf',
+        size: 24576,
+        dataBase64: Buffer.from('arquivo sintético').toString('base64'),
+      },
+    },
+  });
+
+  assert.equal(response.statusCode, 201);
+  assert.equal(response.json().proposal.sourceType, 'file');
+  assert.equal(response.json().proposal.importedFileName, 'proposta-enervita.pdf');
+  assert.equal(response.json().proposal.importedFileMimeType, 'application/pdf');
+  assert.equal(response.json().proposal.importedFileSize, 24576);
+});
+
+test('POST /api/proposals rejects empty editor content and missing imported file', async (t) => {
+  const app = createApp({ userRepository: makeUserRepository(makeAuthUser()), proposalsRepository: makeProposalsRepository(), sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+  const cookie = await loginAndGetCookie(app);
+
+  const editorResponse = await app.inject({
+    method: 'POST',
+    url: '/api/proposals',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: {
+      leadId: LEAD_ID,
+      title: 'Proposta vazia',
+      monthlyBillValue: 1,
+      discountPercentage: 1,
+      projectedMonthlySavings: 1,
+      projectedAnnualSavings: 12,
+      sourceType: 'editor',
+      contentHtml: '   ',
+    },
+  });
+  assert.equal(editorResponse.statusCode, 400);
+
+  const fileResponse = await app.inject({
+    method: 'POST',
+    url: '/api/proposals',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: {
+      leadId: LEAD_ID,
+      title: 'Sem arquivo',
+      monthlyBillValue: 1,
+      discountPercentage: 1,
+      projectedMonthlySavings: 1,
+      projectedAnnualSavings: 12,
+      sourceType: 'file',
+    },
+  });
+  assert.equal(fileResponse.statusCode, 400);
 });
 
 test('GET /api/leads/:id/tracking-events returns non-Google tracking events for homologation', async (t) => {

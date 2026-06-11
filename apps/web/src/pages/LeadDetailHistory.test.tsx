@@ -89,6 +89,27 @@ describe('Lead detail history tab', () => {
     expect(fetchMock).toHaveBeenCalledWith(`/api/leads/${leadId}/history`, { credentials: 'include' });
   });
 
+  it('renders system-generated history entries without an actor instead of breaking lead opening', async () => {
+    vi.stubGlobal('fetch', mockLeadDetailFetch([
+      {
+        id: 'hist-system-1',
+        action: 'lead.assigned',
+        occurredAt: '2026-06-06T18:55:00.000Z',
+        actor: null,
+        summary: 'Lead atribuído automaticamente',
+        changes: [],
+      },
+    ]));
+
+    render(<App />);
+    expect(await screen.findByText('Lead com Histórico')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /histórico/i }));
+
+    const historyPanel = screen.getByRole('region', { name: /histórico do lead/i });
+    expect(within(historyPanel).getByText('Lead atribuído automaticamente')).toBeInTheDocument();
+    expect(within(historyPanel).getByText(/Sistema/)).toBeInTheDocument();
+  });
+
   it('shows an empty state when no history is returned', async () => {
     vi.stubGlobal('fetch', mockLeadDetailFetch([]));
 

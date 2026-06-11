@@ -35,6 +35,10 @@ export interface CrmApi {
   listProposals(): Promise<Proposal[]>;
   listProposalsForLead(leadId: string): Promise<Proposal[]>;
   createProposal(payload: CreateProposalPayload): Promise<Proposal>;
+  listTemplates(): Promise<Proposal[]>;
+  getProposal(id: string): Promise<Proposal>;
+  updateProposal(id: string, payload: Partial<CreateProposalPayload>): Promise<Proposal>;
+  deleteProposal(id: string): Promise<void>;
   listTrackingEventsForLead(leadId: string): Promise<TrackingEvent[]>;
 
   listTasks(): Promise<Task[]>;
@@ -144,6 +148,15 @@ type BackendProposal = {
   lostAt?: string | null;
   lostReason?: string | null;
   notes?: string | null;
+  sourceType?: Proposal['sourceType'] | null;
+  contentHtml?: string | null;
+  contentText?: string | null;
+  templateName?: string | null;
+  isTemplate?: boolean | null;
+  importedFileName?: string | null;
+  importedFileMimeType?: string | null;
+  importedFileSize?: string | number | null;
+  importedFileDataBase64?: string | null;
   createdAt: string;
   updatedAt: string;
   leadName?: string | null;
@@ -218,6 +231,31 @@ function priority(value: string | null | undefined): Priority {
   return value === 'baixa' || value === 'alta' || value === 'urgente' ? value : 'media';
 }
 
+function extractSubmittedAt(metadata: Record<string, unknown>, contactMetadata: Record<string, unknown>, createdAt: string, updatedAt: string): string {
+  const meta = (metadata.meta as Record<string, unknown> | undefined) ?? {};
+  const contactMeta = (contactMetadata.meta as Record<string, unknown> | undefined) ?? {};
+  const candidates = [
+    meta?.createdTime,
+    meta?.created_at,
+    meta?.receivedAt,
+    meta?.received_at,
+    contactMeta?.createdTime,
+    contactMeta?.created_at,
+    contactMeta?.receivedAt,
+    contactMeta?.received_at,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      const time = new Date(candidate).getTime();
+      if (Number.isFinite(time)) return candidate;
+    }
+    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+      return new Date(candidate * 1000).toISOString();
+    }
+  }
+  return createdAt || updatedAt;
+}
+
 function mapLead(raw: BackendLead): Lead {
   const metadata = raw.metadata ?? {};
   const contact = raw.contact ?? {};
@@ -241,6 +279,7 @@ function mapLead(raw: BackendLead): Lead {
     sdrOwner: raw.sdrOwner ?? raw.sdrOwnerId ?? 'Sem responsável',
     nextActionAt: raw.nextActionAt ?? null,
     notes: raw.notes ?? undefined,
+    submittedAt: extractSubmittedAt(metadata, contact.metadata ?? {}, raw.createdAt, raw.updatedAt),
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
     energyBillValue: numberFromMetadata(metadata, ['energyBillValue', 'billValue', 'contaMediaMensal']),
@@ -283,6 +322,15 @@ function mapProposal(raw: BackendProposal): Proposal {
     lostAt: raw.lostAt ?? undefined,
     lostReason: raw.lostReason ?? undefined,
     notes: raw.notes ?? undefined,
+    sourceType: raw.sourceType ?? 'editor',
+    contentHtml: raw.contentHtml ?? undefined,
+    contentText: raw.contentText ?? undefined,
+    templateName: raw.templateName ?? undefined,
+    isTemplate: raw.isTemplate === true,
+    importedFileName: raw.importedFileName ?? undefined,
+    importedFileMimeType: raw.importedFileMimeType ?? undefined,
+    importedFileSize: raw.importedFileSize === null || raw.importedFileSize === undefined ? undefined : numeric(raw.importedFileSize),
+    importedFileDataBase64: raw.importedFileDataBase64 ?? undefined,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
     leadName: raw.leadName ?? undefined,
@@ -326,10 +374,14 @@ function mapLeadHistoryEntry(raw: BackendLeadHistoryEntry): LeadHistoryEntry {
     id: raw.id,
     action: raw.action,
     occurredAt: raw.occurredAt,
-    actor: {
+    actor: raw.actor ? {
       id: raw.actor.id,
       name: raw.actor.name,
       email: raw.actor.email,
+    } : {
+      id: 'system',
+      name: 'Sistema',
+      email: 'automático',
     },
     summary: raw.summary,
     changes: Array.isArray(raw.changes) ? raw.changes.map((change) => ({
@@ -440,6 +492,29 @@ export class HttpCrmApi implements CrmApi {
       body: JSON.stringify(payload),
     });
     return mapProposal(body.proposal);
+  }
+
+  async listTemplates(): Promise<Proposal[]> {
+    const body = await requestJson<{ proposals: BackendProposal[] }>('/api/proposals/templates');
+    return body.proposals.map(mapProposal);
+  }
+
+  async getProposal(id: string): Promise<Proposal> {
+    const body = await requestJson<{ proposal: BackendProposal }>(`/api/proposals/${encodeURIComponent(id)}`);
+    return mapProposal(body.proposal);
+  }
+
+  async updateProposal(id: string, payload: Partial<CreateProposalPayload>): Promise<Proposal> {
+    const body = await requestJson<{ proposal: BackendProposal }>(`/api/proposals/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return mapProposal(body.proposal);
+  }
+
+  async deleteProposal(id: string): Promise<void> {
+    await requestJson<{ deleted: boolean }>(`/api/proposals/${encodeURIComponent(id)}`, { method: 'DELETE' });
   }
 
   async listTrackingEventsForLead(leadId: string): Promise<TrackingEvent[]> {

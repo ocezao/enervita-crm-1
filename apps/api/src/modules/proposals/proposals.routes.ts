@@ -1,9 +1,10 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { requirePermission } from '../../middleware/requireAuth.ts';
 import type { PublicUser, UserRepository } from '../auth/userRepository.ts';
+import { isAdminUser } from '../auth/userRepository.ts';
 import type { ProposalsRepository } from './repository.ts';
-import { createProposal, listProposals, listProposalsForLead, listTrackingEventsForLead } from './proposals.service.ts';
-import { ProposalValidationError, validateCreateProposalBody, validateUuid } from './validation.ts';
+import { createProposal, deleteProposal, getProposal, listProposals, listProposalsForLead, listTemplates, listTrackingEventsForLead, updateProposal } from './proposals.service.ts';
+import { ProposalValidationError, validateCreateProposalBody, validateUpdateProposalBody, validateUuid } from './validation.ts';
 
 type ProposalsRouteOptions = {
   userRepository: UserRepository;
@@ -40,6 +41,52 @@ export async function registerProposalsRoutes(app: FastifyInstance, options: Pro
     try {
       const proposals = await listProposals(options.proposalsRepository, authenticatedUser(request));
       return { proposals };
+    } catch (error) {
+      return handleError(error, reply);
+    }
+  });
+
+  app.get('/api/proposals/templates', { preHandler: viewPreHandler }, async (request, reply) => {
+    try {
+      const templates = await listTemplates(options.proposalsRepository, authenticatedUser(request));
+      return { proposals: templates };
+    } catch (error) {
+      return handleError(error, reply);
+    }
+  });
+
+  app.get('/api/proposals/:id', { preHandler: viewPreHandler }, async (request, reply) => {
+    try {
+      const { id: rawId } = request.params as { id: string };
+      const proposalId = validateUuid(rawId, 'id');
+      const proposal = await getProposal(options.proposalsRepository, authenticatedUser(request), proposalId);
+      if (!proposal) return reply.code(404).send({ error: 'Proposta não encontrada' });
+      return { proposal };
+    } catch (error) {
+      return handleError(error, reply);
+    }
+  });
+
+  app.put('/api/proposals/:id', { preHandler: viewPreHandler }, async (request, reply) => {
+    try {
+      const { id: rawId } = request.params as { id: string };
+      const proposalId = validateUuid(rawId, 'id');
+      const input = validateUpdateProposalBody(request.body);
+      const proposal = await updateProposal(options.proposalsRepository, authenticatedUser(request), proposalId, input, auditMetadata(request));
+      return { proposal };
+    } catch (error) {
+      return handleError(error, reply);
+    }
+  });
+
+  app.delete('/api/proposals/:id', { preHandler: viewPreHandler }, async (request, reply) => {
+    try {
+      const user = authenticatedUser(request);
+      if (!isAdminUser(user)) return reply.code(403).send({ error: 'Somente administradores podem excluir propostas' });
+      const { id: rawId } = request.params as { id: string };
+      const proposalId = validateUuid(rawId, 'id');
+      await deleteProposal(options.proposalsRepository, user, proposalId, auditMetadata(request));
+      return { deleted: true };
     } catch (error) {
       return handleError(error, reply);
     }
