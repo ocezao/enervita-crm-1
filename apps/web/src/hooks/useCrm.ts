@@ -309,22 +309,39 @@ export function useWebhooks() {
 
 export function useProposals() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [templates, setTemplates] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [proposalData, templateData] = await Promise.all([
+        api.listProposals(),
+        api.listTemplates().catch(() => []),
+      ]);
+      setProposals(proposalData);
+      setTemplates(templateData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar propostas');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    api.listProposals().then(data => {
-      setProposals(data);
-      setLoading(false);
-    });
+    void refresh();
   }, []);
 
   const createProposal = async (payload: CreateProposalPayload) => {
     const fresh = await api.createProposal(payload);
     setProposals(prev => [fresh, ...prev]);
+    if (fresh.isTemplate) setTemplates(prev => [fresh, ...prev]);
     return fresh;
   };
 
-  return { proposals, loading, createProposal };
+  return { proposals, templates, loading, error, refresh, createProposal };
 }
 
 export function useLeadTrackingEvents(id: string | undefined) {
