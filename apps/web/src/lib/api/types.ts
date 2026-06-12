@@ -63,6 +63,7 @@ export interface Lead {
   lastContactAt?: string;
   nextActionAt: string | null;
   notes?: string;
+  submittedAt?: string; // Real form submission date (Meta created_time, site createdAt, etc.)
   createdAt: string;
   updatedAt: string;
   energyBillValue: number;
@@ -100,6 +101,22 @@ export interface Activity {
   responseTimeSeconds?: number;
   notes?: string;
   occurredAt: string;
+  createdAt: string;
+}
+
+export interface Notification {
+  id: string;
+  tenantId: string;
+  userId: string;
+  taskId: string | null;
+  leadId: string | null;
+  type: string;
+  severity: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  body: string | null;
+  href: string | null;
+  metadata: Record<string, unknown>;
+  readAt: string | null;
   createdAt: string;
 }
 
@@ -154,6 +171,15 @@ export interface Proposal {
   lostAt?: string;
   lostReason?: string;
   notes?: string;
+  sourceType: 'editor' | 'file';
+  contentHtml?: string;
+  contentText?: string;
+  templateName?: string;
+  isTemplate: boolean;
+  importedFileName?: string;
+  importedFileMimeType?: string;
+  importedFileSize?: number;
+  importedFileDataBase64?: string;
   createdAt: string;
   updatedAt: string;
   leadName?: string;
@@ -170,6 +196,17 @@ export type CreateProposalPayload = {
   projectedAnnualSavings: number;
   validUntil?: string;
   notes?: string;
+  sourceType: 'editor' | 'file';
+  contentHtml?: string;
+  contentText?: string;
+  templateName?: string;
+  isTemplate?: boolean;
+  importedFile?: {
+    name: string;
+    mimeType: string;
+    size: number;
+    dataBase64?: string;
+  };
 };
 
 

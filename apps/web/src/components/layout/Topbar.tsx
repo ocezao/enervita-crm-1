@@ -6,7 +6,7 @@ import { useAuth } from '../../auth/useAuth';
 import { userHasAnyPermission } from '../../auth/permissions';
 import { Button } from '../ui/Base';
 import { HttpCrmApi } from '../../lib/api/crmApi';
-import type { Lead } from '../../lib/api/types';
+import type { Lead, Notification } from '../../lib/api/types';
 
 type SearchSuggestion = {
   id: string;
@@ -64,6 +64,9 @@ export const Topbar = () => {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [leadsLoaded, setLeadsLoaded] = useState(false);
 
@@ -123,6 +126,30 @@ export const Topbar = () => {
     navigate(suggestion.path);
     setQuery('');
     setOpen(false);
+  };
+
+  const handleNotificationClick = async (notification: Notification) => {
+    if (!notification.readAt) {
+      try {
+        const updated = await crmApi.markNotificationRead(notification.id);
+        setNotifications(prev => prev.map(item => item.id === notification.id ? updated : item));
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      } catch {
+        // Mantém a navegação mesmo se a leitura falhar.
+      }
+    }
+    setNotificationsOpen(false);
+    if (notification.href) navigate(notification.href);
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    try {
+      await crmApi.markAllNotificationsRead();
+      setNotifications(prev => prev.map(item => ({ ...item, readAt: item.readAt ?? new Date().toISOString() })));
+      setUnreadCount(0);
+    } catch {
+      // Falha silenciosa: a lista será recarregada no próximo refresh.
+    }
   };
 
   const handleLogout = async () => {
@@ -185,9 +212,38 @@ export const Topbar = () => {
       </div>
 
       <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" className="relative rounded-xl opacity-50" aria-label="Notificações" disabled title="Notificações">
-          <Bell size={20} className="text-gray-500" />
-        </Button>
+        <div className="relative">
+          <Button variant="outline" size="icon" className="relative rounded-xl" aria-label="Notificações" title="Notificações" onClick={() => setNotificationsOpen(prev => !prev)}>
+            <Bell size={20} className="text-gray-500" />
+            {unreadCount > 0 && <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-alert-red px-1 text-[10px] font-black text-white">{unreadCount}</span>}
+          </Button>
+          {notificationsOpen && (
+            <div className="absolute right-0 z-50 mt-3 w-80 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-gray-100 p-3">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-wider text-solar-orange">Notificações</p>
+                  <p className="text-xs text-gray-500">{unreadCount} não lida{unreadCount === 1 ? '' : 's'}</p>
+                </div>
+                <button type="button" onClick={handleMarkAllNotificationsRead} className="text-xs font-bold text-energy-green hover:underline">Marcar todas</button>
+              </div>
+              <div className="max-h-96 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <p className="p-4 text-sm text-gray-500">Nenhuma notificação por enquanto.</p>
+                ) : notifications.map((notification) => (
+                  <button key={notification.id} type="button" onClick={() => handleNotificationClick(notification)} className="block w-full border-b border-gray-50 p-4 text-left hover:bg-gray-50">
+                    <div className="flex items-start gap-3">
+                      <span className={`mt-1 h-2 w-2 rounded-full ${notification.readAt ? 'bg-gray-200' : 'bg-solar-orange'}`} />
+                      <div className="min-w-0">
+                        <p className="text-sm font-black text-graphite">{notification.title}</p>
+                        {notification.body && <p className="mt-1 line-clamp-2 text-xs text-gray-500">{notification.body}</p>}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
         <div className="hidden md:flex flex-col items-end leading-tight">
           <span className="text-sm font-semibold text-graphite">{user?.name ?? 'Operador'}</span>
           <span className="text-xs text-gray-400">{user?.email}</span>

@@ -20,6 +20,7 @@ import {
   Priority,
   CrmAnalyticsOverview,
   LeadHistoryEntry,
+  Notification,
 } from './types';
 
 export interface CrmApi {
@@ -35,6 +36,10 @@ export interface CrmApi {
   listProposals(): Promise<Proposal[]>;
   listProposalsForLead(leadId: string): Promise<Proposal[]>;
   createProposal(payload: CreateProposalPayload): Promise<Proposal>;
+  listTemplates(): Promise<Proposal[]>;
+  getProposal(id: string): Promise<Proposal>;
+  updateProposal(id: string, payload: Partial<CreateProposalPayload>): Promise<Proposal>;
+  deleteProposal(id: string): Promise<void>;
   listTrackingEventsForLead(leadId: string): Promise<TrackingEvent[]>;
 
   listTasks(): Promise<Task[]>;
@@ -45,6 +50,9 @@ export interface CrmApi {
   listActivities(leadId: string): Promise<Activity[]>;
   createActivity(payload: Partial<Activity>): Promise<Activity>;
   listLeadHistory(leadId: string): Promise<LeadHistoryEntry[]>;
+  listNotifications(limit?: number): Promise<{ notifications: Notification[]; unreadCount: number }>;
+  markNotificationRead(id: string): Promise<Notification>;
+  markAllNotificationsRead(): Promise<number>;
 
   listDashboardMetrics(): Promise<DashboardMetrics>;
   getAnalyticsOverview(filters?: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage }): Promise<CrmAnalyticsOverview>;
@@ -144,6 +152,15 @@ type BackendProposal = {
   lostAt?: string | null;
   lostReason?: string | null;
   notes?: string | null;
+  sourceType?: Proposal['sourceType'] | null;
+  contentHtml?: string | null;
+  contentText?: string | null;
+  templateName?: string | null;
+  isTemplate?: boolean | null;
+  importedFileName?: string | null;
+  importedFileMimeType?: string | null;
+  importedFileSize?: string | number | null;
+  importedFileDataBase64?: string | null;
   createdAt: string;
   updatedAt: string;
   leadName?: string | null;
@@ -168,6 +185,22 @@ type BackendTask = {
   createdAt: string;
   updatedAt: string;
   leadName?: string | null;
+};
+
+type BackendNotification = {
+  id: string;
+  tenantId: string;
+  userId: string;
+  taskId: string | null;
+  leadId: string | null;
+  type: string;
+  severity: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  body: string | null;
+  href: string | null;
+  metadata: Record<string, unknown>;
+  readAt: string | null;
+  createdAt: string;
 };
 
 type BackendActivity = {
@@ -218,6 +251,31 @@ function priority(value: string | null | undefined): Priority {
   return value === 'baixa' || value === 'alta' || value === 'urgente' ? value : 'media';
 }
 
+function extractSubmittedAt(metadata: Record<string, unknown>, contactMetadata: Record<string, unknown>, createdAt: string, updatedAt: string): string {
+  const meta = (metadata.meta as Record<string, unknown> | undefined) ?? {};
+  const contactMeta = (contactMetadata.meta as Record<string, unknown> | undefined) ?? {};
+  const candidates = [
+    meta?.createdTime,
+    meta?.created_at,
+    meta?.receivedAt,
+    meta?.received_at,
+    contactMeta?.createdTime,
+    contactMeta?.created_at,
+    contactMeta?.receivedAt,
+    contactMeta?.received_at,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.trim()) {
+      const time = new Date(candidate).getTime();
+      if (Number.isFinite(time)) return candidate;
+    }
+    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+      return new Date(candidate * 1000).toISOString();
+    }
+  }
+  return createdAt || updatedAt;
+}
+
 function mapLead(raw: BackendLead): Lead {
   const metadata = raw.metadata ?? {};
   const contact = raw.contact ?? {};
@@ -241,6 +299,7 @@ function mapLead(raw: BackendLead): Lead {
     sdrOwner: raw.sdrOwner ?? raw.sdrOwnerId ?? 'Sem responsável',
     nextActionAt: raw.nextActionAt ?? null,
     notes: raw.notes ?? undefined,
+    submittedAt: extractSubmittedAt(metadata, contact.metadata ?? {}, raw.createdAt, raw.updatedAt),
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
     energyBillValue: numberFromMetadata(metadata, ['energyBillValue', 'billValue', 'contaMediaMensal']),
@@ -283,6 +342,15 @@ function mapProposal(raw: BackendProposal): Proposal {
     lostAt: raw.lostAt ?? undefined,
     lostReason: raw.lostReason ?? undefined,
     notes: raw.notes ?? undefined,
+    sourceType: raw.sourceType ?? 'editor',
+    contentHtml: raw.contentHtml ?? undefined,
+    contentText: raw.contentText ?? undefined,
+    templateName: raw.templateName ?? undefined,
+    isTemplate: raw.isTemplate === true,
+    importedFileName: raw.importedFileName ?? undefined,
+    importedFileMimeType: raw.importedFileMimeType ?? undefined,
+    importedFileSize: raw.importedFileSize === null || raw.importedFileSize === undefined ? undefined : numeric(raw.importedFileSize),
+    importedFileDataBase64: raw.importedFileDataBase64 ?? undefined,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
     leadName: raw.leadName ?? undefined,
@@ -321,15 +389,23 @@ function mapActivity(raw: BackendActivity): Activity {
   };
 }
 
+function mapNotification(notification: BackendNotification): Notification {
+  return notification;
+}
+
 function mapLeadHistoryEntry(raw: BackendLeadHistoryEntry): LeadHistoryEntry {
   return {
     id: raw.id,
     action: raw.action,
     occurredAt: raw.occurredAt,
-    actor: {
+    actor: raw.actor ? {
       id: raw.actor.id,
       name: raw.actor.name,
       email: raw.actor.email,
+    } : {
+      id: 'system',
+      name: 'Sistema',
+      email: 'automático',
     },
     summary: raw.summary,
     changes: Array.isArray(raw.changes) ? raw.changes.map((change) => ({
@@ -442,6 +518,29 @@ export class HttpCrmApi implements CrmApi {
     return mapProposal(body.proposal);
   }
 
+  async listTemplates(): Promise<Proposal[]> {
+    const body = await requestJson<{ proposals: BackendProposal[] }>('/api/proposals/templates');
+    return body.proposals.map(mapProposal);
+  }
+
+  async getProposal(id: string): Promise<Proposal> {
+    const body = await requestJson<{ proposal: BackendProposal }>(`/api/proposals/${encodeURIComponent(id)}`);
+    return mapProposal(body.proposal);
+  }
+
+  async updateProposal(id: string, payload: Partial<CreateProposalPayload>): Promise<Proposal> {
+    const body = await requestJson<{ proposal: BackendProposal }>(`/api/proposals/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return mapProposal(body.proposal);
+  }
+
+  async deleteProposal(id: string): Promise<void> {
+    await requestJson<{ deleted: boolean }>(`/api/proposals/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  }
+
   async listTrackingEventsForLead(leadId: string): Promise<TrackingEvent[]> {
     const body = await requestJson<{ events: BackendTrackingEvent[] }>(`/api/leads/${encodeURIComponent(leadId)}/tracking-events`);
     return body.events;
@@ -503,6 +602,21 @@ export class HttpCrmApi implements CrmApi {
   async listLeadHistory(leadId: string): Promise<LeadHistoryEntry[]> {
     const body = await requestJson<{ history: BackendLeadHistoryEntry[] }>(`/api/leads/${encodeURIComponent(leadId)}/history`);
     return body.history.map(mapLeadHistoryEntry);
+  }
+
+  async listNotifications(limit = 20): Promise<{ notifications: Notification[]; unreadCount: number }> {
+    const body = await requestJson<{ notifications: BackendNotification[]; unreadCount: number }>(`/api/notifications?limit=${encodeURIComponent(String(limit))}`);
+    return { notifications: body.notifications.map(mapNotification), unreadCount: body.unreadCount };
+  }
+
+  async markNotificationRead(id: string): Promise<Notification> {
+    const body = await requestJson<{ notification: BackendNotification }>(`/api/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' });
+    return mapNotification(body.notification);
+  }
+
+  async markAllNotificationsRead(): Promise<number> {
+    const body = await requestJson<{ updated: number }>('/api/notifications/read-all', { method: 'POST' });
+    return body.updated;
   }
 
   async listDashboardMetrics(): Promise<DashboardMetrics> {

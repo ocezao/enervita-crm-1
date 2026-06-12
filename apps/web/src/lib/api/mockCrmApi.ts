@@ -16,7 +16,8 @@ import {
   AdsSyncResult,
   LeadStage,
   CrmAnalyticsOverview,
-  LeadHistoryEntry
+  LeadHistoryEntry,
+  Notification
 } from './types';
 import {
   mockLeads,
@@ -134,11 +135,34 @@ export class MockCrmApi implements CrmApi {
       discountPercentage: 20,
       projectedMonthlySavings: lead.projectedSavings || 500,
       projectedAnnualSavings: (lead.projectedSavings || 500) * 12,
+      sourceType: 'editor',
+      isTemplate: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       leadName: lead.contact?.name,
       leadStage: lead.stage,
     }));
+  }
+
+  async listTemplates(): Promise<Proposal[]> {
+    const proposals = await this.listProposals();
+    return proposals.filter((proposal) => proposal.isTemplate);
+  }
+
+  async getProposal(id: string): Promise<Proposal> {
+    const proposals = await this.listProposals();
+    const proposal = proposals.find((item) => item.id === id);
+    if (!proposal) throw new Error('Proposal not found');
+    return proposal;
+  }
+
+  async updateProposal(id: string, payload: Partial<CreateProposalPayload>): Promise<Proposal> {
+    const proposal = await this.getProposal(id);
+    return { ...proposal, ...payload, updatedAt: new Date().toISOString() };
+  }
+
+  async deleteProposal(_id: string): Promise<void> {
+    await delay(150);
   }
 
   async listProposalsForLead(leadId: string): Promise<Proposal[]> {
@@ -152,6 +176,8 @@ export class MockCrmApi implements CrmApi {
     return {
       id: Math.random().toString(36).substr(2, 9),
       ...payload,
+      sourceType: payload.sourceType ?? 'editor',
+      isTemplate: payload.isTemplate ?? false,
       estimatedKwh: payload.estimatedKwh || 0,
       status: 'draft',
       createdAt: new Date().toISOString(),
@@ -241,6 +267,21 @@ export class MockCrmApi implements CrmApi {
         changes: [],
       },
     ];
+  }
+
+  async listNotifications(): Promise<{ notifications: Notification[]; unreadCount: number }> {
+    await delay(150);
+    return { notifications: [], unreadCount: 0 };
+  }
+
+  async markNotificationRead(id: string): Promise<Notification> {
+    await delay(150);
+    return { id, tenantId: 'mock-tenant', userId: 'mock-user', taskId: null, leadId: null, type: 'task_assigned', severity: 'info', title: 'Notificação lida', body: '', href: '', metadata: {}, readAt: new Date().toISOString(), createdAt: new Date().toISOString() };
+  }
+
+  async markAllNotificationsRead(): Promise<number> {
+    await delay(150);
+    return 0;
   }
 
   async listDashboardMetrics(): Promise<DashboardMetrics> {

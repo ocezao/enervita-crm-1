@@ -70,6 +70,7 @@ export function useLeadDetail(id: string | undefined) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [history, setHistory] = useState<LeadHistoryEntry[]>([]);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -80,14 +81,16 @@ export function useLeadDetail(id: string | undefined) {
           api.getLead(id),
           api.listActivities(id),
           api.listTasksForLead(id),
-          api.listLeadHistory(id)
+          api.listLeadHistory(id),
+          api.listProposalsForLead(id).catch(() => [])
         ]);
       })
-      .then(([l, a, t, h]) => {
+      .then(([l, a, t, h, p]) => {
         setLead(l);
         setActivities(a);
         setTasks(t);
         setHistory(h);
+        setProposals(p);
         setLoading(false);
       });
   }, [id]);
@@ -110,6 +113,23 @@ export function useLeadDetail(id: string | undefined) {
     return updated;
   };
 
+  const addProposal = async (payload: CreateProposalPayload) => {
+    const fresh = await api.createProposal({ ...payload, leadId: id ?? payload.leadId });
+    setProposals(prev => [fresh, ...prev]);
+    return fresh;
+  };
+
+  const updateProposalItem = async (proposalId: string, payload: Partial<CreateProposalPayload>) => {
+    const updated = await api.updateProposal(proposalId, payload);
+    setProposals(prev => prev.map(p => p.id === proposalId ? updated : p));
+    return updated;
+  };
+
+  const deleteProposalItem = async (proposalId: string) => {
+    await api.deleteProposal(proposalId);
+    setProposals(prev => prev.filter(p => p.id !== proposalId));
+  };
+
   const updateLead = async (payload: UpdateLeadPayload) => {
     if (!id) return undefined;
     const updated = await api.updateLead(id, payload);
@@ -130,7 +150,7 @@ export function useLeadDetail(id: string | undefined) {
     return updated;
   };
 
-  return { lead, activities, tasks, history, loading, addActivity, addTask, completeTask, updateLead, deleteLead, setTags };
+  return { lead, activities, tasks, history, proposals, loading, addActivity, addTask, completeTask, addProposal, updateProposal: updateProposalItem, deleteProposal: deleteProposalItem, updateLead, deleteLead, setTags };
 }
 
 export function useTasks() {
@@ -289,22 +309,39 @@ export function useWebhooks() {
 
 export function useProposals() {
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [templates, setTemplates] = useState<Proposal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [proposalData, templateData] = await Promise.all([
+        api.listProposals(),
+        api.listTemplates().catch(() => []),
+      ]);
+      setProposals(proposalData);
+      setTemplates(templateData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar propostas');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    api.listProposals().then(data => {
-      setProposals(data);
-      setLoading(false);
-    });
+    void refresh();
   }, []);
 
   const createProposal = async (payload: CreateProposalPayload) => {
     const fresh = await api.createProposal(payload);
     setProposals(prev => [fresh, ...prev]);
+    if (fresh.isTemplate) setTemplates(prev => [fresh, ...prev]);
     return fresh;
   };
 
-  return { proposals, loading, createProposal };
+  return { proposals, templates, loading, error, refresh, createProposal };
 }
 
 export function useLeadTrackingEvents(id: string | undefined) {

@@ -58,3 +58,5 @@ scripts/create_lead_form_*.py
 scripts/publish_lead_form_ads_*.py
 scripts/retry_lead_form_publish_*.py
 scripts/source_brand_campaign.json
+
+.deploy-reports/

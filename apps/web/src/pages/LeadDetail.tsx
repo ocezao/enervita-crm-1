@@ -17,12 +17,19 @@ import {
   Trash2,
   X,
   Plus,
-  History
+  History,
+  Upload,
+  Download,
+  Copy
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { userHasPermission } from '../auth/permissions';
+import { isAdminUser } from '../auth/permissions';
+import type { CreateProposalPayload } from '../lib/api/types';
+import type { Proposal } from '../lib/api/types';
+import { api } from '../lib/api/crmApi';
 
 type DetailItem = { label: string; value: string };
 
@@ -40,6 +47,26 @@ function firstMetadataValue(metadata: Record<string, unknown> | undefined, keys:
     if (value) return value;
   }
   return fallback;
+}
+
+function getObject(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function metaAttributionItems(lead: NonNullable<ReturnType<typeof useLeadDetail>['lead']>): DetailItem[] {
+  const meta = getObject(lead.metadata?.meta);
+  const rawLeadDetails = getObject(meta.rawLeadDetails);
+  const items: DetailItem[] = [
+    { label: 'Campanha', value: textValue(meta.campaignName) || textValue(rawLeadDetails.campaign_name) || lead.utmCampaign || '' },
+    { label: 'ID campanha', value: textValue(meta.campaignId) || textValue(rawLeadDetails.campaign_id) },
+    { label: 'Conjunto', value: textValue(meta.adsetName) || textValue(rawLeadDetails.adset_name) },
+    { label: 'ID conjunto', value: textValue(meta.adsetId) || textValue(rawLeadDetails.adset_id) || textValue(meta.adgroupId) || textValue(rawLeadDetails.adgroup_id) },
+    { label: 'Anúncio / criativo', value: textValue(meta.adName) || textValue(rawLeadDetails.ad_name) || lead.utmContent || '' },
+    { label: 'ID anúncio', value: textValue(meta.adId) || textValue(rawLeadDetails.ad_id) },
+    { label: 'Formulário / proposta', value: textValue(meta.formName) || textValue(rawLeadDetails.form_name) || lead.utmTerm || textValue(meta.formId) },
+    { label: 'ID formulário', value: textValue(meta.formId) || textValue(rawLeadDetails.form_id) || lead.utmTerm || '' },
+  ];
+  return items.filter((item) => item.value && item.value !== 'Invalid Date');
 }
 
 function historyValue(value: string | number | boolean | null): string {
@@ -67,10 +94,70 @@ function cadastroItems(lead: NonNullable<ReturnType<typeof useLeadDetail>['lead'
   return items.filter((item) => item.value && item.value !== 'Invalid Date');
 }
 
+type ProposalDraft = {
+  title: string;
+  monthlyBillValue: string;
+  estimatedKwh: string;
+  discountPercentage: string;
+  projectedMonthlySavings: string;
+  projectedAnnualSavings: string;
+  validUntil: string;
+  notes: string;
+  sourceType: 'editor' | 'file';
+  contentText: string;
+  templateName: string;
+  isTemplate: boolean;
+  importedFile?: CreateProposalPayload['importedFile'];
+};
+
+const emptyProposalDraft: ProposalDraft = {
+  title: '',
+  monthlyBillValue: '',
+  estimatedKwh: '',
+  discountPercentage: '20',
+  projectedMonthlySavings: '',
+  projectedAnnualSavings: '',
+  validUntil: '',
+  notes: '',
+  sourceType: 'editor',
+  contentText: '',
+  templateName: '',
+  isTemplate: false,
+};
+
+const proposalStatusLabels = {
+  draft: 'Rascunho',
+  sent: 'Enviada',
+  accepted: 'Aceita',
+  lost: 'Perdida',
+  expired: 'Expirada',
+} as const;
+
+const proposalStatusVariants = {
+  draft: 'warning',
+  sent: 'info',
+  accepted: 'success',
+  lost: 'error',
+  expired: 'default',
+} as const;
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? '').split(',')[1] ?? '');
+    reader.onerror = () => reject(reader.error ?? new Error('Falha ao ler arquivo'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function proposalHtmlFromText(text: string) {
+  return text.split('\n').map((line) => `<p>${line.replace(/[&<>]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[char] ?? char)) || '<br />'}</p>`).join('');
+}
+
 export default function LeadDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { lead, activities, tasks, history, loading, addActivity, addTask, completeTask, updateLead, deleteLead, setTags } = useLeadDetail(id);
+  const { lead, activities, tasks, history, proposals, loading, addActivity, addTask, completeTask, addProposal, updateProposal, deleteProposal, updateLead, deleteLead, setTags } = useLeadDetail(id);
   const { user } = useAuth();
   const canCreateActivity = userHasPermission(user, 'activity.create');
   const canCreateTask = userHasPermission(user, 'task.create');
@@ -78,6 +165,9 @@ export default function LeadDetail() {
   const canEditLead = userHasPermission(user, 'lead.edit');
   const [activeTab, setActiveTab] = useState('timeline');
   const [activityNote, setActivityNote] = useState('');
+  const [whatsappConfirmOpen, setWhatsappConfirmOpen] = useState(false);
+  const [whatsappDoNotAskAgain, setWhatsappDoNotAskAgain] = useState(false);
+  const [whatsappStatus, setWhatsappStatus] = useState<string | null>(null);
   const [taskTitle, setTaskTitle] = useState('');
   const [taskPriority, setTaskPriority] = useState<'baixa' | 'media' | 'alta' | 'urgente'>('media');
   const [taskDueDate, setTaskDueDate] = useState('');
@@ -100,7 +190,16 @@ export default function LeadDetail() {
     projectedSavings: '',
     notes: '',
   });
+  const [proposalDraft, setProposalDraft] = useState<ProposalDraft>(emptyProposalDraft);
+  const [savingProposal, setSavingProposal] = useState(false);
+  const [proposalMessage, setProposalMessage] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<Proposal[]>([]);
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [editingProposalId, setEditingProposalId] = useState<string | null>(null);
   const cadastro = useMemo(() => lead ? cadastroItems(lead) : [], [lead]);
+  const metaAttribution = useMemo(() => lead ? metaAttributionItems(lead) : [], [lead]);
+  const sortedProposals = useMemo(() => [...proposals].sort((a, b) => new Date(b.createdAt || b.updatedAt).getTime() - new Date(a.createdAt || a.updatedAt).getTime()), [proposals]);
 
   function startEditing() {
     if (!lead) return;
@@ -192,6 +291,33 @@ export default function LeadDetail() {
     setActivityNote('');
   }
 
+  async function openWhatsapp(registerActivity: boolean) {
+    if (!whatsappHref) return;
+    if (registerActivity && canCreateActivity) {
+      try {
+        await addActivity({ activityType: 'whatsapp', outcome: 'WhatsApp aberto pelo CRM', notes: 'Usuário confirmou abertura do WhatsApp pelo botão do lead.' });
+      } catch {
+        setWhatsappStatus('WhatsApp será aberto, mas não consegui registrar a atividade.');
+      }
+    }
+    window.open(whatsappHref, '_blank', 'noopener,noreferrer');
+  }
+
+  async function handleWhatsappClick() {
+    setWhatsappStatus(null);
+    if (localStorage.getItem('enervita-crm.skipWhatsappConfirm') === 'true') {
+      await openWhatsapp(true);
+      return;
+    }
+    setWhatsappConfirmOpen(true);
+  }
+
+  async function confirmWhatsappOpen() {
+    if (whatsappDoNotAskAgain) localStorage.setItem('enervita-crm.skipWhatsappConfirm', 'true');
+    setWhatsappConfirmOpen(false);
+    await openWhatsapp(true);
+  }
+
   async function handleCreateTask() {
     const title = taskTitle.trim();
     if (!title) return;
@@ -199,6 +325,171 @@ export default function LeadDetail() {
     setTaskTitle('');
     setTaskPriority('media');
     setTaskDueDate('');
+  }
+
+  async function handleProposalFile(file?: File | null) {
+    if (!file) return;
+    const dataBase64 = await fileToBase64(file);
+    setProposalDraft((current) => ({
+      ...current,
+      sourceType: 'file',
+      importedFile: { name: file.name, mimeType: file.type || 'application/octet-stream', size: file.size, dataBase64 },
+      title: current.title || file.name.replace(/\.[^.]+$/, ''),
+    }));
+  }
+
+  async function handleCreateProposal() {
+    if (!lead || savingProposal) return;
+    const monthlyBillValue = numberOrUndefined(proposalDraft.monthlyBillValue) ?? 0;
+    const estimatedKwh = numberOrUndefined(proposalDraft.estimatedKwh);
+    const discountPercentage = numberOrUndefined(proposalDraft.discountPercentage) ?? 0;
+    const projectedMonthlySavings = numberOrUndefined(proposalDraft.projectedMonthlySavings) ?? Math.round(monthlyBillValue * (discountPercentage / 100));
+    const projectedAnnualSavings = numberOrUndefined(proposalDraft.projectedAnnualSavings) ?? projectedMonthlySavings * 12;
+    const title = proposalDraft.title.trim();
+    const contentText = proposalDraft.contentText.trim();
+    if (!title) { setProposalMessage('Informe o título da proposta.'); return; }
+    if (proposalDraft.sourceType === 'editor' && !contentText) { setProposalMessage('Escreva o conteúdo da proposta ou importe um arquivo.'); return; }
+    if (proposalDraft.sourceType === 'file' && !proposalDraft.importedFile) { setProposalMessage('Selecione o arquivo da proposta.'); return; }
+    setSavingProposal(true);
+    setProposalMessage(null);
+    try {
+      await addProposal({
+        leadId: lead.id,
+        title,
+        monthlyBillValue,
+        estimatedKwh,
+        discountPercentage,
+        projectedMonthlySavings,
+        projectedAnnualSavings,
+        validUntil: proposalDraft.validUntil ? new Date(proposalDraft.validUntil).toISOString() : undefined,
+        notes: proposalDraft.notes.trim() || undefined,
+        sourceType: proposalDraft.sourceType,
+        contentText: proposalDraft.sourceType === 'editor' ? contentText : undefined,
+        contentHtml: proposalDraft.sourceType === 'editor' ? proposalHtmlFromText(contentText) : undefined,
+        templateName: proposalDraft.templateName.trim() || undefined,
+        isTemplate: proposalDraft.isTemplate,
+        importedFile: proposalDraft.sourceType === 'file' ? proposalDraft.importedFile : undefined,
+      });
+      setProposalDraft(emptyProposalDraft);
+      setProposalMessage('Proposta salva no lead.');
+    } catch (error) {
+      setProposalMessage(error instanceof Error ? error.message : 'Erro ao salvar proposta.');
+    } finally {
+      setSavingProposal(false);
+    }
+  }
+
+  async function handleLoadTemplates() {
+    setLoadingTemplates(true);
+    try {
+      const data = await api.listTemplates();
+      setTemplates(data);
+      setShowTemplateSelector(true);
+    } catch {
+      setProposalMessage('Erro ao carregar modelos.');
+    } finally {
+      setLoadingTemplates(false);
+    }
+  }
+
+  function handleSelectTemplate(template: Proposal) {
+    setProposalDraft({
+      title: template.title || '',
+      monthlyBillValue: template.monthlyBillValue ? String(template.monthlyBillValue) : '',
+      estimatedKwh: template.estimatedKwh ? String(template.estimatedKwh) : '',
+      discountPercentage: template.discountPercentage ? String(template.discountPercentage) : '20',
+      projectedMonthlySavings: template.projectedMonthlySavings ? String(template.projectedMonthlySavings) : '',
+      projectedAnnualSavings: template.projectedAnnualSavings ? String(template.projectedAnnualSavings) : '',
+      validUntil: template.validUntil ? template.validUntil.split('T')[0] : '',
+      notes: template.notes || '',
+      sourceType: template.sourceType || 'editor',
+      contentText: template.contentText || '',
+      templateName: template.templateName || '',
+      isTemplate: false,
+      importedFile: undefined,
+    });
+    setShowTemplateSelector(false);
+    setEditingProposalId(null);
+    setProposalMessage(`Modelo "${template.templateName || template.title}" carregado. Preencha e salve.`);
+  }
+
+  function handleEditProposal(proposal: Proposal) {
+    setProposalDraft({
+      title: proposal.title || '',
+      monthlyBillValue: proposal.monthlyBillValue ? String(proposal.monthlyBillValue) : '',
+      estimatedKwh: proposal.estimatedKwh ? String(proposal.estimatedKwh) : '',
+      discountPercentage: proposal.discountPercentage ? String(proposal.discountPercentage) : '20',
+      projectedMonthlySavings: proposal.projectedMonthlySavings ? String(proposal.projectedMonthlySavings) : '',
+      projectedAnnualSavings: proposal.projectedAnnualSavings ? String(proposal.projectedAnnualSavings) : '',
+      validUntil: proposal.validUntil ? proposal.validUntil.split('T')[0] : '',
+      notes: proposal.notes || '',
+      sourceType: proposal.sourceType || 'editor',
+      contentText: proposal.contentText || '',
+      templateName: proposal.templateName || '',
+      isTemplate: proposal.isTemplate,
+      importedFile: undefined,
+    });
+    setEditingProposalId(proposal.id);
+    setProposalMessage(null);
+  }
+
+  async function handleUpdateProposal() {
+    if (!editingProposalId || savingProposal) return;
+    const monthlyBillValue = numberOrUndefined(proposalDraft.monthlyBillValue) ?? 0;
+    const estimatedKwh = numberOrUndefined(proposalDraft.estimatedKwh);
+    const discountPercentage = numberOrUndefined(proposalDraft.discountPercentage) ?? 0;
+    const projectedMonthlySavings = numberOrUndefined(proposalDraft.projectedMonthlySavings) ?? Math.round(monthlyBillValue * (discountPercentage / 100));
+    const projectedAnnualSavings = numberOrUndefined(proposalDraft.projectedAnnualSavings) ?? projectedMonthlySavings * 12;
+    const title = proposalDraft.title.trim();
+    const contentText = proposalDraft.contentText.trim();
+    if (!title) { setProposalMessage('Informe o título da proposta.'); return; }
+    setSavingProposal(true);
+    setProposalMessage(null);
+    try {
+      await updateProposal(editingProposalId, {
+        title,
+        monthlyBillValue,
+        estimatedKwh,
+        discountPercentage,
+        projectedMonthlySavings,
+        projectedAnnualSavings,
+        validUntil: proposalDraft.validUntil ? new Date(proposalDraft.validUntil).toISOString() : undefined,
+        notes: proposalDraft.notes.trim() || undefined,
+        sourceType: proposalDraft.sourceType,
+        contentText: proposalDraft.sourceType === 'editor' ? contentText : undefined,
+        contentHtml: proposalDraft.sourceType === 'editor' ? proposalHtmlFromText(contentText) : undefined,
+        templateName: proposalDraft.templateName.trim() || undefined,
+        isTemplate: proposalDraft.isTemplate,
+      });
+      setProposalDraft(emptyProposalDraft);
+      setEditingProposalId(null);
+      setProposalMessage('Proposta atualizada.');
+    } catch (error) {
+      setProposalMessage(error instanceof Error ? error.message : 'Erro ao atualizar proposta.');
+    } finally {
+      setSavingProposal(false);
+    }
+  }
+
+  async function handleDeleteProposal(proposalId: string) {
+    const ok = window.confirm('Excluir esta proposta? Essa ação não pode ser desfeita.');
+    if (!ok) return;
+    try {
+      await deleteProposal(proposalId);
+      if (editingProposalId === proposalId) {
+        setEditingProposalId(null);
+        setProposalDraft(emptyProposalDraft);
+      }
+      setProposalMessage('Proposta excluída.');
+    } catch (error) {
+      setProposalMessage(error instanceof Error ? error.message : 'Erro ao excluir proposta.');
+    }
+  }
+
+  function handleCancelEdit() {
+    setEditingProposalId(null);
+    setProposalDraft(emptyProposalDraft);
+    setProposalMessage(null);
   }
 
   async function handleSaveTags() {
@@ -267,7 +558,7 @@ export default function LeadDetail() {
 
             <div className="mt-8 grid grid-cols-2 gap-2">
               {phoneHref ? <a href={phoneHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-100 px-4 py-2 text-sm font-bold text-graphite hover:bg-gray-200"><Phone size={16} /> Ligar</a> : <Button variant="secondary" className="gap-2 w-full opacity-50" disabled><Phone size={16} /> Sem telefone</Button>}
-              {whatsappHref ? <a href={whatsappHref} target="_blank" rel="noreferrer" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-graphite hover:bg-gray-50"><MessageSquare size={16} /> WhatsApp</a> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
+              {whatsappHref ? <button type="button" onClick={handleWhatsappClick} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-graphite hover:bg-gray-50"><MessageSquare size={16} /> WhatsApp</button> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
             </div>
           </Card>
 
@@ -430,14 +721,31 @@ export default function LeadDetail() {
             )}
 
             {activeTab === 'events' && (
-              <div className="p-6 space-y-4">
-                <h4 className="font-bold text-graphite">Resumo de tracking do lead</h4>
+              <div className="p-6 space-y-6">
+                <div className="space-y-2">
+                  <h4 className="font-bold text-graphite">Resumo de tracking do lead</h4>
+                  <p className="text-sm text-gray-500">Identificação da origem comercial capturada pelo tracking e pelo Lead Form da Meta.</p>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                   <div className="rounded-xl bg-gray-50 p-4"><span className="text-gray-400">Origem</span><p className="font-bold text-graphite">{lead.leadSource || 'Não informada'}</p></div>
-                  <div className="rounded-xl bg-gray-50 p-4"><span className="text-gray-400">Origem / mídia da campanha</span><p className="font-bold text-graphite">{lead.utmSource || 'sem origem'} / {lead.utmMedium || 'sem medium'}</p></div>
-                  <div className="rounded-xl bg-gray-50 p-4 md:col-span-2"><span className="text-gray-400">Campanha</span><p className="font-bold text-graphite">{lead.utmCampaign || 'Sem campanha registrada'}</p></div>
+                  <div className="rounded-xl bg-gray-50 p-4"><span className="text-gray-400">Origem / mídia</span><p className="font-bold text-graphite">{lead.utmSource || 'sem origem'} / {lead.utmMedium || 'sem medium'}</p></div>
                 </div>
-                <p className="text-xs text-gray-500">Eventos detalhados por lead ainda dependem da decisão de integrar a fila operacional de tracking ao painel.</p>
+                {metaAttribution.length > 0 ? (
+                  <div className="rounded-2xl border border-gray-100 bg-white p-5">
+                    <h5 className="font-bold text-graphite">Meta Ads: campanha, conjunto, anúncio e proposta</h5>
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                      {metaAttribution.map((item) => (
+                        <div key={item.label} className="rounded-xl bg-gray-50 p-4">
+                          <span className="text-xs font-bold uppercase tracking-wide text-gray-400">{item.label}</span>
+                          <p className="mt-1 break-words font-semibold text-graphite">{item.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-5 text-sm text-gray-500">Este lead ainda não tem campanha/conjunto/anúncio do Meta registrados.</div>
+                )}
+                <p className="text-xs text-gray-500">IDs técnicos são exibidos para permitir conferência direta no Gerenciador de Anúncios.</p>
               </div>
             )}
 
@@ -483,13 +791,149 @@ export default function LeadDetail() {
             )}
 
             {activeTab === 'proposals' && (
-              <div className="p-12 text-center text-gray-400">
-                Propostas reais ainda pendentes de decisão de origem: importar do banco operacional/Twenty ou criar módulo próprio no CRM custom.
+              <div className="p-6 space-y-6">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h4 className="font-bold text-graphite">Propostas vinculadas ao lead</h4>
+                    <p className="text-sm text-gray-500">Crie do zero pelo editor, salve como modelo reutilizável ou importe PDF/arquivo externo.</p>
+                  </div>
+                  <Badge variant="solar">{sortedProposals.length} proposta(s)</Badge>
+                </div>
+
+                {proposalMessage && <div className="rounded-2xl border border-solar-orange/20 bg-solar-orange/5 p-3 text-sm font-semibold text-solar-orange">{proposalMessage}</div>}
+
+                {showTemplateSelector && (
+                  <div className="rounded-2xl border border-solar-orange/30 bg-white p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h5 className="font-bold text-graphite">Selecionar Modelo</h5>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowTemplateSelector(false)}><X size={16} /></Button>
+                    </div>
+                    {templates.length === 0 ? (
+                      <p className="text-sm text-gray-500">Nenhum modelo encontrado. Crie uma proposta com "Salvar como modelo" marcado.</p>
+                    ) : (
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                        {templates.map((template) => (
+                          <button key={template.id} type="button" onClick={() => handleSelectTemplate(template)} className="w-full text-left rounded-xl border border-gray-100 bg-gray-50 p-3 hover:border-solar-orange/40 hover:bg-solar-orange/5 transition-colors">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-bold text-graphite text-sm">{template.templateName || template.title}</p>
+                                <p className="text-xs text-gray-500 mt-1">{template.sourceType === 'file' ? `Arquivo: ${template.importedFileName ?? 'importado'}` : 'Editor'}{template.discountPercentage ? ` · ${template.discountPercentage}% desconto` : ''}</p>
+                              </div>
+                              <Badge variant="info">Modelo</Badge>
+                            </div>
+                            {template.contentText && <p className="mt-2 text-xs text-gray-400 line-clamp-2">{template.contentText}</p>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="rounded-2xl border border-gray-100 bg-gray-50 p-4 space-y-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" variant="outline" className="gap-2" onClick={handleLoadTemplates} disabled={loadingTemplates}>
+                      <Copy size={14} /> {loadingTemplates ? 'Carregando...' : 'Carregar Modelo'}
+                    </Button>
+                    {editingProposalId && (
+                      <Button type="button" size="sm" variant="ghost" className="gap-2" onClick={handleCancelEdit}>
+                        <X size={14} /> Cancelar edição
+                      </Button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Título da proposta
+                      <input aria-label="Título da proposta" value={proposalDraft.title} onChange={(event) => setProposalDraft((current) => ({ ...current, title: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case" placeholder="Ex.: Proposta Enervita - Mercado Solar" />
+                    </label>
+                    <label className="text-xs font-bold text-gray-500 uppercase">Modelo editável
+                      <input aria-label="Nome do modelo" value={proposalDraft.templateName} onChange={(event) => setProposalDraft((current) => ({ ...current, templateName: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case" placeholder="Opcional: Modelo B2B conta alta" />
+                    </label>
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <label className="text-xs font-bold text-gray-500 uppercase">Conta R$<input aria-label="Valor mensal da conta" value={proposalDraft.monthlyBillValue} onChange={(event) => setProposalDraft((current) => ({ ...current, monthlyBillValue: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case" /></label>
+                    <label className="text-xs font-bold text-gray-500 uppercase">kWh<input aria-label="Consumo estimado" value={proposalDraft.estimatedKwh} onChange={(event) => setProposalDraft((current) => ({ ...current, estimatedKwh: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case" /></label>
+                    <label className="text-xs font-bold text-gray-500 uppercase">Desconto %<input aria-label="Percentual de desconto" value={proposalDraft.discountPercentage} onChange={(event) => setProposalDraft((current) => ({ ...current, discountPercentage: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case" /></label>
+                    <label className="text-xs font-bold text-gray-500 uppercase">Economia/mês<input aria-label="Economia mensal projetada" value={proposalDraft.projectedMonthlySavings} onChange={(event) => setProposalDraft((current) => ({ ...current, projectedMonthlySavings: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case" placeholder="auto" /></label>
+                    <label className="text-xs font-bold text-gray-500 uppercase">Validade<input aria-label="Validade da proposta" type="date" value={proposalDraft.validUntil} onChange={(event) => setProposalDraft((current) => ({ ...current, validUntil: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case" /></label>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" size="sm" variant={proposalDraft.sourceType === 'editor' ? 'primary' : 'outline'} onClick={() => setProposalDraft((current) => ({ ...current, sourceType: 'editor' }))}><Copy size={14} className="mr-2" /> Criar no editor</Button>
+                    <label className="inline-flex cursor-pointer items-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-graphite hover:border-solar-orange/40">
+                      <Upload size={14} className="mr-2 text-solar-orange" /> Importar arquivo
+                      <input type="file" className="hidden" onChange={(event) => void handleProposalFile(event.target.files?.[0])} />
+                    </label>
+                    <label className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-bold text-gray-600"><input type="checkbox" checked={proposalDraft.isTemplate} onChange={(event) => setProposalDraft((current) => ({ ...current, isTemplate: event.target.checked }))} /> Salvar como modelo</label>
+                    {proposalDraft.importedFile && <span className="inline-flex items-center rounded-xl bg-energy-green/10 px-3 py-2 text-xs font-bold text-energy-green">{proposalDraft.importedFile.name}</span>}
+                  </div>
+
+                  {proposalDraft.sourceType === 'editor' ? (
+                    <textarea aria-label="Conteúdo editável da proposta" value={proposalDraft.contentText} onChange={(event) => setProposalDraft((current) => ({ ...current, contentText: event.target.value }))} className="min-h-[190px] w-full rounded-2xl border border-gray-200 bg-white p-4 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-solar-orange/30" placeholder="Escreva a proposta: diagnóstico, economia estimada, condições comerciais, validade e próximos passos..." />
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">{proposalDraft.importedFile ? 'Arquivo pronto para salvar junto ao lead.' : 'Selecione um arquivo para importar a proposta existente.'}</div>
+                  )}
+
+                  <textarea aria-label="Observações da proposta" value={proposalDraft.notes} onChange={(event) => setProposalDraft((current) => ({ ...current, notes: event.target.value }))} className="w-full rounded-xl border border-gray-200 bg-white p-2 text-sm" placeholder="Observações internas opcionais..." />
+                  {editingProposalId ? (
+                    <Button variant="primary" size="sm" className="gap-2" onClick={handleUpdateProposal} disabled={savingProposal}><Save size={16} /> {savingProposal ? 'Salvando...' : 'Atualizar proposta'}</Button>
+                  ) : (
+                    <Button variant="primary" size="sm" className="gap-2" onClick={handleCreateProposal} disabled={savingProposal}><Save size={16} /> {savingProposal ? 'Salvando...' : 'Salvar proposta no lead'}</Button>
+                  )}
+                </div>
+
+                {sortedProposals.length === 0 ? (
+                  <div className="p-10 text-center text-gray-400"><FileText className="mx-auto mb-3" />Nenhuma proposta salva para este lead.</div>
+                ) : (
+                  <div className="space-y-3">
+                    {sortedProposals.map((proposal) => (
+                      <article key={proposal.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2"><h5 className="font-bold text-graphite">{proposal.title}</h5><Badge variant={proposalStatusVariants[proposal.status]}>{proposalStatusLabels[proposal.status]}</Badge>{proposal.isTemplate && <Badge variant="info">Modelo</Badge>}</div>
+                            <p className="mt-1 text-xs text-gray-500">Criada em {formatDate(proposal.createdAt)} · {proposal.sourceType === 'file' ? `Arquivo: ${proposal.importedFileName ?? 'importado'}` : `Editor${proposal.templateName ? ` · ${proposal.templateName}` : ''}`}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="text-right text-sm"><p className="font-black text-energy-success">{formatCurrency(proposal.projectedAnnualSavings)}/ano</p><p className="text-xs text-gray-500">{proposal.discountPercentage}% desconto</p></div>
+                            <div className="flex items-center gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar proposta" onClick={() => handleEditProposal(proposal)}><Edit3 size={14} /></Button>
+                              {isAdminUser(user) && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-alert-red/10" aria-label="Excluir proposta" onClick={() => void handleDeleteProposal(proposal.id)}><Trash2 size={14} className="text-alert-red" /></Button>}
+                            </div>
+                          </div>
+                        </div>
+                        {proposal.contentText && <p className="mt-3 line-clamp-3 whitespace-pre-wrap rounded-xl bg-gray-50 p-3 text-sm text-gray-600">{proposal.contentText}</p>}
+                        {proposal.importedFileDataBase64 && proposal.importedFileName && <a className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-solar-orange hover:underline" download={proposal.importedFileName} href={`data:${proposal.importedFileMimeType || 'application/octet-stream'};base64,${proposal.importedFileDataBase64}`}><Download size={14} /> Baixar arquivo</a>}
+                      </article>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </Card>
         </div>
       </div>
+
+      {whatsappConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="whatsapp-confirm-title">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <h3 id="whatsapp-confirm-title" className="text-lg font-black text-graphite">Confirmar abertura do WhatsApp</h3>
+                <p className="mt-1 text-sm text-gray-500">Vou registrar esta ação na timeline do lead e abrir o WhatsApp em uma nova aba.</p>
+              </div>
+              <button type="button" className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-graphite" onClick={() => setWhatsappConfirmOpen(false)} aria-label="Fechar confirmação"><X size={18} /></button>
+            </div>
+            {whatsappStatus && <p className="mb-3 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-700">{whatsappStatus}</p>}
+            <label className="mb-5 flex items-center gap-3 rounded-2xl bg-gray-50 p-3 text-sm font-semibold text-graphite">
+              <input type="checkbox" checked={whatsappDoNotAskAgain} onChange={(event) => setWhatsappDoNotAskAgain(event.target.checked)} className="h-4 w-4 rounded border-gray-300 text-solar-orange focus:ring-solar-orange" />
+              Não mostrar novamente neste navegador
+            </label>
+            <div className="flex justify-end gap-3">
+              <Button variant="ghost" onClick={() => setWhatsappConfirmOpen(false)}>Cancelar</Button>
+              <Button onClick={confirmWhatsappOpen} className="gap-2"><MessageSquare size={16} /> Abrir WhatsApp</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
