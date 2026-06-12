@@ -41,6 +41,19 @@ export interface LeadTag {
   color?: string | null;
 }
 
+export interface LeadOpportunity {
+  id: string;
+  leadId: string;
+  title: string;
+  status: 'open' | 'won' | 'lost';
+  expectedValue: string | null;
+  probability: number;
+  convertedBy: string | null;
+  convertedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Lead {
   id: string;
   contactId: string;
@@ -75,6 +88,7 @@ export interface Lead {
   metadata?: Record<string, unknown>;
   contact?: Contact; // Join result
   tags: LeadTag[];
+  opportunity?: LeadOpportunity | null;
 }
 
 export interface Task {

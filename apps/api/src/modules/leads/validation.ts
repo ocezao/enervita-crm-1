@@ -70,6 +70,7 @@ export type StageChangeInput = {
   stage: PipelineStageKey;
   notes?: string | null;
   lostReason?: string | null;
+  createOpportunity?: boolean;
 };
 
 export type LeadTagMode = 'any' | 'all';
@@ -223,6 +224,7 @@ export function validateStageChangeBody(body: unknown): StageChangeInput {
     stage: parseStage(body.stage),
     notes: optionalString(body.notes, 'notes'),
     lostReason: optionalString(body.lostReason, 'lostReason'),
+    createOpportunity: typeof body.createOpportunity === 'boolean' ? body.createOpportunity : undefined,
   };
 }
 

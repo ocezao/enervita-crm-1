@@ -137,6 +137,14 @@ export function useLeadDetail(id: string | undefined) {
     return updated;
   };
 
+  const convertToOpportunity = async () => {
+    if (!id) return undefined;
+    const updated = await api.updateLeadStage(id, 'atendimento_iniciado', { notes: 'Lead convertido em oportunidade pelo CRM.', createOpportunity: true });
+    setLead(updated);
+    setHistory(await api.listLeadHistory(id));
+    return updated;
+  };
+
   const deleteLead = async () => {
     if (!id) return;
     await api.deleteLead(id);
@@ -150,7 +158,7 @@ export function useLeadDetail(id: string | undefined) {
     return updated;
   };
 
-  return { lead, activities, tasks, history, proposals, loading, addActivity, addTask, completeTask, addProposal, updateProposal: updateProposalItem, deleteProposal: deleteProposalItem, updateLead, deleteLead, setTags };
+  return { lead, activities, tasks, history, proposals, loading, addActivity, addTask, completeTask, addProposal, updateProposal: updateProposalItem, deleteProposal: deleteProposalItem, updateLead, convertToOpportunity, deleteLead, setTags };
 }
 
 export function useTasks() {

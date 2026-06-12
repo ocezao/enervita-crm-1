@@ -157,7 +157,7 @@ function proposalHtmlFromText(text: string) {
 export default function LeadDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { lead, activities, tasks, history, proposals, loading, addActivity, addTask, completeTask, addProposal, updateProposal, deleteProposal, updateLead, deleteLead, setTags } = useLeadDetail(id);
+  const { lead, activities, tasks, history, proposals, loading, addActivity, addTask, completeTask, addProposal, updateProposal, deleteProposal, updateLead, convertToOpportunity, deleteLead, setTags } = useLeadDetail(id);
   const { user } = useAuth();
   const canCreateActivity = userHasPermission(user, 'activity.create');
   const canCreateTask = userHasPermission(user, 'task.create');
@@ -181,6 +181,7 @@ export default function LeadDetail() {
   const [tagDraft, setTagDraft] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [savingLead, setSavingLead] = useState(false);
+  const [convertingOpportunity, setConvertingOpportunity] = useState(false);
   const [leadMessage, setLeadMessage] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState({
     name: '',

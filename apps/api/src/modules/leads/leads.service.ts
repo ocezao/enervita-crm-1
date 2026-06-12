@@ -69,7 +69,7 @@ export async function changeLeadStage(repository: LeadsRepository, actor: Public
   if (!isKnownPipelineStage(input.stage)) throw new LeadsOperationError('Unknown pipeline stage');
   ensureStageAllowed(actor, input.stage);
   ensureMarkLostAllowed(actor, input.stage);
-  return repository.changeStage(makeAuditContext(actor, metadata), leadId, scopedStages(actor), scopedOwner(actor), input.stage, input.notes, input.lostReason);
+  return repository.changeStage(makeAuditContext(actor, metadata), leadId, scopedStages(actor), scopedOwner(actor), input.stage, input.notes, input.lostReason, input.createOpportunity);
 }
 
 
