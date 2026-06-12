@@ -198,6 +198,27 @@ test('POST /api/notifications/:id/read marks current user notification as read',
   assert.equal(response.json().notification.readAt, '2026-05-29T12:05:00.000Z');
 });
 
+test('POST /api/notifications/read-all marks all current user notifications as read', async (t) => {
+  const actor = makeAuthUser();
+  const otherUserId = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+  const notificationsRepository = makeNotificationsRepository([
+    { id: '11111111-1111-4111-8111-111111111111', tenantId: TENANT_ID, userId: actor.id, taskId: null, leadId: null, type: 'task_assigned', severity: 'info', title: 'Primeira', body: null, href: null, metadata: {}, readAt: null, createdAt: '2026-05-29T12:00:00.000Z' },
+    { id: '22222222-2222-4222-8222-222222222222', tenantId: TENANT_ID, userId: actor.id, taskId: null, leadId: null, type: 'task_assigned', severity: 'warning', title: 'Segunda', body: null, href: null, metadata: {}, readAt: null, createdAt: '2026-05-29T12:01:00.000Z' },
+    { id: '33333333-3333-4333-8333-333333333333', tenantId: TENANT_ID, userId: otherUserId, taskId: null, leadId: null, type: 'task_assigned', severity: 'warning', title: 'Outro usuário', body: null, href: null, metadata: {}, readAt: null, createdAt: '2026-05-29T12:02:00.000Z' },
+  ]);
+  const app = createApp({ userRepository: makeUserRepository(actor), engagementRepository: makeEngagementRepository(), notificationsRepository, sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+  const cookie = await loginAndGetCookie(app);
+
+  const response = await app.inject({ method: 'POST', url: '/api/notifications/read-all', headers: { cookie } });
+  assert.equal(response.statusCode, 200);
+  assert.equal(response.json().count, 2);
+
+  const list = await app.inject({ method: 'GET', url: '/api/notifications', headers: { cookie } });
+  assert.equal(list.statusCode, 200);
+  assert.equal(list.json().unreadCount, 0);
+});
+
 test('GET /api/tasks lists tasks for authenticated users with page.tasks', async (t) => {
   const actor = makeAuthUser({ roles: ['sdr'], permissions: ['page.tasks'], allowedStages: ['novo_lead'] });
   const app = createApp({ userRepository: makeUserRepository(actor), engagementRepository: makeEngagementRepository(), sessionSecret: SESSION_SECRET });
