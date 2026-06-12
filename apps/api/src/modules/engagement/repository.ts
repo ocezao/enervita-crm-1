@@ -1,6 +1,7 @@
 import pg, { type PoolClient } from 'pg';
 import type { PipelineStageKey } from '@enervita/shared';
 import type { AuditContext } from '../users/repository.ts';
+import type { NotificationsRepository } from '../notifications/repository.ts';
 import type { ActivityInput, TaskInput } from './validation.ts';
 
 const { Pool } = pg;
@@ -160,7 +161,7 @@ async function writeAudit(client: PoolClient, context: AuditContext, entityType:
   );
 }
 
-export function createPgEngagementRepository(databaseUrl: string): EngagementRepository {
+export function createPgEngagementRepository(databaseUrl: string, notificationsRepository?: NotificationsRepository): EngagementRepository {
   const pool = new Pool({ connectionString: databaseUrl });
 
   return {
@@ -207,6 +208,20 @@ export function createPgEngagementRepository(databaseUrl: string): EngagementRep
         const task = selected.rows[0] ? rowToTask(selected.rows[0]) : null;
         if (!task) return null;
         await writeAudit(client, context, 'task', task.id, 'task.created', null, task);
+        if (notificationsRepository && task.ownerId && task.ownerId !== context.actorUserId) {
+          await notificationsRepository.create({
+            tenantId: context.tenantId,
+            userId: task.ownerId,
+            taskId: task.id,
+            leadId: task.leadId ?? undefined,
+            type: 'task_assigned',
+            severity: task.priority === 'urgente' || task.priority === 'alta' ? 'warning' : 'info',
+            title: 'Nova tarefa atribuída',
+            body: task.leadName ? `${task.title} — ${task.leadName}` : task.title,
+            href: task.leadId ? `/leads/${task.leadId}` : '/tasks',
+            metadata: { priority: task.priority, dueDate: task.dueDate },
+          }, client);
+        }
         await client.query('commit');
         return task;
       } catch (error) {

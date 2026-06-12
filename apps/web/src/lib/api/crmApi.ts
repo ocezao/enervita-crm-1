@@ -20,6 +20,7 @@ import {
   Priority,
   CrmAnalyticsOverview,
   LeadHistoryEntry,
+  Notification,
 } from './types';
 
 export interface CrmApi {
@@ -49,6 +50,9 @@ export interface CrmApi {
   listActivities(leadId: string): Promise<Activity[]>;
   createActivity(payload: Partial<Activity>): Promise<Activity>;
   listLeadHistory(leadId: string): Promise<LeadHistoryEntry[]>;
+  listNotifications(limit?: number): Promise<{ notifications: Notification[]; unreadCount: number }>;
+  markNotificationRead(id: string): Promise<Notification>;
+  markAllNotificationsRead(): Promise<number>;
 
   listDashboardMetrics(): Promise<DashboardMetrics>;
   getAnalyticsOverview(filters?: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage }): Promise<CrmAnalyticsOverview>;
@@ -181,6 +185,22 @@ type BackendTask = {
   createdAt: string;
   updatedAt: string;
   leadName?: string | null;
+};
+
+type BackendNotification = {
+  id: string;
+  tenantId: string;
+  userId: string;
+  taskId: string | null;
+  leadId: string | null;
+  type: string;
+  severity: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  body: string | null;
+  href: string | null;
+  metadata: Record<string, unknown>;
+  readAt: string | null;
+  createdAt: string;
 };
 
 type BackendActivity = {
@@ -367,6 +387,10 @@ function mapActivity(raw: BackendActivity): Activity {
     occurredAt: raw.occurredAt,
     createdAt: raw.createdAt,
   };
+}
+
+function mapNotification(notification: BackendNotification): Notification {
+  return notification;
 }
 
 function mapLeadHistoryEntry(raw: BackendLeadHistoryEntry): LeadHistoryEntry {
@@ -578,6 +602,21 @@ export class HttpCrmApi implements CrmApi {
   async listLeadHistory(leadId: string): Promise<LeadHistoryEntry[]> {
     const body = await requestJson<{ history: BackendLeadHistoryEntry[] }>(`/api/leads/${encodeURIComponent(leadId)}/history`);
     return body.history.map(mapLeadHistoryEntry);
+  }
+
+  async listNotifications(limit = 20): Promise<{ notifications: Notification[]; unreadCount: number }> {
+    const body = await requestJson<{ notifications: BackendNotification[]; unreadCount: number }>(`/api/notifications?limit=${encodeURIComponent(String(limit))}`);
+    return { notifications: body.notifications.map(mapNotification), unreadCount: body.unreadCount };
+  }
+
+  async markNotificationRead(id: string): Promise<Notification> {
+    const body = await requestJson<{ notification: BackendNotification }>(`/api/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' });
+    return mapNotification(body.notification);
+  }
+
+  async markAllNotificationsRead(): Promise<number> {
+    const body = await requestJson<{ updated: number }>('/api/notifications/read-all', { method: 'POST' });
+    return body.updated;
   }
 
   async listDashboardMetrics(): Promise<DashboardMetrics> {

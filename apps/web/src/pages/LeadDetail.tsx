@@ -165,6 +165,9 @@ export default function LeadDetail() {
   const canEditLead = userHasPermission(user, 'lead.edit');
   const [activeTab, setActiveTab] = useState('timeline');
   const [activityNote, setActivityNote] = useState('');
+  const [whatsappConfirmOpen, setWhatsappConfirmOpen] = useState(false);
+  const [whatsappDoNotAskAgain, setWhatsappDoNotAskAgain] = useState(false);
+  const [whatsappStatus, setWhatsappStatus] = useState<string | null>(null);
   const [taskTitle, setTaskTitle] = useState('');
   const [taskPriority, setTaskPriority] = useState<'baixa' | 'media' | 'alta' | 'urgente'>('media');
   const [taskDueDate, setTaskDueDate] = useState('');
@@ -286,6 +289,33 @@ export default function LeadDetail() {
     if (!outcome) return;
     await addActivity({ activityType: 'note', outcome, notes: outcome });
     setActivityNote('');
+  }
+
+  async function openWhatsapp(registerActivity: boolean) {
+    if (!whatsappHref) return;
+    if (registerActivity && canCreateActivity) {
+      try {
+        await addActivity({ activityType: 'whatsapp', outcome: 'WhatsApp aberto pelo CRM', notes: 'Usuário confirmou abertura do WhatsApp pelo botão do lead.' });
+      } catch {
+        setWhatsappStatus('WhatsApp será aberto, mas não consegui registrar a atividade.');
+      }
+    }
+    window.open(whatsappHref, '_blank', 'noopener,noreferrer');
+  }
+
+  async function handleWhatsappClick() {
+    setWhatsappStatus(null);
+    if (localStorage.getItem('enervita-crm.skipWhatsappConfirm') === 'true') {
+      await openWhatsapp(true);
+      return;
+    }
+    setWhatsappConfirmOpen(true);
+  }
+
+  async function confirmWhatsappOpen() {
+    if (whatsappDoNotAskAgain) localStorage.setItem('enervita-crm.skipWhatsappConfirm', 'true');
+    setWhatsappConfirmOpen(false);
+    await openWhatsapp(true);
   }
 
   async function handleCreateTask() {
@@ -528,7 +558,7 @@ export default function LeadDetail() {
 
             <div className="mt-8 grid grid-cols-2 gap-2">
               {phoneHref ? <a href={phoneHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-100 px-4 py-2 text-sm font-bold text-graphite hover:bg-gray-200"><Phone size={16} /> Ligar</a> : <Button variant="secondary" className="gap-2 w-full opacity-50" disabled><Phone size={16} /> Sem telefone</Button>}
-              {whatsappHref ? <a href={whatsappHref} target="_blank" rel="noreferrer" className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-graphite hover:bg-gray-50"><MessageSquare size={16} /> WhatsApp</a> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
+              {whatsappHref ? <button type="button" onClick={handleWhatsappClick} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-graphite hover:bg-gray-50"><MessageSquare size={16} /> WhatsApp</button> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
             </div>
           </Card>
 
@@ -881,6 +911,29 @@ export default function LeadDetail() {
           </Card>
         </div>
       </div>
+
+      {whatsappConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="whatsapp-confirm-title">
+          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
+            <div className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <h3 id="whatsapp-confirm-title" className="text-lg font-black text-graphite">Confirmar abertura do WhatsApp</h3>
+                <p className="mt-1 text-sm text-gray-500">Vou registrar esta ação na timeline do lead e abrir o WhatsApp em uma nova aba.</p>
+              </div>
+              <button type="button" className="rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-graphite" onClick={() => setWhatsappConfirmOpen(false)} aria-label="Fechar confirmação"><X size={18} /></button>
+            </div>
+            {whatsappStatus && <p className="mb-3 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-700">{whatsappStatus}</p>}
+            <label className="mb-5 flex items-center gap-3 rounded-2xl bg-gray-50 p-3 text-sm font-semibold text-graphite">
+              <input type="checkbox" checked={whatsappDoNotAskAgain} onChange={(event) => setWhatsappDoNotAskAgain(event.target.checked)} className="h-4 w-4 rounded border-gray-300 text-solar-orange focus:ring-solar-orange" />
+              Não mostrar novamente neste navegador
+            </label>
+            <div className="flex justify-end gap-3">
+              <Button variant="ghost" onClick={() => setWhatsappConfirmOpen(false)}>Cancelar</Button>
+              <Button onClick={confirmWhatsappOpen} className="gap-2"><MessageSquare size={16} /> Abrir WhatsApp</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

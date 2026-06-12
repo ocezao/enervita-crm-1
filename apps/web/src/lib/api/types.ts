@@ -104,6 +104,22 @@ export interface Activity {
   createdAt: string;
 }
 
+export interface Notification {
+  id: string;
+  tenantId: string;
+  userId: string;
+  taskId: string | null;
+  leadId: string | null;
+  type: string;
+  severity: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  body: string | null;
+  href: string | null;
+  metadata: Record<string, unknown>;
+  readAt: string | null;
+  createdAt: string;
+}
+
 export interface LeadHistoryChange {
   field: string;
   label: string;

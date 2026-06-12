@@ -188,7 +188,7 @@ export default function Leads() {
           )}
         </div>
 
-        <div className="md:hidden divide-y divide-gray-100">
+        <div className="md:hidden divide-y divide-gray-100 crm-scroll-panel min-h-[520px] h-[calc(150vh-220px)] overflow-y-auto">
           {loading ? <div className="px-6 py-10 text-center text-gray-500">Carregando leads...</div> : filteredLeads.length === 0 ? <div className="px-6 py-12 text-center text-gray-500">Nenhum lead encontrado com os filtros atuais.</div> : filteredLeads.map((lead) => (
             <article key={lead.id} className="p-4 space-y-3" onClick={() => navigate(`/leads/${lead.id}`)}>
               <div className="flex items-start justify-between gap-3">
@@ -208,9 +208,9 @@ export default function Leads() {
             </article>
           ))}
         </div>
-        <div className="hidden md:block crm-scroll-panel overflow-x-auto">
+        <div className="hidden md:block crm-scroll-panel min-h-[520px] h-[calc(150vh-220px)] overflow-auto">
           <table className="w-full min-w-[980px] text-left">
-            <thead><tr className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100"><th className="px-4 py-4 w-12"><input aria-label="Selecionar todos os leads visíveis" type="checkbox" checked={allVisibleSelected} onChange={toggleAllVisible} className="h-4 w-4 rounded border-gray-300 text-solar-orange focus:ring-solar-orange" /></th><th className="px-6 py-4">Lead</th><th className="px-6 py-4">Status / Etapa</th><th className="px-6 py-4">Responsável</th><th className="px-6 py-4">Prioridade</th><th className="px-6 py-4">Valor Conta</th><th className="px-6 py-4">Origem</th><th className="px-6 py-4">Tags</th><th className="px-6 py-4 text-right">Ações</th></tr></thead>
+            <thead className="sticky top-0 z-10 bg-white"><tr className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100"><th className="px-4 py-4 w-12"><input aria-label="Selecionar todos os leads visíveis" type="checkbox" checked={allVisibleSelected} onChange={toggleAllVisible} className="h-4 w-4 rounded border-gray-300 text-solar-orange focus:ring-solar-orange" /></th><th className="px-6 py-4">Lead</th><th className="px-6 py-4">Status / Etapa</th><th className="px-6 py-4">Responsável</th><th className="px-6 py-4">Prioridade</th><th className="px-6 py-4">Valor Conta</th><th className="px-6 py-4">Origem</th><th className="px-6 py-4">Tags</th><th className="px-6 py-4 text-right">Ações</th></tr></thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? <tr><td colSpan={9} className="px-6 py-10 text-center text-gray-500">Carregando leads...</td></tr> : filteredLeads.length === 0 ? <tr><td colSpan={9} className="px-6 py-12 text-center text-gray-500">Nenhum lead encontrado com os filtros atuais.</td></tr> : filteredLeads.map((lead) => (
                 <tr

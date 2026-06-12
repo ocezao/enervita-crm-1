@@ -9,15 +9,16 @@ REMOTE_DIST="/app/apps/web/dist"
 VAULT_DIR="/home/deploy/repos/agencia-vault/06-VPS/deploys"
 FEATURES="${FEATURES:-crm-ui}"
 EXPECT_MARKERS=()
+BROWSER_EXPECT_MARKERS=()
 ROUTES=()
 SKIP_BROWSER=0
 
 usage() {
   cat <<'USAGE'
-Usage: scripts/deploy-public-ui.sh [--expect TEXT] [--route PATH] [--skip-browser]
+Usage: scripts/deploy-public-ui.sh [--expect TEXT] [--expect-browser TEXT] [--route PATH] [--skip-browser]
 
 Builds Enervita CRM web, generates version.json, backs up and copies dist to the public container,
-verifies markers inside the public container and through the public domain, optionally runs browser screenshots,
+verifies markers inside the public container, optionally verifies browser-specific markers with screenshots,
 and writes a vault deploy report. Rolls back dist automatically if a required check fails after backup.
 USAGE
 }
@@ -25,6 +26,7 @@ USAGE
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --expect) EXPECT_MARKERS+=("$2"); shift 2 ;;
+    --expect-browser) BROWSER_EXPECT_MARKERS+=("$2"); shift 2 ;;
     --route) ROUTES+=("$2"); shift 2 ;;
     --skip-browser) SKIP_BROWSER=1; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -34,6 +36,9 @@ done
 
 if [[ ${#EXPECT_MARKERS[@]} -eq 0 ]]; then
   EXPECT_MARKERS=("Enervita")
+fi
+if [[ ${#BROWSER_EXPECT_MARKERS[@]} -eq 0 ]]; then
+  BROWSER_EXPECT_MARKERS=("${EXPECT_MARKERS[@]}")
 fi
 if [[ ${#ROUTES[@]} -eq 0 ]]; then
   ROUTES=("/dashboard")
@@ -129,8 +134,8 @@ if [[ "$SKIP_BROWSER" == "0" ]]; then
   log "Running browser smoke screenshots"
   smoke_args=(--domain "$DOMAIN" --output-dir "$SCREENSHOT_DIR")
   for route in "${ROUTES[@]}"; do smoke_args+=(--route "$route"); done
-  for marker in "${EXPECT_MARKERS[@]}"; do smoke_args+=(--expect "$marker"); done
-  SMOKE_PASSWORD="${SMOKE_PASSWORD:-}" scripts/smoke-public-ui.sh "${smoke_args[@]}" | tee "${REPORT_DIR}/browser-smoke.log"
+  for marker in "${BROWSER_EXPECT_MARKERS[@]}"; do smoke_args+=(--expect "$marker"); done
+  SMOKE_EMAIL="${SMOKE_EMAIL:-hermes.prints@enervita.local}" SMOKE_PASSWORD="${SMOKE_PASSWORD:-}" scripts/smoke-public-ui.sh "${smoke_args[@]}" | tee "${REPORT_DIR}/browser-smoke.log"
 fi
 
 ROLLBACK_NEEDED=0
@@ -161,6 +166,7 @@ status: concluido
 - Marcadores: $(printf '`%s` ' "${EXPECT_MARKERS[@]}")
 - Rotas: $(printf '`%s` ' "${ROUTES[@]}")
 - Browser smoke: $([[ "$SKIP_BROWSER" == "0" ]] && echo OK || echo SKIPPED)
+- Browser markers: $(printf '`%s` ' "${BROWSER_EXPECT_MARKERS[@]}")
 
 ## Evidências
 

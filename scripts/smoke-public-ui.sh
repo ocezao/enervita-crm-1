@@ -120,20 +120,44 @@ try {
     throw new Error(`Login smoke failed: ${loginText.slice(0, 180)}`);
   }
 
+  async function waitForRouteData(route) {
+    const startedAt = Date.now();
+    let snapshot = null;
+    while (Date.now() - startedAt < 30000) {
+      snapshot = await evalJs(`(() => {
+        const text = document.body.innerText || '';
+        const loading = /Carregando|Loading|Aguarde/i.test(text);
+        const dataNodes = document.querySelectorAll('tbody tr, article, .cursor-grab, [data-testid^="pipeline-column-"], [data-rbd-draggable-id], [draggable="true"]').length;
+        const pageHeight = document.documentElement.scrollHeight;
+        const viewportHeight = window.innerHeight;
+        const pathname = window.location.pathname;
+        return { text, loading, dataNodes, pageHeight, viewportHeight, pathname };
+      })()`);
+      const expectedVisible = expects.length === 0 || expects.some((marker) => snapshot.text.includes(marker));
+      if (snapshot.pathname === route && !snapshot.loading && snapshot.text.length > 120 && expectedVisible) return snapshot;
+      await delay(500);
+    }
+    throw new Error(`Route data did not finish loading before screenshot: ${route}. Last path: ${snapshot?.pathname}. Last text: ${(snapshot?.text || '').slice(0, 220)}`);
+  }
+
   for (const route of routes) {
     await send('Page.navigate', { url: `${domain}${route}` });
-    await delay(1800);
-    const text = await evalJs('document.body.innerText');
-    for (const marker of expects) {
-      if (!text.includes(marker)) {
-        // Marker may be route-specific; do not require every marker on every route, but record text.
-        fs.writeFileSync(`${outputDir}/text-${route.replaceAll('/', '_') || 'home'}.txt`, text);
-      }
+    await delay(800);
+    let currentPath = await evalJs('window.location.pathname');
+    if (currentPath !== route) {
+      await evalJs(`window.location.assign(${JSON.stringify(`${domain}${route}`)})`);
+      await delay(1200);
     }
+    const snapshot = await waitForRouteData(route);
+    const text = snapshot.text;
+    const safeRoute = route.replaceAll('/', '_') || 'home';
+    fs.writeFileSync(`${outputDir}/text-${safeRoute}.txt`, text);
+    fs.writeFileSync(`${outputDir}/metrics-${safeRoute}.json`, JSON.stringify({ route, dataNodes: snapshot.dataNodes, pageHeight: snapshot.pageHeight, viewportHeight: snapshot.viewportHeight }, null, 2));
     const shot = await send('Page.captureScreenshot', { format: 'png', fullPage: true });
-    const filename = `${outputDir}/screenshot-${route.replaceAll('/', '_') || 'home'}.png`;
+    const filename = `${outputDir}/screenshot-${safeRoute}.png`;
     fs.writeFileSync(filename, Buffer.from(shot.data, 'base64'));
     console.log(`screenshot=${filename}`);
+    console.log(`metrics=${JSON.stringify({ route, dataNodes: snapshot.dataNodes, pageHeight: snapshot.pageHeight, viewportHeight: snapshot.viewportHeight })}`);
   }
 
   const allText = routes.map(route => {

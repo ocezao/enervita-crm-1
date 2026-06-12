@@ -16,7 +16,8 @@ import {
   AdsSyncResult,
   LeadStage,
   CrmAnalyticsOverview,
-  LeadHistoryEntry
+  LeadHistoryEntry,
+  Notification
 } from './types';
 import {
   mockLeads,
@@ -266,6 +267,21 @@ export class MockCrmApi implements CrmApi {
         changes: [],
       },
     ];
+  }
+
+  async listNotifications(): Promise<{ notifications: Notification[]; unreadCount: number }> {
+    await delay(150);
+    return { notifications: [], unreadCount: 0 };
+  }
+
+  async markNotificationRead(id: string): Promise<Notification> {
+    await delay(150);
+    return { id, tenantId: 'mock-tenant', userId: 'mock-user', taskId: null, leadId: null, type: 'task_assigned', severity: 'info', title: 'Notificação lida', body: '', href: '', metadata: {}, readAt: new Date().toISOString(), createdAt: new Date().toISOString() };
+  }
+
+  async markAllNotificationsRead(): Promise<number> {
+    await delay(150);
+    return 0;
   }
 
   async listDashboardMetrics(): Promise<DashboardMetrics> {
