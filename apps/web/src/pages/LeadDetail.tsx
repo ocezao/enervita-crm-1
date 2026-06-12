@@ -591,6 +591,24 @@ export default function LeadDetail() {
             </div>
           </Card>
 
+            <div className="rounded-2xl border border-solar-orange/20 bg-solar-orange/5 p-4 mb-4">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-solar-orange">Oportunidade</p>
+              {lead.opportunity ? (
+                <div className="mt-2 space-y-1">
+                  <p className="font-bold text-graphite">{lead.opportunity.title}</p>
+                  <p className="text-xs text-gray-500">Status: {lead.opportunity.status} · Probabilidade: {lead.opportunity.probability}% · Convertida em {formatDate(lead.opportunity.convertedAt)}</p>
+                  {lead.opportunity.acceptedProposalId && <p className="text-xs font-semibold text-green-700">Contrato ganho via proposta aceita em {(lead.opportunity.acceptedAt ? formatDate(lead.opportunity.acceptedAt) : 'data não informada')}</p>}
+                </div>
+              ) : (
+                <div className="mt-2 space-y-3">
+                  <p className="text-sm text-gray-600">Lead ainda não virou oportunidade. Converta quando houver intenção comercial clara e próximo passo de venda.</p>
+                  <Button size="sm" onClick={() => void convertToOpportunity()} disabled={convertingOpportunity}>
+                    {convertingOpportunity ? 'Convertendo...' : 'Converter em oportunidade'}
+                  </Button>
+                </div>
+              )}
+            </div>
+
           <Card className="p-6">
             <h3 className="font-bold text-graphite mb-4">Tags internas</h3>
             <div className="flex flex-wrap gap-2 mb-4">

@@ -17,6 +17,7 @@ import {
   AdsSyncResult,
   LeadStage,
   LeadTag,
+  LeadOpportunity,
   Priority,
   CrmAnalyticsOverview,
   LeadHistoryEntry,
@@ -133,6 +134,7 @@ type BackendLead = {
   updatedAt: string;
   contact?: BackendContact | null;
   tags?: LeadTag[] | null;
+  opportunity?: LeadOpportunity | null;
 };
 
 type BackendProposal = {
@@ -310,6 +312,7 @@ function mapLead(raw: BackendLead): Lead {
     priority: priority(raw.priority),
     metadata,
     tags: Array.isArray(raw.tags) ? raw.tags : [],
+    opportunity: raw.opportunity ?? null,
     contact: {
       id: contact.id ?? raw.contactId,
       name: contact.name ?? 'Lead sem nome',
