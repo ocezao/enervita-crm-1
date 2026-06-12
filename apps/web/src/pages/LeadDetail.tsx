@@ -171,6 +171,13 @@ export default function LeadDetail() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskPriority, setTaskPriority] = useState<'baixa' | 'media' | 'alta' | 'urgente'>('media');
   const [taskDueDate, setTaskDueDate] = useState('');
+  const nextOpenTask = tasks
+    .filter((task) => task.status !== 'concluido')
+    .sort((a, b) => {
+      const left = a.dueDate ? new Date(a.dueDate).getTime() : Number.POSITIVE_INFINITY;
+      const right = b.dueDate ? new Date(b.dueDate).getTime() : Number.POSITIVE_INFINITY;
+      return left - right;
+    })[0];
   const [tagDraft, setTagDraft] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [savingLead, setSavingLead] = useState(false);
@@ -559,6 +566,17 @@ export default function LeadDetail() {
             <div className="mt-8 grid grid-cols-2 gap-2">
               {phoneHref ? <a href={phoneHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-100 px-4 py-2 text-sm font-bold text-graphite hover:bg-gray-200"><Phone size={16} /> Ligar</a> : <Button variant="secondary" className="gap-2 w-full opacity-50" disabled><Phone size={16} /> Sem telefone</Button>}
               {whatsappHref ? <button type="button" onClick={handleWhatsappClick} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-graphite hover:bg-gray-50"><MessageSquare size={16} /> WhatsApp</button> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
+            </div>
+            <div className="mt-4 rounded-2xl border border-solar-orange/15 bg-solar-orange/5 p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-solar-orange">Próxima ação</p>
+              {nextOpenTask ? (
+                <div className="mt-2 space-y-1">
+                  <p className="text-sm font-black text-graphite">{nextOpenTask.title}</p>
+                  <p className="text-xs font-semibold text-gray-500">Prioridade: {nextOpenTask.priority} · Vence em {formatDate(nextOpenTask.dueDate)}</p>
+                </div>
+              ) : (
+                <p className="mt-2 text-sm font-semibold text-gray-500">Nenhuma próxima ação cadastrada. Crie uma tarefa para evitar lead parado.</p>
+              )}
             </div>
           </Card>
 
