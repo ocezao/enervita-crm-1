@@ -157,7 +157,7 @@ function proposalHtmlFromText(text: string) {
 export default function LeadDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { lead, activities, tasks, history, proposals, loading, addActivity, addTask, completeTask, addProposal, updateProposal, deleteProposal, updateLead, deleteLead, setTags } = useLeadDetail(id);
+  const { lead, activities, tasks, history, proposals, loading, addActivity, addTask, completeTask, addProposal, updateProposal, deleteProposal, updateLead, convertToOpportunity, deleteLead, setTags } = useLeadDetail(id);
   const { user } = useAuth();
   const canCreateActivity = userHasPermission(user, 'activity.create');
   const canCreateTask = userHasPermission(user, 'task.create');
@@ -171,9 +171,17 @@ export default function LeadDetail() {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskPriority, setTaskPriority] = useState<'baixa' | 'media' | 'alta' | 'urgente'>('media');
   const [taskDueDate, setTaskDueDate] = useState('');
+  const nextOpenTask = tasks
+    .filter((task) => task.status !== 'concluido')
+    .sort((a, b) => {
+      const left = a.dueDate ? new Date(a.dueDate).getTime() : Number.POSITIVE_INFINITY;
+      const right = b.dueDate ? new Date(b.dueDate).getTime() : Number.POSITIVE_INFINITY;
+      return left - right;
+    })[0];
   const [tagDraft, setTagDraft] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [savingLead, setSavingLead] = useState(false);
+  const [convertingOpportunity, setConvertingOpportunity] = useState(false);
   const [leadMessage, setLeadMessage] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState({
     name: '',
@@ -471,6 +479,16 @@ export default function LeadDetail() {
     }
   }
 
+  async function handleAcceptProposal(proposalId: string) {
+    setProposalMessage(null);
+    try {
+      await updateProposal(proposalId, { status: 'accepted' });
+      setProposalMessage('Proposta aceita e oportunidade marcada como contrato ganho.');
+    } catch {
+      setProposalMessage('Não foi possível marcar a proposta como aceita.');
+    }
+  }
+
   async function handleDeleteProposal(proposalId: string) {
     const ok = window.confirm('Excluir esta proposta? Essa ação não pode ser desfeita.');
     if (!ok) return;
@@ -560,7 +578,36 @@ export default function LeadDetail() {
               {phoneHref ? <a href={phoneHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gray-100 px-4 py-2 text-sm font-bold text-graphite hover:bg-gray-200"><Phone size={16} /> Ligar</a> : <Button variant="secondary" className="gap-2 w-full opacity-50" disabled><Phone size={16} /> Sem telefone</Button>}
               {whatsappHref ? <button type="button" onClick={handleWhatsappClick} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-bold text-graphite hover:bg-gray-50"><MessageSquare size={16} /> WhatsApp</button> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
             </div>
+            <div className="mt-4 rounded-2xl border border-solar-orange/15 bg-solar-orange/5 p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-solar-orange">Próxima ação</p>
+              {nextOpenTask ? (
+                <div className="mt-2 space-y-1">
+                  <p className="text-sm font-black text-graphite">{nextOpenTask.title}</p>
+                  <p className="text-xs font-semibold text-gray-500">Prioridade: {nextOpenTask.priority} · Vence em {formatDate(nextOpenTask.dueDate)}</p>
+                </div>
+              ) : (
+                <p className="mt-2 text-sm font-semibold text-gray-500">Nenhuma próxima ação cadastrada. Crie uma tarefa para evitar lead parado.</p>
+              )}
+            </div>
           </Card>
+
+            <div className="rounded-2xl border border-solar-orange/20 bg-solar-orange/5 p-4 mb-4">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-solar-orange">Oportunidade</p>
+              {lead.opportunity ? (
+                <div className="mt-2 space-y-1">
+                  <p className="font-bold text-graphite">{lead.opportunity.title}</p>
+                  <p className="text-xs text-gray-500">Status: {lead.opportunity.status} · Probabilidade: {lead.opportunity.probability}% · Convertida em {formatDate(lead.opportunity.convertedAt)}</p>
+                  {lead.opportunity.acceptedProposalId && <p className="text-xs font-semibold text-green-700">Contrato ganho via proposta aceita em {(lead.opportunity.acceptedAt ? formatDate(lead.opportunity.acceptedAt) : 'data não informada')}</p>}
+                </div>
+              ) : (
+                <div className="mt-2 space-y-3">
+                  <p className="text-sm text-gray-600">Lead ainda não virou oportunidade. Converta quando houver intenção comercial clara e próximo passo de venda.</p>
+                  <Button size="sm" onClick={() => void convertToOpportunity()} disabled={convertingOpportunity}>
+                    {convertingOpportunity ? 'Convertendo...' : 'Converter em oportunidade'}
+                  </Button>
+                </div>
+              )}
+            </div>
 
           <Card className="p-6">
             <h3 className="font-bold text-graphite mb-4">Tags internas</h3>
@@ -896,6 +943,7 @@ export default function LeadDetail() {
                             <div className="text-right text-sm"><p className="font-black text-energy-success">{formatCurrency(proposal.projectedAnnualSavings)}/ano</p><p className="text-xs text-gray-500">{proposal.discountPercentage}% desconto</p></div>
                             <div className="flex items-center gap-1">
                               <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar proposta" onClick={() => handleEditProposal(proposal)}><Edit3 size={14} /></Button>
+                              {proposal.status !== 'accepted' && <Button size="sm" onClick={() => handleAcceptProposal(proposal.id)}>Marcar aceita</Button>}
                               {isAdminUser(user) && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-alert-red/10" aria-label="Excluir proposta" onClick={() => void handleDeleteProposal(proposal.id)}><Trash2 size={14} className="text-alert-red" /></Button>}
                             </div>
                           </div>

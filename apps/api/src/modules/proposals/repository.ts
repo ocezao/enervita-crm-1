@@ -272,7 +272,15 @@ export function createPgProposalsRepository(databaseUrl: string): ProposalsRepos
         }
         const selected = await client.query(`${proposalTemplateSelect} where p.tenant_id = $1 and p.id = $2`, [context.tenantId, proposalId]);
         const proposal = rowToProposal(selected.rows[0]);
-        await writeAudit(client, context, 'proposal', proposal.id, 'proposal.updated', proposal);
+        if (proposal.status === 'accepted' && proposal.leadId) {
+          await client.query(
+            `update lead_opportunities
+                set status = 'won', accepted_proposal_id = $3, accepted_at = coalesce(accepted_at, now()), updated_at = now()
+              where tenant_id = $1 and lead_id = $2`,
+            [context.tenantId, proposal.leadId, proposal.id],
+          );
+        }
+        await writeAudit(client, context, 'proposal', proposal.id, proposal.status === 'accepted' ? 'proposal.accepted' : 'proposal.updated', proposal);
         await client.query('commit');
         return proposal;
       } catch (error) {

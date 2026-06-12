@@ -72,6 +72,7 @@ function makeLead(overrides: Partial<Lead> = {}): Lead {
     createdAt: '2026-05-29T00:00:00.000Z',
     updatedAt: '2026-05-29T00:00:00.000Z',
     tags: [],
+    opportunity: null,
     contact: {
       id: `contact-${id}`,
       name: 'Lead Teste',

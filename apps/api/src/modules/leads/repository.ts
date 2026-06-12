@@ -25,6 +25,21 @@ export type LeadTag = {
   color: string | null;
 };
 
+export type LeadOpportunity = {
+  id: string;
+  leadId: string;
+  title: string;
+  status: 'open' | 'won' | 'lost';
+  expectedValue: string | null;
+  probability: number;
+  convertedBy: string | null;
+  convertedAt: string;
+  acceptedProposalId: string | null;
+  acceptedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Lead = {
   id: string;
   tenantId: string;
@@ -53,6 +68,7 @@ export type Lead = {
   updatedAt: string;
   contact: LeadContact;
   tags: LeadTag[];
+  opportunity: LeadOpportunity | null;
 };
 
 export type LeadHistoryChange = {
@@ -78,7 +94,7 @@ export type LeadsRepository = {
   listLeadHistory(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<LeadHistoryEvent[]>;
   createLead(context: AuditContext, input: CreateLeadInput): Promise<Lead>;
   updateLead(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: UpdateLeadInput): Promise<Lead>;
-  changeStage(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, targetStage: PipelineStageKey, notes?: string | null, lostReason?: string | null): Promise<Lead>;
+  changeStage(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, targetStage: PipelineStageKey, notes?: string | null, lostReason?: string | null, createOpportunity?: boolean): Promise<Lead>;
   setLeadTags(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: SetLeadTagsInput): Promise<Lead>;
   bulkSetLeadTags(context: AuditContext, leadIds: string[], allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: SetLeadTagsInput): Promise<Lead[]>;
   deleteLead(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<void>;
@@ -184,6 +200,24 @@ function rowHistoryStage(row: Record<string, unknown>): PipelineStageKey | null 
   return historyStage(after?.stage, before?.stage);
 }
 
+function rowToOpportunity(row: Record<string, unknown>): LeadOpportunity | null {
+  if (!row.opportunityId) return null;
+  return {
+    id: String(row.opportunityId),
+    leadId: String(row.opportunityLeadId ?? row.id),
+    title: String(row.opportunityTitle ?? ''),
+    status: String(row.opportunityStatus ?? 'open') as LeadOpportunity['status'],
+    expectedValue: row.opportunityExpectedValue === null || row.opportunityExpectedValue === undefined ? null : String(row.opportunityExpectedValue),
+    probability: Number(row.opportunityProbability ?? 0),
+    convertedBy: row.opportunityConvertedBy ? String(row.opportunityConvertedBy) : null,
+    convertedAt: String(row.opportunityConvertedAt ?? row.created_at),
+    acceptedProposalId: row.opportunityAcceptedProposalId ? String(row.opportunityAcceptedProposalId) : null,
+    acceptedAt: row.opportunityAcceptedAt ? String(row.opportunityAcceptedAt) : null,
+    createdAt: String(row.opportunityCreatedAt ?? row.created_at),
+    updatedAt: String(row.opportunityUpdatedAt ?? row.updated_at),
+  };
+}
+
 function rowToLead(row: Record<string, unknown>): Lead {
   return {
     id: row.id as string,
@@ -212,6 +246,7 @@ function rowToLead(row: Record<string, unknown>): Lead {
     createdAt: row.createdAt as string,
     updatedAt: row.updatedAt as string,
     tags: tagArray(row.tags),
+    opportunity: rowToOpportunity(row),
     contact: {
       id: row.contactId as string,
       name: row.contactName as string,
@@ -245,6 +280,18 @@ const leadSelect = `select l.id,
                           l.estimated_ticket::text as "estimatedTicket",
                           l.sdr_owner_id as "sdrOwnerId",
                           owner_user.name as "sdrOwner",
+                          lo.id as "opportunityId",
+                          lo.lead_id as "opportunityLeadId",
+                          lo.title as "opportunityTitle",
+                          lo.status as "opportunityStatus",
+                          lo.expected_value as "opportunityExpectedValue",
+                          lo.probability as "opportunityProbability",
+                          lo.converted_by as "opportunityConvertedBy",
+                          lo.converted_at::text as "opportunityConvertedAt",
+                          lo.accepted_proposal_id as "opportunityAcceptedProposalId",
+                          lo.accepted_at::text as "opportunityAcceptedAt",
+                          lo.created_at::text as "opportunityCreatedAt",
+                          lo.updated_at::text as "opportunityUpdatedAt",
                           l.next_action_at::text as "nextActionAt",
                           l.priority::text as priority,
                           l.notes,
@@ -265,6 +312,7 @@ const leadSelect = `select l.id,
                      from leads l
                      join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id
                      left join users owner_user on owner_user.tenant_id = l.tenant_id and owner_user.id = l.sdr_owner_id
+                     left join lead_opportunities lo on lo.tenant_id = l.tenant_id and lo.lead_id = l.id
                      left join lateral (
                        select jsonb_agg(jsonb_build_object('id', lt.id::text, 'name', lt.name, 'slug', lt.slug, 'color', lt.color) order by lt.name) as tags
                          from lead_tag_assignments lta
@@ -352,6 +400,22 @@ async function writeAudit(client: PoolClient, context: AuditContext, entityId: s
     `insert into audit_logs (tenant_id, actor_user_id, entity_type, entity_id, action, before_data, after_data, ip_address, user_agent)
      values ($1, $2, 'lead', $3, $4, $5::jsonb, $6::jsonb, nullif($7, '')::inet, $8)`,
     [context.tenantId, context.actorUserId, entityId, action, before ? JSON.stringify(before) : null, after ? JSON.stringify(after) : null, context.ipAddress ?? null, context.userAgent ?? null],
+  );
+}
+
+async function createOpportunityForLead(client: PoolClient, context: AuditContext, lead: Lead): Promise<void> {
+  await client.query(
+    `insert into lead_opportunities (tenant_id, lead_id, title, expected_value, probability, converted_by, metadata)
+     values ($1, $2, $3, $4, 60, $5, $6::jsonb)
+     on conflict (tenant_id, lead_id) do nothing`,
+    [
+      context.tenantId,
+      lead.id,
+      `Oportunidade — ${lead.contact.name}`,
+      lead.estimatedTicket,
+      context.actorUserId,
+      JSON.stringify({ source: 'lead_conversion', fromStage: lead.stage }),
+    ],
   );
 }
 
@@ -664,7 +728,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         client.release();
       }
     },
-    async changeStage(context, leadId, allowedStages, ownerUserId, targetStage, notes, lostReason) {
+    async changeStage(context, leadId, allowedStages, ownerUserId, targetStage, notes = null, lostReason = null, createOpportunity = false) {
       const client = await pool.connect();
       try {
         await client.query('begin');
@@ -681,9 +745,14 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
            values ($1, $2, $3::lead_stage, $4::lead_stage, $5, $6)`,
           [context.tenantId, leadId, before.stage, targetStage, context.actorUserId, notes ?? null],
         );
-        const after = await selectOne(client, context.tenantId, leadId, null, null);
+        let after = await selectOne(client, context.tenantId, leadId, null, null);
         if (!after) throw new LeadsNotFoundError('Lead not found after stage change');
-        await writeAudit(client, context, leadId, 'lead.stage_changed', before, after);
+        if (createOpportunity) {
+          await createOpportunityForLead(client, context, after);
+          after = await selectOne(client, context.tenantId, leadId, null, null);
+          if (!after) throw new LeadsNotFoundError('Lead not found after opportunity conversion');
+        }
+        await writeAudit(client, context, leadId, createOpportunity ? 'lead.converted_to_opportunity' : 'lead.stage_changed', before, after);
         await queueMetaStageEvent(client, context, after, 'stage_changed', before.stage);
         await client.query('commit');
         return after;

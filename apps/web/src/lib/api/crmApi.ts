@@ -17,6 +17,7 @@ import {
   AdsSyncResult,
   LeadStage,
   LeadTag,
+  LeadOpportunity,
   Priority,
   CrmAnalyticsOverview,
   LeadHistoryEntry,
@@ -27,7 +28,7 @@ export interface CrmApi {
   listLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' }): Promise<Lead[]>;
   getLead(id: string): Promise<Lead | undefined>;
   updateLead(id: string, payload: UpdateLeadPayload): Promise<Lead>;
-  updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string }): Promise<Lead>;
+  updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string; createOpportunity?: boolean }): Promise<Lead>;
   setLeadTags(id: string, tags: string[]): Promise<Lead>;
   bulkSetLeadTags(leadIds: string[], tags: string[]): Promise<Lead[]>;
   deleteLead(id: string): Promise<void>;
@@ -133,6 +134,7 @@ type BackendLead = {
   updatedAt: string;
   contact?: BackendContact | null;
   tags?: LeadTag[] | null;
+  opportunity?: LeadOpportunity | null;
 };
 
 type BackendProposal = {
@@ -310,6 +312,7 @@ function mapLead(raw: BackendLead): Lead {
     priority: priority(raw.priority),
     metadata,
     tags: Array.isArray(raw.tags) ? raw.tags : [],
+    opportunity: raw.opportunity ?? null,
     contact: {
       id: contact.id ?? raw.contactId,
       name: contact.name ?? 'Lead sem nome',
@@ -459,11 +462,11 @@ export class HttpCrmApi implements CrmApi {
     return mapLead(body.lead);
   }
 
-  async updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string }): Promise<Lead> {
+  async updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string; createOpportunity?: boolean }): Promise<Lead> {
     const body = await requestJson<{ lead: BackendLead }>(`/api/leads/${encodeURIComponent(id)}/stage`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage, notes: options?.notes, lostReason: options?.lostReason }),
+      body: JSON.stringify({ stage, notes: options?.notes, lostReason: options?.lostReason, createOpportunity: options?.createOpportunity }),
     });
     return mapLead(body.lead);
   }

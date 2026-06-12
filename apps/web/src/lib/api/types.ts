@@ -41,6 +41,21 @@ export interface LeadTag {
   color?: string | null;
 }
 
+export interface LeadOpportunity {
+  id: string;
+  leadId: string;
+  title: string;
+  status: 'open' | 'won' | 'lost';
+  expectedValue: string | null;
+  probability: number;
+  convertedBy: string | null;
+  convertedAt: string;
+  acceptedProposalId: string | null;
+  acceptedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Lead {
   id: string;
   contactId: string;
@@ -75,6 +90,7 @@ export interface Lead {
   metadata?: Record<string, unknown>;
   contact?: Contact; // Join result
   tags: LeadTag[];
+  opportunity?: LeadOpportunity | null;
 }
 
 export interface Task {
@@ -207,6 +223,7 @@ export type CreateProposalPayload = {
     size: number;
     dataBase64?: string;
   };
+  status?: Proposal['status'];
 };
 
 

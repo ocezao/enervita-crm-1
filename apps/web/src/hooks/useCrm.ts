@@ -122,6 +122,9 @@ export function useLeadDetail(id: string | undefined) {
   const updateProposalItem = async (proposalId: string, payload: Partial<CreateProposalPayload>) => {
     const updated = await api.updateProposal(proposalId, payload);
     setProposals(prev => prev.map(p => p.id === proposalId ? updated : p));
+    if (id && payload.status === 'accepted') {
+      setLead(await api.getLead(id));
+    }
     return updated;
   };
 
@@ -134,6 +137,14 @@ export function useLeadDetail(id: string | undefined) {
     if (!id) return undefined;
     const updated = await api.updateLead(id, payload);
     setLead(updated);
+    return updated;
+  };
+
+  const convertToOpportunity = async () => {
+    if (!id) return undefined;
+    const updated = await api.updateLeadStage(id, 'atendimento_iniciado', { notes: 'Lead convertido em oportunidade pelo CRM.', createOpportunity: true });
+    setLead(updated);
+    setHistory(await api.listLeadHistory(id));
     return updated;
   };
 
@@ -150,7 +161,7 @@ export function useLeadDetail(id: string | undefined) {
     return updated;
   };
 
-  return { lead, activities, tasks, history, proposals, loading, addActivity, addTask, completeTask, addProposal, updateProposal: updateProposalItem, deleteProposal: deleteProposalItem, updateLead, deleteLead, setTags };
+  return { lead, activities, tasks, history, proposals, loading, addActivity, addTask, completeTask, addProposal, updateProposal: updateProposalItem, deleteProposal: deleteProposalItem, updateLead, convertToOpportunity, deleteLead, setTags };
 }
 
 export function useTasks() {
