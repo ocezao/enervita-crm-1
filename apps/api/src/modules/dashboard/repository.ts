@@ -9,6 +9,36 @@ export type LeadsBySource = { source: string; count: number };
 export type LeadsByStage = { stage: PipelineStageKey; count: number };
 export type ConversionsByPlatform = { platform: string; count: number };
 
+export type CommercialStageBreakdown = {
+  stage: PipelineStageKey;
+  count: number;
+  value: number;
+};
+
+export type CommercialAttentionLead = {
+  id: string;
+  name: string;
+  stage: PipelineStageKey;
+  reason: string;
+  updatedAt: string;
+  nextActionAt: string | null;
+};
+
+export type CommercialMetrics = {
+  openOpportunityValue: number;
+  wonOpportunityValue: number;
+  openOpportunities: number;
+  wonOpportunities: number;
+  openProposals: number;
+  acceptedProposals: number;
+  acceptedProposalAnnualValue: number;
+  overdueTasks: number;
+  leadsWithoutNextAction: number;
+  staleLeads: number;
+  stageBreakdown: CommercialStageBreakdown[];
+  attentionLeads: CommercialAttentionLead[];
+};
+
 export type DashboardMetrics = {
   newLeadsToday: number;
   leadsWithoutFollowup: number;
@@ -18,6 +48,7 @@ export type DashboardMetrics = {
   leadsByStage: LeadsByStage[];
   conversionsByPlatform: ConversionsByPlatform[];
   recentEvents: Activity[];
+  commercial: CommercialMetrics;
 };
 
 export type DashboardRepository = {
@@ -55,6 +86,130 @@ function rowToActivity(row: Record<string, unknown>): Activity {
     occurredAt: row.occurredAt as string,
     createdAt: row.createdAt as string,
     leadStage: row.leadStage as PipelineStageKey | null,
+  };
+}
+
+
+function numericValue(value: unknown): number {
+  if (value === null || value === undefined) return 0;
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function intValue(value: unknown): number {
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+async function getCommercialMetrics(pool: pg.Pool, tenantId: string, allowedStages: PipelineStageKey[] | null): Promise<CommercialMetrics> {
+  const stageFilter = allowedStages === null ? '' : 'and l.stage = any($2::lead_stage[])';
+  const params = allowedStages === null ? [tenantId] : [tenantId, allowedStages];
+
+  const opportunityResult = await pool.query(
+    `select
+        coalesce(sum(expected_value) filter (where status = 'open'), 0)::text as "openValue",
+        coalesce(sum(expected_value) filter (where status = 'won'), 0)::text as "wonValue",
+        count(*) filter (where status = 'open')::int as "openCount",
+        count(*) filter (where status = 'won')::int as "wonCount"
+       from lead_opportunities lo
+       join leads l on l.tenant_id = lo.tenant_id and l.id = lo.lead_id
+      where lo.tenant_id = $1 ${stageFilter}`,
+    params,
+  );
+
+  const proposalResult = await pool.query(
+    `select
+        count(*) filter (where p.status in ('draft', 'sent'))::int as "openProposals",
+        count(*) filter (where p.status = 'accepted')::int as "acceptedProposals",
+        coalesce(sum(p.projected_annual_savings) filter (where p.status = 'accepted'), 0)::text as "acceptedAnnualValue"
+       from proposals p
+       join leads l on l.tenant_id = p.tenant_id and l.id = p.lead_id
+      where p.tenant_id = $1 ${stageFilter}`,
+    params,
+  );
+
+  const taskResult = await pool.query(
+    `select count(*)::int as count
+       from tasks t
+       join leads l on l.tenant_id = t.tenant_id and l.id = t.lead_id
+      where t.tenant_id = $1
+        and t.status not in ('concluido', 'cancelado')
+        and t.due_date < now()
+        ${stageFilter}`,
+    params,
+  );
+
+  const staleResult = await pool.query(
+    `select
+        count(*) filter (where l.next_action_at is null and l.stage <> 'perdido')::int as "withoutNextAction",
+        count(*) filter (where l.updated_at < now() - interval '7 days' and l.stage not in ('perdido', 'contrato_enervita'))::int as "staleLeads"
+       from leads l
+      where l.tenant_id = $1 ${stageFilter}`,
+    params,
+  );
+
+  const stageResult = await pool.query(
+    `select l.stage::text as stage,
+            count(*)::int as count,
+            coalesce(sum(lo.expected_value), 0)::text as value
+       from leads l
+       left join lead_opportunities lo on lo.tenant_id = l.tenant_id and lo.lead_id = l.id and lo.status = 'open'
+      where l.tenant_id = $1 ${stageFilter}
+      group by l.stage
+      order by min(l.updated_at) asc`,
+    params,
+  );
+
+  const attentionResult = await pool.query(
+    `select l.id,
+            c.name,
+            l.stage::text as stage,
+            case
+              when exists (select 1 from tasks t where t.tenant_id = l.tenant_id and t.lead_id = l.id and t.status not in ('concluido', 'cancelado') and t.due_date < now()) then 'Tarefa vencida'
+              when l.next_action_at is null then 'Sem próxima ação'
+              when l.updated_at < now() - interval '7 days' then 'Lead parado'
+              else 'Revisar'
+            end as reason,
+            l.updated_at::text as "updatedAt",
+            l.next_action_at::text as "nextActionAt"
+       from leads l
+       join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id
+      where l.tenant_id = $1
+        ${stageFilter}
+        and l.stage not in ('perdido', 'contrato_enervita')
+        and (
+          l.next_action_at is null
+          or l.updated_at < now() - interval '7 days'
+          or exists (select 1 from tasks t where t.tenant_id = l.tenant_id and t.lead_id = l.id and t.status not in ('concluido', 'cancelado') and t.due_date < now())
+        )
+      order by
+        case
+          when exists (select 1 from tasks t where t.tenant_id = l.tenant_id and t.lead_id = l.id and t.status not in ('concluido', 'cancelado') and t.due_date < now()) then 1
+          when l.next_action_at is null then 2
+          else 3
+        end,
+        l.updated_at asc
+      limit 8`,
+    params,
+  );
+
+  const opportunities = opportunityResult.rows[0] ?? {};
+  const proposals = proposalResult.rows[0] ?? {};
+  const stale = staleResult.rows[0] ?? {};
+
+  return {
+    openOpportunityValue: numericValue(opportunities.openValue),
+    wonOpportunityValue: numericValue(opportunities.wonValue),
+    openOpportunities: intValue(opportunities.openCount),
+    wonOpportunities: intValue(opportunities.wonCount),
+    openProposals: intValue(proposals.openProposals),
+    acceptedProposals: intValue(proposals.acceptedProposals),
+    acceptedProposalAnnualValue: numericValue(proposals.acceptedAnnualValue),
+    overdueTasks: intValue(taskResult.rows[0]?.count),
+    leadsWithoutNextAction: intValue(stale.withoutNextAction),
+    staleLeads: intValue(stale.staleLeads),
+    stageBreakdown: stageResult.rows.map((row) => ({ stage: row.stage as PipelineStageKey, count: intValue(row.count), value: numericValue(row.value) })),
+    attentionLeads: attentionResult.rows.map((row) => ({ id: row.id as string, name: row.name as string, stage: row.stage as PipelineStageKey, reason: row.reason as string, updatedAt: row.updatedAt as string, nextActionAt: row.nextActionAt as string | null })),
   };
 }
 
@@ -102,6 +257,7 @@ export function createPgDashboardRepository(databaseUrl: string): DashboardRepos
         leadsByStage: byStage.rows.map((row) => ({ stage: row.stage as PipelineStageKey, count: countValue(row) })),
         conversionsByPlatform: byPlatform.rows.map((row) => ({ platform: String(row.platform), count: countValue(row) })),
         recentEvents: recentEvents.rows.map(rowToActivity),
+        commercial: await getCommercialMetrics(pool, tenantId, allowedStages),
       };
     },
     async close() {
