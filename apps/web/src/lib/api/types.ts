@@ -420,6 +420,36 @@ export interface WebhookTestResult {
   delivery: WebhookDelivery;
 }
 
+export interface CommercialStageBreakdown {
+  stage: LeadStage;
+  count: number;
+  value: number;
+}
+
+export interface CommercialAttentionLead {
+  id: string;
+  name: string;
+  stage: LeadStage;
+  reason: string;
+  updatedAt: string;
+  nextActionAt?: string | null;
+}
+
+export interface CommercialMetrics {
+  openOpportunityValue: number;
+  wonOpportunityValue: number;
+  openOpportunities: number;
+  wonOpportunities: number;
+  openProposals: number;
+  acceptedProposals: number;
+  acceptedProposalAnnualValue: number;
+  overdueTasks: number;
+  leadsWithoutNextAction: number;
+  staleLeads: number;
+  stageBreakdown: CommercialStageBreakdown[];
+  attentionLeads: CommercialAttentionLead[];
+}
+
 export interface DashboardMetrics {
   newLeadsToday: number;
   leadsWithoutFollowup: number;
@@ -429,6 +459,7 @@ export interface DashboardMetrics {
   leadsByStage: { stage: LeadStage; count: number }[];
   conversionsByPlatform: { platform: string; count: number }[];
   recentEvents: Activity[];
+  commercial?: CommercialMetrics;
 }
 
 

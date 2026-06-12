@@ -1,112 +1,318 @@
-import { Users, Clock, AlertTriangle, FileText, Calendar, CheckCircle2, TrendingUp, History, ArrowUpRight, Sparkles } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import {
+  AlertTriangle,
+  ArrowUpRight,
+  Calendar,
+  ClipboardCheck,
+  Clock,
+  DollarSign,
+  FileText,
+  History,
+  Sparkles,
+  Target,
+  Trophy,
+  Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useDashboardMetrics } from '../hooks/useCrm';
-import { MetricCard, Card, Button } from '../components/ui/Base';
-import { PageHeader } from '../components/ui/LayoutComponents';
-import { formatDate } from '../lib/utils';
-import { Link } from 'react-router-dom';
+import { Badge, Card } from '../components/ui/Base';
 
-const COLORS = ['#F58220', '#2EAD5B', '#0E7A3D', '#2A332D', '#EFE6D4'];
+const stageLabels: Record<string, string> = {
+  novo_lead: 'Novo lead',
+  qualificacao: 'Qualificação',
+  atendimento_iniciado: 'Atendimento iniciado',
+  conta_recebida: 'Conta recebida',
+  diagnostico: 'Diagnóstico',
+  proposta_enviada: 'Proposta enviada',
+  contrato_enervita: 'Contrato Enervita',
+  perdido: 'Perdido',
+};
 
-function shortLabel(value: string) {
-  if (!value) return 'Origem';
-  if (value.length <= 14) return value;
-  return `${value.slice(0, 12)}…`;
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('pt-BR').format(value || 0);
 }
 
-function todayLabel() {
-  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date());
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 0,
+  }).format(value || 0);
+}
+
+function formatDate(value?: string | null) {
+  if (!value) return 'Sem data';
+  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+}
+
+function stageLabel(stage: string) {
+  return stageLabels[stage] ?? stage;
+}
+
+function iconTone(tone: 'blue' | 'orange' | 'green' | 'red') {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-600',
+    orange: 'bg-solar-orange/10 text-solar-orange',
+    green: 'bg-green-50 text-green-600',
+    red: 'bg-red-50 text-red-600',
+  };
+  return tones[tone];
+}
+
+function CommercialMetricCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  tone,
+}: {
+  title: string;
+  value: string | number;
+  subtitle: string;
+  icon: LucideIcon;
+  tone: 'blue' | 'orange' | 'green' | 'red';
+}) {
+  return (
+    <Card>
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-gray-400">{title}</p>
+            <p className="mt-2 text-2xl font-black text-graphite">{value}</p>
+            <p className="mt-1 text-xs text-gray-500">{subtitle}</p>
+          </div>
+          <div className={`rounded-2xl p-3 ${iconTone(tone)}`}>
+            <Icon size={20} />
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
 }
 
 export default function Dashboard() {
   const { metrics, loading } = useDashboardMetrics();
 
-  if (loading || !metrics) {
-    return <div className="space-y-6"><div className="h-24 rounded-3xl bg-gray-100 animate-pulse" /><div className="grid grid-cols-1 md:grid-cols-4 gap-4">{[1,2,3,4].map(i => <div key={i} className="h-32 rounded-2xl bg-gray-100 animate-pulse" />)}</div></div>;
-  }
+  if (loading || !metrics) return <p>Carregando dashboard...</p>;
 
-  const sourceData = metrics.leadsBySource.map((item) => ({ ...item, shortSource: shortLabel(item.source) }));
-  const hasSourceData = sourceData.length > 0;
-  const hasConversions = metrics.conversionsByPlatform.length > 0;
-  const recent = metrics.recentEvents.slice(0, 5);
-  const needsAttention = metrics.leadsWithoutFollowup + metrics.overdueTasks;
+  const commercial = metrics.commercial;
+
+  const cards = [
+    {
+      label: 'Novos leads hoje',
+      value: metrics.newLeadsToday,
+      icon: Users,
+      color: 'from-solar-orange to-solar-yellow',
+      helper: 'Entradas capturadas nas últimas 24h.',
+    },
+    {
+      label: 'Sem follow-up',
+      value: metrics.leadsWithoutFollowup,
+      icon: Clock,
+      color: 'from-alert-red to-solar-orange',
+      helper: 'Leads sem próxima ação definida.',
+    },
+    {
+      label: 'Tarefas vencidas',
+      value: metrics.overdueTasks,
+      icon: AlertTriangle,
+      color: 'from-red-500 to-pink-500',
+      helper: 'Atividades que precisam de atenção.',
+    },
+    {
+      label: 'Propostas abertas',
+      value: metrics.openProposals,
+      icon: FileText,
+      color: 'from-blue-500 to-cyan-500',
+      helper: 'Leads em estágio de proposta.',
+    },
+  ];
 
   return (
-    <div className="space-y-8 max-w-[1500px] mx-auto overflow-hidden">
-      <PageHeader
-        title="Cockpit Comercial"
-        description="Resumo executivo da operação Enervita, com gargalos e próximos movimentos comerciais."
-        actions={<span className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-gray-500"><Calendar size={18} /><span>Hoje, {todayLabel()}</span></span>}
-      />
-
-      <Card className="p-6 bg-gradient-to-br from-graphite via-graphite to-[#1f2f2a] text-white relative overflow-hidden">
-        <div className="absolute -right-12 -top-12 h-56 w-56 rounded-full bg-solar-orange/20 blur-3xl" />
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+    <div className="space-y-8">
+      <div className="relative overflow-hidden rounded-[2rem] bg-graphite p-8 text-white shadow-soft">
+        <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-solar-orange/30 blur-3xl" />
+        <div className="absolute bottom-0 left-20 h-24 w-24 rounded-full bg-solar-yellow/20 blur-2xl" />
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-8 items-center">
           <div>
-            <p className="text-xs uppercase tracking-[0.3em] font-black text-white/50">Visão do dia</p>
-            <h2 className="mt-3 text-3xl font-black">{needsAttention > 0 ? `${needsAttention} ponto(s) pedem ação` : 'Operação sem gargalos críticos'}</h2>
-            <p className="mt-2 text-sm text-white/60 max-w-2xl">Use este cockpit para decidir: quem precisa de follow-up, onde os leads chegam e se a máquina de conversão está gerando sinais suficientes.</p>
+            <div className="flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-solar-yellow font-bold">
+              <Sparkles size={16} /> Cockpit Enervita
+            </div>
+            <h1 className="mt-4 text-4xl font-black max-w-2xl">Operação comercial sob controle, do lead ao contrato ganho.</h1>
+            <p className="mt-3 text-white/70 max-w-xl">Acompanhe captação, follow-up, oportunidades, propostas e gargalos comerciais em um só lugar.</p>
           </div>
-          <div className="grid grid-cols-2 gap-3 min-w-[260px]">
-            <div className="rounded-2xl bg-white/10 border border-white/10 p-4"><p className="text-xs text-white/50 uppercase font-bold">Sem follow-up</p><p className="text-3xl font-black mt-1">{metrics.leadsWithoutFollowup}</p></div>
-            <div className="rounded-2xl bg-white/10 border border-white/10 p-4"><p className="text-xs text-white/50 uppercase font-bold">Tarefas vencidas</p><p className="text-3xl font-black mt-1">{metrics.overdueTasks}</p></div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
+              <p className="text-xs text-white/50 uppercase font-bold">Leads sem ação</p>
+              <p className="text-3xl font-black mt-1">{metrics.leadsWithoutFollowup}</p>
+            </div>
+            <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
+              <p className="text-xs text-white/50 uppercase font-bold">Tarefas vencidas</p>
+              <p className="text-3xl font-black mt-1">{metrics.overdueTasks}</p>
+            </div>
           </div>
         </div>
-      </Card>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard title="Novos Leads Hoje" value={metrics.newLeadsToday} icon={Users} color="solar" />
-        <MetricCard title="Sem Follow-up" value={metrics.leadsWithoutFollowup} icon={Clock} color="graphite" />
-        <MetricCard title="Tarefas Vencidas" value={metrics.overdueTasks} icon={AlertTriangle} color="graphite" />
-        <MetricCard title="Propostas Abertas" value={metrics.openProposals} icon={FileText} color="energy" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="p-6 lg:col-span-2 overflow-visible">
-          <div className="flex items-center justify-between gap-4 mb-6">
-            <h3 className="font-black text-graphite flex items-center gap-2"><TrendingUp size={20} className="text-solar-orange" />Leads por Origem</h3>
-            <Link to="/analytics"><Button variant="ghost" size="sm" className="gap-2"><ArrowUpRight size={14} /> Abrir relatório</Button></Link>
-          </div>
-          {hasSourceData ? (
-            <div className="h-[320px] w-full min-w-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={sourceData} margin={{ left: -10, right: 10, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F0F0F0" />
-                  <XAxis dataKey="shortSource" axisLine={false} tickLine={false} tick={{fontSize: 11, fill: '#666'}} interval={0} angle={-18} textAnchor="end" height={55} />
-                  <YAxis axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#666'}} allowDecimals={false} />
-                  <Tooltip cursor={{fill: '#F9F9F9'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'}} />
-                  <Bar dataKey="count" fill="#F58220" radius={[8, 8, 0, 0]} barSize={34} />
-                </BarChart>
-              </ResponsiveContainer>
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+        {cards.map(({ label, value, icon: Icon, color, helper }) => (
+          <Card key={label}>
+            <div className="p-0">
+              <div className={`h-1 bg-gradient-to-r ${color}`} />
+              <div className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-500">{label}</p>
+                    <p className="mt-3 text-3xl font-black text-graphite">{formatNumber(value)}</p>
+                  </div>
+                  <div className="rounded-2xl bg-gray-50 p-3 text-graphite">
+                    <Icon size={22} />
+                  </div>
+                </div>
+                <p className="mt-4 text-xs text-gray-500 leading-relaxed">{helper}</p>
+              </div>
             </div>
-          ) : <div className="h-[320px] rounded-3xl border border-dashed border-gray-200 grid place-items-center text-center text-gray-500 px-6">Sem origem suficiente para montar gráfico ainda.</div>}
+          </Card>
+        ))}
+      </div>
+
+      {commercial && (
+        <div className="space-y-6">
+          <div>
+            <p className="text-sm font-semibold text-solar-orange uppercase tracking-[0.2em]">Gestão comercial</p>
+            <h2 className="text-2xl font-bold text-graphite mt-1">Dinheiro, gargalo e ação de hoje</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <CommercialMetricCard title="Oportunidades abertas" value={formatCurrency(commercial.openOpportunityValue)} subtitle={`${formatNumber(commercial.openOpportunities)} em aberto`} icon={DollarSign} tone="blue" />
+            <CommercialMetricCard title="Contratos ganhos" value={formatCurrency(commercial.wonOpportunityValue)} subtitle={`${formatNumber(commercial.wonOpportunities)} ganhos`} icon={Trophy} tone="green" />
+            <CommercialMetricCard title="Propostas abertas" value={formatNumber(commercial.openProposals)} subtitle="Rascunhos e enviadas" icon={FileText} tone="orange" />
+            <CommercialMetricCard title="Propostas aceitas" value={formatCurrency(commercial.acceptedProposalAnnualValue)} subtitle={`${formatNumber(commercial.acceptedProposals)} aceitas / ano`} icon={ClipboardCheck} tone="green" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <CommercialMetricCard title="Tarefas vencidas" value={formatNumber(commercial.overdueTasks)} subtitle="exigem ação imediata" icon={AlertTriangle} tone="red" />
+            <CommercialMetricCard title="Leads sem próxima ação" value={formatNumber(commercial.leadsWithoutNextAction)} subtitle="risco de lead parado" icon={Clock} tone="orange" />
+            <CommercialMetricCard title="Leads parados" value={formatNumber(commercial.staleLeads)} subtitle="sem atualização há 7+ dias" icon={Target} tone="blue" />
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <Card className="xl:col-span-2">
+              <div className="border-b border-gray-100 px-6 py-4">
+                <h3 className="text-lg font-bold text-graphite">Atenção agora</h3>
+              </div>
+              <div className="p-6">
+                {commercial.attentionLeads.length === 0 ? (
+                  <p className="text-sm text-gray-500">Nenhum lead crítico no momento.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {commercial.attentionLeads.map((lead) => (
+                      <a key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-4 transition hover:border-solar-orange/40">
+                        <div>
+                          <p className="font-bold text-graphite">{lead.name}</p>
+                          <p className="text-xs text-gray-500">{stageLabel(lead.stage)} · {lead.reason}</p>
+                          <p className="text-xs text-gray-400 mt-1">Atualizado em {formatDate(lead.updatedAt)}</p>
+                        </div>
+                        <ArrowUpRight size={16} className="text-solar-orange" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            <Card>
+              <div className="border-b border-gray-100 px-6 py-4">
+                <h3 className="text-lg font-bold text-graphite">Funil por etapa</h3>
+              </div>
+              <div className="space-y-3 p-6">
+                {commercial.stageBreakdown.length === 0 ? (
+                  <p className="text-sm text-gray-500">Sem dados de funil.</p>
+                ) : (
+                  commercial.stageBreakdown.map((stage) => (
+                    <div key={stage.stage} className="rounded-xl bg-gray-50 p-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-semibold text-graphite">{stageLabel(stage.stage)}</span>
+                        <span className="text-gray-500">{formatNumber(stage.count)}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">{formatCurrency(stage.value)} em aberto</p>
+                    </div>
+                  ))
+                )}
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <Card className="xl:col-span-2">
+          <div className="border-b border-gray-100 px-6 py-4">
+            <h3 className="text-lg font-bold text-graphite">Leads por etapa</h3>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4">
+              {metrics.leadsByStage.map((stage) => (
+                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-3">
+                  <div>
+                    <p className="font-semibold text-graphite">{stageLabel(stage.stage)}</p>
+                    <p className="text-xs text-gray-500">Distribuição do pipeline</p>
+                  </div>
+                  <Badge variant="info">{stage.count} leads</Badge>
+                </div>
+              ))}
+            </div>
+          </div>
         </Card>
 
-        <Card className="p-6">
-          <h3 className="font-black text-graphite mb-6 flex items-center gap-2"><CheckCircle2 size={20} className="text-energy-green" />Conversões por Plataforma</h3>
-          {hasConversions ? (
-            <>
-              <div className="h-[240px] w-full"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={metrics.conversionsByPlatform} cx="50%" cy="50%" innerRadius={58} outerRadius={82} paddingAngle={5} dataKey="count" nameKey="platform">{metrics.conversionsByPlatform.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer></div>
-              <div className="mt-4 space-y-2">{metrics.conversionsByPlatform.map((item, i) => <div key={item.platform} className="flex items-center justify-between text-sm"><div className="flex items-center gap-2 min-w-0"><div className="w-2 h-2 rounded-full shrink-0" style={{backgroundColor: COLORS[i % COLORS.length]}} /><span className="text-gray-500 truncate">{item.platform}</span></div><span className="font-bold">{item.count}</span></div>)}</div>
-            </>
-          ) : <div className="h-[240px] rounded-3xl border border-dashed border-gray-200 grid place-items-center text-center text-gray-500 px-6">Sem eventos de conversão enviados ainda.</div>}
+        <Card>
+          <div className="border-b border-gray-100 px-6 py-4">
+            <h3 className="text-lg font-bold text-graphite">Eventos recentes</h3>
+          </div>
+          <div className="space-y-4 p-6">
+            {metrics.recentEvents.length === 0 && <p className="text-sm text-gray-500">Nenhuma atividade recente registrada.</p>}
+            {metrics.recentEvents.map((event) => (
+              <div key={event.id} className="flex gap-3">
+                <div className="mt-1 rounded-full bg-solar-orange/10 p-2 text-solar-orange">
+                  {event.activityType === 'call' ? <Calendar size={16} /> : <History size={16} />}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-graphite">{event.outcome}</p>
+                  <p className="text-xs text-gray-500">{formatDate(event.occurredAt)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="p-6">
-          <h3 className="font-black text-graphite mb-6 flex items-center gap-2"><History size={20} className="text-solar-orange" />Atividades Recentes</h3>
-          {recent.length > 0 ? <div className="space-y-4">{recent.map((event) => <div key={event.id} className="flex gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors"><div className="w-10 h-10 rounded-full bg-solar-orange/10 flex items-center justify-center text-solar-orange shrink-0"><FileText size={18} /></div><div className="min-w-0"><p className="text-sm font-medium text-graphite break-words">{event.outcome}</p><p className="text-xs text-gray-400 mt-1">{formatDate(event.occurredAt)}</p></div></div>)}</div> : <div className="rounded-3xl border border-dashed border-gray-200 p-8 text-center text-gray-500">Ainda não há atividades recentes registradas.</div>}
-          <Link to="/analytics"><Button variant="outline" className="w-full mt-6">Ver histórico completo</Button></Link>
+        <Card>
+          <div className="border-b border-gray-100 px-6 py-4">
+            <h3 className="text-lg font-bold text-graphite">Origem dos leads</h3>
+          </div>
+          <div className="space-y-4 p-6">
+            {metrics.leadsBySource.map((source) => (
+              <div key={source.source} className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-600">{source.source}</span>
+                <span className="font-bold text-graphite">{source.count}</span>
+              </div>
+            ))}
+          </div>
         </Card>
 
-        <Card className="p-6 bg-graphite text-white overflow-hidden relative">
-          <div className="relative z-10"><h3 className="font-black text-lg mb-2 flex items-center gap-2"><Sparkles size={18} className="text-solar-orange" />Próximas ações recomendadas</h3><p className="text-gray-400 text-sm mb-6">Recomendações baseadas nos gargalos reais carregados do CRM.</p>
-            <div className="space-y-3">
-              <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/10 flex items-center justify-between gap-3"><div><p className="font-bold text-sm">{metrics.leadsWithoutFollowup} lead(s) sem follow-up</p><p className="text-xs text-gray-400">Priorize contato humano e próxima tarefa.</p></div><Link to="/leads"><Button size="sm" variant="secondary" className="h-8 whitespace-nowrap">Ver leads</Button></Link></div>
-              <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl border border-white/10 flex items-center justify-between gap-3"><div><p className="font-bold text-sm">{metrics.overdueTasks} tarefa(s) vencida(s)</p><p className="text-xs text-gray-400">Reorganize a fila comercial antes de novas demandas.</p></div><Link to="/tasks"><Button size="sm" variant="secondary" className="h-8 whitespace-nowrap">Ver tarefas</Button></Link></div>
-            </div>
-          </div><div className="absolute -right-8 -bottom-8 w-48 h-48 bg-solar-orange/20 rounded-full blur-3xl" />
+        <Card>
+          <div className="border-b border-gray-100 px-6 py-4">
+            <h3 className="text-lg font-bold text-graphite">Conversões enviadas</h3>
+          </div>
+          <div className="space-y-4 p-6">
+            {metrics.conversionsByPlatform.length === 0 && <p className="text-sm text-gray-500">Nenhum evento enviado ainda.</p>}
+            {metrics.conversionsByPlatform.map((item) => (
+              <div key={item.platform} className="flex items-center justify-between">
+                <span className="text-sm font-medium text-gray-600">{item.platform}</span>
+                <span className="font-bold text-graphite">{item.count}</span>
+              </div>
+            ))}
+          </div>
         </Card>
       </div>
     </div>
