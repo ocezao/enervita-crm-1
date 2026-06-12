@@ -122,6 +122,9 @@ export function useLeadDetail(id: string | undefined) {
   const updateProposalItem = async (proposalId: string, payload: Partial<CreateProposalPayload>) => {
     const updated = await api.updateProposal(proposalId, payload);
     setProposals(prev => prev.map(p => p.id === proposalId ? updated : p));
+    if (id && payload.status === 'accepted') {
+      setLead(await api.getLead(id));
+    }
     return updated;
   };
 

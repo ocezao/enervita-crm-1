@@ -479,6 +479,16 @@ export default function LeadDetail() {
     }
   }
 
+  async function handleAcceptProposal(proposalId: string) {
+    setProposalMessage(null);
+    try {
+      await updateProposal(proposalId, { status: 'accepted' });
+      setProposalMessage('Proposta aceita e oportunidade marcada como contrato ganho.');
+    } catch {
+      setProposalMessage('Não foi possível marcar a proposta como aceita.');
+    }
+  }
+
   async function handleDeleteProposal(proposalId: string) {
     const ok = window.confirm('Excluir esta proposta? Essa ação não pode ser desfeita.');
     if (!ok) return;
@@ -915,6 +925,7 @@ export default function LeadDetail() {
                             <div className="text-right text-sm"><p className="font-black text-energy-success">{formatCurrency(proposal.projectedAnnualSavings)}/ano</p><p className="text-xs text-gray-500">{proposal.discountPercentage}% desconto</p></div>
                             <div className="flex items-center gap-1">
                               <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar proposta" onClick={() => handleEditProposal(proposal)}><Edit3 size={14} /></Button>
+                              {proposal.status !== 'accepted' && <Button size="sm" onClick={() => handleAcceptProposal(proposal.id)}>Marcar aceita</Button>}
                               {isAdminUser(user) && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-alert-red/10" aria-label="Excluir proposta" onClick={() => void handleDeleteProposal(proposal.id)}><Trash2 size={14} className="text-alert-red" /></Button>}
                             </div>
                           </div>

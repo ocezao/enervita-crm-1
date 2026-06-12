@@ -34,6 +34,8 @@ export type LeadOpportunity = {
   probability: number;
   convertedBy: string | null;
   convertedAt: string;
+  acceptedProposalId: string | null;
+  acceptedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -209,6 +211,8 @@ function rowToOpportunity(row: Record<string, unknown>): LeadOpportunity | null 
     probability: Number(row.opportunityProbability ?? 0),
     convertedBy: row.opportunityConvertedBy ? String(row.opportunityConvertedBy) : null,
     convertedAt: String(row.opportunityConvertedAt ?? row.created_at),
+    acceptedProposalId: row.opportunityAcceptedProposalId ? String(row.opportunityAcceptedProposalId) : null,
+    acceptedAt: row.opportunityAcceptedAt ? String(row.opportunityAcceptedAt) : null,
     createdAt: String(row.opportunityCreatedAt ?? row.created_at),
     updatedAt: String(row.opportunityUpdatedAt ?? row.updated_at),
   };
@@ -284,6 +288,8 @@ const leadSelect = `select l.id,
                           lo.probability as "opportunityProbability",
                           lo.converted_by as "opportunityConvertedBy",
                           lo.converted_at::text as "opportunityConvertedAt",
+                          lo.accepted_proposal_id as "opportunityAcceptedProposalId",
+                          lo.accepted_at::text as "opportunityAcceptedAt",
                           lo.created_at::text as "opportunityCreatedAt",
                           lo.updated_at::text as "opportunityUpdatedAt",
                           l.next_action_at::text as "nextActionAt",
