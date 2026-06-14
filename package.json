@@ -22,6 +22,7 @@
     "typecheck:api": "npm run typecheck --workspace @enervita/api",
     "test": "npm run test:api && npm run test --workspace @enervita/web",
     "verify:production": "npm run typecheck:api && npm run test:api && npm run lint --workspace @enervita/web && npm run test --workspace @enervita/web && npm run build --workspace @enervita/web && npm run test:migration",
-    "dispatch:meta-capi": "npm run dispatch:meta-capi --workspace @enervita/api"
+    "dispatch:meta-capi": "npm run dispatch:meta-capi --workspace @enervita/api",
+    "run:notification-rules": "npm run run:notification-rules --workspace @enervita/api"
   }
 }

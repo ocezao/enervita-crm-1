@@ -10,6 +10,8 @@ import { createPgEngagementRepository, type EngagementRepository } from './modul
 import { createPgNotificationsRepository, type NotificationsRepository } from './modules/notifications/repository.ts';
 import { registerEngagementRoutes } from './modules/engagement/engagement.routes.ts';
 import { registerNotificationsRoutes } from './modules/notifications/notifications.routes.ts';
+import { createPgFollowUpsRepository, type FollowUpsRepository } from './modules/followups/repository.ts';
+import { registerFollowUpsRoutes } from './modules/followups/followups.routes.ts';
 import { createPgDashboardRepository, type DashboardRepository } from './modules/dashboard/repository.ts';
 import { registerDashboardRoutes } from './modules/dashboard/dashboard.routes.ts';
 import { registerIntegrationsRoutes } from './modules/integrations/integrations.routes.ts';
@@ -30,6 +32,7 @@ export type CreateAppOptions = {
   leadsRepository?: LeadsRepository;
   engagementRepository?: EngagementRepository;
   notificationsRepository?: NotificationsRepository;
+  followUpsRepository?: FollowUpsRepository;
   dashboardRepository?: DashboardRepository;
   proposalsRepository?: ProposalsRepository;
   integrationsRepository?: IntegrationsRepository;
@@ -50,6 +53,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   const usersRepository = options.usersRepository ?? createPgUsersRepository(env.databaseUrl);
   const leadsRepository = options.leadsRepository ?? createPgLeadsRepository(env.databaseUrl);
   const notificationsRepository = options.notificationsRepository ?? createPgNotificationsRepository(env.databaseUrl);
+  const followUpsRepository = options.followUpsRepository ?? createPgFollowUpsRepository(env.databaseUrl);
   const engagementRepository = options.engagementRepository ?? createPgEngagementRepository(env.databaseUrl, notificationsRepository);
   const dashboardRepository = options.dashboardRepository ?? createPgDashboardRepository(env.databaseUrl);
   const proposalsRepository = options.proposalsRepository ?? createPgProposalsRepository(env.databaseUrl);
@@ -67,6 +71,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   void registerLeadsRoutes(app, { userRepository, leadsRepository, sessionSecret });
   void registerEngagementRoutes(app, { userRepository, engagementRepository, sessionSecret });
   void registerNotificationsRoutes(app, { userRepository, notificationsRepository, sessionSecret });
+  void registerFollowUpsRoutes(app, { userRepository, followUpsRepository, sessionSecret });
   void registerDashboardRoutes(app, { userRepository, dashboardRepository, sessionSecret });
   void registerIntegrationsRoutes(app, { userRepository, integrationsRepository, sessionSecret });
   void registerProposalsRoutes(app, { userRepository, proposalsRepository, sessionSecret });
@@ -80,6 +85,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
     await leadsRepository.close?.();
     await engagementRepository.close?.();
     await notificationsRepository.close?.();
+    await followUpsRepository.close?.();
     await dashboardRepository.close?.();
     await proposalsRepository.close?.();
     await integrationsRepository.close?.();

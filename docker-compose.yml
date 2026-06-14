@@ -111,6 +111,26 @@ services:
       - default
     restart: unless-stopped
 
+  notification-rules-runner:
+    image: node:20-bookworm-slim
+    container_name: enervita-custom-crm-notification-rules-runner
+    working_dir: /app
+    command: sh -lc "while true; do npm run run:notification-rules; sleep $${NOTIFICATION_RULES_INTERVAL_SECONDS:-3600}; done"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://enervita:enervita@postgres:5432/enervita_crm
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET required}
+      NOTIFICATION_RULES_TENANT_SLUG: ${NOTIFICATION_RULES_TENANT_SLUG:-enervita}
+      NOTIFICATION_RULES_INTERVAL_SECONDS: ${NOTIFICATION_RULES_INTERVAL_SECONDS:-3600}
+    volumes:
+      - ./:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - default
+    restart: unless-stopped
+
   web:
     image: node:20-bookworm-slim
     container_name: enervita-custom-crm-web

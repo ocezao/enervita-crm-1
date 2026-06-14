@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Bell, Bot, Command, FileText, Kanban, LayoutDashboard, LogOut, Megaphone, Plus, Search, Settings, Sparkles, UserRound, Users, CheckSquare, Zap, BarChart3 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -104,6 +104,26 @@ export const Topbar = () => {
       .finally(() => setLeadsLoaded(true));
   }, [open, leadsLoaded, user]);
 
+  const refreshNotifications = useCallback(async () => {
+    try {
+      const data = await crmApi.listNotifications();
+      setNotifications(data.notifications);
+      setUnreadCount(data.unreadCount);
+    } catch {
+      setNotifications([]);
+      setUnreadCount(0);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshNotifications();
+  }, [refreshNotifications, user?.id]);
+
+  useEffect(() => {
+    if (!notificationsOpen) return;
+    void refreshNotifications();
+  }, [notificationsOpen, refreshNotifications]);
+
   const suggestions = useMemo(() => {
     const leadSuggestions = leads.map(leadToSuggestion);
     const all = [...visibleStaticSuggestions, ...leadSuggestions];
@@ -147,6 +167,7 @@ export const Topbar = () => {
       await crmApi.markAllNotificationsRead();
       setNotifications(prev => prev.map(item => ({ ...item, readAt: item.readAt ?? new Date().toISOString() })));
       setUnreadCount(0);
+      void refreshNotifications();
     } catch {
       // Falha silenciosa: a lista será recarregada no próximo refresh.
     }
