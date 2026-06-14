@@ -60,3 +60,4 @@ scripts/retry_lead_form_publish_*.py
 scripts/source_brand_campaign.json
 
 .deploy-reports/
+.env.prod
