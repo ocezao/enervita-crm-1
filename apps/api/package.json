@@ -9,7 +9,8 @@
     "test": "node --import tsx --test src/__tests__/*.test.ts",
     "typecheck": "tsc -p tsconfig.json",
     "dispatch:webhooks": "node --import tsx scripts/dispatch-webhooks.ts",
-    "dispatch:meta-capi": "node --import tsx scripts/dispatch-meta-capi.ts"
+    "dispatch:meta-capi": "node --import tsx scripts/dispatch-meta-capi.ts",
+    "run:notification-rules": "node --import tsx scripts/run-notification-rules.ts"
   },
   "dependencies": {
     "@enervita/shared": "0.0.0",

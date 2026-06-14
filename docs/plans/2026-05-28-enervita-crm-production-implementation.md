@@ -86,7 +86,7 @@ Mesmo que o frontend esconda botões, o backend precisa bloquear qualquer ação
 
 Usar como base o arquivo já criado:
 
-`PRODUCTION_SCHEMA_DRAFT.sql`
+`docs/PRODUCTION_SCHEMA_DRAFT.sql`
 
 Adicionar/ajustar para permissões granulares:
 
@@ -259,7 +259,7 @@ Expected: lint e build passando.
 
 **Files:**
 - Create: `infra/migrations/001_initial_schema.sql`
-- Use as base: `PRODUCTION_SCHEMA_DRAFT.sql`
+- Use as base: `docs/PRODUCTION_SCHEMA_DRAFT.sql`
 
 **Tables:**
 - tenants

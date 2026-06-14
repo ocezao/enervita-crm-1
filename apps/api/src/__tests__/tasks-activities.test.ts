@@ -159,6 +159,17 @@ function makeNotificationsRepository(seed: Notification[] = []): NotificationsRe
       }
       return updated;
     },
+    async runCommercialRules() {
+      return {
+        created: {
+          task_overdue: 0,
+          lead_without_next_action: 0,
+          proposal_no_response: 0,
+          opportunity_stale: 0,
+        },
+        totalCreated: 0,
+      };
+    },
   };
 }
 
