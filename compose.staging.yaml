@@ -1,0 +1,98 @@
+# Enervita CRM — Staging Stack
+# Parallel environment for testing before production deploy.
+
+services:
+  api:
+    image: node:20-bookworm-slim
+    container_name: enervita-staging-crm-api
+    working_dir: /app/apps/api
+    command: sh -lc "node --import tsx src/server.ts"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 44123
+      DATABASE_URL: postgres://enervita_app:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita_crm_staging
+      SESSION_SECRET: ${SESSION_SECRET}
+      META_ADS_ACCESS_TOKEN: ${META_ADS_ACCESS_TOKEN:-}
+      META_AD_ACCOUNT_ID: ${META_AD_ACCOUNT_ID:-}
+      META_AD_ACCOUNT_NUMERIC_ID: ${META_AD_ACCOUNT_NUMERIC_ID:-}
+      META_BUSINESS_ID: ${META_BUSINESS_ID:-}
+      META_PIXEL_ID: ${META_PIXEL_ID:-}
+      META_DATASET_ID: ${META_DATASET_ID:-}
+      META_PIXEL_NAME: ${META_PIXEL_NAME:-}
+      META_PAGE_ID: ${META_PAGE_ID:-}
+      META_PAGE_USERNAME: ${META_PAGE_USERNAME:-}
+      META_INSTAGRAM_BUSINESS_ID: ${META_INSTAGRAM_BUSINESS_ID:-}
+      META_INSTAGRAM_USERNAME: ${META_INSTAGRAM_USERNAME:-}
+      META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION:-}
+      META_TEST_EVENT_CODE: ${META_TEST_EVENT_CODE:-}
+      META_LEADGEN_VERIFY_TOKEN: ${META_LEADGEN_VERIFY_TOKEN:-}
+      META_LEADGEN_PAGE_ACCESS_TOKEN: ${META_LEADGEN_PAGE_ACCESS_TOKEN:-${META_PAGE_ACCESS_TOKEN:-${META_ADS_ACCESS_TOKEN:-}}}
+      META_ASSET_SCOPE: ${META_ASSET_SCOPE:-}
+      N8N_DATABASE_URL: postgres://n8n:${N8N_DB_PASSWORD}@enervita-postgres:5432/enervita_n8n
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-deepseek/deepseek-chat-v3-0324}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+    volumes:
+      - ./:/app
+    depends_on: []
+    networks:
+      - default
+      - enervita_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:44123/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    image: node:20-bookworm-slim
+    container_name: enervita-staging-crm-web
+    working_dir: /app/apps/web
+    command: sh -lc "npx vite preview --host 0.0.0.0 --port 44124"
+    environment:
+      NODE_ENV: production
+    volumes:
+      - ./:/app
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - default
+    restart: unless-stopped
+
+  proxy:
+    image: node:20-bookworm-slim
+    container_name: enervita-staging-crm-proxy
+    working_dir: /app
+    command: node scripts/preview-proxy.cjs
+    environment:
+      CRM_PREVIEW_API: http://enervita-staging-crm-api:44123
+      CRM_PREVIEW_WEB: http://enervita-staging-crm-web:44124
+      CRM_PREVIEW_PORT: 44210
+      CRM_PREVIEW_BIND: 0.0.0.0
+    volumes:
+      - ./:/app
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_started
+    networks:
+      - default
+      - enervita_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:44210/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  default:
+    name: enervita-staging_default
+  enervita_net:
+    external: true
