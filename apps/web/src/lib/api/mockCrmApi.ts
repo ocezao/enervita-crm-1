@@ -1,23 +1,30 @@
-import { CrmApi, type UpdateLeadPayload } from './crmApi';
-import {
-  Lead,
-  Task,
+import type { CrmApi, UpdateLeadPayload } from './crmApi';
+import type {
   Activity,
+  AdsOverview,
+  AdsSyncResult,
   AutomationRule,
   AutomationRun,
+  CreateProposalPayload,
+  CrmAnalyticsOverview,
+  DashboardMetrics,
+  FollowUpQueueItem,
+  FollowUpRuleRunResult,
+  FollowUpStatus,
+  Lead,
+  LeadHistoryEntry,
+  LeadOpportunity,
+  LeadStage,
+  LeadTag,
+  N8nWorkflow,
+  N8nWorkflowToggleResult,
+  Notification,
+  Proposal,
+  Task,
+  TrackingEvent,
   Webhook,
   WebhookDelivery,
   WebhookTestResult,
-  DashboardMetrics,
-  Proposal,
-  CreateProposalPayload,
-  TrackingEvent,
-  AdsOverview,
-  AdsSyncResult,
-  LeadStage,
-  CrmAnalyticsOverview,
-  LeadHistoryEntry,
-  Notification
 } from './types';
 import {
   mockLeads,
@@ -279,9 +286,62 @@ export class MockCrmApi implements CrmApi {
     return { id, tenantId: 'mock-tenant', userId: 'mock-user', taskId: null, leadId: null, type: 'task_assigned', severity: 'info', title: 'Notificação lida', body: '', href: '', metadata: {}, readAt: new Date().toISOString(), createdAt: new Date().toISOString() };
   }
 
-  async markAllNotificationsRead(): Promise<number> {
+  async markAllNotificationsRead(): Promise<{ updated: number }> {
     await delay(150);
-    return 0;
+    return { updated: 0 };
+  }
+
+  async listFollowUps(filters: { status?: FollowUpStatus; ruleKey?: string; limit?: number } = {}): Promise<FollowUpQueueItem[]> {
+    await delay(150);
+    const now = new Date().toISOString();
+    const item: FollowUpQueueItem = {
+      id: 'mock-follow-up-1',
+      tenantId: 'mock-tenant',
+      leadId: mockLeads[0]?.id ?? 'mock-lead',
+      ruleKey: 'lead_without_next_action',
+      channel: 'manual',
+      reason: 'Lead sem próxima ação há mais de 7 dias',
+      status: 'pending',
+      scheduledAt: now,
+      sentAt: null,
+      skippedAt: null,
+      failedAt: null,
+      attempts: 0,
+      lastError: null,
+      idempotencyKey: 'mock-follow-up-key',
+      metadata: {},
+      contactName: 'Lead',
+      contactPhone: null,
+      contactEmail: null,
+      suggestedMessage: 'Olá, tudo bem? Estou passando para dar continuidade ao seu atendimento.',
+      createdAt: now,
+      updatedAt: now,
+    };
+    const items = filters.status && filters.status !== 'pending' ? [] : [item];
+    return items.slice(0, filters.limit ?? 50);
+  }
+
+  async runFollowUpRules(): Promise<FollowUpRuleRunResult> {
+    await delay(150);
+    return {
+      created: { task_overdue: 0, lead_without_next_action: 1, proposal_no_response: 0, opportunity_stale: 0 },
+      existing: { task_overdue: 0, lead_without_next_action: 0, proposal_no_response: 0, opportunity_stale: 0 },
+    };
+  }
+
+  async skipFollowUp(id: string, reason?: string): Promise<FollowUpQueueItem> {
+    const [item] = await this.listFollowUps();
+    return { ...item, id, status: 'skipped', skippedAt: new Date().toISOString(), lastError: reason ?? null };
+  }
+
+  async markFollowUpSent(id: string): Promise<FollowUpQueueItem> {
+    const [item] = await this.listFollowUps();
+    return { ...item, id, status: 'sent', sentAt: new Date().toISOString(), attempts: item.attempts + 1 };
+  }
+
+  async markFollowUpFailed(id: string, error: string): Promise<FollowUpQueueItem> {
+    const [item] = await this.listFollowUps();
+    return { ...item, id, status: 'failed', failedAt: new Date().toISOString(), attempts: item.attempts + 1, lastError: error };
   }
 
   async listDashboardMetrics(): Promise<DashboardMetrics> {

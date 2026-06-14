@@ -6,6 +6,7 @@ import { AppShell } from './components/layout/AppShell';
 import Login from './pages/Login';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
+const DashboardPremium = lazy(() => import('./pages/DashboardPremium'));
 const Leads = lazy(() => import('./pages/Leads'));
 const Pipeline = lazy(() => import('./pages/Pipeline'));
 const LeadDetail = lazy(() => import('./pages/LeadDetail'));
@@ -36,7 +37,9 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
-              <Route path="/" element={<ProtectedRoute requiredPermission="page.dashboard"><Dashboard /></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute requiredPermission="page.dashboard"><DashboardPremium /></ProtectedRoute>} />
+              <Route path="/dashboard-classic" element={<ProtectedRoute requiredPermission="page.dashboard"><Dashboard /></ProtectedRoute>} />
+              <Route path="/dashboard-premium" element={<ProtectedRoute requiredPermission="page.dashboard"><DashboardPremium /></ProtectedRoute>} />
               <Route path="/leads" element={<ProtectedRoute requiredAnyPermission={["page.leads", "lead.view"]}><Leads /></ProtectedRoute>} />
               <Route path="/leads/:id" element={<ProtectedRoute requiredAnyPermission={["page.lead_detail", "lead.view"]}><LeadDetail /></ProtectedRoute>} />
               <Route path="/pipeline" element={<ProtectedRoute requiredPermission="page.pipeline"><Pipeline /></ProtectedRoute>} />

@@ -1,6 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { api, type UpdateLeadPayload } from '../lib/api/crmApi';
-import { Lead, LeadStage, Task, DashboardMetrics, AutomationRule, AutomationRun, N8nWorkflow, N8nWorkflowToggleResult, Webhook, WebhookDelivery, WebhookTestResult, Activity, Proposal, CreateProposalPayload, TrackingEvent, AdsOverview, CrmAnalyticsOverview, LeadHistoryEntry } from '../lib/api/types';
+import type {
+  Activity,
+  AdsOverview,
+  AutomationRule,
+  AutomationRun,
+  CreateProposalPayload,
+  CrmAnalyticsOverview,
+  DashboardMetrics,
+  FollowUpQueueItem,
+  FollowUpRuleRunResult,
+  FollowUpStatus,
+  Lead,
+  LeadHistoryEntry,
+  LeadStage,
+  N8nWorkflow,
+  N8nWorkflowToggleResult,
+  Proposal,
+  Task,
+  TrackingEvent,
+  Webhook,
+  WebhookDelivery,
+  WebhookTestResult,
+} from '../lib/api/types';
 
 export function useLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' }) {
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -190,16 +212,18 @@ export function useTasks() {
   return { tasks, loading, createTask, completeTask };
 }
 
-export function useDashboardMetrics() {
+export function useDashboardMetrics(filters: Parameters<typeof api.listDashboardMetrics>[0] = {}) {
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const filtersKey = JSON.stringify(filters);
 
   useEffect(() => {
-    api.listDashboardMetrics().then(data => {
+    setLoading(true);
+    api.listDashboardMetrics(filters).then(data => {
       setMetrics(data);
       setLoading(false);
     });
-  }, []);
+  }, [filtersKey]);
 
   return { metrics, loading };
 }
@@ -231,6 +255,64 @@ export function useAnalyticsOverview(filters: { days?: number; period?: string; 
   }, [days, period, startDate, endDate, source, campaign, stage]);
 
   return { overview, loading, error };
+}
+
+export function useFollowUps(initialStatus: FollowUpStatus = 'pending') {
+  const [status, setStatus] = useState<FollowUpStatus | undefined>(initialStatus);
+  const [ruleKey, setRuleKey] = useState<string | undefined>();
+  const [followUps, setFollowUps] = useState<FollowUpQueueItem[]>([]);
+  const [lastRun, setLastRun] = useState<FollowUpRuleRunResult | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = async (overrides: { status?: FollowUpStatus; ruleKey?: string } = {}) => {
+    setLoading(true);
+    const nextStatus = overrides.status ?? status;
+    const nextRuleKey = overrides.ruleKey ?? ruleKey;
+    const queue = await api.listFollowUps({ status: nextStatus, ruleKey: nextRuleKey, limit: 50 });
+    setFollowUps(queue);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    void refresh();
+  }, [status, ruleKey]);
+
+  const updateStatus = (nextStatus?: FollowUpStatus) => setStatus(nextStatus);
+  const updateRuleKey = (nextRuleKey?: string) => setRuleKey(nextRuleKey);
+
+  const runRules = async () => {
+    const result = await api.runFollowUpRules();
+    setLastRun(result);
+    await refresh();
+    return result;
+  };
+
+  const skip = async (id: string, reason?: string) => {
+    await api.skipFollowUp(id, reason);
+    await refresh();
+  };
+
+  const markSent = async (id: string) => {
+    await api.markFollowUpSent(id);
+    await refresh();
+  };
+
+  const markFailed = async (id: string, error: string) => {
+    await api.markFollowUpFailed(id, error);
+    await refresh();
+  };
+
+  const counts = followUps.reduce(
+    (acc, item) => {
+      acc.total += 1;
+      acc.byStatus[item.status] = (acc.byStatus[item.status] ?? 0) + 1;
+      acc.byRule[item.ruleKey] = (acc.byRule[item.ruleKey] ?? 0) + 1;
+      return acc;
+    },
+    { total: 0, byStatus: {} as Record<FollowUpStatus, number>, byRule: {} as Record<string, number> },
+  );
+
+  return { followUps, counts, status, ruleKey, loading, lastRun, refresh, runRules, skip, markSent, markFailed, setStatus: updateStatus, setRuleKey: updateRuleKey };
 }
 
 export function useAutomations() {

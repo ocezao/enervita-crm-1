@@ -1,27 +1,30 @@
 import {
-  Lead,
-  Task,
-  Activity,
-  AutomationRule,
-  AutomationRun,
-  N8nWorkflow,
-  N8nWorkflowToggleResult,
-  Webhook,
-  WebhookDelivery,
-  WebhookTestResult,
-  DashboardMetrics,
-  Proposal,
-  CreateProposalPayload,
-  TrackingEvent,
-  AdsOverview,
-  AdsSyncResult,
-  LeadStage,
-  LeadTag,
-  LeadOpportunity,
-  Priority,
-  CrmAnalyticsOverview,
-  LeadHistoryEntry,
-  Notification,
+  type Lead,
+  type Task,
+  type Activity,
+  type AutomationRule,
+  type AutomationRun,
+  type N8nWorkflow,
+  type N8nWorkflowToggleResult,
+  type Webhook,
+  type WebhookDelivery,
+  type WebhookTestResult,
+  type DashboardMetrics,
+  type LeadStage,
+  type CreateProposalPayload,
+  type Proposal,
+  type TrackingEvent,
+  type AdsOverview,
+  type AdsSyncResult,
+  type LeadTag,
+  type LeadOpportunity,
+  type Priority,
+  type CrmAnalyticsOverview,
+  type LeadHistoryEntry,
+  type Notification,
+  type FollowUpQueueItem,
+  type FollowUpStatus,
+  type FollowUpRuleRunResult,
 } from './types';
 
 export interface CrmApi {
@@ -53,10 +56,15 @@ export interface CrmApi {
   listLeadHistory(leadId: string): Promise<LeadHistoryEntry[]>;
   listNotifications(limit?: number): Promise<{ notifications: Notification[]; unreadCount: number }>;
   markNotificationRead(id: string): Promise<Notification>;
-  markAllNotificationsRead(): Promise<number>;
-
+  markAllNotificationsRead(): Promise<{ updated: number }>;
+  listDashboardMetrics(filters?: DashboardMetricFilters): Promise<DashboardMetrics>;
   listDashboardMetrics(): Promise<DashboardMetrics>;
   getAnalyticsOverview(filters?: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage }): Promise<CrmAnalyticsOverview>;
+  listFollowUps(filters?: { status?: FollowUpStatus; ruleKey?: string; limit?: number }): Promise<FollowUpQueueItem[]>;
+  runFollowUpRules(): Promise<FollowUpRuleRunResult>;
+  skipFollowUp(id: string, reason?: string): Promise<FollowUpQueueItem>;
+  markFollowUpSent(id: string): Promise<FollowUpQueueItem>;
+  markFollowUpFailed(id: string, error: string): Promise<FollowUpQueueItem>;
 
   listAutomations(): Promise<AutomationRule[]>;
   runAutomation(id: string, payload?: Record<string, unknown>): Promise<AutomationRun>;
@@ -218,6 +226,15 @@ type BackendActivity = {
 };
 
 type BackendLeadHistoryEntry = LeadHistoryEntry;
+
+type DashboardMetricFilters = {
+  startDate?: string;
+  endDate?: string;
+  stage?: LeadStage;
+  source?: string;
+  platform?: string;
+  activityType?: Activity['activityType'];
+};
 
 type ApiErrorBody = { error?: string };
 
@@ -617,13 +634,18 @@ export class HttpCrmApi implements CrmApi {
     return mapNotification(body.notification);
   }
 
-  async markAllNotificationsRead(): Promise<number> {
+  async markAllNotificationsRead(): Promise<{ updated: number }> {
     const body = await requestJson<{ updated: number }>('/api/notifications/read-all', { method: 'POST' });
-    return body.updated;
+    return body;
   }
 
-  async listDashboardMetrics(): Promise<DashboardMetrics> {
-    const body = await requestJson<{ metrics: DashboardMetrics }>('/api/dashboard');
+  async listDashboardMetrics(filters: DashboardMetricFilters = {}): Promise<DashboardMetrics> {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, String(value));
+    });
+    const query = params.toString();
+    const body = await requestJson<{ metrics: DashboardMetrics }>(`/api/dashboard${query ? `?${query}` : ''}`);
     return {
       ...body.metrics,
       recentEvents: body.metrics.recentEvents.map(mapActivity),
@@ -642,6 +664,44 @@ export class HttpCrmApi implements CrmApi {
     const suffix = params.toString() ? `?${params.toString()}` : '';
     const body = await requestJson<{ overview: CrmAnalyticsOverview }>(`/api/analytics/overview${suffix}`);
     return body.overview;
+  }
+
+  async listFollowUps(filters: { status?: FollowUpStatus; ruleKey?: string; limit?: number } = {}): Promise<FollowUpQueueItem[]> {
+    const params = new URLSearchParams();
+    if (filters.status) params.set('status', filters.status);
+    if (filters.ruleKey) params.set('ruleKey', filters.ruleKey);
+    if (filters.limit) params.set('limit', String(filters.limit));
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    const body = await requestJson<{ followUps: FollowUpQueueItem[] }>(`/api/follow-ups${suffix}`);
+    return body.followUps;
+  }
+
+  async runFollowUpRules(): Promise<FollowUpRuleRunResult> {
+    const body = await requestJson<{ result: FollowUpRuleRunResult }>('/api/follow-ups/run-rules', { method: 'POST' });
+    return body.result;
+  }
+
+  async skipFollowUp(id: string, reason?: string): Promise<FollowUpQueueItem> {
+    const body = await requestJson<{ followUp: FollowUpQueueItem }>(`/api/follow-ups/${encodeURIComponent(id)}/skip`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    return body.followUp;
+  }
+
+  async markFollowUpSent(id: string): Promise<FollowUpQueueItem> {
+    const body = await requestJson<{ followUp: FollowUpQueueItem }>(`/api/follow-ups/${encodeURIComponent(id)}/sent`, { method: 'POST' });
+    return body.followUp;
+  }
+
+  async markFollowUpFailed(id: string, error: string): Promise<FollowUpQueueItem> {
+    const body = await requestJson<{ followUp: FollowUpQueueItem }>(`/api/follow-ups/${encodeURIComponent(id)}/failed`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error }),
+    });
+    return body.followUp;
   }
 
   async listAutomations(): Promise<AutomationRule[]> {

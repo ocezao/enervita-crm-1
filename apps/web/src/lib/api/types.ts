@@ -143,6 +143,39 @@ export interface LeadHistoryChange {
   after: string | number | boolean | null;
 }
 
+export type FollowUpStatus = 'pending' | 'sent' | 'skipped' | 'failed' | 'cancelled';
+export type FollowUpChannel = 'manual' | 'whatsapp' | 'email';
+export type FollowUpRuleKey = 'task_overdue' | 'lead_without_next_action' | 'proposal_no_response' | 'opportunity_stale';
+
+export interface FollowUpQueueItem {
+  id: string;
+  tenantId: string;
+  leadId: string;
+  ruleKey: FollowUpRuleKey | string;
+  channel: FollowUpChannel;
+  reason: string;
+  status: FollowUpStatus;
+  scheduledAt: string;
+  sentAt: string | null;
+  skippedAt: string | null;
+  failedAt: string | null;
+  attempts: number;
+  lastError: string | null;
+  idempotencyKey: string;
+  metadata: Record<string, unknown>;
+  contactName: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  suggestedMessage: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FollowUpRuleRunResult {
+  created: Record<FollowUpRuleKey, number>;
+  existing: Record<FollowUpRuleKey, number>;
+}
+
 export interface LeadHistoryEntry {
   id: string;
   action: string;

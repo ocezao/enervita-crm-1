@@ -1,5 +1,45 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/Manrope-400.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../assets/fonts/Manrope-500.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../assets/fonts/Manrope-600.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../assets/fonts/Manrope-700.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url('../assets/fonts/Manrope-800.ttf') format('truetype');
+}
+
 @theme {
   --color-solar-orange: #C05800;
   --color-energy-green: #2EAD5B;
@@ -13,8 +53,8 @@
   --color-alert-red: #D94A38;
   --color-alert-amber: #F5A524;
 
-  --font-sans: "Inter", "system-ui", "sans-serif";
-  --font-display: "Lexend", "sans-serif";
+  --font-sans: "Manrope", "Inter", "system-ui", "sans-serif";
+  --font-display: "Manrope", "Lexend", "sans-serif";
 }
 
 @layer base {
@@ -275,4 +315,22 @@ html[data-crm-density="compact"] table td {
   html[data-crm-density="spacious"] [data-crm-app-main] {
     padding: 1rem !important;
   }
+}
+
+/* Premium rounded professional typography override */
+:root {
+  --crm-font-rounded: "Manrope", ui-rounded, "SF Pro Rounded", "Aptos", "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+html,
+body,
+button,
+input,
+textarea,
+select {
+  font-family: var(--crm-font-rounded) !important;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }

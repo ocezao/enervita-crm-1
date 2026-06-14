@@ -154,6 +154,99 @@ function proposalHtmlFromText(text: string) {
   return text.split('\n').map((line) => `<p>${line.replace(/[&<>]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[char] ?? char)) || '<br />'}</p>`).join('');
 }
 
+
+type EnervitaIntelligence = {
+  potential: 'Alto' | 'Médio' | 'Baixo';
+  potentialTone: 'success' | 'warning' | 'default';
+  readiness: 'Pronto para proposta' | 'Quase pronto' | 'Qualificar antes';
+  nextAction: string;
+  argument: string;
+  missing: string[];
+  signals: string[];
+  risk: 'Baixo' | 'Médio' | 'Alto';
+};
+
+function daysSince(value?: string | null) {
+  if (!value) return null;
+  const time = new Date(value).getTime();
+  if (!Number.isFinite(time)) return null;
+  return Math.max(0, Math.floor((Date.now() - time) / 86400000));
+}
+
+function buildEnervitaIntelligence(
+  lead: NonNullable<ReturnType<typeof useLeadDetail>['lead']>,
+  tasks: ReturnType<typeof useLeadDetail>['tasks'],
+  proposals: ReturnType<typeof useLeadDetail>['proposals'],
+): EnervitaIntelligence {
+  const bill = Number(lead.energyBillValue || lead.estimatedTicket || 0);
+  const consumption = Number(lead.averageConsumptionKwh || 0);
+  const savings = Number(lead.projectedSavings || 0);
+  const hasPhone = Boolean(lead.contact?.phone);
+  const hasCity = Boolean(lead.metadata?.city || lead.metadata?.cidade || lead.metadata?.state || lead.metadata?.uf);
+  const hasBill = bill > 0;
+  const hasConsumption = consumption > 0;
+  const hasOpenTask = tasks.some((task) => task.status !== 'concluido');
+  const sentProposal = proposals.find((proposal) => proposal.status === 'sent');
+  const acceptedProposal = proposals.find((proposal) => proposal.status === 'accepted');
+  const lastContactDays = daysSince(lead.lastContactAt ?? lead.updatedAt);
+  const proposalDays = sentProposal ? daysSince(sentProposal.sentAt ?? sentProposal.updatedAt ?? sentProposal.createdAt) : null;
+
+  const missing: string[] = [];
+  if (!hasPhone) missing.push('telefone do decisor');
+  if (!hasBill && !hasConsumption) missing.push('valor da conta ou consumo médio');
+  if (!hasCity) missing.push('cidade/UF do atendimento');
+  if (!hasOpenTask && !lead.nextActionAt) missing.push('próxima ação definida');
+
+  const signals: string[] = [];
+  if (bill >= 800) signals.push('conta alta: priorizar economia mensal e previsibilidade');
+  else if (bill >= 350) signals.push('conta compatível com qualificação comercial');
+  else if (bill > 0) signals.push('conta baixa: validar se compensa avançar proposta');
+  if (savings > 0) signals.push(`economia projetada registrada: ${formatCurrency(savings)}/mês`);
+  if (acceptedProposal) signals.push('proposta aceita: foco em próximo passo de implantação/contrato');
+  else if (sentProposal) signals.push('proposta enviada: follow-up deve comparar custo atual e economia estimada');
+  if (lastContactDays !== null && lastContactDays >= 5) signals.push(`sem contato recente há ${lastContactDays} dias`);
+  if (!hasOpenTask && !lead.nextActionAt) signals.push('sem tarefa/próxima ação ativa');
+
+  let potential: EnervitaIntelligence['potential'] = 'Baixo';
+  if (bill >= 800 || savings >= 150 || acceptedProposal) potential = 'Alto';
+  else if (bill >= 350 || consumption >= 300 || sentProposal) potential = 'Médio';
+
+  let readiness: EnervitaIntelligence['readiness'] = 'Qualificar antes';
+  if ((hasBill || hasConsumption) && hasPhone && hasCity) readiness = 'Pronto para proposta';
+  else if ((hasBill || hasConsumption) && hasPhone) readiness = 'Quase pronto';
+
+  let risk: EnervitaIntelligence['risk'] = 'Baixo';
+  if ((proposalDays !== null && proposalDays >= 3) || (lastContactDays !== null && lastContactDays >= 7 && potential !== 'Baixo')) risk = 'Alto';
+  else if (lastContactDays !== null && lastContactDays >= 3) risk = 'Médio';
+
+  const nextAction = acceptedProposal
+    ? 'Confirmar próximo passo de contrato/implantação.'
+    : sentProposal
+      ? 'Retomar proposta destacando economia mensal e removendo objeções.'
+      : readiness === 'Pronto para proposta'
+        ? 'Montar proposta com foco em economia e previsibilidade.'
+        : missing.length
+          ? `Completar qualificação: ${missing.slice(0, 2).join(' e ')}.`
+          : 'Criar próxima tarefa comercial.';
+
+  const argument = bill >= 800
+    ? 'Pelo valor da conta, conduza a conversa por economia recorrente e previsibilidade, não por desconto isolado.'
+    : bill >= 350
+      ? 'Use abordagem consultiva: validar consumo, perfil do imóvel e mostrar economia potencial com baixo atrito.'
+      : 'Antes de proposta, confirme se o consumo justifica avanço comercial para evitar esforço em lead de baixo potencial.';
+
+  return {
+    potential,
+    potentialTone: potential === 'Alto' ? 'success' : potential === 'Médio' ? 'warning' : 'default',
+    readiness,
+    nextAction,
+    argument,
+    missing,
+    signals: signals.length ? signals : ['dados comerciais ainda insuficientes para diagnóstico forte'],
+    risk,
+  };
+}
+
 export default function LeadDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -208,6 +301,7 @@ export default function LeadDetail() {
   const cadastro = useMemo(() => lead ? cadastroItems(lead) : [], [lead]);
   const metaAttribution = useMemo(() => lead ? metaAttributionItems(lead) : [], [lead]);
   const sortedProposals = useMemo(() => [...proposals].sort((a, b) => new Date(b.createdAt || b.updatedAt).getTime() - new Date(a.createdAt || a.updatedAt).getTime()), [proposals]);
+  const enervitaIntelligence = useMemo(() => lead ? buildEnervitaIntelligence(lead, tasks, proposals) : null, [lead, tasks, proposals]);
 
   function startEditing() {
     if (!lead) return;
@@ -333,6 +427,54 @@ export default function LeadDetail() {
     setTaskTitle('');
     setTaskPriority('media');
     setTaskDueDate('');
+  }
+
+  async function handleCreateRecommendedTask() {
+    if (!enervitaIntelligence || !canCreateTask) return;
+    const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    const priority = enervitaIntelligence.risk === 'Alto' ? 'urgente' : enervitaIntelligence.potential === 'Alto' ? 'alta' : 'media';
+    await addTask({
+      title: `${enervitaIntelligence.nextAction} — ${enervitaIntelligence.argument}`,
+      priority,
+      dueDate,
+    });
+    setActiveTab('tasks');
+  }
+
+  function handleStartIntelligentProposal() {
+    if (!lead || !enervitaIntelligence) return;
+    const monthlyBillValue = lead.energyBillValue || lead.estimatedTicket || 0;
+    const estimatedKwh = lead.averageConsumptionKwh || 0;
+    const projectedMonthlySavings = lead.projectedSavings || (monthlyBillValue ? Math.round(monthlyBillValue * 0.2) : 0);
+    const projectedAnnualSavings = projectedMonthlySavings * 12;
+    const contactName = lead.contact?.name || 'cliente';
+    setProposalDraft({
+      ...emptyProposalDraft,
+      title: `Proposta Enervita — ${contactName}`,
+      monthlyBillValue: monthlyBillValue ? String(monthlyBillValue) : '',
+      estimatedKwh: estimatedKwh ? String(estimatedKwh) : '',
+      discountPercentage: '20',
+      projectedMonthlySavings: projectedMonthlySavings ? String(projectedMonthlySavings) : '',
+      projectedAnnualSavings: projectedAnnualSavings ? String(projectedAnnualSavings) : '',
+      notes: `Gerada a partir da Inteligência Enervita. Potencial ${enervitaIntelligence.potential}; risco ${enervitaIntelligence.risk}.`,
+      sourceType: 'editor',
+      contentText: [
+        `Olá ${contactName},`,
+        '',
+        'Com base nas informações levantadas, preparei uma proposta para reduzir o custo mensal de energia com mais previsibilidade.',
+        monthlyBillValue ? `Conta atual estimada: ${formatCurrency(monthlyBillValue)} por mês.` : '',
+        estimatedKwh ? `Consumo médio informado: ${estimatedKwh} kWh.` : '',
+        projectedMonthlySavings ? `Economia mensal estimada: ${formatCurrency(projectedMonthlySavings)}.` : '',
+        projectedAnnualSavings ? `Economia anual estimada: ${formatCurrency(projectedAnnualSavings)}.` : '',
+        '',
+        `Ponto principal: ${enervitaIntelligence.argument}`,
+        '',
+        'Próximo passo: validar os dados da conta de energia e confirmar o melhor modelo para avançarmos com segurança.',
+      ].filter(Boolean).join('\n'),
+    });
+    setEditingProposalId(null);
+    setProposalMessage('Rascunho iniciado pela Inteligência Enervita. Revise antes de salvar ou enviar.');
+    setActiveTab('proposals');
   }
 
   async function handleProposalFile(file?: File | null) {
@@ -538,6 +680,53 @@ export default function LeadDetail() {
           <PriorityBadge priority={lead.priority} />
         </div>
       </div>
+
+      {enervitaIntelligence && (
+        <Card className="p-5 border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-orange-50">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-energy-success font-black">Inteligência Enervita</p>
+              <h2 className="mt-1 text-xl font-black text-graphite">Diagnóstico comercial do lead</h2>
+              <p className="mt-1 text-sm font-semibold text-gray-500">Leitura personalizada para priorizar economia, proposta e próximo contato.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={enervitaIntelligence.potentialTone}>Potencial {enervitaIntelligence.potential}</Badge>
+              <Badge variant={enervitaIntelligence.risk === 'Alto' ? 'warning' : 'default'}>Risco {enervitaIntelligence.risk}</Badge>
+              <Badge variant="info">{enervitaIntelligence.readiness}</Badge>
+              <Button size="sm" variant="ghost" onClick={() => void navigator.clipboard?.writeText(enervitaIntelligence.argument)}>Copiar argumento</Button>
+              {canCreateTask ? <Button size="sm" variant="secondary" onClick={() => void handleCreateRecommendedTask()}>Criar tarefa recomendada</Button> : null}
+              <Button size="sm" variant="primary" onClick={handleStartIntelligentProposal}>Iniciar proposta</Button>
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
+              <p className="text-[10px] uppercase tracking-widest font-black text-gray-400 flex items-center gap-1"><Zap size={12} /> Próxima melhor ação</p>
+              <p className="mt-2 text-sm font-black text-graphite">{enervitaIntelligence.nextAction}</p>
+            </div>
+            <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
+              <p className="text-[10px] uppercase tracking-widest font-black text-gray-400 flex items-center gap-1"><MessageSquare size={12} /> Argumento recomendado</p>
+              <p className="mt-2 text-sm font-semibold text-gray-600">{enervitaIntelligence.argument}</p>
+            </div>
+            <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
+              <p className="text-[10px] uppercase tracking-widest font-black text-gray-400 flex items-center gap-1"><CheckCircle2 size={12} /> Dados críticos</p>
+              {enervitaIntelligence.missing.length ? (
+                <ul className="mt-2 space-y-1 text-sm font-semibold text-gray-600">
+                  {enervitaIntelligence.missing.map((item) => <li key={item}>• Falta {item}</li>)}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm font-black text-energy-success">Base suficiente para avançar comercialmente.</p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {enervitaIntelligence.signals.map((signal) => (
+              <span key={signal} className="rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-gray-500 border border-white">{signal}</span>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Info Card */}
