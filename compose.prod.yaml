@@ -1,0 +1,197 @@
+# Enervita CRM — Production Stack
+# Separated from consolidated container for P5 consolidation.
+# Uses existing enervita-postgres and enervita_net.
+
+services:
+  api:
+    image: node:20-bookworm-slim
+    container_name: enervita-prod-crm-api
+    working_dir: /app/apps/api
+    command: sh -lc "node --import tsx src/server.ts"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 43123
+      DATABASE_URL: postgres://enervita:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita_crm
+      SESSION_SECRET: ${SESSION_SECRET}
+      META_ADS_ACCESS_TOKEN: ${META_ADS_ACCESS_TOKEN:-}
+      META_AD_ACCOUNT_ID: ${META_AD_ACCOUNT_ID:-}
+      META_AD_ACCOUNT_NUMERIC_ID: ${META_AD_ACCOUNT_NUMERIC_ID:-}
+      META_BUSINESS_ID: ${META_BUSINESS_ID:-}
+      META_PIXEL_ID: ${META_PIXEL_ID:-}
+      META_DATASET_ID: ${META_DATASET_ID:-}
+      META_PIXEL_NAME: ${META_PIXEL_NAME:-}
+      META_PAGE_ID: ${META_PAGE_ID:-}
+      META_PAGE_USERNAME: ${META_PAGE_USERNAME:-}
+      META_INSTAGRAM_BUSINESS_ID: ${META_INSTAGRAM_BUSINESS_ID:-}
+      META_INSTAGRAM_USERNAME: ${META_INSTAGRAM_USERNAME:-}
+      META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION:-}
+      META_TEST_EVENT_CODE: ${META_TEST_EVENT_CODE:-}
+      META_LEADGEN_VERIFY_TOKEN: ${META_LEADGEN_VERIFY_TOKEN:-}
+      META_LEADGEN_PAGE_ACCESS_TOKEN: ${META_LEADGEN_PAGE_ACCESS_TOKEN:-${META_PAGE_ACCESS_TOKEN:-${META_ADS_ACCESS_TOKEN:-}}}
+      META_ASSET_SCOPE: ${META_ASSET_SCOPE:-}
+      N8N_DATABASE_URL: postgres://n8n:${N8N_DB_PASSWORD}@enervita-postgres:5432/enervita_n8n
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-deepseek/deepseek-chat-v3-0324}
+      OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+    volumes:
+      - ./:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - default
+      - enervita_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:43123/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    image: node:20-bookworm-slim
+    container_name: enervita-prod-crm-web
+    working_dir: /app/apps/web
+    command: sh -lc "npx vite preview --host 0.0.0.0 --port 43124"
+    environment:
+      NODE_ENV: production
+    volumes:
+      - ./:/app
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - default
+    restart: unless-stopped
+
+  proxy:
+    image: node:20-bookworm-slim
+    container_name: enervita-prod-crm-proxy
+    working_dir: /app
+    command: node scripts/preview-proxy.cjs
+    environment:
+      CRM_PREVIEW_API: http://127.0.0.1:43123
+      CRM_PREVIEW_WEB: http://127.0.0.1:43124
+      CRM_PREVIEW_PORT: 43210
+      CRM_PREVIEW_BIND: 0.0.0.0
+    volumes:
+      - ./:/app
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_started
+    networks:
+      - default
+      - enervita_net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:43210/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  notification-runner:
+    image: node:20-bookworm-slim
+    container_name: enervita-prod-crm-notification-runner
+    working_dir: /app
+    command: sh -lc "while true; do npm run run:notification-rules; sleep ${NOTIFICATION_RULES_INTERVAL_SECONDS:-3600}; done"
+    environment:
+      DATABASE_URL: postgres://enervita:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita_crm
+      NOTIFICATION_RULES_TENANT_SLUG: enervita
+      NOTIFICATION_RULES_INTERVAL_SECONDS: ${NOTIFICATION_RULES_INTERVAL_SECONDS:-3600}
+    volumes:
+      - ./:/app
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - default
+    restart: unless-stopped
+
+  lead-sync:
+    image: node:20-bookworm-slim
+    container_name: enervita-prod-crm-lead-sync
+    working_dir: /app
+    command: sh -lc "while true; do node scripts/sync-operational-leads-to-custom-crm.mjs; sleep ${OPERATIONAL_LEAD_SYNC_INTERVAL_SECONDS:-300}; done"
+    environment:
+      NODE_ENV: production
+      CUSTOM_DATABASE_URL: postgres://enervita:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita_crm
+      OPERATIONAL_DATABASE_URL: ${OPERATIONAL_DATABASE_URL}
+      OPERATIONAL_LEAD_SYNC_INTERVAL_SECONDS: ${OPERATIONAL_LEAD_SYNC_INTERVAL_SECONDS:-300}
+      OPERATIONAL_LEAD_SYNC_MIN_CREATED_AT: ${OPERATIONAL_LEAD_SYNC_MIN_CREATED_AT:-2026-05-30T00:00:00-03:00}
+      TENANT_SLUG: enervita
+    volumes:
+      - ./:/app
+    networks:
+      - default
+    restart: unless-stopped
+
+  meta-leadgen:
+    image: node:20-bookworm-slim
+    container_name: enervita-prod-crm-meta-leadgen
+    working_dir: /app
+    command: sh -lc "while true; do node scripts/poll-meta-leadgen-to-crm.mjs; sleep ${META_LEADGEN_POLL_INTERVAL_SECONDS:-300}; done"
+    environment:
+      NODE_ENV: production
+      META_LEADGEN_CRM_API_URL: http://127.0.0.1:43123
+      META_LEADGEN_POLL_INTERVAL_SECONDS: ${META_LEADGEN_POLL_INTERVAL_SECONDS:-300}
+    volumes:
+      - ./:/app
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - default
+    restart: unless-stopped
+
+  meta-capi:
+    image: node:20-bookworm-slim
+    container_name: enervita-prod-crm-meta-capi
+    working_dir: /app
+    command: sh -lc "while true; do npm run dispatch:meta-capi; sleep ${META_CAPI_DISPATCH_INTERVAL_SECONDS:-300}; done"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://enervita:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita_crm
+      META_ADS_ACCESS_TOKEN: ${META_ADS_ACCESS_TOKEN:-}
+      META_AD_ACCOUNT_NUMERIC_ID: ${META_AD_ACCOUNT_NUMERIC_ID:-}
+      META_CAPI_DISPATCH_INTERVAL_SECONDS: ${META_CAPI_DISPATCH_INTERVAL_SECONDS:-300}
+    volumes:
+      - ./:/app
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - default
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: enervita-postgres
+    environment:
+      POSTGRES_USER: enervita
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: enervita_crm
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - /opt/clients/enervita/data/postgres:/var/lib/postgresql/data
+      - /opt/clients/enervita/postgres/init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - default
+      - enervita_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U enervita -d enervita_crm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+networks:
+  default:
+    name: enervita-prod_default
+  enervita_net:
+    external: true
