@@ -71,3 +71,8 @@ fi
 # 10. Keep old container as fallback (don't remove yet)
 log "container legado mantido como fallback: $OLD_CONTAINER"
 log "para remover depois de 24h de validação: docker rm $OLD_CONTAINER"
+
+# 6. Run migrations
+log "executando migrations..."
+docker exec enervita-prod-crm-api sh -lc "cd /app && node apps/api/scripts/db-migrate.mjs" || fail "migration falhou"
+log "✅ migrations concluídas"

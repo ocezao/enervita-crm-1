@@ -45,6 +45,10 @@ log "aguardando health checks..."
 sleep 20
 
 # 7. Verify
+
+# 8. Run migrations on staging
+log "executando migrations no staging..."
+docker exec enervita-staging-crm-api sh -lc "cd /app && DATABASE_URL=postgres://enervita_app:uUibFxWtVvGDVh2whPTgU5ofLOiY7OSdRBWOrW1XJUioSmp0@enervita-postgres:5432/enervita_crm_staging node apps/api/scripts/db-migrate.mjs" || log "⚠️ migration warning"
 API_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' enervita-staging-crm-api 2>/dev/null || echo "unknown")
 PROXY_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' enervita-staging-crm-proxy 2>/dev/null || echo "unknown")
 
