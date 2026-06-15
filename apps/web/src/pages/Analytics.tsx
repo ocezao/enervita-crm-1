@@ -20,6 +20,7 @@ import { DateRangeFilter, rangeForPeriod, type DateRangeState } from '../compone
 import { useAnalyticsOverview } from '../hooks/useCrm';
 import { formatCurrency } from '../lib/utils';
 import type { AnalyticsKpi, LeadStage } from '../lib/api/types';
+import { InsightsPanel } from "../components/InsightsPanel";
 
 const COLORS = ['#F58220', '#2EAD5B', '#0E7A3D', '#2A332D', '#F7C948', '#54A3FF'];
 
@@ -297,6 +298,9 @@ export default function Analytics() {
             </tbody>
           </table>
         </div>
+      </Card>
+      <Card className="p-6">
+        <InsightsPanel />
       </Card>
     </div>
   );
