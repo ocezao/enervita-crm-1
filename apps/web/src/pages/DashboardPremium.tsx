@@ -283,14 +283,24 @@ export default function DashboardPremium() {
 
         <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
           <PremiumSurface className="p-6">
-            <PremiumSectionTitle eyebrow="Funil" title="Composição do funil" action={<Radar size={18} className="text-slate-900" />} />
-            <div className="mt-6 h-[220px]">
+            <PremiumSectionTitle eyebrow="Funil" title="Composição do funil" action={<div className="flex items-center gap-2"><Radar size={18} className="text-slate-900" /><ContextHint text="Distribuição percentual dos leads por etapa do funil. Mostra onde a maioria dos leads está concentrada. Use para identificar gargalos e atrito entre etapas." /></div>} />
+            <div className="mt-6 h-[260px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={stageData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={92} paddingAngle={3}>{stageData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}</Pie>
-                  <Tooltip content={<CustomTooltip />} />
+                  <Pie data={stageData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={95} paddingAngle={3} label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}>
+                    {stageData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
+                  </Pie>
+                  <Tooltip formatter={(value, name) => [`${numberFmt(Number(value))} leads`, String(name)]} />
                 </PieChart>
               </ResponsiveContainer>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {stageData.map((entry) => (
+                <span key={entry.name} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/60 px-3 py-1 text-xs font-bold text-slate-700">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.fill }} />
+                  {entry.name}: {numberFmt(entry.value)}
+                </span>
+              ))}
             </div>
           </PremiumSurface>
 
