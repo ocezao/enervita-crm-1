@@ -83,27 +83,6 @@ async function main() {
     );
     const lastTimeByForm = Object.fromEntries(lastEvents.rows.map(r => [r.form_id, r.last_time]));
 
-    // 3. Get sdr owner for assignment
-    const sdrResult = await db.query(
-      `select u.id::text as id
-         from users u
-         join user_roles ur on ur.tenant_id = u.tenant_id and ur.user_id = u.id
-         join roles r on r.tenant_id = ur.tenant_id and r.id = ur.role_id
-        where u.tenant_id = $1
-          and u.status = 'active'
-          and r.name in ('sdr', 'vendedor', 'seller', 'closer')
-          and not exists (
-            select 1 from user_roles admin_ur
-            join roles admin_r on admin_r.tenant_id = admin_ur.tenant_id and admin_r.id = admin_ur.role_id
-            where admin_ur.tenant_id = u.tenant_id and admin_ur.user_id = u.id and admin_r.name = 'admin'
-          )
-        group by u.id
-        order by (select count(*) from leads l where l.tenant_id = u.tenant_id and l.sdr_owner_id = u.id) asc
-        limit 1`,
-      [tenantId],
-    );
-    const sdrOwnerId = sdrResult.rows[0]?.id ?? null;
-
     let totalFetched = 0;
     let totalInserted = 0;
     let totalSkipped = 0;
@@ -218,6 +197,25 @@ async function main() {
           }
 
           // Insert contact
+          const sdrResult = await db.query(
+            `select u.id::text as id
+               from users u
+               join user_roles ur on ur.tenant_id = u.tenant_id and ur.user_id = u.id
+               join roles r on r.tenant_id = ur.tenant_id and r.id = ur.role_id
+              where u.tenant_id = $1
+                and u.status = 'active'
+                and r.name in ('sdr', 'vendedor', 'seller', 'closer')
+                and not exists (
+                  select 1 from user_roles admin_ur
+                  join roles admin_r on admin_r.tenant_id = admin_ur.tenant_id and admin_r.id = admin_ur.role_id
+                  where admin_ur.tenant_id = u.tenant_id and admin_ur.user_id = u.id and admin_r.name = 'admin'
+                )
+              group by u.id
+              order by (select count(*) from leads l where l.tenant_id = u.tenant_id and l.sdr_owner_id = u.id) asc
+              limit 1`,
+            [tenantId],
+          );
+          const sdrOwnerId = sdrResult.rows[0]?.id ?? null;
           const contact = await db.query(
             `insert into contacts (tenant_id, name, email, phone, company, source, consent, metadata, created_at, updated_at)
              values ($1, $2, $3, $4, $5, 'meta_lead_form', true, $6::jsonb, $7, now())
