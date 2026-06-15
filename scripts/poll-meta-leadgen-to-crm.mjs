@@ -38,11 +38,27 @@ function extractFieldData(fieldData) {
   const result = {};
   if (!Array.isArray(fieldData)) return result;
   for (const field of fieldData) {
-    const name = field.name ?? field.key ?? '';
+    const name = (field.name ?? field.key ?? '').toLowerCase().trim().replace(/:$/, '').replace(/\s+/g, '_');
     const values = field.values ?? [];
     result[name] = values[0] ?? null;
   }
   return result;
+}
+
+// Map Meta form field names to our standard names
+function normalizeFieldNames(fields) {
+  const mapped = { ...fields };
+  // Name mappings
+  for (const key of Object.keys(mapped)) {
+    if (key.includes('nome') && !key.includes('email') && !key.includes('usuario')) mapped._name = mapped._name ?? mapped[key];
+    if (key.includes('email') || key.includes('e-mail') || key.includes('e_mail')) mapped._email = mapped._email ?? mapped[key];
+    if (key.includes('whatsapp') || key.includes('telefone') || key.includes('celular') || key.includes('phone') || key.includes('ddd')) mapped._phone = mapped._phone ?? mapped[key];
+    if (key.includes('cidade') || key.includes('city')) mapped._city = mapped._city ?? mapped[key];
+    if (key.includes('estado') || key.includes('state') || key.includes('uf')) mapped._state = mapped._state ?? mapped[key];
+    if (key.includes('energia') || key.includes('conta') || key.includes('gasto') || key.includes('bill') || key.includes('kwh')) mapped._bill = mapped._bill ?? mapped[key];
+    if (key.includes('mensagem') || key.includes('message') || key.includes('observa')) mapped._message = mapped._message ?? mapped[key];
+  }
+  return mapped;
 }
 
 async function main() {
@@ -117,7 +133,7 @@ async function main() {
         const adId = lead.ad_id ?? null;
         const adsetId = lead.adset_id ?? null;
         const campaignId = lead.campaign_id ?? null;
-        const fields = extractFieldData(lead.field_data);
+        const fields = normalizeFieldNames(extractFieldData(lead.field_data));
 
         // Check if already exists
         const existing = await db.query(
@@ -129,13 +145,13 @@ async function main() {
           continue;
         }
 
-        const fullName = text(fields.full_name) ?? text(fields.nome_completo) ?? text(fields.nome) ?? text(fields.name) ?? 'Lead Meta sem nome';
-        const email = text(fields.email) ?? text(fields.e_mail) ?? null;
-        const phone = text(fields.phone_number) ?? text(fields.telefone) ?? text(fields.celular) ?? null;
-        const city = text(fields.city) ?? text(fields.cidade) ?? null;
-        const state = text(fields.state) ?? text(fields.estado) ?? null;
-        const message = text(fields.message) ?? text(fields.mensagem) ?? null;
-        const monthlyBill = text(fields.monthly_bill_value) ?? text(fields.valor_conta_luz) ?? text(fields.conta_energia) ?? null;
+        const fullName = text(fields._name) ?? text(fields.full_name) ?? text(fields.nome_completo) ?? text(fields.nome) ?? text(fields.name) ?? 'Lead Meta sem nome';
+        const email = text(fields._email) ?? text(fields.email) ?? text(fields.e_mail) ?? null;
+        const phone = text(fields._phone) ?? text(fields.phone_number) ?? text(fields.telefone) ?? text(fields.celular) ?? null;
+        const city = text(fields._city) ?? text(fields.city) ?? text(fields.cidade) ?? null;
+        const state = text(fields._state) ?? text(fields.state) ?? text(fields.estado) ?? null;
+        const message = text(fields._message) ?? text(fields.message) ?? text(fields.mensagem) ?? null;
+        const monthlyBill = text(fields._bill) ?? text(fields.monthly_bill_value) ?? text(fields.valor_conta_luz) ?? text(fields.conta_energia) ?? null;
 
         // Insert into meta_leadgen_events
         const normalizedPayload = {
