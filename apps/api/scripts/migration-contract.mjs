@@ -1,3 +1,5 @@
+// Nota: 010_meta_leadgen_events foi aplicada em producao mas o arquivo foi removido do repo.
+// Esta migration e historica — nao recriar. O schema_migrations ja a registra.
 export const migrationFiles = [
   'infra/migrations/001_initial_schema.sql',
   'infra/migrations/002_user_stage_permissions.sql',
