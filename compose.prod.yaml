@@ -104,7 +104,7 @@ services:
     working_dir: /app
     command: sh -lc "while true; do npm run run:notification-rules; sleep ${NOTIFICATION_RULES_INTERVAL_SECONDS:-3600}; done"
     environment:
-      DATABASE_URL: postgres://enervita_app:***@enervita-postgres:5432/enervita_crm
+      DATABASE_URL: postgres://enervita_app:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita_crm
       NOTIFICATION_RULES_TENANT_SLUG: enervita
       NOTIFICATION_RULES_INTERVAL_SECONDS: ${NOTIFICATION_RULES_INTERVAL_SECONDS:-3600}
     volumes:
@@ -114,6 +114,7 @@ services:
         condition: service_healthy
     networks:
       - default
+      - enervita_net
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1 || exit 1"]
@@ -129,8 +130,8 @@ services:
     command: sh -lc "while true; do node scripts/sync-operational-leads-to-custom-crm.mjs; sleep ${OPERATIONAL_LEAD_SYNC_INTERVAL_SECONDS:-300}; done"
     environment:
       NODE_ENV: production
-      CUSTOM_DATABASE_URL: postgres://enervita_app:***@enervita-postgres:5432/enervita_crm
-      OPERATIONAL_DATABASE_URL: ${OPERATIONAL_DATABASE_URL}
+      CUSTOM_DATABASE_URL: postgres://enervita_app:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita_crm
+      OPERATIONAL_DATABASE_URL: postgres://enervita_app:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita
       OPERATIONAL_LEAD_SYNC_INTERVAL_SECONDS: ${OPERATIONAL_LEAD_SYNC_INTERVAL_SECONDS:-300}
       OPERATIONAL_LEAD_SYNC_MIN_CREATED_AT: ${OPERATIONAL_LEAD_SYNC_MIN_CREATED_AT:-2026-05-30T00:00:00-03:00}
       TENANT_SLUG: enervita
@@ -138,6 +139,7 @@ services:
       - ./:/app
     networks:
       - default
+      - enervita_net
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1 || exit 1"]
@@ -150,11 +152,17 @@ services:
     image: node:20-bookworm-slim
     container_name: enervita-prod-crm-meta-leadgen
     working_dir: /app
-    command: sh -lc "while true; do node scripts/poll-meta-leadgen-to-crm.mjs; sleep ${META_LEADGEN_POLL_INTERVAL_SECONDS:-300}; done"
+    command: sh -lc "while true; do node scripts/sync-operational-leads-to-custom-crm.mjs; sleep ${META_LEADGEN_POLL_INTERVAL_SECONDS:-300}; done"
     environment:
       NODE_ENV: production
-      META_LEADGEN_CRM_API_URL: http://127.0.0.1:43123
+      CUSTOM_DATABASE_URL: postgres://enervita_app:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita_crm
+      OPERATIONAL_DATABASE_URL: postgres://enervita_app:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita
       META_LEADGEN_POLL_INTERVAL_SECONDS: ${META_LEADGEN_POLL_INTERVAL_SECONDS:-300}
+      META_LEADGEN_CRM_API_URL: http://enervita-prod-crm-api:43123
+      META_ADS_ACCESS_TOKEN: ${META_ADS_ACCESS_TOKEN:-}
+      META_LEADGEN_PAGE_ACCESS_TOKEN: ${META_LEADGEN_PAGE_ACCESS_TOKEN:-${META_PAGE_ACCESS_TOKEN:-${META_ADS_ACCESS_TOKEN:-}}}
+      META_AD_ACCOUNT_ID: ${META_AD_ACCOUNT_ID:-}
+      TENANT_SLUG: enervita
     volumes:
       - ./:/app
     depends_on:
@@ -162,6 +170,7 @@ services:
         condition: service_healthy
     networks:
       - default
+      - enervita_net
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1 || exit 1"]
@@ -176,10 +185,12 @@ services:
     working_dir: /app
     command: sh -lc "while true; do npm run dispatch:meta-capi; sleep ${META_CAPI_DISPATCH_INTERVAL_SECONDS:-300}; done"
     environment:
-      DATABASE_URL: postgres://enervita_app:***@enervita-postgres:5432/enervita_crm
+      DATABASE_URL: postgres://enervita_app:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita_crm
       META_ADS_ACCESS_TOKEN: ${META_ADS_ACCESS_TOKEN:-}
       META_AD_ACCOUNT_ID: ${META_AD_ACCOUNT_ID:-}
       META_AD_ACCOUNT_NUMERIC_ID: ${META_AD_ACCOUNT_NUMERIC_ID:-}
+      META_DATASET_ID: ${META_DATASET_ID:-}
+      META_PIXEL_ID: ${META_PIXEL_ID:-}
       META_CAPI_DISPATCH_INTERVAL_SECONDS: ${META_CAPI_DISPATCH_INTERVAL_SECONDS:-300}
     volumes:
       - ./:/app
@@ -188,6 +199,7 @@ services:
         condition: service_healthy
     networks:
       - default
+      - enervita_net
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "kill -0 1 || exit 1"]
