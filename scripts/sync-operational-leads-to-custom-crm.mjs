@@ -94,7 +94,8 @@ function metadataFrom(row) {
 
 
 async function resolveSdrOwnerId(custom, tenantId) {
-  const result = await custom.query(
+  // Round-robin rotation: find all SDRs, check last assigned, pick next
+  const sdrList = await custom.query(
     `select u.id::text as id
        from users u
        join user_roles ur on ur.tenant_id = u.tenant_id and ur.user_id = u.id
@@ -110,14 +111,19 @@ async function resolveSdrOwnerId(custom, tenantId) {
              and admin_ur.user_id = u.id
              and admin_r.name = 'admin'
         )
-      group by u.id, u.name
-      order by (select count(*) from leads l where l.tenant_id = u.tenant_id and l.sdr_owner_id = u.id) asc,
-               u.name asc,
-               u.id asc
-      limit 1`,
+      order by u.name`,
     [tenantId],
   );
-  return result.rows[0]?.id ?? null;
+  if (sdrList.rows.length === 0) return null;
+  if (sdrList.rows.length === 1) return sdrList.rows[0].id;
+  const lastLead = await custom.query(
+    `select sdr_owner_id from leads where tenant_id = $1 and sdr_owner_id is not null order by created_at desc limit 1`,
+    [tenantId],
+  );
+  const lastId = lastLead.rows[0]?.sdr_owner_id ?? null;
+  const lastIdx = sdrList.rows.findIndex(r => r.id === lastId);
+  const nextIdx = (lastIdx + 1) % sdrList.rows.length;
+  return sdrList.rows[nextIdx].id;
 }
 
 async function main() {

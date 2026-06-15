@@ -197,7 +197,8 @@ async function main() {
           }
 
           // Insert contact
-          const sdrResult = await db.query(
+          // Round-robin: find all SDRs, check last assigned, pick next in rotation
+          const sdrList = await db.query(
             `select u.id::text as id
                from users u
                join user_roles ur on ur.tenant_id = u.tenant_id and ur.user_id = u.id
@@ -210,12 +211,20 @@ async function main() {
                   join roles admin_r on admin_r.tenant_id = admin_ur.tenant_id and admin_r.id = admin_ur.role_id
                   where admin_ur.tenant_id = u.tenant_id and admin_ur.user_id = u.id and admin_r.name = 'admin'
                 )
-              group by u.id
-              order by (select count(*) from leads l where l.tenant_id = u.tenant_id and l.sdr_owner_id = u.id) asc
-              limit 1`,
+              order by u.name`,
             [tenantId],
           );
-          const sdrOwnerId = sdrResult.rows[0]?.id ?? null;
+          let sdrOwnerId = null;
+          if (sdrList.rows.length > 0) {
+            const lastLead = await db.query(
+              `select sdr_owner_id from leads where tenant_id = $1 and sdr_owner_id is not null order by created_at desc limit 1`,
+              [tenantId],
+            );
+            const lastId = lastLead.rows[0]?.sdr_owner_id ?? null;
+            const lastIdx = sdrList.rows.findIndex(r => r.id === lastId);
+            const nextIdx = sdrList.rows.length === 1 ? 0 : (lastIdx + 1) % sdrList.rows.length;
+            sdrOwnerId = sdrList.rows[nextIdx].id;
+          }
           const contact = await db.query(
             `insert into contacts (tenant_id, name, email, phone, company, source, consent, metadata, created_at, updated_at)
              values ($1, $2, $3, $4, $5, 'meta_lead_form', true, $6::jsonb, $7, now())
