@@ -65,16 +65,6 @@ export type DashboardRepository = {
   close?(): Promise<void>;
 };
 
-function stageClause(alias: string, allowedStages: PipelineStageKey[] | null, offset: number): string {
-  if (allowedStages === null) return '';
-  return ` and ${alias}.stage = any($${offset}::lead_stage[])`;
-}
-
-function stageParams(allowedStages: PipelineStageKey[] | null): unknown[] {
-  return allowedStages === null ? [] : [allowedStages];
-}
-
-
 function pushParam(params: unknown[], value: unknown): string {
   params.push(value);
   return `$${params.length}`;
@@ -143,46 +133,48 @@ function intValue(value: unknown): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/**
+ * Calculate commercial metrics directly from leads table instead of lead_opportunities.
+ * The lead_opportunities table was never populated — all progression data lives in
+ * leads.stage, leads.energy_bill_value, and lead_stage_history.
+ */
 async function getCommercialMetrics(pool: pg.Pool, tenantId: string, allowedStages: PipelineStageKey[] | null, filters: DashboardFilters = {}): Promise<CommercialMetrics> {
-  const opportunityParams: unknown[] = [tenantId];
-  const opportunityFilter = leadFilterSql(opportunityParams, allowedStages, filters);
-  const opportunityResult = await pool.query(
-    `select count(*) filter (where lo.status = 'open')::int as "openCount",
-            count(*) filter (where lo.status = 'won')::int as "wonCount",
-            coalesce(sum(lo.expected_value) filter (where lo.status = 'open'), 0)::text as "openValue",
-            coalesce(sum(lo.expected_value) filter (where lo.status = 'won'), 0)::text as "wonValue"
-       from lead_opportunities lo
-       join leads l on l.tenant_id = lo.tenant_id and l.id = lo.lead_id
-      where lo.tenant_id = $1 ${opportunityFilter}`,
-    opportunityParams,
+  // --- Pipeline value from leads with energy_bill_value ---
+  const valueParams: unknown[] = [tenantId];
+  const valueFilter = leadFilterSql(valueParams, allowedStages, filters);
+  const valueResult = await pool.query(
+    `select
+       coalesce(sum(l.energy_bill_value) filter (where l.stage not in ('perdido', 'contrato_enervita')), 0)::numeric as "openValue",
+       coalesce(sum(l.energy_bill_value) filter (where l.stage = 'contrato_enervita'), 0)::numeric as "wonValue",
+       count(*) filter (where l.stage not in ('perdido', 'contrato_enervita'))::int as "openCount",
+       count(*) filter (where l.stage = 'contrato_enervita')::int as "wonCount"
+     from leads l
+     where l.tenant_id = $1 ${valueFilter}`,
+    valueParams,
   );
 
-  const proposalParams: unknown[] = [tenantId];
-  const proposalFilter = leadFilterSql(proposalParams, allowedStages, filters);
+  // --- Proposals ---
   const proposalResult = await pool.query(
     `select count(*) filter (where p.status in ('draft', 'sent'))::int as "openProposals",
             count(*) filter (where p.status = 'accepted')::int as "acceptedProposals",
             coalesce(sum(p.projected_annual_savings) filter (where p.status = 'accepted'), 0)::text as "acceptedAnnualValue"
        from proposals p
-       join leads l on l.tenant_id = p.tenant_id and l.id = p.lead_id
-      where p.tenant_id = $1 ${proposalFilter}`,
-    proposalParams,
+      where p.tenant_id = $1`,
+    [tenantId],
   );
 
-  const taskParams: unknown[] = [tenantId];
-  const taskFilter = leadFilterSql(taskParams, allowedStages, filters);
+  // --- Overdue tasks ---
   const taskResult = await pool.query(
     `select count(*)::int as count
        from tasks t
-       join leads l on l.tenant_id = t.tenant_id and l.id = t.lead_id
       where t.tenant_id = $1
         and t.status in ('pendente', 'atrasado')
         and t.due_date is not null
-        and t.due_date < now()
-        ${taskFilter}`,
-    taskParams,
+        and t.due_date < now()`,
+    [tenantId],
   );
 
+  // --- Stale / without next action ---
   const staleParams: unknown[] = [tenantId];
   const staleFilter = leadFilterSql(staleParams, allowedStages, filters);
   const staleResult = await pool.query(
@@ -193,20 +185,21 @@ async function getCommercialMetrics(pool: pg.Pool, tenantId: string, allowedStag
     staleParams,
   );
 
+  // --- Stage breakdown with lead value ---
   const stageParams: unknown[] = [tenantId];
   const stageFilter = leadFilterSql(stageParams, allowedStages, filters);
   const stageBreakdown = await pool.query(
     `select l.stage::text as stage,
             count(*)::int as count,
-            coalesce(sum(lo.expected_value), 0)::text as value
+            coalesce(sum(l.energy_bill_value), 0)::numeric as value
        from leads l
-       left join lead_opportunities lo on lo.tenant_id = l.tenant_id and lo.lead_id = l.id and lo.status = 'open'
       where l.tenant_id = $1 ${stageFilter}
       group by l.stage
       order by count desc`,
     stageParams,
   );
 
+  // --- Attention leads ---
   const attentionParams: unknown[] = [tenantId];
   const attentionFilter = leadFilterSql(attentionParams, allowedStages, filters);
   const attentionLeads = await pool.query(
@@ -242,7 +235,7 @@ async function getCommercialMetrics(pool: pg.Pool, tenantId: string, allowedStag
     attentionParams,
   );
 
-  const opportunities = opportunityResult.rows[0] ?? {};
+  const opportunities = valueResult.rows[0] ?? {};
   const proposals = proposalResult.rows[0] ?? {};
   const stale = staleResult.rows[0] ?? {};
 
@@ -294,8 +287,8 @@ export function createPgDashboardRepository(databaseUrl: string): DashboardRepos
       const [newLeads, noFollowup, overdueTasks, openProposals, bySource, byStage, byPlatform, recentEvents] = await Promise.all([
         pool.query(`select count(*)::int as count from leads l where l.tenant_id = $1 and l.created_at >= current_date${todayFilter}`, todayParams),
         pool.query(`select count(*)::int as count from leads l where l.tenant_id = $1 and l.stage <> 'perdido' and (l.next_action_at is null or l.next_action_at < now())${leadFilter}`, leadParams),
-        pool.query(`select count(*)::int as count from tasks t left join leads l on l.tenant_id = t.tenant_id and l.id = t.lead_id where t.tenant_id = $1 and t.status in ('pendente', 'atrasado') and t.due_date is not null and t.due_date < now()${taskFilter}`, taskParams),
-        pool.query(`select count(*)::int as count from leads l where l.tenant_id = $1 and l.stage = 'proposta_enviada'${leadFilter}`, leadParams),
+        pool.query(`select count(*)::int as count from tasks t where t.tenant_id = $1 and t.status in ('pendente', 'atrasado') and t.due_date is not null and t.due_date < now()`, taskParams),
+        pool.query(`select count(*)::int as count from proposals p where p.tenant_id = $1 and p.status in ('draft', 'sent')`, [tenantId]),
         pool.query(`select coalesce(nullif(l.lead_source, ''), 'desconhecido') as source, count(*)::int as count from leads l where l.tenant_id = $1${leadFilter} group by 1 order by count desc, source asc limit 8`, leadParams),
         pool.query(`select l.stage::text as stage, count(*)::int as count from leads l where l.tenant_id = $1${leadFilter} group by l.stage order by count desc`, leadParams),
         pool.query(`select coalesce(nullif(t.platform, ''), 'desconhecido') as platform, count(*)::int as count from tracking_events t left join leads l on l.tenant_id = t.tenant_id and l.id = t.lead_id where t.tenant_id = $1 and t.status = 'sent'${platformLeadFilter}${platformFilter} group by 1 order by count desc, platform asc limit 6`, platformParams),
