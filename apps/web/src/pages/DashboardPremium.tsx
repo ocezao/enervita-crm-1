@@ -1,20 +1,48 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import {
+  Activity,
   AlertTriangle,
-  Clock,
+  ArrowRight,
+  BellRing,
+  CalendarDays,
+  CheckCircle2,
+  Clock3,
   DollarSign,
-  FileText,
+  Filter,
+  Flame,
+  Gauge,
+  Layers3,
+  LineChart,
+  MousePointer2,
+  Radar,
+  RefreshCw,
+  RotateCcw,
+  Sparkles,
+  Target,
+  TrendingUp,
   Users,
 } from 'lucide-react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { ContextHint, PremiumMetricCard, PremiumSectionTitle, PremiumSurface } from '../components/ui/PremiumDashboard';
 import { useDashboardMetrics } from '../hooks/useCrm';
-import { Card } from '../components/ui/Base';
-import { InsightsPanel } from '../components/InsightsPanel';
-import type { LeadStage, Activity } from '../lib/api/types';
+import type { Activity as CrmActivity, LeadStage } from '../lib/api/types';
 
-const stageLabels: Record<string, string> = {
+const stageLabels: Record<LeadStage, string> = {
   novo_lead: 'Novo lead',
+  atendimento_iniciado: 'Atendimento',
   qualificacao: 'Qualificação',
-  atendimento_iniciado: 'Atendimento iniciado',
   conta_recebida: 'Conta recebida',
   diagnostico: 'Diagnóstico',
   proposta_enviada: 'Proposta enviada',
@@ -22,28 +50,18 @@ const stageLabels: Record<string, string> = {
   perdido: 'Perdido',
 };
 
-const stageOptions: Array<{ value: LeadStage | ''; label: string }> = [
-  { value: '', label: 'Todas as etapas' },
-  { value: 'novo_lead', label: 'Novo lead' },
-  { value: 'qualificacao', label: 'Qualificação' },
-  { value: 'atendimento_iniciado', label: 'Atendimento iniciado' },
-  { value: 'conta_recebida', label: 'Conta recebida' },
-  { value: 'diagnostico', label: 'Diagnóstico' },
-  { value: 'proposta_enviada', label: 'Proposta enviada' },
-  { value: 'contrato_enervita', label: 'Contrato Enervita' },
-  { value: 'perdido', label: 'Perdido' },
-];
+const stageOptions = Object.entries(stageLabels) as Array<[LeadStage, string]>;
 
-type Filters = {
-  startDate: string;
-  endDate: string;
-  stage: LeadStage | '';
-  source: string;
-  platform: string;
-  activityType: Activity['activityType'] | '';
+const activityLabels: Record<CrmActivity['activityType'], string> = {
+  note: 'Nota',
+  call: 'Ligação',
+  email: 'E-mail',
+  whatsapp: 'WhatsApp',
+  meeting: 'Reunião',
+  stage_change: 'Etapa alterada',
 };
 
-const defaultFilters: Filters = {
+const defaultFilters = {
   startDate: '',
   endDate: '',
   stage: '',
@@ -52,217 +70,271 @@ const defaultFilters: Filters = {
   activityType: '',
 };
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat('pt-BR').format(value || 0);
+type DashboardFilters = typeof defaultFilters;
+
+const quickRanges = [
+  { label: '7 dias', days: 7 },
+  { label: '30 dias', days: 30 },
+  { label: '90 dias', days: 90 },
+];
+
+function toInputDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 0,
-  }).format(value || 0);
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value || 0);
+
+const numberFmt = (value: number) => new Intl.NumberFormat('pt-BR').format(value || 0);
+
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value?: number; name?: string; color?: string }>; label?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-2xl border border-white/40 bg-slate-950/90 px-4 py-3 text-xs font-bold text-white shadow-2xl backdrop-blur-xl">
+      <p className="mb-1 text-slate-300">{label}</p>
+      {payload.map((item) => <p key={item.name} style={{ color: item.color }}>{item.name}: {numberFmt(Number(item.value ?? 0))}</p>)}
+    </div>
+  );
 }
 
-function formatDate(value?: string | null) {
-  if (!value) return 'Sem data';
-  return new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="space-y-2">
+      <span className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">{label}</span>
+      {children}
+    </label>
+  );
 }
 
-function stageLabel(stage: string) {
-  return stageLabels[stage] ?? stage;
-}
+const fieldClass = 'h-11 w-full rounded-2xl border border-white/70 bg-white/75 px-3 text-sm font-bold text-slate-800 shadow-inner outline-none transition focus:border-orange-300 focus:ring-4 focus:ring-orange-100';
 
-export default function DashboardPremium() {
-  const [filters, setFilters] = useState<Filters>(defaultFilters);
-
-  const queryFilters = {
+function toApiFilters(filters: DashboardFilters) {
+  return {
     startDate: filters.startDate || undefined,
     endDate: filters.endDate || undefined,
     stage: (filters.stage || undefined) as LeadStage | undefined,
     source: filters.source || undefined,
     platform: filters.platform || undefined,
-    activityType: (filters.activityType || undefined) as Activity['activityType'] | undefined,
+    activityType: (filters.activityType || undefined) as CrmActivity['activityType'] | undefined,
+  };
+}
+
+export default function DashboardPremium() {
+  const [draftFilters, setDraftFilters] = useState<DashboardFilters>(defaultFilters);
+  const [appliedFilters, setAppliedFilters] = useState<DashboardFilters>(defaultFilters);
+  const { metrics, loading } = useDashboardMetrics(toApiFilters(appliedFilters));
+
+  const activeFilterCount = Object.values(appliedFilters).filter(Boolean).length;
+
+  const stageData = useMemo(() => (metrics?.leadsByStage ?? []).map((item, index) => ({
+    name: stageLabels[item.stage] ?? item.stage,
+    value: item.count,
+    fill: ['#f97316', '#16a34a', '#0f172a', '#fb923c', '#22c55e', '#475569', '#ef4444'][index % 7],
+  })), [metrics]);
+
+  const sourceData = useMemo(() => (metrics?.leadsBySource ?? []).map((item) => ({
+    source: item.source || 'Indefinida',
+    leads: item.count,
+  })), [metrics]);
+
+  const platformData = useMemo(() => (metrics?.conversionsByPlatform ?? []).map((item) => ({
+    platform: item.platform || 'Indefinida',
+    conversions: item.count,
+  })), [metrics]);
+
+  const eventsByType = useMemo(() => {
+    const grouped = new Map<string, number>();
+    for (const event of metrics?.recentEvents ?? []) grouped.set(event.activityType, (grouped.get(event.activityType) ?? 0) + 1);
+    return Array.from(grouped.entries()).map(([type, count]) => ({ type: activityLabels[type as CrmActivity['activityType']] ?? type, count }));
+  }, [metrics]);
+
+  const sourceOptions = useMemo(() => Array.from(new Set((metrics?.leadsBySource ?? []).map((item) => item.source).filter(Boolean))), [metrics]);
+  const platformOptions = useMemo(() => Array.from(new Set((metrics?.conversionsByPlatform ?? []).map((item) => item.platform).filter(Boolean))), [metrics]);
+
+  const commercial = metrics?.commercial;
+  const openValue = commercial?.openOpportunityValue ?? 0;
+  const wonValue = commercial?.wonOpportunityValue ?? 0;
+  const acceptedAnnual = commercial?.acceptedProposalAnnualValue ?? 0;
+  const totalPipeline = openValue + wonValue;
+  const commercialStageValue = commercial?.stageBreakdown?.reduce((sum, item) => sum + item.value, 0) ?? 0;
+
+  const setQuickRange = (days: number) => {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - days + 1);
+    setDraftFilters((current) => ({ ...current, startDate: toInputDate(start), endDate: toInputDate(end) }));
   };
 
-  const { metrics, loading } = useDashboardMetrics(queryFilters);
+  const clearFilters = () => {
+    setDraftFilters(defaultFilters);
+    setAppliedFilters(defaultFilters);
+  };
 
-  if (loading || !metrics) return <p className="p-8 text-center text-gray-500">Carregando cockpit...</p>;
+  if (loading && !metrics) {
+    return <div className="flex min-h-[60vh] items-center justify-center text-slate-500">Carregando cockpit premium...</div>;
+  }
 
-  const commercial = metrics.commercial;
+  if (!metrics) {
+    return <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-red-700">Não foi possível carregar os dados do dashboard.</div>;
+  }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="relative overflow-hidden rounded-[2rem] bg-graphite p-8 text-white shadow-soft">
-        <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-solar-orange/30 blur-3xl" />
-        <div className="relative z-10">
-          <h1 className="text-3xl font-black">Cockpit Enervita</h1>
-          <p className="mt-2 text-white/70">Operação comercial sob controle, do lead ao contrato ganho.</p>
-        </div>
-      </div>
+    <div className="relative -m-6 min-h-screen overflow-hidden bg-[#f6f1e8] p-6 text-slate-900 lg:p-8">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(249,115,22,0.20),transparent_28%),radial-gradient(circle_at_85%_5%,rgba(34,197,94,0.18),transparent_25%),linear-gradient(135deg,rgba(255,255,255,0.82),rgba(255,247,237,0.55))]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:linear-gradient(#0f172a_1px,transparent_1px),linear-gradient(90deg,#0f172a_1px,transparent_1px)] [background-size:28px_28px]" />
 
-      {/* Filtros */}
-      <Card className="p-5">
-        <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Filtros</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
-          <label className="space-y-1">
-            <span className="text-[10px] font-bold uppercase text-gray-400">Início</span>
-            <input type="date" value={filters.startDate} onChange={(e) => setFilters(f => ({ ...f, startDate: e.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" />
-          </label>
-          <label className="space-y-1">
-            <span className="text-[10px] font-bold uppercase text-gray-400">Fim</span>
-            <input type="date" value={filters.endDate} onChange={(e) => setFilters(f => ({ ...f, endDate: e.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm" />
-          </label>
-          <label className="space-y-1">
-            <span className="text-[10px] font-bold uppercase text-gray-400">Etapa</span>
-            <select value={filters.stage} onChange={(e) => setFilters(f => ({ ...f, stage: e.target.value as LeadStage | '' }))} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
-              {stageOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </label>
-          <label className="space-y-1">
-            <span className="text-[10px] font-bold uppercase text-gray-400">Origem</span>
-            <select value={filters.source} onChange={(e) => setFilters(f => ({ ...f, source: e.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
-              <option value="">Todas</option>
-              {(metrics.leadsBySource ?? []).map(s => <option key={s.source} value={s.source}>{s.source}</option>)}
-            </select>
-          </label>
-          <label className="space-y-1">
-            <span className="text-[10px] font-bold uppercase text-gray-400">Plataforma</span>
-            <select value={filters.platform} onChange={(e) => setFilters(f => ({ ...f, platform: e.target.value }))} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
-              <option value="">Todas</option>
-              {(metrics.conversionsByPlatform ?? []).map(p => <option key={p.platform} value={p.platform}>{p.platform}</option>)}
-            </select>
-          </label>
-          <label className="space-y-1">
-            <span className="text-[10px] font-bold uppercase text-gray-400">Atividade</span>
-            <select value={filters.activityType} onChange={(e) => setFilters(f => ({ ...f, activityType: e.target.value as Activity['activityType'] | '' }))} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm">
-              <option value="">Todas</option>
-              <option value="call">Ligação</option>
-              <option value="email">E-mail</option>
-              <option value="whatsapp">WhatsApp</option>
-              <option value="meeting">Reunião</option>
-              <option value="note">Nota</option>
-            </select>
-          </label>
-        </div>
-        <div className="mt-3 flex gap-2">
-          <button onClick={() => setFilters(defaultFilters)} className="text-xs text-gray-500 hover:text-gray-700">Limpar filtros</button>
-        </div>
-      </Card>
-
-      {/* Métricas principais */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card><div className="p-5"><div className="flex items-center gap-3"><div className="rounded-xl bg-solar-orange/10 p-2 text-solar-orange"><Users size={20} /></div><div><p className="text-xs text-gray-500">Novos hoje</p><p className="text-2xl font-black">{formatNumber(metrics.newLeadsToday)}</p></div></div></div></Card>
-        <Card><div className="p-5"><div className="flex items-center gap-3"><div className="rounded-xl bg-red-50 p-2 text-red-500"><Clock size={20} /></div><div><p className="text-xs text-gray-500">Sem follow-up</p><p className="text-2xl font-black">{formatNumber(metrics.leadsWithoutFollowup)}</p></div></div></div></Card>
-        <Card><div className="p-5"><div className="flex items-center gap-3"><div className="rounded-xl bg-red-50 p-2 text-red-500"><AlertTriangle size={20} /></div><div><p className="text-xs text-gray-500">Tarefas vencidas</p><p className="text-2xl font-black">{formatNumber(metrics.overdueTasks)}</p></div></div></div></Card>
-        <Card><div className="p-5"><div className="flex items-center gap-3"><div className="rounded-xl bg-blue-50 p-2 text-blue-500"><FileText size={20} /></div><div><p className="text-xs text-gray-500">Propostas abertas</p><p className="text-2xl font-black">{formatNumber(metrics.openProposals)}</p></div></div></div></Card>
-      </div>
-
-      {/* Gestão comercial */}
-      {commercial && (
-        <div className="space-y-6">
-          <h2 className="text-xl font-black text-graphite">Gestão comercial</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card><div className="p-5"><p className="text-xs text-gray-500">Oportunidades abertas</p><p className="text-xl font-black">{formatCurrency(commercial.openOpportunityValue)}</p><p className="text-xs text-gray-400">{commercial.openOpportunities} em aberto</p></div></Card>
-            <Card><div className="p-5"><p className="text-xs text-gray-500">Contratos ganhos</p><p className="text-xl font-black text-energy-green">{formatCurrency(commercial.wonOpportunityValue)}</p><p className="text-xs text-gray-400">{commercial.wonOpportunities} ganhos</p></div></Card>
-            <Card><div className="p-5"><p className="text-xs text-gray-500">Propostas abertas</p><p className="text-xl font-black">{formatNumber(commercial.openProposals)}</p></div></Card>
-            <Card><div className="p-5"><p className="text-xs text-gray-500">Valor anual aceito</p><p className="text-xl font-black text-energy-green">{formatCurrency(commercial.acceptedProposalAnnualValue)}</p></div></Card>
-          </div>
-
-          {/* Leads parados */}
-          <Card className="p-5">
-            <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Atenção comercial</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center"><p className="text-2xl font-black text-red-500">{formatNumber(commercial.overdueTasks)}</p><p className="text-xs text-gray-500">Tarefas vencidas</p></div>
-              <div className="text-center"><p className="text-2xl font-black text-solar-orange">{formatNumber(commercial.leadsWithoutNextAction)}</p><p className="text-xs text-gray-500">Sem próxima ação</p></div>
-              <div className="text-center"><p className="text-2xl font-black">{formatNumber(commercial.staleLeads)}</p><p className="text-xs text-gray-500">Parados 7+ dias</p></div>
+      <div className="relative mx-auto max-w-7xl space-y-6">
+        <PremiumSurface dark className="overflow-hidden p-0">
+          <div className="relative grid gap-6 p-6 lg:grid-cols-[1.25fr_0.75fr] lg:p-8">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_20%,rgba(249,115,22,0.35),transparent_28%),radial-gradient(circle_at_85%_80%,rgba(34,197,94,0.25),transparent_25%)]" />
+            <div className="relative z-10 space-y-6">
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-orange-100 backdrop-blur">
+                <Sparkles size={14} /> Enervita CRM · Dashboard principal
+              </div>
+              <div className="flex items-start gap-3">
+                <h1 className="max-w-3xl text-4xl font-black tracking-tight text-white md:text-6xl">Cockpit comercial com dados reais.</h1>
+                <ContextHint text="Este dashboard é a tela principal. Os filtros avançados recalculam os indicadores no backend: período por criação do lead, etapa, origem, plataforma e tipo de atividade." />
+              </div>
+              <p className="max-w-2xl text-base font-semibold leading-8 text-slate-300 md:text-lg">Visão executiva para receita, aquisição, gargalos operacionais e próximos movimentos comerciais.</p>
+              <div className="flex flex-wrap gap-3">
+                <span className="rounded-full border border-emerald-300/30 bg-emerald-400/10 px-4 py-2 text-sm font-black text-emerald-100">{numberFmt(commercial?.openOpportunities ?? 0)} oportunidades abertas</span>
+                <span className="rounded-full border border-orange-300/30 bg-orange-400/10 px-4 py-2 text-sm font-black text-orange-100">{formatCurrency(openValue)} em jogo</span>
+                {activeFilterCount > 0 && <span className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-black text-white">{activeFilterCount} filtros ativos</span>}
+              </div>
             </div>
-          </Card>
-
-          {/* Atenção agora */}
-          {commercial.attentionLeads.length > 0 && (
-            <Card className="p-5">
-              <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Leads que precisam de atenção</h3>
-              <div className="space-y-2">
-                {commercial.attentionLeads.map(lead => (
-                  <a key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between rounded-xl border border-gray-100 p-3 hover:border-solar-orange/40 transition">
-                    <div>
-                      <p className="font-bold text-sm text-graphite">{lead.name}</p>
-                      <p className="text-xs text-gray-500">{stageLabel(lead.stage)} · {lead.reason}</p>
-                    </div>
-                    <span className="text-xs text-gray-400">{formatDate(lead.updatedAt)}</span>
-                  </a>
-                ))}
+            <div className="relative z-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <div className="rounded-[2rem] border border-white/10 bg-white/10 p-5 backdrop-blur-xl">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-300">Valor aberto</p>
+                <strong className="mt-2 block text-3xl font-black text-white">{formatCurrency(openValue)}</strong>
+                <p className="mt-2 text-sm font-semibold text-slate-300">Pipeline vivo ainda negociável.</p>
               </div>
-            </Card>
-          )}
-
-          {/* Funil */}
-          {commercial.stageBreakdown.length > 0 && (
-            <Card className="p-5">
-              <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Funil por etapa</h3>
-              <div className="space-y-2">
-                {commercial.stageBreakdown.map(stage => {
-                  const max = Math.max(...commercial.stageBreakdown.map(s => s.count), 1);
-                  return (
-                    <div key={stage.stage}>
-                      <div className="flex items-center justify-between text-sm"><span className="font-semibold">{stageLabel(stage.stage)}</span><span className="text-gray-500">{stage.count} · {formatCurrency(stage.value)}</span></div>
-                      <div className="mt-1 h-2 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-solar-orange rounded-full" style={{ width: `${Math.max(4, (stage.count / max) * 100)}%` }} /></div>
-                    </div>
-                  );
-                })}
+              <div className="rounded-[2rem] border border-white/10 bg-white/10 p-5 backdrop-blur-xl">
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-slate-300">Valor anual aceito</p>
+                <strong className="mt-2 block text-3xl font-black text-emerald-200">{formatCurrency(acceptedAnnual)}</strong>
+                <p className="mt-2 text-sm font-semibold text-slate-300">Propostas aceitas com economia anual projetada.</p>
               </div>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* Origem e conversões */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-5">
-          <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Origem dos leads</h3>
-          <div className="space-y-2">
-            {metrics.leadsBySource.map(s => (
-              <div key={s.source} className="flex items-center justify-between">
-                <span className="text-sm font-medium">{s.source}</span>
-                <span className="font-bold">{s.count}</span>
-              </div>
-            ))}
-            {metrics.leadsBySource.length === 0 && <p className="text-sm text-gray-500">Sem dados.</p>}
-          </div>
-        </Card>
-        <Card className="p-5">
-          <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Conversões por plataforma</h3>
-          <div className="space-y-2">
-            {metrics.conversionsByPlatform.map(p => (
-              <div key={p.platform} className="flex items-center justify-between">
-                <span className="text-sm font-medium">{p.platform}</span>
-                <span className="font-bold">{p.count}</span>
-              </div>
-            ))}
-            {metrics.conversionsByPlatform.length === 0 && <p className="text-sm text-gray-500">Nenhum evento enviado.</p>}
-          </div>
-        </Card>
-      </div>
-
-      {/* Leads por etapa */}
-      <Card className="p-5">
-        <h3 className="text-sm font-bold text-gray-500 uppercase mb-4">Leads por etapa</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {metrics.leadsByStage.map(s => (
-            <div key={s.stage} className="rounded-xl bg-gray-50 p-3">
-              <p className="font-semibold text-sm">{stageLabel(s.stage)}</p>
-              <p className="text-xs text-gray-500">{s.count} leads</p>
             </div>
-          ))}
-        </div>
-      </Card>
+          </div>
+        </PremiumSurface>
 
-      {/* Insights */}
-      <Card className="p-6">
-        <InsightsPanel />
-      </Card>
+        <PremiumSurface className="p-5 lg:p-6">
+          <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <PremiumSectionTitle eyebrow="Filtros avançados" title="Recorte os dados do cockpit" action={<div className="flex items-center gap-2"><Filter size={18} className="text-solar-orange" /><ContextHint text="Use quando precisar investigar um canal, etapa ou período específico. A aplicação recalcula métricas, gráficos e listas com o mesmo recorte." /></div>} />
+            <div className="flex flex-wrap gap-2">
+              {quickRanges.map((range) => <button key={range.days} type="button" onClick={() => setQuickRange(range.days)} className="rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:border-orange-200 hover:bg-orange-50">{range.label}</button>)}
+              <button type="button" onClick={clearFilters} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 shadow-sm transition hover:border-red-200 hover:bg-red-50"><RotateCcw size={14} /> Limpar</button>
+            </div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+            <FilterField label="Início"><input className={fieldClass} type="date" value={draftFilters.startDate} onChange={(event) => setDraftFilters((current) => ({ ...current, startDate: event.target.value }))} /></FilterField>
+            <FilterField label="Fim"><input className={fieldClass} type="date" value={draftFilters.endDate} onChange={(event) => setDraftFilters((current) => ({ ...current, endDate: event.target.value }))} /></FilterField>
+            <FilterField label="Etapa"><select className={fieldClass} value={draftFilters.stage} onChange={(event) => setDraftFilters((current) => ({ ...current, stage: event.target.value }))}><option value="">Todas</option>{stageOptions.map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></FilterField>
+            <FilterField label="Origem"><select className={fieldClass} value={draftFilters.source} onChange={(event) => setDraftFilters((current) => ({ ...current, source: event.target.value }))}><option value="">Todas</option>{sourceOptions.map((source) => <option key={source} value={source}>{source}</option>)}</select></FilterField>
+            <FilterField label="Plataforma"><select className={fieldClass} value={draftFilters.platform} onChange={(event) => setDraftFilters((current) => ({ ...current, platform: event.target.value }))}><option value="">Todas</option>{platformOptions.map((platform) => <option key={platform} value={platform}>{platform}</option>)}</select></FilterField>
+            <FilterField label="Atividade"><select className={fieldClass} value={draftFilters.activityType} onChange={(event) => setDraftFilters((current) => ({ ...current, activityType: event.target.value }))}><option value="">Todas</option>{Object.entries(activityLabels).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></FilterField>
+          </div>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm font-bold text-slate-500">{activeFilterCount ? `${activeFilterCount} filtro(s) aplicado(s)` : 'Sem filtros: visão geral completa.'}</p>
+            <button type="button" onClick={() => setAppliedFilters(draftFilters)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3 text-sm font-black text-white shadow-xl shadow-slate-900/20 transition hover:-translate-y-0.5 hover:bg-slate-800"><RefreshCw size={16} /> Aplicar filtros</button>
+          </div>
+        </PremiumSurface>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <PremiumMetricCard title="Novos hoje" value={numberFmt(metrics.newLeadsToday)} description="Entradas criadas hoje" icon={<Users size={20} />} accent="orange" />
+          <PremiumMetricCard title="Sem follow-up" value={numberFmt(metrics.leadsWithoutFollowup)} description="Leads sem próxima ação válida" icon={<BellRing size={20} />} accent="red" />
+          <PremiumMetricCard title="Tarefas vencidas" value={numberFmt(metrics.overdueTasks)} description="Pendências já atrasadas" icon={<Clock3 size={20} />} accent="red" />
+          <PremiumMetricCard title="Propostas abertas" value={numberFmt(metrics.openProposals)} description="Negociações em proposta" icon={<Target size={20} />} accent="green" />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <PremiumMetricCard title="Valor aberto" value={formatCurrency(openValue)} description="Oportunidades abertas" icon={<DollarSign size={20} />} accent="orange" />
+          <PremiumMetricCard title="Valor ganho" value={formatCurrency(wonValue)} description="Oportunidades ganhas" icon={<CheckCircle2 size={20} />} accent="green" />
+          <PremiumMetricCard title="Valor anual aceito" value={formatCurrency(acceptedAnnual)} description="Economia anual em propostas aceitas" icon={<TrendingUp size={20} />} accent="green" />
+          <PremiumMetricCard title="Taxa visual" value={totalPipeline ? `${Math.round((wonValue / totalPipeline) * 100)}%` : '0%'} description="Ganho sobre aberto + ganho" icon={<Gauge size={20} />} accent="slate" />
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <PremiumSurface className="p-6">
+            <PremiumSectionTitle eyebrow="Pipeline vivo" title="Distribuição por etapa" action={<div className="flex items-center gap-2"><Layers3 size={18} className="text-solar-orange" /><ContextHint text="Mostra onde os leads estão concentrados. Com filtros, ajuda a ver gargalos por período, origem ou plataforma." /></div>} />
+            <div className="mt-6 h-[340px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stageData} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700 }} angle={-18} textAnchor="end" interval={0} />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 12, fontWeight: 700 }} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="value" name="Leads" radius={[14, 14, 4, 4]}>{stageData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}</Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </PremiumSurface>
+
+          <PremiumSurface className="p-6">
+            <PremiumSectionTitle eyebrow="Aquisição" title="Canais de origem" action={<MousePointer2 size={18} className="text-emerald-600" />} />
+            <div className="mt-6 space-y-4">
+              {sourceData.map((item, index) => {
+                const max = Math.max(...sourceData.map((source) => source.leads), 1);
+                return <div key={item.source} className="rounded-3xl border border-white/70 bg-white/70 p-4"><div className="flex items-center justify-between text-sm font-black"><span>{item.source}</span><span>{numberFmt(item.leads)}</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-slate-200"><motion.div initial={{ width: 0 }} animate={{ width: `${Math.max(8, (item.leads / max) * 100)}%` }} transition={{ duration: 0.8, delay: index * 0.05 }} className="h-full rounded-full bg-gradient-to-r from-orange-500 to-emerald-500" /></div></div>;
+              })}
+              {!sourceData.length && <p className="text-sm font-bold text-slate-500">Nenhuma origem encontrada neste recorte.</p>}
+            </div>
+          </PremiumSurface>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
+          <PremiumSurface className="p-6">
+            <PremiumSectionTitle eyebrow="Funil" title="Composição do funil" action={<Radar size={18} className="text-slate-900" />} />
+            <div className="mt-6 h-[220px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={stageData} dataKey="value" nameKey="name" innerRadius={55} outerRadius={92} paddingAngle={3}>{stageData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}</Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </PremiumSurface>
+
+          <PremiumSurface className="p-6">
+            <PremiumSectionTitle eyebrow="Atenção comercial" title="Leads que precisam de decisão" action={<div className="flex items-center gap-2"><AlertTriangle size={18} className="text-alert-red" /><ContextHint text="Lista priorizada por tarefa vencida, falta de próxima ação e lead parado. É a fila operacional para o time não perder receita." /></div>} />
+            <div className="mt-6 grid gap-3">
+              {(commercial?.attentionLeads ?? []).map((lead) => <div key={lead.id} className="group rounded-3xl border border-white/70 bg-white/75 p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl"><div className="flex items-start justify-between gap-4"><div><p className="text-sm font-black text-slate-900">{lead.name}</p><p className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-slate-400">{stageLabels[lead.stage]}</p></div><span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-600">{lead.reason}</span></div><div className="mt-3 flex items-center justify-between text-xs font-bold text-slate-500"><span>Atualizado {new Date(lead.updatedAt).toLocaleDateString('pt-BR')}</span><ArrowRight size={14} className="transition group-hover:translate-x-1" /></div></div>)}
+              {!(commercial?.attentionLeads ?? []).length && <p className="rounded-3xl border border-emerald-100 bg-emerald-50 p-4 text-sm font-bold text-emerald-700">Nenhum lead crítico neste recorte.</p>}
+            </div>
+          </PremiumSurface>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-2">
+          <PremiumSurface className="p-6">
+            <PremiumSectionTitle eyebrow="Conversão" title="Conversões por plataforma" action={<Flame size={18} className="text-solar-orange" />} />
+            <div className="mt-6 h-[280px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={platformData} layout="vertical" margin={{ left: 20, right: 20 }}><CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" /><XAxis type="number" allowDecimals={false} tick={{ fontSize: 12, fontWeight: 700 }} /><YAxis type="category" dataKey="platform" tick={{ fontSize: 12, fontWeight: 800 }} width={90} /><Tooltip content={<CustomTooltip />} /><Bar dataKey="conversions" name="Conversões" radius={[0, 14, 14, 0]} fill="#f97316" /></BarChart></ResponsiveContainer></div>
+          </PremiumSurface>
+
+          <PremiumSurface className="p-6">
+            <PremiumSectionTitle eyebrow="Atividade recente" title="Eventos por tipo" action={<div className="flex items-center gap-2"><Activity size={18} className="text-solar-orange" /><ContextHint text="Agrupa os últimos eventos exibidos. O filtro por tipo de atividade serve para auditar comunicação, propostas e automações." /></div>} />
+            <div className="mt-6 h-[280px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={eventsByType} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}><CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" /><XAxis dataKey="type" tick={{ fontSize: 12, fontWeight: 800 }} /><YAxis allowDecimals={false} /><Tooltip content={<CustomTooltip />} /><Bar dataKey="count" name="Eventos" radius={[14, 14, 4, 4]} fill="#16a34a" /></BarChart></ResponsiveContainer></div>
+          </PremiumSurface>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+          <PremiumSurface className="p-6">
+            <PremiumSectionTitle eyebrow="Valor por etapa" title="Pipeline financeiro estimado" action={<div className="flex items-center gap-2"><LineChart size={18} className="text-slate-900" /><ContextHint text="Soma o valor esperado das oportunidades abertas por etapa. Use para priorizar onde uma ação comercial mexe mais no dinheiro." /></div>} />
+            <div className="mt-6 space-y-4">
+              {(commercial?.stageBreakdown ?? []).map((stage, index) => {
+                const share = commercialStageValue ? Math.max(6, Math.round((stage.value / commercialStageValue) * 100)) : 0;
+                return <div key={stage.stage} className="rounded-3xl border border-white/70 bg-white/70 p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black text-slate-900">{stageLabels[stage.stage]}</p><p className="text-xs font-bold text-slate-400">{numberFmt(stage.count)} leads</p></div><strong className="text-sm text-slate-700">{formatCurrency(stage.value)}</strong></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200/70"><motion.div initial={{ width: 0 }} animate={{ width: `${share}%` }} transition={{ duration: 0.8, delay: index * 0.05 }} className="h-full rounded-full bg-gradient-to-r from-slate-900 via-orange-500 to-emerald-500" /></div></div>;
+              })}
+            </div>
+          </PremiumSurface>
+
+          <PremiumSurface className="p-6">
+            <PremiumSectionTitle eyebrow="Últimos movimentos" title="Últimos movimentos do CRM" action={<CalendarDays size={18} className="text-emerald-600" />} />
+            <div className="mt-6 space-y-3">
+              {(metrics.recentEvents ?? []).map((event) => <div key={event.id} className="rounded-3xl border border-white/70 bg-white/75 p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-black text-slate-900">{activityLabels[event.activityType]}</p><p className="mt-1 line-clamp-2 text-sm font-semibold text-slate-500">{event.outcome || event.notes || 'Sem descrição'}</p></div><span className="whitespace-nowrap text-xs font-black text-slate-400">{new Date(event.createdAt).toLocaleDateString('pt-BR')}</span></div></div>)}
+              {!metrics.recentEvents.length && <p className="rounded-3xl border border-slate-100 bg-white/70 p-4 text-sm font-bold text-slate-500">Nenhum movimento recente neste recorte.</p>}
+            </div>
+          </PremiumSurface>
+        </div>
+      </div>
     </div>
   );
 }
