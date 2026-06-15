@@ -60,6 +60,29 @@ export interface CrmApi {
   listDashboardMetrics(filters?: DashboardMetricFilters): Promise<DashboardMetrics>;
   listDashboardMetrics(): Promise<DashboardMetrics>;
   getAnalyticsOverview(filters?: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage }): Promise<CrmAnalyticsOverview>;
+  getInsights(days?: number): Promise<{
+    generatedAt: string;
+    period: string;
+    insights: Array<{
+      id: string;
+      type: 'pattern' | 'recommendation' | 'alert' | 'opportunity';
+      priority: 'high' | 'medium' | 'low';
+      title: string;
+      description: string;
+      metric?: string;
+      trend?: 'up' | 'down' | 'stable';
+      comparison?: string;
+      action?: string;
+      category: 'conversion' | 'source' | 'timing' | 'pipeline';
+    }>;
+    summary: {
+      totalLeads: number;
+      conversionRate: number;
+      avgTimeToConvert: number;
+      topSource: string;
+      bottleneck: string;
+    };
+  }>;
   listFollowUps(filters?: { status?: FollowUpStatus; ruleKey?: string; limit?: number }): Promise<FollowUpQueueItem[]>;
   runFollowUpRules(): Promise<FollowUpRuleRunResult>;
   skipFollowUp(id: string, reason?: string): Promise<FollowUpQueueItem>;
@@ -650,6 +673,55 @@ export class HttpCrmApi implements CrmApi {
       ...body.metrics,
       recentEvents: body.metrics.recentEvents.map(mapActivity),
     };
+  }
+
+  async getInsights(days: number = 30): Promise<{
+    generatedAt: string;
+    period: string;
+    insights: Array<{
+      id: string;
+      type: 'pattern' | 'recommendation' | 'alert' | 'opportunity';
+      priority: 'high' | 'medium' | 'low';
+      title: string;
+      description: string;
+      metric?: string;
+      trend?: 'up' | 'down' | 'stable';
+      comparison?: string;
+      action?: string;
+      category: 'conversion' | 'source' | 'timing' | 'pipeline';
+    }>;
+    summary: {
+      totalLeads: number;
+      conversionRate: number;
+      avgTimeToConvert: number;
+      topSource: string;
+      bottleneck: string;
+    };
+  }> {
+    const query = new URLSearchParams({ days: String(days) });
+    return requestJson<{
+      generatedAt: string;
+      period: string;
+      insights: Array<{
+        id: string;
+        type: 'pattern' | 'recommendation' | 'alert' | 'opportunity';
+        priority: 'high' | 'medium' | 'low';
+        title: string;
+        description: string;
+        metric?: string;
+        trend?: 'up' | 'down' | 'stable';
+        comparison?: string;
+        action?: string;
+        category: 'conversion' | 'source' | 'timing' | 'pipeline';
+      }>;
+      summary: {
+        totalLeads: number;
+        conversionRate: number;
+        avgTimeToConvert: number;
+        topSource: string;
+        bottleneck: string;
+      };
+    }>(`/api/analytics/insights?${query}`);
   }
 
   async getAnalyticsOverview(filters: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage } = {}): Promise<CrmAnalyticsOverview> {

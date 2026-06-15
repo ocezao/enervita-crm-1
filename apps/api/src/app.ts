@@ -22,6 +22,8 @@ import { registerAdsRoutes } from './modules/ads/ads.routes.ts';
 import { createPgAdsRepository, createStaticAdsRepository, type AdsRepository } from './modules/ads/repository.ts';
 import { registerAnalyticsRoutes } from './modules/analytics/analytics.routes.ts';
 import { createPgAnalyticsRepository, createStaticAnalyticsRepository, type AnalyticsRepository } from './modules/analytics/repository.ts';
+import { registerInsightsRoutes } from './modules/analytics/analytics-insights.routes.ts';
+import { createPgInsightsRepository, createStaticInsightsRepository, type InsightsRepository } from './modules/analytics/insights.repository.ts';
 import { registerAiRoutes } from './modules/ai/ai.routes.ts';
 import { createPgAiSqlRunner, type AiSqlRunner } from './modules/ai/ai.service.ts';
 import type { AiConfig } from './config/env.ts';
@@ -38,6 +40,7 @@ export type CreateAppOptions = {
   integrationsRepository?: IntegrationsRepository;
   adsRepository?: AdsRepository;
   analyticsRepository?: AnalyticsRepository;
+  insightsRepository?: InsightsRepository;
   aiConfig?: AiConfig;
   aiSqlRunner?: AiSqlRunner;
   aiFetchImpl?: typeof fetch;
@@ -60,6 +63,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   const integrationsRepository = options.integrationsRepository ?? (options.userRepository ? createStaticIntegrationsRepository() : createPgIntegrationsRepository(env.databaseUrl, env.n8nDatabaseUrl));
   const adsRepository = options.adsRepository ?? (options.userRepository ? createStaticAdsRepository() : createPgAdsRepository(env.databaseUrl, env.metaAds));
   const analyticsRepository = options.analyticsRepository ?? (options.userRepository ? createStaticAnalyticsRepository() : createPgAnalyticsRepository(env.databaseUrl));
+  const insightsRepository = options.insightsRepository ?? (options.userRepository ? createStaticInsightsRepository() : createPgInsightsRepository(env.databaseUrl));
   const aiSqlRunner = options.aiSqlRunner ?? createPgAiSqlRunner(env.databaseUrl);
   const sessionSecret = options.sessionSecret ?? env.sessionSecret;
   const secureCookies = options.secureCookies ?? env.nodeEnv === 'production';
@@ -77,6 +81,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   void registerProposalsRoutes(app, { userRepository, proposalsRepository, sessionSecret });
   void registerAdsRoutes(app, { userRepository, adsRepository, sessionSecret });
   void registerAnalyticsRoutes(app, { userRepository, analyticsRepository, sessionSecret });
+  void registerInsightsRoutes(app, { userRepository, insightsRepository, sessionSecret });
   void registerAiRoutes(app, { userRepository, sessionSecret, aiConfig: options.aiConfig ?? env.ai, sqlRunner: aiSqlRunner, fetchImpl: options.aiFetchImpl });
 
   app.addHook('onClose', async () => {
@@ -91,6 +96,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
     await integrationsRepository.close?.();
     await adsRepository.close?.();
     await analyticsRepository.close?.();
+    await insightsRepository.close?.();
     await aiSqlRunner.close?.();
   });
 
