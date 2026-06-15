@@ -287,13 +287,14 @@ export function createPgDashboardRepository(databaseUrl: string): DashboardRepos
       const eventLeadFilter = leadFilterSql(eventParams, allowedStages, filters);
       const eventTypeFilter = filters.activityType ? ` and a.activity_type = ${pushParam(eventParams, filters.activityType)}::activity_type` : '';
 
-      const [newLeads, noFollowup, overdueTasks, openProposals, bySource, byStage, byPlatform, recentEvents] = await Promise.all([
+      const [newLeads, noFollowup, overdueTasks, openProposals, bySource, byStage, bySeller, byPlatform, recentEvents] = await Promise.all([
         pool.query(`select count(*)::int as count from leads l where l.tenant_id = $1 and l.created_at >= current_date${todayFilter}`, todayParams),
         pool.query(`select count(*)::int as count from leads l where l.tenant_id = $1 and l.stage <> 'perdido' and (l.next_action_at is null or l.next_action_at < now())${leadFilter}`, leadParams),
         pool.query(`select count(*)::int as count from tasks t where t.tenant_id = $1 and t.status in ('pendente', 'atrasado') and t.due_date is not null and t.due_date < now()`, taskParams),
         pool.query(`select count(*)::int as count from proposals p where p.tenant_id = $1 and p.status in ('draft', 'sent')`, [tenantId]),
         pool.query(`select coalesce(nullif(l.lead_source, ''), 'desconhecido') as source, count(*)::int as count from leads l where l.tenant_id = $1${leadFilter} group by 1 order by count desc, source asc limit 8`, leadParams),
         pool.query(`select l.stage::text as stage, count(*)::int as count from leads l where l.tenant_id = $1${leadFilter} group by l.stage order by count desc`, leadParams),
+        pool.query(`select coalesce(u.name, 'Sem vendedor') as name, count(*)::int as count from leads l left join users u on u.id = l.sdr_owner_id where l.tenant_id = $1${leadFilter} group by u.name order by count desc`, leadParams),
         pool.query(`select coalesce(nullif(t.platform, ''), 'desconhecido') as platform, count(*)::int as count from tracking_events t left join leads l on l.tenant_id = t.tenant_id and l.id = t.lead_id where t.tenant_id = $1 and t.status = 'sent'${platformLeadFilter}${platformFilter} group by 1 order by count desc, platform asc limit 6`, platformParams),
         pool.query(`select a.id,
                            a.tenant_id as "tenantId",
@@ -320,6 +321,7 @@ export function createPgDashboardRepository(databaseUrl: string): DashboardRepos
         openProposals: countValue(openProposals.rows[0]),
         leadsBySource: bySource.rows,
         leadsByStage: byStage.rows,
+        leadsBySeller: bySeller.rows,
         conversionsByPlatform: byPlatform.rows,
         recentEvents: recentEvents.rows.map(rowToActivity),
         commercial,

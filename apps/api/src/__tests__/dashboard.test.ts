@@ -46,6 +46,7 @@ function makeMetrics(): DashboardMetrics {
     leadsBySource: [{ source: 'site', count: 3 }],
     leadsByStage: [{ stage: 'novo_lead', count: 2 }, { stage: 'proposta_enviada', count: 1 }],
     conversionsByPlatform: [{ platform: 'meta', count: 2 }],
+      leadsBySeller: [{ name: 'Cleyton', count: 2 }],
     commercial: {
       openOpportunityValue: 10000,
       wonOpportunityValue: 5000,

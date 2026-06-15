@@ -620,7 +620,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
       const result = await pool.query(
         `${leadSelect}
           where l.tenant_id = $1${stageClause(allowedStages, 2)}${ownerClause(ownerUserId, 2 + stageParams(allowedStages).length)}${tagFilter.clause}
-          order by l.updated_at desc, l.created_at desc`,
+          order by l.created_at desc`,
         [...baseParams, ...tagFilter.params],
       );
       return result.rows.map(rowToLead);
@@ -813,7 +813,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         const beforeResult = await client.query(
           `${leadSelect}
             where l.tenant_id = $1 and l.id = any($2::uuid[])${stageClause(allowedStages, 3)}${ownerClause(ownerUserId, 3 + stageParams(allowedStages).length)}
-            order by l.updated_at desc, l.created_at desc
+            order by l.created_at desc
             for update of l, c`,
           beforeParams,
         );
@@ -842,7 +842,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         const afterResult = await client.query(
           `${leadSelect}
             where l.tenant_id = $1 and l.id = any($2::uuid[])
-            order by l.updated_at desc, l.created_at desc`,
+            order by l.created_at desc`,
           [context.tenantId, visibleIds],
         );
         const afterLeads = afterResult.rows.map(rowToLead);
@@ -886,7 +886,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         const beforeResult = await client.query(
           `${leadSelect}
             where l.tenant_id = $1 and l.id = any($2::uuid[])${stageClause(allowedStages, 3)}${ownerClause(ownerUserId, 3 + stageParams(allowedStages).length)}
-            order by l.updated_at desc, l.created_at desc
+            order by l.created_at desc
             for update of l, c`,
           beforeParams,
         );
