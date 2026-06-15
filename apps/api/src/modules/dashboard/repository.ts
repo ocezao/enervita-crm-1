@@ -39,6 +39,8 @@ export type CommercialMetrics = {
   attentionLeads: CommercialAttentionLead[];
 };
 
+export type LeadsBySeller = { name: string; count: number };
+
 export type DashboardMetrics = {
   newLeadsToday: number;
   leadsWithoutFollowup: number;
@@ -46,6 +48,7 @@ export type DashboardMetrics = {
   openProposals: number;
   leadsBySource: LeadsBySource[];
   leadsByStage: LeadsByStage[];
+  leadsBySeller: LeadsBySeller[];
   conversionsByPlatform: ConversionsByPlatform[];
   recentEvents: Activity[];
   commercial: CommercialMetrics;

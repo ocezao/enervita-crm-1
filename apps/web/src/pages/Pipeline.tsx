@@ -25,7 +25,7 @@ const stages: Array<{ id: LeadStage; label: string; limit: number; helper: strin
 
 const priorities: Array<'todas' | Priority> = ['todas', 'urgente', 'alta', 'media', 'baixa'];
 type AgingFilter = 'todos' | 'sem_proxima_acao' | 'parados_3d' | 'parados_7d';
-type SortKey = 'oldest_stage' | 'updated_desc' | 'bill_desc' | 'priority_desc';
+type SortKey = 'oldest_stage' | 'updated_desc' | 'bill_desc' | 'priority_desc' | 'created_asc';
 type KanbanContextState = { lead: Lead; nextStage?: { id: LeadStage; label: string }; lostStage?: { id: LeadStage; label: string }; x: number; y: number } | null;
 
 function visibleStagesForUser(user: ReturnType<typeof useAuth>['user']) {
@@ -78,6 +78,7 @@ function sortLeads(leads: Lead[], sort: SortKey) {
     if (sort === 'bill_desc') return (b.energyBillValue || b.estimatedTicket || 0) - (a.energyBillValue || a.estimatedTicket || 0);
     if (sort === 'priority_desc') return priorityWeight(b.priority) - priorityWeight(a.priority) || daysSince(b.updatedAt) - daysSince(a.updatedAt);
     if (sort === 'oldest_stage') return daysSince(b.updatedAt || b.createdAt) - daysSince(a.updatedAt || a.createdAt);
+    if (sort === 'created_asc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
   });
 }
@@ -193,7 +194,7 @@ export default function Pipeline() {
           <input value={minBill} onChange={(event) => setMinBill(event.target.value)} inputMode="numeric" placeholder="Conta mínima R$" className="bg-white border border-gray-200 rounded-2xl px-3 py-3 text-sm" />
           <Button variant="outline" size="sm" className="h-11 gap-2" onClick={resetFilters}><RotateCcw size={14} /> Limpar</Button>
         </div>
-        <div className="mt-3 flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs text-gray-500"><span className="flex items-center gap-2"><Filter size={14} /> {filteredLeads.length} de {visibleRawLeads.length} leads visíveis · {urgentCount} alta/urgente</span><label className="font-bold">Ordenar <select value={sort} onChange={(event) => setSort(event.target.value as SortKey)} className="border border-gray-200 rounded-xl px-2 py-1 bg-white font-medium"><option value="oldest_stage">Mais parados primeiro</option><option value="updated_desc">Atualizados recentemente</option><option value="bill_desc">Maior conta primeiro</option><option value="priority_desc">Prioridade comercial</option></select></label></div>
+        <div className="mt-3 flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs text-gray-500"><span className="flex items-center gap-2"><Filter size={14} /> {filteredLeads.length} de {visibleRawLeads.length} leads visíveis · {urgentCount} alta/urgente</span><label className="font-bold">Ordenar <select value={sort} onChange={(event) => setSort(event.target.value as SortKey)} className="border border-gray-200 rounded-xl px-2 py-1 bg-white font-medium"><option value="oldest_stage">Mais parados primeiro</option><option value="updated_desc">Atualizados recentemente</option><option value="bill_desc">Maior conta primeiro</option><option value="priority_desc">Prioridade comercial</option><option value="created_asc">Rotação (distribuição)</option></select></label></div>
       </Card>
 
       <div className="shrink-0 crm-scroll-panel overflow-x-auto pb-8 -mx-2 px-2" style={{ height: 'calc(150vh - 220px)', maxHeight: 'calc(150vh - 220px)', minHeight: 720 }}><div className="flex gap-5 h-full min-w-max">
