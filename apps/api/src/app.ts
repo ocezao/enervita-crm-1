@@ -15,6 +15,7 @@ import { registerFollowUpsRoutes } from './modules/followups/followups.routes.ts
 import { createPgDashboardRepository, type DashboardRepository } from './modules/dashboard/repository.ts';
 import { registerDashboardRoutes } from './modules/dashboard/dashboard.routes.ts';
 import { registerIntegrationsRoutes } from './modules/integrations/integrations.routes.ts';
+import { registerMetaWebhookRoutes } from './modules/integrations/metaWebhook.routes.ts';
 import { createPgIntegrationsRepository, createStaticIntegrationsRepository, type IntegrationsRepository } from './modules/integrations/repository.ts';
 import { createPgProposalsRepository, type ProposalsRepository } from './modules/proposals/repository.ts';
 import { registerProposalsRoutes } from './modules/proposals/proposals.routes.ts';
@@ -78,6 +79,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   void registerFollowUpsRoutes(app, { userRepository, followUpsRepository, sessionSecret });
   void registerDashboardRoutes(app, { userRepository, dashboardRepository, sessionSecret });
   void registerIntegrationsRoutes(app, { userRepository, integrationsRepository, sessionSecret });
+  registerMetaWebhookRoutes(app);
   void registerProposalsRoutes(app, { userRepository, proposalsRepository, sessionSecret });
   void registerAdsRoutes(app, { userRepository, adsRepository, sessionSecret });
   void registerAnalyticsRoutes(app, { userRepository, analyticsRepository, sessionSecret });
