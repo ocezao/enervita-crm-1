@@ -152,16 +152,15 @@ services:
     image: node:20-bookworm-slim
     container_name: enervita-prod-crm-meta-leadgen
     working_dir: /app
-    command: sh -lc "while true; do node scripts/sync-operational-leads-to-custom-crm.mjs; sleep ${META_LEADGEN_POLL_INTERVAL_SECONDS:-300}; done"
+    command: sh -lc "while true; do node scripts/poll-meta-leadgen-to-crm.mjs; sleep ${META_LEADGEN_POLL_INTERVAL_SECONDS:-300}; done"
     environment:
       NODE_ENV: production
-      CUSTOM_DATABASE_URL: postgres://enervita_app:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita_crm
-      OPERATIONAL_DATABASE_URL: postgres://enervita_app:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita
+      DATABASE_URL: postgres://enervita_app:${POSTGRES_PASSWORD}@enervita-postgres:5432/enervita_crm
       META_LEADGEN_POLL_INTERVAL_SECONDS: ${META_LEADGEN_POLL_INTERVAL_SECONDS:-300}
-      META_LEADGEN_CRM_API_URL: http://enervita-prod-crm-api:43123
-      META_ADS_ACCESS_TOKEN: ${META_ADS_ACCESS_TOKEN:-}
       META_LEADGEN_PAGE_ACCESS_TOKEN: ${META_LEADGEN_PAGE_ACCESS_TOKEN:-${META_PAGE_ACCESS_TOKEN:-${META_ADS_ACCESS_TOKEN:-}}}
-      META_AD_ACCOUNT_ID: ${META_AD_ACCOUNT_ID:-}
+      META_ADS_ACCESS_TOKEN: ${META_ADS_ACCESS_TOKEN:-}
+      META_PAGE_ID: ${META_PAGE_ID:-}
+      META_GRAPH_API_VERSION: ${META_GRAPH_API_VERSION:-v25.0}
       TENANT_SLUG: enervita
     volumes:
       - ./:/app
