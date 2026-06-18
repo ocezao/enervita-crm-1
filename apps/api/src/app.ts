@@ -85,6 +85,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   void registerProposalsRoutes(app, { userRepository, proposalsRepository, sessionSecret });
   void registerAdsRoutes(app, { userRepository, adsRepository, sessionSecret });
   void registerAnalyticsRoutes(app, { userRepository, analyticsRepository, sessionSecret });
+  void registerInsightsRoutes(app, { userRepository, insightsRepository, sessionSecret });
   void registerAiRoutes(app, { userRepository, sessionSecret, aiConfig: options.aiConfig ?? env.ai, sqlRunner: aiSqlRunner, fetchImpl: options.aiFetchImpl });
 
   app.addHook('onClose', async () => {
