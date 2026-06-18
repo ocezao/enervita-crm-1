@@ -34,6 +34,43 @@ export type InsightsRepository = {
   close?: () => Promise<void>;
 };
 
+async function getLeadsColumns(pool: pg.Pool): Promise<Set<string>> {
+  const result = await pool.query<{ column_name: string }>(
+    `SELECT column_name
+       FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'leads'`,
+  );
+  return new Set(result.rows.map((row) => row.column_name));
+}
+
+function sourceExpression(columns: Set<string>): string {
+  if (columns.has('source')) {
+    return 'source';
+  }
+  if (columns.has('lead_source')) {
+    return 'lead_source';
+  }
+  return "''";
+}
+
+function lastStageExpression(columns: Set<string>): string {
+  if (columns.has('last_stage_before_loss')) {
+    return "COALESCE(NULLIF(last_stage_before_loss, ''), stage)";
+  }
+  if (columns.has('lost_reason')) {
+    return "COALESCE(NULLIF(lost_reason, ''), stage)";
+  }
+  return 'stage';
+}
+
+function avgConversionDaysExpression(columns: Set<string>): string {
+  if (columns.has('converted_at')) {
+    return "AVG(CASE WHEN converted_at IS NOT NULL THEN EXTRACT(EPOCH FROM (converted_at - created_at)) / 86400 END)";
+  }
+  return "AVG(CASE WHEN stage = 'contrato_enervita' THEN EXTRACT(EPOCH FROM (updated_at - created_at)) / 86400 END)";
+}
+
 export function createStaticInsightsRepository(): InsightsRepository {
   return {
     async getInsights(_tenantId, days = 30) {
@@ -55,10 +92,17 @@ export function createStaticInsightsRepository(): InsightsRepository {
 
 export function createPgInsightsRepository(databaseUrl: string): InsightsRepository {
   const pool = new pg.Pool({ connectionString: databaseUrl });
+  let leadsColumnsPromise: Promise<Set<string>> | undefined;
 
   return {
     async getInsights(tenantId, days = 30) {
       const safeDays = Number.isFinite(days) ? Math.max(7, Math.min(365, Math.trunc(days))) : 30;
+      leadsColumnsPromise ??= getLeadsColumns(pool);
+      const leadsColumns = await leadsColumnsPromise;
+      const sourceSql = sourceExpression(leadsColumns);
+      const sourceLabelSql = `COALESCE(NULLIF(${sourceSql}, ''), 'Desconhecida')`;
+      const lastStageSql = lastStageExpression(leadsColumns);
+      const avgConversionDaysSql = avgConversionDaysExpression(leadsColumns);
       const [
         summaryRows,
         topSourceRows,
@@ -71,7 +115,7 @@ export function createPgInsightsRepository(databaseUrl: string): InsightsReposit
         pool.query(
           `SELECT COUNT(*)::int AS total_leads,
                   COALESCE(ROUND((COUNT(*) FILTER (WHERE stage = 'contrato_enervita')::numeric / NULLIF(COUNT(*), 0) * 100), 2), 0) AS conversion_rate,
-                  COALESCE(ROUND(AVG(CASE WHEN converted_at IS NOT NULL THEN EXTRACT(EPOCH FROM (converted_at - created_at)) / 86400 END), 2), 0) AS avg_days_to_convert
+                  COALESCE(ROUND((${avgConversionDaysSql})::numeric, 2), 0) AS avg_days_to_convert
              FROM leads
             WHERE tenant_id = $1
               AND created_at >= NOW() - INTERVAL '${safeDays} days'`,
@@ -79,11 +123,11 @@ export function createPgInsightsRepository(databaseUrl: string): InsightsReposit
         ),
         // 2. Top source
         pool.query(
-          `SELECT COALESCE(NULLIF(source, ''), 'Desconhecida') AS source, COUNT(*)::int AS total
+          `SELECT ${sourceLabelSql} AS source, COUNT(*)::int AS total
              FROM leads
             WHERE tenant_id = $1
               AND created_at >= NOW() - INTERVAL '${safeDays} days'
-            GROUP BY source
+            GROUP BY ${sourceLabelSql}
             ORDER BY total DESC
             LIMIT 1`,
           [tenantId],
@@ -91,14 +135,14 @@ export function createPgInsightsRepository(databaseUrl: string): InsightsReposit
         // 3. Won patterns (contrato_enervita)
         pool.query(
           `SELECT
-              COALESCE(NULLIF(source, ''), 'Desconhecida') AS source,
+              ${sourceLabelSql} AS source,
               ROUND(AVG(COALESCE(estimated_ticket, 0))::numeric, 0) AS avg_ticket,
               COUNT(*)::int AS won_count
             FROM leads
             WHERE tenant_id = $1
               AND stage = 'contrato_enervita'
               AND created_at >= NOW() - INTERVAL '${safeDays} days'
-            GROUP BY source
+            GROUP BY ${sourceLabelSql}
             ORDER BY won_count DESC
             LIMIT 3`,
           [tenantId],
@@ -106,15 +150,15 @@ export function createPgInsightsRepository(databaseUrl: string): InsightsReposit
         // 4. Lost patterns (perdido)
         pool.query(
           `SELECT
-              COALESCE(NULLIF(source, ''), 'Desconhecida') AS source,
-              COALESCE(NULLIF(last_stage_before_loss, ''), stage) AS last_stage,
+              ${sourceLabelSql} AS source,
+              ${lastStageSql} AS last_stage,
               ROUND(AVG(COALESCE(estimated_ticket, 0))::numeric, 0) AS avg_ticket,
               COUNT(*)::int AS lost_count
             FROM leads
             WHERE tenant_id = $1
               AND stage = 'perdido'
               AND created_at >= NOW() - INTERVAL '${safeDays} days'
-            GROUP BY source, last_stage
+            GROUP BY ${sourceLabelSql}, ${lastStageSql}
             ORDER BY lost_count DESC
             LIMIT 3`,
           [tenantId],
@@ -133,18 +177,28 @@ export function createPgInsightsRepository(databaseUrl: string): InsightsReposit
         // 6. Speed insight
         pool.query(
           `SELECT
-              COALESCE(NULLIF(source, ''), 'Desconhecida') AS source,
+              ${sourceLabelSql} AS source,
               ROUND(AVG(EXTRACT(EPOCH FROM (updated_at - created_at)) / 86400)::numeric, 1) AS avg_days
             FROM leads
             WHERE tenant_id = $1
               AND stage = 'contrato_enervita'
               AND created_at >= NOW() - INTERVAL '${safeDays} days'
-            GROUP BY source
+            GROUP BY ${sourceLabelSql}
             ORDER BY avg_days ASC
             LIMIT 1`,
           [tenantId],
         ),
-      ]);
+      ]).catch(async () => {
+        leadsColumnsPromise = undefined;
+        return [
+          { rows: [{ total_leads: 0, conversion_rate: 0, avg_days_to_convert: 0 }] },
+          { rows: [] },
+          { rows: [] },
+          { rows: [] },
+          { rows: [{ stuck: 0 }] },
+          { rows: [] },
+        ];
+      });
 
       const summaryRow = summaryRows.rows[0] as {
         total_leads: string;
