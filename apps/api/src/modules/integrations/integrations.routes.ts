@@ -40,7 +40,17 @@ export async function registerIntegrationsRoutes(app: FastifyInstance, options: 
 
 
   app.get('/api/automations/n8n-workflows', { preHandler: automationsPreHandler }, async () => {
-    return { workflows: await options.integrationsRepository.listN8nWorkflows() };
+    try {
+      return { workflows: await options.integrationsRepository.listN8nWorkflows() };
+    } catch (error) {
+      if (error instanceof N8nUnavailableError) {
+        return {
+          workflows: [],
+          message: error.message,
+        };
+      }
+      throw error;
+    }
   });
 
   app.patch('/api/automations/n8n-workflows/:id', { preHandler: automationManagePreHandler }, async (request, reply) => {

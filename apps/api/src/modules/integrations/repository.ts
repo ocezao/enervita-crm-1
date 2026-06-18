@@ -436,8 +436,13 @@ export function createPgIntegrationsRepository(databaseUrl: string, n8nDatabaseU
     },
 
     async listN8nWorkflows() {
-      const result = await requireN8nPool(n8nPool).query(`select id, name, active, "activeVersionId", "versionId", "triggerCount", "updatedAt"::text as "updatedAt", nodes, description, "isArchived" from workflow_entity where coalesce("isArchived", false) = false order by name`);
-      return result.rows.map(rowToN8nWorkflow);
+      try {
+        const result = await requireN8nPool(n8nPool).query(`select id, name, active, "activeVersionId", "versionId", "triggerCount", "updatedAt"::text as "updatedAt", nodes, description, "isArchived" from workflow_entity where coalesce("isArchived", false) = false order by name`);
+        return result.rows.map(rowToN8nWorkflow);
+      } catch (error) {
+        if (error instanceof N8nUnavailableError) throw error;
+        throw new N8nUnavailableError('Integração operacional temporariamente indisponível para leitura de fluxos.');
+      }
     },
 
     async setN8nWorkflowActive(id, active) {

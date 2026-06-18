@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import bcrypt from 'bcryptjs';
 import { createApp } from '../app.ts';
+import { N8nUnavailableError } from '../modules/integrations/repository.ts';
 import type { AuthUser, UserRepository } from '../modules/auth/userRepository.ts';
 
 const SESSION_SECRET = 'test-secret-automations-webhooks-1234567890';
@@ -53,6 +54,31 @@ test('GET /api/automations requires page.automations and returns operational aut
   const body = response.json();
   assert.ok(Array.isArray(body.automations));
   assert.ok(body.automations.some((rule: { id: string; trigger: string; status: string }) => rule.id === 'lead-no-followup-12h' && rule.trigger === 'lead.no_followup_12h' && rule.status === 'planned'));
+});
+
+test('GET /api/automations/n8n-workflows degrades when operational integration is unavailable', async (t) => {
+  const app = createApp({
+    userRepository: makeUserRepository(makeAuthUser()),
+    sessionSecret: SESSION_SECRET,
+    integrationsRepository: {
+      async listAutomations() { return []; },
+      async listWebhooks() { return []; },
+      async listN8nWorkflows() { throw new N8nUnavailableError('Integração operacional ainda não está conectada ao CRM.'); },
+      async setN8nWorkflowActive() { throw new Error('not used'); },
+      async listWebhookDeliveries() { return []; },
+      async runAutomation() { throw new Error('not used'); },
+      async testWebhook() { throw new Error('not used'); },
+      async close() {},
+    },
+  });
+  t.after(async () => app.close());
+  const cookie = await loginAndGetCookie(app);
+
+  const response = await app.inject({ method: 'GET', url: '/api/automations/n8n-workflows', headers: { cookie } });
+
+  assert.equal(response.statusCode, 200);
+  assert.deepEqual(response.json().workflows, []);
+  assert.match(response.json().message, /Integração operacional/);
 });
 
 test('GET /api/webhooks requires page.webhooks and returns webhook catalog without secrets', async (t) => {

@@ -442,7 +442,7 @@ function stageParams(allowedStages: PipelineStageKey[] | null): unknown[] {
 }
 
 function ownerClause(ownerUserId: string | null, offset: number): string {
-  return ownerUserId === null ? '' : ` and l.sdr_owner_id = ${offset}::uuid`;
+  return ownerUserId === null ? '' : ` and l.sdr_owner_id = $${offset}::uuid`;
 }
 
 function ownerParams(ownerUserId: string | null): unknown[] {

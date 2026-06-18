@@ -18,6 +18,13 @@ function cacheControlFor(reqUrl, contentType) {
   return "public, max-age=3600";
 }
 
+function applySecurityHeaders(responseHeaders) {
+  responseHeaders["content-security-policy"] = responseHeaders["content-security-policy"] || "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https://crm.enervita.com.br https://analytics.enervita.com.br https://n8n.enervita.com.br; frame-ancestors 'self'; base-uri 'self'; form-action 'self'";
+  responseHeaders["permissions-policy"] = responseHeaders["permissions-policy"] || "camera=(), microphone=(), geolocation=(), payment=()";
+  responseHeaders["x-content-type-options"] = responseHeaders["x-content-type-options"] || "nosniff";
+  responseHeaders["referrer-policy"] = responseHeaders["referrer-policy"] || "strict-origin-when-cross-origin";
+}
+
 function proxy(req, res, target) {
   const url = new URL(req.url, target);
   const upstreamHost = req.headers.host || url.host;
@@ -26,6 +33,7 @@ function proxy(req, res, target) {
     const responseHeaders = { ...upstreamRes.headers };
     responseHeaders["cache-control"] = cacheControlFor(req.url, responseHeaders["content-type"]);
     responseHeaders["pragma"] = responseHeaders["cache-control"] === "no-store" ? "no-cache" : undefined;
+    applySecurityHeaders(responseHeaders);
     for (const [key, value] of Object.entries(responseHeaders)) {
       if (value === undefined) delete responseHeaders[key];
     }
