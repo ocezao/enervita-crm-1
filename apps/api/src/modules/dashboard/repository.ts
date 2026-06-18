@@ -74,8 +74,8 @@ function pushParam(params: unknown[], value: unknown): string {
 }
 
 function appendLeadFilters(clauses: string[], params: unknown[], filters: DashboardFilters = {}, alias = 'l'): void {
-  if (filters.startDate) clauses.push(`${alias}.created_at >= ${pushParam(params, filters.startDate)}::date`);
-  if (filters.endDate) clauses.push(`${alias}.created_at < (${pushParam(params, filters.endDate)}::date + interval '1 day')`);
+  if (filters.startDate) clauses.push(`(${alias}.created_at at time zone 'America/Sao_Paulo')::date >= ${pushParam(params, filters.startDate)}::date`);
+  if (filters.endDate) clauses.push(`(${alias}.created_at at time zone 'America/Sao_Paulo')::date <= ${pushParam(params, filters.endDate)}::date`);
   if (filters.stage) clauses.push(`${alias}.stage = ${pushParam(params, filters.stage)}::lead_stage`);
   if (filters.source) clauses.push(`coalesce(nullif(${alias}.lead_source, ''), 'desconhecido') = ${pushParam(params, filters.source)}`);
   if (filters.platform) clauses.push(`exists (select 1 from tracking_events tf where tf.tenant_id = ${alias}.tenant_id and tf.lead_id = ${alias}.id and tf.status = 'sent' and coalesce(nullif(tf.platform, ''), 'desconhecido') = ${pushParam(params, filters.platform)})`);
@@ -85,20 +85,19 @@ function appendStageScope(clauses: string[], params: unknown[], allowedStages: P
   if (allowedStages !== null) clauses.push(`${alias}.stage = any(${pushParam(params, allowedStages)}::lead_stage[])`);
 }
 
-function andSql(clauses: string[]): string {
-  return clauses.length ? ` and ${clauses.join(' and ')}` : '';
+function filteredLeadsCte(params: unknown[], allowedStages: PipelineStageKey[] | null, filters: DashboardFilters = {}): string {
+  const clauses: string[] = ['l.tenant_id = $1'];
+  appendStageScope(clauses, params, allowedStages, 'l');
+  appendLeadFilters(clauses, params, filters, 'l');
+  return `with filtered_leads as (
+    select l.*
+      from leads l
+     where ${clauses.join(' and ')}
+  )`;
 }
 
-function whereSql(clauses: string[]): string {
-  return clauses.length ? ` where ${clauses.join(' and ')}` : '';
-}
-
-function leadFilterSql(params: unknown[], allowedStages: PipelineStageKey[] | null, filters: DashboardFilters = {}, alias = 'l'): string {
-  const clauses: string[] = [];
-  appendStageScope(clauses, params, allowedStages, alias);
-  appendLeadFilters(clauses, params, filters, alias);
-  return andSql(clauses);
-}
+const pipelineOrderSql = `array_position(array['novo_lead','qualificacao','atendimento_iniciado','conta_recebida','diagnostico','proposta_enviada','contrato_enervita','perdido']::lead_stage[], fl.stage)`;
+const opportunityValueSql = 'coalesce(nullif(fl.estimated_ticket, 0), nullif(fl.energy_bill_value, 0), 0)';
 
 function countValue(row: Record<string, unknown> | undefined): number {
   const raw = row?.count;
@@ -142,98 +141,99 @@ function intValue(value: unknown): number {
  * leads.stage, leads.energy_bill_value, and lead_stage_history.
  */
 async function getCommercialMetrics(pool: pg.Pool, tenantId: string, allowedStages: PipelineStageKey[] | null, filters: DashboardFilters = {}): Promise<CommercialMetrics> {
-  // --- Pipeline value from leads with energy_bill_value ---
   const valueParams: unknown[] = [tenantId];
-  const valueFilter = leadFilterSql(valueParams, allowedStages, filters);
+  const valueCte = filteredLeadsCte(valueParams, allowedStages, filters);
   const valueResult = await pool.query(
-    `select
-       coalesce(sum(l.energy_bill_value) filter (where l.stage not in ('perdido', 'contrato_enervita')), 0)::numeric as "openValue",
-       coalesce(sum(l.energy_bill_value) filter (where l.stage = 'contrato_enervita'), 0)::numeric as "wonValue",
-       count(*) filter (where l.stage not in ('perdido', 'contrato_enervita'))::int as "openCount",
-       count(*) filter (where l.stage = 'contrato_enervita')::int as "wonCount"
-     from leads l
-     where l.tenant_id = $1 ${valueFilter}`,
+    `${valueCte}
+     select
+       coalesce(sum(${opportunityValueSql}) filter (where fl.stage not in ('perdido', 'contrato_enervita')), 0)::numeric as "openValue",
+       coalesce(sum(${opportunityValueSql}) filter (where fl.stage = 'contrato_enervita'), 0)::numeric as "wonValue",
+       count(*) filter (where fl.stage not in ('perdido', 'contrato_enervita'))::int as "openCount",
+       count(*) filter (where fl.stage = 'contrato_enervita')::int as "wonCount"
+     from filtered_leads fl`,
     valueParams,
   );
 
-  // --- Proposals ---
+  const proposalParams: unknown[] = [tenantId];
+  const proposalCte = filteredLeadsCte(proposalParams, allowedStages, filters);
   const proposalResult = await pool.query(
-    `select count(*) filter (where p.status in ('draft', 'sent'))::int as "openProposals",
+    `${proposalCte}
+     select count(*) filter (where p.status in ('draft', 'sent'))::int as "openProposals",
             count(*) filter (where p.status = 'accepted')::int as "acceptedProposals",
             coalesce(sum(p.projected_annual_savings) filter (where p.status = 'accepted'), 0)::text as "acceptedAnnualValue"
        from proposals p
+       join filtered_leads fl on fl.tenant_id = p.tenant_id and fl.id = p.lead_id
       where p.tenant_id = $1`,
-    [tenantId],
+    proposalParams,
   );
 
-  // --- Overdue tasks ---
+  const taskParams: unknown[] = [tenantId];
+  const taskCte = filteredLeadsCte(taskParams, allowedStages, filters);
   const taskResult = await pool.query(
-    `select count(*)::int as count
+    `${taskCte}
+     select count(*)::int as count
        from tasks t
+       join filtered_leads fl on fl.tenant_id = t.tenant_id and fl.id = t.lead_id
       where t.tenant_id = $1
         and t.status in ('pendente', 'atrasado')
         and t.due_date is not null
         and t.due_date < now()`,
-    [tenantId],
+    taskParams,
   );
 
-  // --- Stale / without next action ---
   const staleParams: unknown[] = [tenantId];
-  const staleFilter = leadFilterSql(staleParams, allowedStages, filters);
+  const staleCte = filteredLeadsCte(staleParams, allowedStages, filters);
   const staleResult = await pool.query(
-    `select count(*) filter (where l.next_action_at is null and l.stage <> 'perdido')::int as "withoutNextAction",
-            count(*) filter (where l.updated_at < now() - interval '7 days' and l.stage not in ('perdido', 'contrato_enervita'))::int as "staleLeads"
-       from leads l
-      where l.tenant_id = $1 ${staleFilter}`,
+    `${staleCte}
+     select count(*) filter (where fl.next_action_at is null and fl.stage <> 'perdido')::int as "withoutNextAction",
+            count(*) filter (where fl.updated_at < now() - interval '7 days' and fl.stage not in ('perdido', 'contrato_enervita'))::int as "staleLeads"
+       from filtered_leads fl`,
     staleParams,
   );
 
-  // --- Stage breakdown with lead value ---
   const stageParams: unknown[] = [tenantId];
-  const stageFilter = leadFilterSql(stageParams, allowedStages, filters);
+  const stageCte = filteredLeadsCte(stageParams, allowedStages, filters);
   const stageBreakdown = await pool.query(
-    `select l.stage::text as stage,
+    `${stageCte}
+     select fl.stage::text as stage,
             count(*)::int as count,
-            coalesce(sum(l.energy_bill_value), 0)::numeric as value
-       from leads l
-      where l.tenant_id = $1 ${stageFilter}
-      group by l.stage
-      order by count desc`,
+            coalesce(sum(${opportunityValueSql}), 0)::numeric as value
+       from filtered_leads fl
+      group by fl.stage
+      order by ${pipelineOrderSql}`,
     stageParams,
   );
 
-  // --- Attention leads ---
   const attentionParams: unknown[] = [tenantId];
-  const attentionFilter = leadFilterSql(attentionParams, allowedStages, filters);
+  const attentionCte = filteredLeadsCte(attentionParams, allowedStages, filters);
   const attentionLeads = await pool.query(
-    `select l.id,
+    `${attentionCte}
+     select fl.id,
             c.name,
-            l.stage::text as stage,
+            fl.stage::text as stage,
             case
-              when exists (select 1 from tasks t where t.tenant_id = l.tenant_id and t.lead_id = l.id and t.status not in ('concluido', 'cancelado') and t.due_date < now()) then 'Tarefa vencida'
-              when l.next_action_at is null then 'Sem próxima ação'
-              when l.updated_at < now() - interval '7 days' then 'Lead parado'
+              when exists (select 1 from tasks t where t.tenant_id = fl.tenant_id and t.lead_id = fl.id and t.status not in ('concluido', 'cancelado') and t.due_date < now()) then 'Tarefa vencida'
+              when fl.next_action_at is null then 'Sem próxima ação'
+              when fl.updated_at < now() - interval '7 days' then 'Lead parado'
               else 'Atenção'
             end as reason,
-            l.updated_at::text as "updatedAt",
-            l.next_action_at::text as "nextActionAt"
-       from leads l
-       join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id
-      where l.tenant_id = $1
-        and l.stage not in ('perdido', 'contrato_enervita')
+            fl.updated_at::text as "updatedAt",
+            fl.next_action_at::text as "nextActionAt"
+       from filtered_leads fl
+       join contacts c on c.tenant_id = fl.tenant_id and c.id = fl.contact_id
+      where fl.stage not in ('perdido', 'contrato_enervita')
         and (
-          l.next_action_at is null
-          or l.updated_at < now() - interval '7 days'
-          or exists (select 1 from tasks t where t.tenant_id = l.tenant_id and t.lead_id = l.id and t.status not in ('concluido', 'cancelado') and t.due_date < now())
+          fl.next_action_at is null
+          or fl.updated_at < now() - interval '7 days'
+          or exists (select 1 from tasks t where t.tenant_id = fl.tenant_id and t.lead_id = fl.id and t.status not in ('concluido', 'cancelado') and t.due_date < now())
         )
-        ${attentionFilter}
       order by
         case
-          when exists (select 1 from tasks t where t.tenant_id = l.tenant_id and t.lead_id = l.id and t.status not in ('concluido', 'cancelado') and t.due_date < now()) then 1
-          when l.next_action_at is null then 2
+          when exists (select 1 from tasks t where t.tenant_id = fl.tenant_id and t.lead_id = fl.id and t.status not in ('concluido', 'cancelado') and t.due_date < now()) then 1
+          when fl.next_action_at is null then 2
           else 3
         end,
-        l.updated_at asc
+        fl.updated_at asc
       limit 8`,
     attentionParams,
   );
@@ -271,44 +271,47 @@ export function createPgDashboardRepository(databaseUrl: string): DashboardRepos
   return {
     async getMetrics(tenantId, allowedStages, filters = {}) {
       const leadParams: unknown[] = [tenantId];
-      const leadFilter = leadFilterSql(leadParams, allowedStages, filters);
-
-      const todayParams: unknown[] = [tenantId];
-      const todayFilter = leadFilterSql(todayParams, allowedStages, { ...filters, startDate: undefined, endDate: undefined });
+      const leadCte = filteredLeadsCte(leadParams, allowedStages, filters);
 
       const taskParams: unknown[] = [tenantId];
-      const taskFilter = leadFilterSql(taskParams, allowedStages, filters);
+      const taskCte = filteredLeadsCte(taskParams, allowedStages, filters);
+
+      const proposalParams: unknown[] = [tenantId];
+      const proposalCte = filteredLeadsCte(proposalParams, allowedStages, filters);
 
       const platformParams: unknown[] = [tenantId];
-      const platformLeadFilter = leadFilterSql(platformParams, allowedStages, filters);
+      const platformCte = filteredLeadsCte(platformParams, allowedStages, filters);
       const platformFilter = filters.platform ? ` and coalesce(nullif(t.platform, ''), 'desconhecido') = ${pushParam(platformParams, filters.platform)}` : '';
 
       const eventParams: unknown[] = [tenantId];
-      const eventLeadFilter = leadFilterSql(eventParams, allowedStages, filters);
+      const eventCte = filteredLeadsCte(eventParams, allowedStages, filters);
       const eventTypeFilter = filters.activityType ? ` and a.activity_type = ${pushParam(eventParams, filters.activityType)}::activity_type` : '';
 
       const [newLeads, noFollowup, overdueTasks, openProposals, bySource, byStage, bySeller, byPlatform, recentEvents] = await Promise.all([
-        pool.query(`select count(*)::int as count from leads l where l.tenant_id = $1 and l.created_at >= current_date${todayFilter}`, todayParams),
-        pool.query(`select count(*)::int as count from leads l where l.tenant_id = $1 and l.stage <> 'perdido' and (l.next_action_at is null or l.next_action_at < now())${leadFilter}`, leadParams),
-        pool.query(`select count(*)::int as count from tasks t where t.tenant_id = $1 and t.status in ('pendente', 'atrasado') and t.due_date is not null and t.due_date < now()`, taskParams),
-        pool.query(`select count(*)::int as count from proposals p where p.tenant_id = $1 and p.status in ('draft', 'sent')`, [tenantId]),
-        pool.query(`select coalesce(nullif(l.lead_source, ''), 'desconhecido') as source, count(*)::int as count from leads l where l.tenant_id = $1${leadFilter} group by 1 order by count desc, source asc limit 8`, leadParams),
-        pool.query(`select l.stage::text as stage, count(*)::int as count from leads l where l.tenant_id = $1${leadFilter} group by l.stage order by count desc`, leadParams),
-        pool.query(`select coalesce(u.name, 'Sem vendedor') as name, count(*)::int as count from leads l left join users u on u.id = l.sdr_owner_id where l.tenant_id = $1${leadFilter} group by u.name order by count desc`, leadParams),
-        pool.query(`select coalesce(nullif(t.platform, ''), 'desconhecido') as platform, count(*)::int as count from tracking_events t left join leads l on l.tenant_id = t.tenant_id and l.id = t.lead_id where t.tenant_id = $1 and t.status = 'sent'${platformLeadFilter}${platformFilter} group by 1 order by count desc, platform asc limit 6`, platformParams),
-        pool.query(`select a.id,
+        pool.query(`${leadCte} select count(*)::int as count from filtered_leads`, leadParams),
+        pool.query(`${leadCte} select count(*)::int as count from filtered_leads fl where fl.stage <> 'perdido' and (fl.next_action_at is null or fl.next_action_at < now())`, leadParams),
+        pool.query(`${taskCte} select count(*)::int as count from tasks t join filtered_leads fl on fl.tenant_id = t.tenant_id and fl.id = t.lead_id where t.tenant_id = $1 and t.status in ('pendente', 'atrasado') and t.due_date is not null and t.due_date < now()`, taskParams),
+        pool.query(`${proposalCte} select count(*)::int as count from proposals p join filtered_leads fl on fl.tenant_id = p.tenant_id and fl.id = p.lead_id where p.tenant_id = $1 and p.status in ('draft', 'sent')`, proposalParams),
+        pool.query(`${leadCte} select coalesce(nullif(fl.lead_source, ''), 'desconhecido') as source, count(*)::int as count from filtered_leads fl group by 1 order by count desc, source asc limit 8`, leadParams),
+        pool.query(`${leadCte} select fl.stage::text as stage, count(*)::int as count from filtered_leads fl group by fl.stage order by ${pipelineOrderSql}`, leadParams),
+        pool.query(`${leadCte} select coalesce(u.name, 'Sem vendedor') as name, count(*)::int as count from filtered_leads fl left join users u on u.id = fl.sdr_owner_id group by u.name order by count desc`, leadParams),
+        pool.query(`${platformCte} select coalesce(nullif(t.platform, ''), 'desconhecido') as platform, count(*)::int as count from tracking_events t join filtered_leads fl on fl.tenant_id = t.tenant_id and fl.id = t.lead_id where t.tenant_id = $1 and t.status = 'sent'${platformFilter} group by 1 order by count desc, platform asc limit 6`, platformParams),
+        pool.query(`${eventCte} select a.id,
                            a.tenant_id as "tenantId",
                            a.lead_id as "leadId",
+                           a.contact_id as "contactId",
                            a.user_id as "userId",
                            a.activity_type as "activityType",
                            a.outcome,
+                           a.response_time_seconds as "responseTimeSeconds",
                            a.notes,
+                           a.occurred_at::text as "occurredAt",
                            a.created_at::text as "createdAt",
-                           l.stage::text as "leadStage"
+                           fl.stage::text as "leadStage"
                       from activities a
-                      join leads l on l.tenant_id = a.tenant_id and l.id = a.lead_id
-                     where a.tenant_id = $1${eventLeadFilter}${eventTypeFilter}
-                     order by a.created_at desc
+                      join filtered_leads fl on fl.tenant_id = a.tenant_id and fl.id = a.lead_id
+                     where a.tenant_id = $1${eventTypeFilter}
+                     order by a.occurred_at desc, a.created_at desc
                      limit 8`, eventParams),
       ]);
 

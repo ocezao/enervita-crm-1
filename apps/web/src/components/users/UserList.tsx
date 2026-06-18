@@ -18,7 +18,7 @@ export function UserList({ users, selectedId, onSelect, onNew }: Props) {
         </div>
         <Button size="sm" onClick={onNew}>Novo</Button>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2" data-testid="users-list">
         {users.map((user) => (
           <button
             key={user.id}
@@ -31,6 +31,7 @@ export function UserList({ users, selectedId, onSelect, onNew }: Props) {
               <Badge variant={user.status === 'active' ? 'success' : 'warning'}>{user.status === 'active' ? 'Ativo' : 'Inativo'}</Badge>
             </div>
             <p className="mt-1 truncate text-xs text-gray-500">{user.email}</p>
+            <p className="mt-1 text-[11px] font-semibold text-gray-500">Área/Função: {user.profile?.department || 'sem área definida'}</p>
             <p className="mt-2 text-[11px] text-gray-400">{user.permissions.length} permissões • {user.allowedStages.length} etapas</p>
           </button>
         ))}

@@ -41,8 +41,8 @@ import type { Activity as CrmActivity, LeadStage } from '../lib/api/types';
 
 const stageLabels: Record<LeadStage, string> = {
   novo_lead: 'Novo lead',
-  atendimento_iniciado: 'Atendimento',
   qualificacao: 'Qualificação',
+  atendimento_iniciado: 'Atendimento iniciado',
   conta_recebida: 'Conta recebida',
   diagnostico: 'Diagnóstico',
   proposta_enviada: 'Proposta enviada',
@@ -50,7 +50,29 @@ const stageLabels: Record<LeadStage, string> = {
   perdido: 'Perdido',
 };
 
-const stageOptions = Object.entries(stageLabels) as Array<[LeadStage, string]>;
+const pipelineStageOrder: LeadStage[] = [
+  'novo_lead',
+  'qualificacao',
+  'atendimento_iniciado',
+  'conta_recebida',
+  'diagnostico',
+  'proposta_enviada',
+  'contrato_enervita',
+  'perdido',
+];
+
+const stageColors: Record<LeadStage, string> = {
+  novo_lead: '#f97316',
+  qualificacao: '#2563eb',
+  atendimento_iniciado: '#0891b2',
+  conta_recebida: '#16a34a',
+  diagnostico: '#7c3aed',
+  proposta_enviada: '#eab308',
+  contrato_enervita: '#059669',
+  perdido: '#ef4444',
+};
+
+const stageOptions = pipelineStageOrder.map((stage) => [stage, stageLabels[stage]] as const);
 
 const activityLabels: Record<CrmActivity['activityType'], string> = {
   note: 'Nota',
@@ -86,6 +108,11 @@ const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(value || 0);
 
 const numberFmt = (value: number) => new Intl.NumberFormat('pt-BR').format(value || 0);
+
+function percentFmt(value: number, total: number): string {
+  if (!total) return '0%';
+  return `${Math.round((value / total) * 100)}%`;
+}
 
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value?: number; name?: string; color?: string }>; label?: string }) {
   if (!active || !payload?.length) return null;
@@ -126,11 +153,18 @@ export default function DashboardPremium() {
 
   const activeFilterCount = Object.values(appliedFilters).filter(Boolean).length;
 
-  const stageData = useMemo(() => (metrics?.leadsByStage ?? []).map((item, index) => ({
-    name: stageLabels[item.stage] ?? item.stage,
-    value: item.count,
-    fill: ['#f97316', '#16a34a', '#0f172a', '#fb923c', '#22c55e', '#475569', '#ef4444'][index % 7],
-  })), [metrics]);
+  const stageData = useMemo(() => {
+    const counts = new Map((metrics?.leadsByStage ?? []).map((item) => [item.stage, item.count]));
+    return pipelineStageOrder.map((stage) => ({
+      stage,
+      name: stageLabels[stage],
+      value: counts.get(stage) ?? 0,
+      fill: stageColors[stage],
+    }));
+  }, [metrics]);
+
+  const totalStageLeads = useMemo(() => stageData.reduce((sum, item) => sum + item.value, 0), [stageData]);
+  const donutStageData = useMemo(() => stageData.filter((item) => item.value > 0), [stageData]);
 
   const sourceData = useMemo(() => (metrics?.leadsBySource ?? []).map((item) => ({
     source: item.source || 'Indefinida',
@@ -156,7 +190,11 @@ export default function DashboardPremium() {
   const wonValue = commercial?.wonOpportunityValue ?? 0;
   const acceptedAnnual = commercial?.acceptedProposalAnnualValue ?? 0;
   const totalPipeline = openValue + wonValue;
-  const commercialStageValue = commercial?.stageBreakdown?.reduce((sum, item) => sum + item.value, 0) ?? 0;
+  const commercialStageData = useMemo(() => {
+    const byStage = new Map((commercial?.stageBreakdown ?? []).map((item) => [item.stage, item]));
+    return pipelineStageOrder.map((stage) => byStage.get(stage) ?? { stage, count: 0, value: 0 });
+  }, [commercial]);
+  const commercialStageValue = commercialStageData.reduce((sum, item) => sum + item.value, 0);
 
   const setQuickRange = (days: number) => {
     const end = new Date();
@@ -240,7 +278,7 @@ export default function DashboardPremium() {
         </PremiumSurface>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <PremiumMetricCard title="Novos hoje" value={numberFmt(metrics.newLeadsToday)} description="Entradas criadas hoje" icon={<Users size={20} />} accent="orange" />
+          <PremiumMetricCard title="Leads no período" value={numberFmt(metrics.newLeadsToday)} description="Total do recorte ativo" icon={<Users size={20} />} accent="orange" />
           <PremiumMetricCard title="Sem follow-up" value={numberFmt(metrics.leadsWithoutFollowup)} description="Leads sem próxima ação válida" icon={<BellRing size={20} />} accent="red" />
           <PremiumMetricCard title="Tarefas vencidas" value={numberFmt(metrics.overdueTasks)} description="Pendências já atrasadas" icon={<Clock3 size={20} />} accent="red" />
           <PremiumMetricCard title="Propostas abertas" value={numberFmt(metrics.openProposals)} description="Negociações em proposta" icon={<Target size={20} />} accent="green" />
@@ -256,17 +294,21 @@ export default function DashboardPremium() {
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <PremiumSurface className="p-6">
             <PremiumSectionTitle eyebrow="Pipeline vivo" title="Distribuição por etapa" action={<div className="flex items-center gap-2"><Layers3 size={18} className="text-solar-orange" /><ContextHint text="Mostra onde os leads estão concentrados. Com filtros, ajuda a ver gargalos por período, origem ou plataforma." /></div>} />
-            <div className="mt-6 h-[340px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stageData} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700 }} angle={-18} textAnchor="end" interval={0} />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 12, fontWeight: 700 }} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="value" name="Leads" radius={[14, 14, 4, 4]}>{stageData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}</Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            {totalStageLeads ? (
+              <div className="mt-6 h-[340px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stageData} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700 }} angle={-18} textAnchor="end" interval={0} />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 12, fontWeight: 700 }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Bar dataKey="value" name="Leads" radius={[14, 14, 4, 4]}>{stageData.map((entry) => <Cell key={entry.stage} fill={entry.fill} />)}</Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="mt-6 flex h-[340px] items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white/60 p-6 text-center text-sm font-bold text-slate-500">Nenhum lead encontrado neste recorte.</div>
+            )}
           </PremiumSurface>
 
           <PremiumSurface className="p-6">
@@ -284,21 +326,28 @@ export default function DashboardPremium() {
         <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
           <PremiumSurface className="p-6">
             <PremiumSectionTitle eyebrow="Funil" title="Composição do funil" action={<div className="flex items-center gap-2"><Radar size={18} className="text-slate-900" /><ContextHint text="Distribuição percentual dos leads por etapa do funil. Mostra onde a maioria dos leads está concentrada. Use para identificar gargalos e atrito entre etapas." /></div>} />
-            <div className="mt-6 h-[260px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={stageData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={95} paddingAngle={3} label={({ name, percent }: { name?: string; percent?: number }) => `${name ?? ''} ${((percent ?? 0) * 100).toFixed(0)}%`} labelLine={{ stroke: '#94a3b8', strokeWidth: 1 }}>
-                    {stageData.map((entry) => <Cell key={entry.name} fill={entry.fill} />)}
-                  </Pie>
-                  <Tooltip formatter={(value, name) => [`${numberFmt(Number(value))} leads`, String(name)]} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
+            {donutStageData.length ? (
+              <div className="mt-6 h-[260px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={donutStageData} dataKey="value" nameKey="name" innerRadius={60} outerRadius={95} paddingAngle={3}>
+                      {donutStageData.map((entry) => <Cell key={entry.stage} fill={entry.fill} />)}
+                    </Pie>
+                    <Tooltip formatter={(value, name) => [`${numberFmt(Number(value))} leads`, String(name)]} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="mt-6 flex h-[260px] items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white/60 p-6 text-center text-sm font-bold text-slate-500">Nenhum dado de funil para este recorte.</div>
+            )}
+            <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {stageData.map((entry) => (
-                <span key={entry.name} className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/60 px-3 py-1 text-xs font-bold text-slate-700">
-                  <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: entry.fill }} />
-                  {entry.name}: {numberFmt(entry.value)}
+                <span key={entry.stage} data-testid={`funnel-stage-${entry.stage}`} className="inline-flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white/60 px-3 py-2 text-xs font-bold text-slate-700">
+                  <span className="inline-flex min-w-0 items-center gap-1.5">
+                    <span data-testid={`funnel-stage-color-${entry.stage}`} className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: entry.fill }} />
+                    <span className="truncate">{entry.name}</span>
+                  </span>
+                  <span className="shrink-0 text-slate-500">{numberFmt(entry.value)} · {percentFmt(entry.value, totalStageLeads)}</span>
                 </span>
               ))}
             </div>
@@ -329,10 +378,11 @@ export default function DashboardPremium() {
           <PremiumSurface className="p-6">
             <PremiumSectionTitle eyebrow="Valor por etapa" title="Pipeline financeiro estimado" action={<div className="flex items-center gap-2"><LineChart size={18} className="text-slate-900" /><ContextHint text="Soma o valor esperado das oportunidades abertas por etapa. Use para priorizar onde uma ação comercial mexe mais no dinheiro." /></div>} />
             <div className="mt-6 space-y-4">
-              {(commercial?.stageBreakdown ?? []).map((stage, index) => {
+              {commercialStageData.map((stage, index) => {
                 const share = commercialStageValue ? Math.max(6, Math.round((stage.value / commercialStageValue) * 100)) : 0;
-                return <div key={stage.stage} className="rounded-3xl border border-white/70 bg-white/70 p-4"><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black text-slate-900">{stageLabels[stage.stage]}</p><p className="text-xs font-bold text-slate-400">{numberFmt(stage.count)} leads</p></div><strong className="text-sm text-slate-700">{formatCurrency(stage.value)}</strong></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200/70"><motion.div initial={{ width: 0 }} animate={{ width: `${share}%` }} transition={{ duration: 0.8, delay: index * 0.05 }} className="h-full rounded-full bg-gradient-to-r from-slate-900 via-orange-500 to-emerald-500" /></div></div>;
+                return <div key={stage.stage} className="rounded-3xl border border-white/70 bg-white/70 p-4" data-testid={`value-stage-${stage.stage}`}><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black text-slate-900">{stageLabels[stage.stage]}</p><p className="text-xs font-bold text-slate-400">{numberFmt(stage.count)} leads</p></div><strong className="text-sm text-slate-700">{formatCurrency(stage.value)}</strong></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200/70"><motion.div initial={{ width: 0 }} animate={{ width: `${share}%` }} transition={{ duration: 0.8, delay: index * 0.05 }} className="h-full rounded-full" style={{ backgroundColor: stageColors[stage.stage] }} /></div></div>;
               })}
+              {!commercialStageValue && <p className="rounded-3xl border border-dashed border-slate-200 bg-white/60 p-4 text-sm font-bold text-slate-500">Nenhum valor estimado neste recorte.</p>}
             </div>
           </PremiumSurface>
 

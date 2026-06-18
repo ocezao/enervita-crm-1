@@ -19,6 +19,8 @@ export type ContactInput = {
   company?: string | null;
   source?: string | null;
   consent?: boolean;
+  cpf?: string | null;
+  cnpj?: string | null;
   metadata?: Record<string, unknown>;
 };
 
@@ -107,6 +109,58 @@ function optionalString(value: unknown, field: string): string | null | undefine
   return value.trim();
 }
 
+function onlyDigits(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+function hasRepeatedDigits(value: string): boolean {
+  return /^(\d)\1+$/.test(value);
+}
+
+function formatCpf(value: string): string {
+  return value.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+}
+
+function formatCnpj(value: string): string {
+  return value.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+}
+
+function isValidCpfDigits(value: string): boolean {
+  if (value.length !== 11 || hasRepeatedDigits(value)) return false;
+  const digit = (factor: number) => {
+    let total = 0;
+    for (let index = 0; index < factor - 1; index += 1) total += Number(value[index]) * (factor - index);
+    const rest = (total * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+  return digit(10) === Number(value[9]) && digit(11) === Number(value[10]);
+}
+
+function isValidCnpjDigits(value: string): boolean {
+  if (value.length !== 14 || hasRepeatedDigits(value)) return false;
+  const calculate = (base: string, factors: number[]) => {
+    const total = factors.reduce((sum, factor, index) => sum + Number(base[index]) * factor, 0);
+    const rest = total % 11;
+    return rest < 2 ? 0 : 11 - rest;
+  };
+  const first = calculate(value.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  const second = calculate(value.slice(0, 13), [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  return first === Number(value[12]) && second === Number(value[13]);
+}
+
+function optionalDocument(value: unknown, field: 'cpf' | 'cnpj'): { digits: string; formatted: string } | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null || value === '') return null;
+  if (typeof value !== 'string') throw new ValidationError(`contact.${field} must be a string`);
+  const digits = onlyDigits(value);
+  const valid = field === 'cpf' ? isValidCpfDigits(digits) : isValidCnpjDigits(digits);
+  if (!valid) throw new ValidationError(`contact.${field} must be valid`);
+  return {
+    digits,
+    formatted: field === 'cpf' ? formatCpf(digits) : formatCnpj(digits),
+  };
+}
+
 function requiredString(value: unknown, field: string): string {
   if (typeof value !== 'string' || value.trim().length === 0) throw new ValidationError(`${field} is required`);
   return value.trim();
@@ -165,7 +219,20 @@ function parseContact(value: unknown, partial: boolean): ContactInput | UpdateCo
   contact.company = optionalString(value.company, 'contact.company');
   contact.source = optionalString(value.source, 'contact.source');
   contact.consent = optionalBoolean(value.consent, 'contact.consent');
-  contact.metadata = optionalMetadata(value.metadata, 'contact.metadata');
+  const metadata = optionalMetadata(value.metadata, 'contact.metadata');
+  const cpf = optionalDocument(value.cpf, 'cpf');
+  const cnpj = optionalDocument(value.cnpj, 'cnpj');
+  if (metadata !== undefined || cpf !== undefined || cnpj !== undefined) {
+    contact.metadata = { ...(metadata ?? {}) };
+    if (cpf !== undefined) {
+      contact.metadata.cpf = cpf?.digits ?? null;
+      contact.metadata.cpfFormatted = cpf?.formatted ?? null;
+    }
+    if (cnpj !== undefined) {
+      contact.metadata.cnpj = cnpj?.digits ?? null;
+      contact.metadata.cnpjFormatted = cnpj?.formatted ?? null;
+    }
+  }
   return pruneUndefined(contact as Record<string, unknown>) as ContactInput | UpdateContactInput;
 }
 

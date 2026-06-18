@@ -56,6 +56,17 @@ function priorityFromTicket(value) {
   return 'baixa';
 }
 
+const META_STAGE_EVENTS = {
+  novo_lead: 'Lead',
+  qualificacao: 'EnervitaPreQualifiedLead',
+  atendimento_iniciado: 'EnervitaOpportunity',
+  conta_recebida: 'EnervitaBillReceived',
+  diagnostico: 'EnervitaQualifiedLead',
+  proposta_enviada: 'ProposalSent',
+  contrato_enervita: 'WonLead',
+  perdido: 'LeadUnqualified',
+};
+
 function attributionFromPayload(payload) {
   return objectValue(payload.attribution);
 }
@@ -90,6 +101,67 @@ function metadataFrom(row) {
     },
     attribution,
   };
+}
+
+function metaTrackingPayload({ row, payload, metadata, attribution, stage, priority }) {
+  return {
+    action: 'created',
+    leadId: row.lead_id,
+    stage,
+    fromStage: null,
+    transitionDirection: 'created',
+    source: text(row.lead_source) ?? text(row.source) ?? text(row.form_name) ?? 'site',
+    utm: {
+      source: text(row.utm_source) ?? text(attribution.utm_source),
+      medium: text(row.utm_medium) ?? text(attribution.utm_medium),
+      campaign: text(row.utm_campaign) ?? text(attribution.utm_campaign) ?? text(attribution.campaign_name),
+      content: text(row.utm_content) ?? text(attribution.utm_content) ?? text(attribution.ad_name),
+      term: text(row.utm_term) ?? text(attribution.utm_term) ?? text(attribution.keyword),
+    },
+    attribution: {
+      fbp: text(attribution.fbp),
+      fbc: text(attribution.fbc),
+      fbclid: text(attribution.fbclid),
+      gclid: text(attribution.gclid),
+    },
+    tags: [],
+    priority,
+    qualificationStatus: text(row.qualification_status) ?? 'pending',
+    qualification: {
+      status: text(row.qualification_status) ?? 'pending',
+      priority,
+      estimatedTicket: numberOrNull(row.estimated_ticket),
+      energyBillValue: numberOrNull(payload.energyBillValue) ?? numberOrNull(payload.billValue) ?? numberOrNull(payload.monthlyBillValue),
+      averageConsumptionKwh: numberOrNull(payload.averageConsumptionKwh) ?? numberOrNull(payload.consumoMedioKwh),
+      concessionaria: text(payload.concessionaria),
+      offer: text(payload.offer) ?? text(payload.ofertaEnervita) ?? text(payload.oferta),
+      projectedSavings: numberOrNull(payload.projectedSavings) ?? numberOrNull(payload.economiaMensalProjetada),
+    },
+    estimatedTicket: numberOrNull(row.estimated_ticket) ?? numberOrNull(payload.monthlyBillValue),
+    actorUserId: null,
+    request: metadata.request,
+    location: {
+      city: metadata.city,
+      state: metadata.state,
+      country: text(payload.country) ?? text(payload.pais) ?? 'BR',
+    },
+    contact: {
+      name: text(row.name),
+      company: text(row.company),
+      source: text(row.source),
+    },
+    leadEventSource: 'Enervita Operational Sync',
+  };
+}
+
+async function queueMetaTrackingEvent(custom, tenantId, row, payload, metadata, attribution, stage, priority) {
+  const eventName = META_STAGE_EVENTS[stage];
+  if (!eventName) return;
+  await custom.query(
+    `insert into tracking_events (tenant_id, lead_id, platform, event_name, status, payload, next_retry_at)
+     values ($1, $2::uuid, 'meta', $3, 'queued', $4::jsonb, now())`,
+    [tenantId, row.lead_id, eventName, JSON.stringify(metaTrackingPayload({ row, payload, metadata, attribution, stage, priority }))],
+  );
 }
 
 
@@ -300,6 +372,8 @@ async function main() {
 
       await custom.query('begin');
       try {
+        const stage = normalizeStage(row.stage);
+        const priority = priorityFromTicket(row.estimated_ticket);
         const contact = await custom.query(
           `insert into contacts (tenant_id, name, email, phone, company, source, consent, metadata, created_at, updated_at)
            values ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, coalesce($10, now()))
@@ -333,7 +407,7 @@ async function main() {
             row.lead_id,
             tenantId,
             contact.rows[0].id,
-            normalizeStage(row.stage),
+            stage,
             text(row.qualification_status) ?? 'pending',
             text(row.lead_source) ?? text(row.source) ?? text(row.form_name) ?? 'site',
             text(row.utm_source) ?? text(attribution.utm_source),
@@ -347,7 +421,7 @@ async function main() {
             text(attribution.gclid),
             numberOrNull(row.estimated_ticket) ?? numberOrNull(payload.monthlyBillValue),
             sdrOwnerId,
-            priorityFromTicket(row.estimated_ticket),
+            priority,
             text(row.notes) ?? text(payload.message),
             JSON.stringify(metadata),
             row.created_at,
@@ -362,6 +436,7 @@ async function main() {
             [tenantId, row.lead_id, JSON.stringify({ sdrOwnerId, reason: 'round_robin_new_lead' })],
           );
         }
+        await queueMetaTrackingEvent(custom, tenantId, row, payload, metadata, attribution, stage, priority);
         await custom.query('commit');
         inserted += 1;
       } catch (error) {

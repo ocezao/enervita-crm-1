@@ -7,10 +7,10 @@ import { useLeads } from '../hooks/useCrm';
 import { useAuth } from '../auth/useAuth';
 import { isAdminUser, userHasPermission } from '../auth/permissions';
 import { PageHeader } from '../components/ui/LayoutComponents';
-import { Badge, Button, Card } from '../components/ui/Base';
+import { Badge, Button, Card, type BadgeVariant } from '../components/ui/Base';
 import { PriorityBadge, StageBadge } from '../components/ui/StatusBadges';
 import type { Lead, LeadStage, Priority } from '../lib/api/types';
-import { cn, formatCurrency } from '../lib/utils';
+import { cn, formatCurrency, formatDate } from '../lib/utils';
 
 const stages: Array<{ id: LeadStage; label: string; limit: number; helper: string }> = [
   { id: 'novo_lead', label: 'Novo lead', limit: 15, helper: 'Entrada e triagem rápida' },
@@ -25,7 +25,7 @@ const stages: Array<{ id: LeadStage; label: string; limit: number; helper: strin
 
 const priorities: Array<'todas' | Priority> = ['todas', 'urgente', 'alta', 'media', 'baixa'];
 type AgingFilter = 'todos' | 'sem_proxima_acao' | 'parados_3d' | 'parados_7d';
-type SortKey = 'oldest_stage' | 'updated_desc' | 'bill_desc' | 'priority_desc' | 'created_asc';
+type SortKey = 'entry_desc' | 'oldest_stage' | 'updated_desc' | 'bill_desc' | 'priority_desc' | 'created_asc';
 type KanbanContextState = { lead: Lead; nextStage?: { id: LeadStage; label: string }; lostStage?: { id: LeadStage; label: string }; x: number; y: number } | null;
 
 function visibleStagesForUser(user: ReturnType<typeof useAuth>['user']) {
@@ -46,6 +46,48 @@ function daysUntil(date?: string | null) {
   const time = new Date(date).getTime();
   if (!Number.isFinite(time)) return undefined;
   return Math.ceil((time - Date.now()) / 86400000);
+}
+
+function timestamp(date?: string | null) {
+  if (!date) return undefined;
+  const time = new Date(date).getTime();
+  return Number.isFinite(time) ? time : undefined;
+}
+
+function leadEntryDate(lead: Lead) {
+  return lead.submittedAt || lead.createdAt || lead.updatedAt;
+}
+
+function leadEntryTimestamp(lead: Lead) {
+  return timestamp(leadEntryDate(lead)) ?? timestamp(lead.createdAt) ?? timestamp(lead.updatedAt) ?? 0;
+}
+
+function formatElapsedSince(date?: string | null) {
+  const time = timestamp(date);
+  if (time === undefined) return 'sem data';
+  const minutes = Math.max(0, Math.floor((Date.now() - time) / 60000));
+  if (minutes < 1) return 'agora';
+  if (minutes < 60) return `há ${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `há ${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+  const days = Math.floor(hours / 24);
+  const remainingHours = hours % 24;
+  const dayLabel = `${days} ${days === 1 ? 'dia' : 'dias'}`;
+  if (remainingHours > 0) {
+    return `há ${dayLabel} e ${remainingHours} ${remainingHours === 1 ? 'hora' : 'horas'}`;
+  }
+  return `há ${dayLabel}`;
+}
+
+type EntryPriority = { label: string; variant: BadgeVariant };
+
+function leadEntryPriority(lead: Lead): EntryPriority {
+  const time = leadEntryTimestamp(lead);
+  if (!time) return { label: 'Sem data', variant: 'default' };
+  const hours = Math.floor(Math.max(0, Date.now() - time) / 3600000);
+  if (hours <= 24) return { label: 'Novo', variant: 'success' };
+  if (hours <= 72) return { label: 'Sem contato', variant: 'warning' };
+  return { label: 'Parado', variant: 'error' };
 }
 
 function normalize(value?: string | number | null) {
@@ -75,10 +117,11 @@ function matchesAging(lead: Lead, filter: AgingFilter) {
 
 function sortLeads(leads: Lead[], sort: SortKey) {
   return [...leads].sort((a, b) => {
+    if (sort === 'entry_desc') return leadEntryTimestamp(b) - leadEntryTimestamp(a);
     if (sort === 'bill_desc') return (b.energyBillValue || b.estimatedTicket || 0) - (a.energyBillValue || a.estimatedTicket || 0);
     if (sort === 'priority_desc') return priorityWeight(b.priority) - priorityWeight(a.priority) || daysSince(b.updatedAt) - daysSince(a.updatedAt);
     if (sort === 'oldest_stage') return daysSince(b.updatedAt || b.createdAt) - daysSince(a.updatedAt || a.createdAt);
-    if (sort === 'created_asc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    if (sort === 'created_asc') return leadEntryTimestamp(a) - leadEntryTimestamp(b);
     return new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime();
   });
 }
@@ -93,7 +136,7 @@ export default function Pipeline() {
   const [priority, setPriority] = useState<'todas' | Priority>('todas');
   const [source, setSource] = useState('todas');
   const [aging, setAging] = useState<AgingFilter>('todos');
-  const [sort, setSort] = useState<SortKey>('oldest_stage');
+  const [sort, setSort] = useState<SortKey>('entry_desc');
   const [minBill, setMinBill] = useState('');
   const [draggingLeadId, setDraggingLeadId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<KanbanContextState>(null);
@@ -132,7 +175,7 @@ export default function Pipeline() {
   const lostStage = useMemo(() => visibleStages.find((stage) => stage.id === 'perdido'), [visibleStages]);
 
   function resetFilters() {
-    setQuery(''); setPriority('todas'); setSource('todas'); setAging('todos'); setMinBill(''); setSort('oldest_stage');
+    setQuery(''); setPriority('todas'); setSource('todas'); setAging('todos'); setMinBill(''); setSort('entry_desc');
   }
 
   function moveLead(lead: Lead, targetStage: LeadStage, notes: string) {
@@ -194,7 +237,7 @@ export default function Pipeline() {
           <input value={minBill} onChange={(event) => setMinBill(event.target.value)} inputMode="numeric" placeholder="Conta mínima R$" className="bg-white border border-gray-200 rounded-2xl px-3 py-3 text-sm" />
           <Button variant="outline" size="sm" className="h-11 gap-2" onClick={resetFilters}><RotateCcw size={14} /> Limpar</Button>
         </div>
-        <div className="mt-3 flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs text-gray-500"><span className="flex items-center gap-2"><Filter size={14} /> {filteredLeads.length} de {visibleRawLeads.length} leads visíveis · {urgentCount} alta/urgente</span><label className="font-bold">Ordenar <select value={sort} onChange={(event) => setSort(event.target.value as SortKey)} className="border border-gray-200 rounded-xl px-2 py-1 bg-white font-medium"><option value="oldest_stage">Mais parados primeiro</option><option value="updated_desc">Atualizados recentemente</option><option value="bill_desc">Maior conta primeiro</option><option value="priority_desc">Prioridade comercial</option><option value="created_asc">Rotação (distribuição)</option></select></label></div>
+        <div className="mt-3 flex flex-col md:flex-row md:items-center justify-between gap-2 text-xs text-gray-500"><span className="flex items-center gap-2"><Filter size={14} /> {filteredLeads.length} de {visibleRawLeads.length} leads visiveis - {urgentCount} alta/urgente</span><label className="font-bold">Ordenar <select value={sort} onChange={(event) => setSort(event.target.value as SortKey)} className="border border-gray-200 rounded-xl px-2 py-1 bg-white font-medium"><option value="entry_desc">Mais recentes primeiro</option><option value="oldest_stage">Mais parados primeiro</option><option value="updated_desc">Atualizados recentemente</option><option value="bill_desc">Maior conta primeiro</option><option value="priority_desc">Prioridade comercial</option><option value="created_asc">Rotacao (distribuicao)</option></select></label></div>
       </Card>
 
       <div className="shrink-0 crm-scroll-panel overflow-x-auto pb-8 -mx-2 px-2" style={{ height: 'calc(150vh - 220px)', maxHeight: 'calc(150vh - 220px)', minHeight: 720 }}><div className="flex gap-5 h-full min-w-max">
@@ -224,10 +267,12 @@ function KanbanCard({ lead, nextStage, canMoveStage, onMove, onDragStart, onDrag
   const stalledDays = daysSince(lead.updatedAt || lead.createdAt);
   const phone = lead.contact?.phone?.replace(/\D/g, '');
   const whatsapp = phone ? `https://wa.me/${phone.startsWith('55') ? phone : `55${phone}`}` : undefined;
+  const entryDate = leadEntryDate(lead);
+  const entryPriority = leadEntryPriority(lead);
   return (
     <motion.div layout initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.98 }} whileHover={{ y: -4, scale: 1.012 }} whileTap={{ scale: 0.985 }} transition={{ type: 'spring', stiffness: 430, damping: 34 }} className="bg-white rounded-2xl border border-transparent shadow-sm overflow-hidden p-4 hover:shadow-xl hover:shadow-solar-orange/10 hover:border-solar-orange/30 transition-colors group cursor-grab active:cursor-grabbing select-none" draggable={canMoveStage} onDragStart={() => { onDragStart(); }} onDragEnd={onDragEnd} onContextMenu={onContextMenu}>
-      <div className="flex justify-between items-start mb-3"><div className="flex items-center gap-2"><GripVertical size={14} className="text-gray-300" /><PriorityBadge priority={lead.priority} /></div><StageBadge stage={lead.stage} /></div>
-      <Link to={`/leads/${lead.id}`} className="block"><h4 className="font-black text-sm text-graphite mb-1 group-hover:text-solar-orange transition-colors">{lead.contact?.name || 'Lead sem nome'}</h4><p className="text-xs text-gray-500 mb-3 truncate">{lead.contact?.company || lead.contact?.email || 'Sem empresa'}</p><div className="grid grid-cols-2 gap-2 mb-4"><div className={cn('rounded-xl p-2 text-[10px] font-bold', stalledDays >= 3 ? 'bg-alert-amber/10 text-alert-amber' : 'bg-gray-50 text-gray-500')}><Clock size={12} className="inline mr-1" />{stalledDays === 0 ? 'Atual hoje' : `Parado ${stalledDays}d`}</div><div className={cn('rounded-xl p-2 text-[10px] font-bold', !lead.nextActionAt || (daysUntil(lead.nextActionAt) ?? 1) <= 0 ? 'bg-alert-red/10 text-alert-red' : 'bg-energy-green/10 text-energy-green')}><Phone size={12} className="inline mr-1" />{nextActionLabel(lead)}</div></div><div className="pt-3 border-t border-gray-50 flex items-center justify-between gap-2"><div><p className="font-black text-sm text-energy-green">{formatCurrency(lead.energyBillValue || lead.estimatedTicket)}</p><p className="text-[10px] text-gray-400 truncate max-w-[150px]">{lead.leadSource || 'origem indefinida'}</p><p className="text-[10px] text-gray-400 mt-1">{new Date(lead.submittedAt || lead.createdAt).toLocaleDateString('pt-BR')}</p></div><div className="text-right"><p className="text-[10px] font-bold text-graphite truncate max-w-[90px]">{lead.sdrOwner || 'SD'}</p><p className="text-[9px] text-gray-400">vendedor</p></div></div></Link>
+      <div className="flex justify-between items-start mb-3"><div className="flex items-center gap-2"><GripVertical size={14} className="text-gray-300" /><PriorityBadge priority={lead.priority} /><Badge variant={entryPriority.variant}>{entryPriority.label}</Badge></div><StageBadge stage={lead.stage} /></div>
+      <Link to={`/leads/${lead.id}`} className="block"><h4 className="font-black text-sm text-graphite mb-1 group-hover:text-solar-orange transition-colors">{lead.contact?.name || 'Lead sem nome'}</h4><p className="text-xs text-gray-500 mb-2 truncate">{lead.contact?.company || lead.contact?.email || 'Sem empresa'}</p><p className="mb-3 flex items-center gap-1 text-[10px] font-bold text-gray-500"><CalendarClock size={12} /> Entrada {formatDate(entryDate)} - {formatElapsedSince(entryDate)}</p><div className="grid grid-cols-2 gap-2 mb-4"><div className={cn('rounded-xl p-2 text-[10px] font-bold', stalledDays >= 3 ? 'bg-alert-amber/10 text-alert-amber' : 'bg-gray-50 text-gray-500')}><Clock size={12} className="inline mr-1" />{stalledDays === 0 ? 'Atual hoje' : `Parado ${stalledDays}d`}</div><div className={cn('rounded-xl p-2 text-[10px] font-bold', !lead.nextActionAt || (daysUntil(lead.nextActionAt) ?? 1) <= 0 ? 'bg-alert-red/10 text-alert-red' : 'bg-energy-green/10 text-energy-green')}><Phone size={12} className="inline mr-1" />{nextActionLabel(lead)}</div></div><div className="pt-3 border-t border-gray-50 flex items-center justify-between gap-2"><div><p className="font-black text-sm text-energy-green">{formatCurrency(lead.energyBillValue || lead.estimatedTicket)}</p><p className="text-[10px] text-gray-400 truncate max-w-[150px]">{lead.leadSource || 'origem indefinida'}</p></div><div className="text-right"><p className="text-[10px] font-bold text-graphite truncate max-w-[90px]">{lead.sdrOwner || 'SD'}</p><p className="text-[9px] text-gray-400">vendedor</p></div></div></Link>
       <div className="mt-3 grid grid-cols-2 gap-2">{whatsapp ? <a href={whatsapp} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-2 py-1.5 text-xs font-bold text-graphite hover:bg-gray-50">WhatsApp</a> : <span className="inline-flex items-center justify-center rounded-lg border border-gray-100 px-2 py-1.5 text-xs font-bold text-gray-300">Sem telefone</span>}{canMoveStage && nextStage ? <Button variant="outline" size="sm" className="gap-1" onClick={() => onMove(nextStage.id)} aria-label={`Mover ${lead.contact?.name ?? 'lead'} para ${nextStage.label}`}><ArrowRight size={14} /> Mover</Button> : <Button variant="ghost" size="sm" disabled>Final</Button>}</div>
     </motion.div>
   );

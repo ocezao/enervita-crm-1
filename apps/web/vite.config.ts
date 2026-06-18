@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
@@ -20,6 +20,21 @@ function allowedHostsFromEnv() {
 
 export default defineConfig({
   plugins: [react()],
+  test: {
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    environment: 'jsdom',
+    fileParallelism: false,
+    globals: true,
+    setupFiles: ['./src/test/setup.ts'],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/tests/e2e/**',
+      '**/e2e/**',
+      '**/*.spec.ts',
+      '**/*.spec.tsx',
+    ],
+  },
   preview: {
     allowedHosts: allowedHostsFromEnv(),
   },

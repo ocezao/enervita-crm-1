@@ -31,7 +31,7 @@ function jsonResponse(body: unknown, status = 200) {
 function mockFetchFor(user: typeof seller) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
-    if (url === '/api/me') return jsonResponse({ user });
+    if (url === '/api/me') return jsonResponse({ user });if(url.startsWith('/api/notifications'))return jsonResponse({notifications:[],unreadCount:0});if(url.startsWith('/api/follow-ups'))return jsonResponse({followUps:[]});if(url==='/api/automations/n8n-workflows')return jsonResponse({workflows:[]});
     if (url === '/api/auth/logout' && init?.method === 'POST') return jsonResponse({ ok: true });
     if (url.startsWith('/api/dashboard')) return jsonResponse({ metrics: { newLeadsToday: 0, leadsWithoutFollowup: 0, overdueTasks: 0, openProposals: 0, leadsBySource: [], leadsByStage: [], conversionsByPlatform: [], recentEvents: [] } });
     if (url.startsWith('/api/leads')) return jsonResponse({ leads: [], lead: null, history: [], tasks: [], activities: [], proposals: [], events: [] });

@@ -1,4 +1,4 @@
-import { useNavigate, useParams, Link } from 'react-router-dom';
+﻿import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useLeadDetail } from '../hooks/useCrm';
 import { Button, Card, Badge } from '../components/ui/Base';
 import { StageBadge, PriorityBadge } from '../components/ui/StatusBadges';
@@ -20,18 +20,23 @@ import {
   History,
   Upload,
   Download,
-  Copy
+  Copy,
+  Eye,
+  ExternalLink
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../lib/utils';
 import { useMemo, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import { userHasPermission } from '../auth/permissions';
 import { isAdminUser } from '../auth/permissions';
-import type { CreateProposalPayload } from '../lib/api/types';
+import type { LeadDocument, ProposalImportedFilePayload, TrackingEvent, UpdateProposalPayload } from '../lib/api/types';
 import type { Proposal } from '../lib/api/types';
-import { api } from '../lib/api/crmApi';
+import { api, formatCnpj, formatCpf, isValidCnpj, isValidCpf } from '../lib/api/crmApi';
 
 type DetailItem = { label: string; value: string };
+
+const MAX_PROPOSAL_FILE_SIZE_BYTES = 20 * 1024 * 1024;
+const MAX_DOCUMENT_FILE_SIZE_BYTES = 20 * 1024 * 1024;
 
 function textValue(value: unknown): string {
   if (typeof value === 'string') return value.trim();
@@ -53,20 +58,101 @@ function getObject(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
-function metaAttributionItems(lead: NonNullable<ReturnType<typeof useLeadDetail>['lead']>): DetailItem[] {
-  const meta = getObject(lead.metadata?.meta);
+function firstTextValue(...values: unknown[]): string {
+  for (const value of values) {
+    const text = textValue(value);
+    if (text) return text;
+  }
+  return '';
+}
+
+function nestedText(value: unknown, path: string[]): string {
+  let current = value;
+  for (const key of path) {
+    if (!current || typeof current !== 'object' || Array.isArray(current)) return '';
+    current = (current as Record<string, unknown>)[key];
+  }
+  return textValue(current);
+}
+
+function trackingPayloadValue(events: TrackingEvent[], paths: string[][]): string {
+  for (const event of events) {
+    for (const path of paths) {
+      const value = nestedText(event.payload, path);
+      if (value) return value;
+    }
+  }
+  return '';
+}
+
+function trackingDetailItems(lead: NonNullable<ReturnType<typeof useLeadDetail>['lead']>, events: TrackingEvent[]): DetailItem[] {
+  const metadata = getObject(lead.metadata);
+  const contactMetadata = getObject(lead.contact?.metadata);
+  const meta = getObject(metadata.meta);
   const rawLeadDetails = getObject(meta.rawLeadDetails);
+  const allMetadata = { ...contactMetadata, ...metadata };
   const items: DetailItem[] = [
-    { label: 'Campanha', value: textValue(meta.campaignName) || textValue(rawLeadDetails.campaign_name) || lead.utmCampaign || '' },
-    { label: 'ID campanha', value: textValue(meta.campaignId) || textValue(rawLeadDetails.campaign_id) },
-    { label: 'Conjunto', value: textValue(meta.adsetName) || textValue(rawLeadDetails.adset_name) },
-    { label: 'ID conjunto', value: textValue(meta.adsetId) || textValue(rawLeadDetails.adset_id) || textValue(meta.adgroupId) || textValue(rawLeadDetails.adgroup_id) },
-    { label: 'Anúncio / criativo', value: textValue(meta.adName) || textValue(rawLeadDetails.ad_name) || lead.utmContent || '' },
-    { label: 'ID anúncio', value: textValue(meta.adId) || textValue(rawLeadDetails.ad_id) },
-    { label: 'Formulário / proposta', value: textValue(meta.formName) || textValue(rawLeadDetails.form_name) || lead.utmTerm || textValue(meta.formId) },
-    { label: 'ID formulário', value: textValue(meta.formId) || textValue(rawLeadDetails.form_id) || lead.utmTerm || '' },
+    {
+      label: 'Origem do lead',
+      value: firstTextValue(lead.leadSource, allMetadata.source, allMetadata.importSource, trackingPayloadValue(events, [['source'], ['leadEventSource']])),
+    },
+    {
+      label: 'Campanha',
+      value: firstTextValue(lead.utmCampaign, meta.campaignName, rawLeadDetails.campaign_name, trackingPayloadValue(events, [['utm', 'campaign'], ['campaignName'], ['campaign', 'name']])),
+    },
+    {
+      label: 'Conjunto',
+      value: firstTextValue(meta.adsetName, rawLeadDetails.adset_name, trackingPayloadValue(events, [['adsetName'], ['adset', 'name']])),
+    },
+    {
+      label: 'Anuncio / criativo',
+      value: firstTextValue(lead.utmContent, meta.adName, rawLeadDetails.ad_name, trackingPayloadValue(events, [['adName'], ['ad', 'name'], ['creative', 'name']])),
+    },
+    {
+      label: 'Formulario / pagina',
+      value: firstTextValue(meta.formName, rawLeadDetails.form_name, allMetadata.formName, allMetadata.landingPage, trackingPayloadValue(events, [['formName'], ['page', 'title'], ['landingPage']])),
+    },
+    {
+      label: 'Pagina de entrada',
+      value: firstTextValue(allMetadata.landingPage, allMetadata.pageUrl, allMetadata.url, trackingPayloadValue(events, [['page', 'url'], ['location', 'url'], ['landingPage']])),
+    },
+    {
+      label: 'UTM source / medium',
+      value: [lead.utmSource || trackingPayloadValue(events, [['utm', 'source']]), lead.utmMedium || trackingPayloadValue(events, [['utm', 'medium']])].filter(Boolean).join(' / '),
+    },
+    {
+      label: 'UTM content / term',
+      value: [lead.utmContent || trackingPayloadValue(events, [['utm', 'content']]), lead.utmTerm || trackingPayloadValue(events, [['utm', 'term']])].filter(Boolean).join(' / '),
+    },
+    {
+      label: 'IDs Meta',
+      value: [
+        firstTextValue(meta.campaignId, rawLeadDetails.campaign_id) && `Campanha ${firstTextValue(meta.campaignId, rawLeadDetails.campaign_id)}`,
+        firstTextValue(meta.adsetId, rawLeadDetails.adset_id, meta.adgroupId, rawLeadDetails.adgroup_id) && `Conjunto ${firstTextValue(meta.adsetId, rawLeadDetails.adset_id, meta.adgroupId, rawLeadDetails.adgroup_id)}`,
+        firstTextValue(meta.adId, rawLeadDetails.ad_id) && `Anuncio ${firstTextValue(meta.adId, rawLeadDetails.ad_id)}`,
+        firstTextValue(meta.formId, rawLeadDetails.form_id) && `Formulario ${firstTextValue(meta.formId, rawLeadDetails.form_id)}`,
+      ].filter(Boolean).join(' | '),
+    },
+    {
+      label: 'Sinais de clique/browser',
+      value: [
+        lead.fbclid ? 'fbclid' : '',
+        lead.fbp ? 'fbp' : '',
+        lead.fbc ? 'fbc' : '',
+        lead.gclid ? 'gclid' : '',
+      ].filter(Boolean).join(', '),
+    },
   ];
   return items.filter((item) => item.value && item.value !== 'Invalid Date');
+}
+
+function documentPreviewType(document: LeadDocument): 'image' | 'pdf' | 'video' | 'text' | 'download' {
+  const mimeType = (document.mimeType ?? '').toLowerCase();
+  if (mimeType.startsWith('image/')) return 'image';
+  if (mimeType.includes('pdf')) return 'pdf';
+  if (mimeType.startsWith('video/')) return 'video';
+  if (mimeType.startsWith('text/') || mimeType.includes('json') || mimeType.includes('xml')) return 'text';
+  return 'download';
 }
 
 function historyValue(value: string | number | boolean | null): string {
@@ -83,6 +169,8 @@ function cadastroItems(lead: NonNullable<ReturnType<typeof useLeadDetail>['lead'
     { label: 'Data do cadastro', value: formatDate(lead.createdAt) },
     { label: 'Última atualização', value: formatDate(lead.updatedAt) },
     { label: 'Formulário', value: firstMetadataValue(metadata, ['formName'], lead.leadSource || 'Não informado') },
+    { label: 'CPF', value: firstMetadataValue(contactMetadata, ['cpfFormatted', 'cpf']) },
+    { label: 'CNPJ', value: firstMetadataValue(contactMetadata, ['cnpjFormatted', 'cnpj']) },
     { label: 'Cidade / UF', value: [firstMetadataValue(metadata, ['city']), firstMetadataValue(metadata, ['state'])].filter(Boolean).join(' / ') },
     { label: 'Tipo de unidade', value: firstMetadataValue(metadata, ['unitType']) },
     { label: 'Interesse declarado', value: firstMetadataValue(metadata, ['interest', 'request']) },
@@ -107,7 +195,17 @@ type ProposalDraft = {
   contentText: string;
   templateName: string;
   isTemplate: boolean;
-  importedFile?: CreateProposalPayload['importedFile'];
+  importedFile?: ProposalImportedFilePayload;
+  removeImportedFile?: boolean;
+};
+
+type ProposalUploadState = 'idle' | 'reading' | 'sending';
+
+type ProposalFileAttachment = {
+  name: string;
+  mimeType: string;
+  size: number;
+  dataBase64?: string;
 };
 
 const emptyProposalDraft: ProposalDraft = {
@@ -123,6 +221,7 @@ const emptyProposalDraft: ProposalDraft = {
   contentText: '',
   templateName: '',
   isTemplate: false,
+  removeImportedFile: false,
 };
 
 const proposalStatusLabels = {
@@ -148,6 +247,100 @@ function fileToBase64(file: File): Promise<string> {
     reader.onerror = () => reject(reader.error ?? new Error('Falha ao ler arquivo'));
     reader.readAsDataURL(file);
   });
+}
+
+function decodeBase64ToText(dataBase64: string): string | null {
+  try {
+    const binary = atob(dataBase64);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return null;
+  }
+}
+
+function isTextualDocument(mimeType: string): boolean {
+  return (
+    mimeType === 'text/plain'
+    || mimeType === 'text/csv'
+    || mimeType === 'text/markdown'
+    || mimeType.includes('json')
+    || mimeType.includes('xml')
+    || mimeType.includes('javascript')
+    || mimeType.includes('javascript.')
+    || mimeType.includes('x-www-form-urlencoded')
+  );
+}
+
+function fileSizeLabel(bytes: number): string {
+  if (!Number.isFinite(bytes) || bytes < 0) return '0 B';
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${bytes} B`;
+}
+
+function proposalFileDataUrl(file: { mimeType?: string | null; dataBase64?: string | null }): string | null {
+  if (!file.dataBase64) return null;
+  const mimeType = file.mimeType ? file.mimeType : 'application/octet-stream';
+  return `data:${mimeType};base64,${file.dataBase64}`;
+}
+
+function renderProposalFilePreview(file: ProposalFileAttachment) {
+  const dataUrl = proposalFileDataUrl(file);
+  if (!dataUrl) return <p className="text-xs text-gray-500">Arquivo sem prévia (sem conteúdo). Baixe para revisar.</p>;
+  const mimeType = file.mimeType.toLowerCase();
+
+  if (mimeType.startsWith('image/')) {
+    return <img src={dataUrl} alt={file.name} className="max-h-64 w-full rounded-xl border border-gray-200 object-contain bg-white" />;
+  }
+
+  if (isTextualDocument(mimeType)) {
+    const previewText = decodeBase64ToText(file.dataBase64 || '');
+    return previewText
+      ? <pre className="max-h-64 overflow-auto rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs whitespace-pre-wrap">{previewText}</pre>
+      : <p className="text-xs text-gray-500">Previa textual indisponivel para este arquivo.</p>;
+  }
+
+  if (mimeType === 'application/pdf' || mimeType.includes('pdf')) {
+    return <iframe src={dataUrl} title={`preview-${file.name}`} className="h-64 w-full rounded-xl border border-gray-200" />;
+  }
+
+  if (mimeType.startsWith('video/')) {
+    return (
+      <video controls className="h-64 w-full rounded-xl border border-gray-200 bg-black">
+        <source src={dataUrl} type={mimeType} />
+      </video>
+    );
+  }
+
+  if (mimeType.startsWith('audio/')) {
+    return <audio controls className="w-full" src={dataUrl} />;
+  }
+
+  if (mimeType.startsWith('application/')) {
+    return (
+      <object
+        data={dataUrl}
+        type={mimeType}
+        className="h-64 w-full rounded-xl border border-gray-200 bg-gray-50"
+        aria-label={`preview ${file.name}`}
+      >
+        <p className="p-3 text-xs text-gray-500">Previa do documento indisponivel. Baixe para abrir.</p>
+      </object>
+    );
+  }
+
+  return <p className="text-xs text-gray-500">Prévia não disponível para este tipo de arquivo. Baixe para abrir.</p>;
+}
+
+function getProposalAttachment(proposal: Proposal): ProposalFileAttachment | null {
+  if (!proposal.importedFileName || !proposal.importedFileDataBase64) return null;
+  return {
+    name: proposal.importedFileName,
+    mimeType: proposal.importedFileMimeType || 'application/octet-stream',
+    size: proposal.importedFileSize ?? 0,
+    dataBase64: proposal.importedFileDataBase64,
+  };
 }
 
 function proposalHtmlFromText(text: string) {
@@ -250,7 +443,7 @@ function buildEnervitaIntelligence(
 export default function LeadDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { lead, activities, tasks, history, proposals, loading, addActivity, addTask, completeTask, addProposal, updateProposal, deleteProposal, updateLead, convertToOpportunity, deleteLead, setTags } = useLeadDetail(id);
+  const { lead, activities, tasks, history, proposals, trackingEvents, documents, loading, addActivity, addTask, completeTask, addProposal, updateProposal, deleteProposal, uploadDocument, deleteDocument, updateLead, convertToOpportunity, deleteLead, setTags } = useLeadDetail(id);
   const { user } = useAuth();
   const canCreateActivity = userHasPermission(user, 'activity.create');
   const canCreateTask = userHasPermission(user, 'task.create');
@@ -281,6 +474,8 @@ export default function LeadDetail() {
     email: '',
     phone: '',
     company: '',
+    cpf: '',
+    cnpj: '',
     leadSource: '',
     qualificationStatus: '',
     priority: 'media' as 'baixa' | 'media' | 'alta' | 'urgente',
@@ -293,13 +488,19 @@ export default function LeadDetail() {
   });
   const [proposalDraft, setProposalDraft] = useState<ProposalDraft>(emptyProposalDraft);
   const [savingProposal, setSavingProposal] = useState(false);
+  const [proposalUploadState, setProposalUploadState] = useState<ProposalUploadState>('idle');
   const [proposalMessage, setProposalMessage] = useState<string | null>(null);
   const [templates, setTemplates] = useState<Proposal[]>([]);
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [editingProposalId, setEditingProposalId] = useState<string | null>(null);
+  const [documentMessage, setDocumentMessage] = useState<string | null>(null);
+  const [documentError, setDocumentError] = useState<string | null>(null);
+  const [documentsUploading, setDocumentsUploading] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState<LeadDocument | null>(null);
+  const isProposalBusy = savingProposal || proposalUploadState === 'reading' || proposalUploadState === 'sending';
   const cadastro = useMemo(() => lead ? cadastroItems(lead) : [], [lead]);
-  const metaAttribution = useMemo(() => lead ? metaAttributionItems(lead) : [], [lead]);
+  const trackingDetails = useMemo(() => lead ? trackingDetailItems(lead, trackingEvents) : [], [lead, trackingEvents]);
   const sortedProposals = useMemo(() => [...proposals].sort((a, b) => new Date(b.createdAt || b.updatedAt).getTime() - new Date(a.createdAt || a.updatedAt).getTime()), [proposals]);
   const enervitaIntelligence = useMemo(() => lead ? buildEnervitaIntelligence(lead, tasks, proposals) : null, [lead, tasks, proposals]);
 
@@ -310,6 +511,8 @@ export default function LeadDetail() {
       email: lead.contact?.email ?? '',
       phone: lead.contact?.phone ?? '',
       company: lead.contact?.company ?? '',
+      cpf: firstMetadataValue(lead.contact?.metadata, ['cpfFormatted', 'cpf']),
+      cnpj: firstMetadataValue(lead.contact?.metadata, ['cnpjFormatted', 'cnpj']),
       leadSource: lead.leadSource ?? '',
       qualificationStatus: lead.qualificationStatus ?? '',
       priority: lead.priority ?? 'media',
@@ -336,6 +539,23 @@ export default function LeadDetail() {
     const energyBillValue = numberOrUndefined(editDraft.energyBillValue);
     const averageConsumptionKwh = numberOrUndefined(editDraft.averageConsumptionKwh);
     const projectedSavings = numberOrUndefined(editDraft.projectedSavings);
+    if (editDraft.cpf.trim() && !isValidCpf(editDraft.cpf)) {
+      setLeadMessage('CPF inválido. Confira os dígitos antes de salvar.');
+      return;
+    }
+    if (editDraft.cnpj.trim() && !isValidCnpj(editDraft.cnpj)) {
+      setLeadMessage('CNPJ inválido. Confira os dígitos antes de salvar.');
+      return;
+    }
+    const cpf = editDraft.cpf.trim();
+    const cnpj = editDraft.cnpj.trim();
+    const contactMetadata = {
+      ...(lead.contact?.metadata ?? {}),
+      cpf: cpf ? cpf.replace(/\D/g, '') : null,
+      cpfFormatted: cpf ? formatCpf(cpf) : null,
+      cnpj: cnpj ? cnpj.replace(/\D/g, '') : null,
+      cnpjFormatted: cnpj ? formatCnpj(cnpj) : null,
+    };
     const metadata = {
       ...(lead.metadata ?? {}),
       ...(energyBillValue !== undefined ? { energyBillValue } : {}),
@@ -354,6 +574,9 @@ export default function LeadDetail() {
           phone: editDraft.phone.trim() || null,
           company: editDraft.company.trim() || null,
           source: editDraft.leadSource.trim() || null,
+          cpf: cpf || null,
+          cnpj: cnpj || null,
+          metadata: contactMetadata,
         },
         leadSource: editDraft.leadSource.trim() || null,
         qualificationStatus: editDraft.qualificationStatus.trim() || null,
@@ -391,6 +614,44 @@ export default function LeadDetail() {
     if (!outcome) return;
     await addActivity({ activityType: 'note', outcome, notes: outcome });
     setActivityNote('');
+  }
+
+  async function handleDocumentFiles(fileList: FileList | File[]) {
+    const files = Array.from(fileList);
+    if (!files.length) return;
+    const oversized = files.find((file) => file.size > MAX_DOCUMENT_FILE_SIZE_BYTES);
+    if (oversized) {
+      setDocumentError(`${oversized.name} ultrapassa o limite de 20 MB.`);
+      return;
+    }
+    setDocumentsUploading(true);
+    setDocumentError(null);
+    setDocumentMessage(null);
+    try {
+      for (const file of files) {
+        await uploadDocument(file);
+      }
+      setDocumentMessage(`${files.length} arquivo(s) enviado(s).`);
+    } catch (error) {
+      setDocumentError(error instanceof Error ? error.message : 'Erro ao enviar documento.');
+    } finally {
+      setDocumentsUploading(false);
+    }
+  }
+
+  async function handleDeleteDocument(document: LeadDocument) {
+    if (!canEditLead) return;
+    const ok = window.confirm(`Excluir o documento ${document.fileName}?`);
+    if (!ok) return;
+    setDocumentError(null);
+    setDocumentMessage(null);
+    try {
+      await deleteDocument(document.id);
+      if (previewDocument?.id === document.id) setPreviewDocument(null);
+      setDocumentMessage('Documento excluído.');
+    } catch (error) {
+      setDocumentError(error instanceof Error ? error.message : 'Erro ao excluir documento.');
+    }
   }
 
   async function openWhatsapp(registerActivity: boolean) {
@@ -479,17 +740,32 @@ export default function LeadDetail() {
 
   async function handleProposalFile(file?: File | null) {
     if (!file) return;
-    const dataBase64 = await fileToBase64(file);
-    setProposalDraft((current) => ({
-      ...current,
-      sourceType: 'file',
-      importedFile: { name: file.name, mimeType: file.type || 'application/octet-stream', size: file.size, dataBase64 },
-      title: current.title || file.name.replace(/\.[^.]+$/, ''),
-    }));
+    if (proposalUploadState === 'sending') return;
+    setProposalUploadState('reading');
+    if (file.size > MAX_PROPOSAL_FILE_SIZE_BYTES) {
+      setProposalMessage(`Arquivo acima do limite de ${fileSizeLabel(MAX_PROPOSAL_FILE_SIZE_BYTES)}. Selecione um arquivo menor ou compacte antes do envio.`);
+      setProposalUploadState('idle');
+      return;
+    }
+    try {
+      setProposalMessage('Lendo arquivo...');
+      const dataBase64 = await fileToBase64(file);
+      setProposalDraft((current) => ({
+        ...current,
+        sourceType: 'file',
+        importedFile: { name: file.name, mimeType: file.type || 'application/octet-stream', size: file.size, dataBase64 },
+        removeImportedFile: false,
+        title: current.title || file.name.replace(/\.[^.]+$/, ''),
+      }));
+      setProposalMessage(null);
+    } catch {
+      setProposalMessage('Não foi possível ler o arquivo selecionado.');
+    } finally {
+      setProposalUploadState('idle');
+    }
   }
-
   async function handleCreateProposal() {
-    if (!lead || savingProposal) return;
+    if (!lead || savingProposal || proposalUploadState === 'sending') return;
     const monthlyBillValue = numberOrUndefined(proposalDraft.monthlyBillValue) ?? 0;
     const estimatedKwh = numberOrUndefined(proposalDraft.estimatedKwh);
     const discountPercentage = numberOrUndefined(proposalDraft.discountPercentage) ?? 0;
@@ -500,6 +776,11 @@ export default function LeadDetail() {
     if (!title) { setProposalMessage('Informe o título da proposta.'); return; }
     if (proposalDraft.sourceType === 'editor' && !contentText) { setProposalMessage('Escreva o conteúdo da proposta ou importe um arquivo.'); return; }
     if (proposalDraft.sourceType === 'file' && !proposalDraft.importedFile) { setProposalMessage('Selecione o arquivo da proposta.'); return; }
+    if (proposalDraft.sourceType === 'file' && proposalDraft.importedFile && proposalDraft.importedFile.size > MAX_PROPOSAL_FILE_SIZE_BYTES) {
+      setProposalMessage(`Arquivo acima do limite de ${fileSizeLabel(MAX_PROPOSAL_FILE_SIZE_BYTES)}.`);
+      return;
+    }
+    setProposalUploadState('sending');
     setSavingProposal(true);
     setProposalMessage(null);
     try {
@@ -525,6 +806,7 @@ export default function LeadDetail() {
     } catch (error) {
       setProposalMessage(error instanceof Error ? error.message : 'Erro ao salvar proposta.');
     } finally {
+      setProposalUploadState('idle');
       setSavingProposal(false);
     }
   }
@@ -557,6 +839,7 @@ export default function LeadDetail() {
       templateName: template.templateName || '',
       isTemplate: false,
       importedFile: undefined,
+      removeImportedFile: false,
     });
     setShowTemplateSelector(false);
     setEditingProposalId(null);
@@ -578,13 +861,14 @@ export default function LeadDetail() {
       templateName: proposal.templateName || '',
       isTemplate: proposal.isTemplate,
       importedFile: undefined,
+      removeImportedFile: false,
     });
     setEditingProposalId(proposal.id);
     setProposalMessage(null);
   }
 
   async function handleUpdateProposal() {
-    if (!editingProposalId || savingProposal) return;
+    if (!editingProposalId || savingProposal || proposalUploadState === 'sending') return;
     const monthlyBillValue = numberOrUndefined(proposalDraft.monthlyBillValue) ?? 0;
     const estimatedKwh = numberOrUndefined(proposalDraft.estimatedKwh);
     const discountPercentage = numberOrUndefined(proposalDraft.discountPercentage) ?? 0;
@@ -593,10 +877,11 @@ export default function LeadDetail() {
     const title = proposalDraft.title.trim();
     const contentText = proposalDraft.contentText.trim();
     if (!title) { setProposalMessage('Informe o título da proposta.'); return; }
+    setProposalUploadState('sending');
     setSavingProposal(true);
     setProposalMessage(null);
     try {
-      await updateProposal(editingProposalId, {
+      const payload: UpdateProposalPayload = {
         title,
         monthlyBillValue,
         estimatedKwh,
@@ -610,13 +895,17 @@ export default function LeadDetail() {
         contentHtml: proposalDraft.sourceType === 'editor' ? proposalHtmlFromText(contentText) : undefined,
         templateName: proposalDraft.templateName.trim() || undefined,
         isTemplate: proposalDraft.isTemplate,
-      });
+      };
+      if (proposalDraft.removeImportedFile) payload.importedFile = null;
+      if (!proposalDraft.removeImportedFile && proposalDraft.sourceType === 'file' && proposalDraft.importedFile) payload.importedFile = proposalDraft.importedFile;
+      await updateProposal(editingProposalId, payload);
       setProposalDraft(emptyProposalDraft);
       setEditingProposalId(null);
       setProposalMessage('Proposta atualizada.');
     } catch (error) {
       setProposalMessage(error instanceof Error ? error.message : 'Erro ao atualizar proposta.');
     } finally {
+      setProposalUploadState('idle');
       setSavingProposal(false);
     }
   }
@@ -628,6 +917,20 @@ export default function LeadDetail() {
       setProposalMessage('Proposta aceita e oportunidade marcada como contrato ganho.');
     } catch {
       setProposalMessage('Não foi possível marcar a proposta como aceita.');
+    }
+  }
+
+  async function handleDeleteProposalFile(proposalId: string) {
+    const ok = window.confirm('Excluir o arquivo desta proposta? O registro da proposta continuará no lead.');
+    if (!ok) return;
+    try {
+      await updateProposal(proposalId, { importedFile: null });
+      if (editingProposalId === proposalId) {
+        setProposalDraft((current) => ({ ...current, importedFile: undefined, removeImportedFile: true }));
+      }
+      setProposalMessage('Arquivo da proposta removido.');
+    } catch (error) {
+      setProposalMessage(error instanceof Error ? error.message : 'Erro ao remover arquivo da proposta.');
     }
   }
 
@@ -656,6 +959,15 @@ export default function LeadDetail() {
     const tags = (tagDraft ?? currentTagsText).split(',').map((tag) => tag.trim()).filter(Boolean);
     await setTags(tags);
     setTagDraft(null);
+  }
+
+  async function handleConvertToOpportunity() {
+    setConvertingOpportunity(true);
+    try {
+      await convertToOpportunity();
+    } finally {
+      setConvertingOpportunity(false);
+    }
   }
 
   if (loading) return <div className="p-8">Carregando detalhes...</div>;
@@ -791,7 +1103,7 @@ export default function LeadDetail() {
               ) : (
                 <div className="mt-2 space-y-3">
                   <p className="text-sm text-gray-600">Lead ainda não virou oportunidade. Converta quando houver intenção comercial clara e próximo passo de venda.</p>
-                  <Button size="sm" onClick={() => void convertToOpportunity()} disabled={convertingOpportunity}>
+                  <Button size="sm" onClick={() => void handleConvertToOpportunity()} disabled={convertingOpportunity}>
                     {convertingOpportunity ? 'Convertendo...' : 'Converter em oportunidade'}
                   </Button>
                 </div>
@@ -828,6 +1140,8 @@ export default function LeadDetail() {
                 <label className="text-xs font-bold uppercase tracking-wide text-gray-400">Valor da conta<input value={editDraft.energyBillValue} onChange={(event) => setEditDraft((current) => ({ ...current, energyBillValue: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case text-graphite" /></label>
                 <label className="text-xs font-bold uppercase tracking-wide text-gray-400">Consumo médio kWh<input value={editDraft.averageConsumptionKwh} onChange={(event) => setEditDraft((current) => ({ ...current, averageConsumptionKwh: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case text-graphite" /></label>
                 <label className="text-xs font-bold uppercase tracking-wide text-gray-400">Concessionária<input value={editDraft.concessionaria} onChange={(event) => setEditDraft((current) => ({ ...current, concessionaria: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case text-graphite" /></label>
+                <label className="text-xs font-bold uppercase tracking-wide text-gray-400">CPF<input inputMode="numeric" value={editDraft.cpf} onChange={(event) => setEditDraft((current) => ({ ...current, cpf: formatCpf(event.target.value) }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case text-graphite" /></label>
+                <label className="text-xs font-bold uppercase tracking-wide text-gray-400">CNPJ<input inputMode="numeric" value={editDraft.cnpj} onChange={(event) => setEditDraft((current) => ({ ...current, cnpj: formatCnpj(event.target.value) }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case text-graphite" /></label>
                 <label className="text-xs font-bold uppercase tracking-wide text-gray-400">Oferta<input value={editDraft.offer} onChange={(event) => setEditDraft((current) => ({ ...current, offer: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case text-graphite" /></label>
                 <label className="text-xs font-bold uppercase tracking-wide text-gray-400">Economia estimada<input value={editDraft.projectedSavings} onChange={(event) => setEditDraft((current) => ({ ...current, projectedSavings: event.target.value }))} className="mt-1 w-full rounded-xl border border-gray-200 bg-white p-2 text-sm normal-case text-graphite" /></label>
               </div>
@@ -864,6 +1178,7 @@ export default function LeadDetail() {
               { id: 'tasks', label: 'Tarefas', icon: CheckCircle2 },
               { id: 'events', label: 'Tracking', icon: Zap },
               { id: 'history', label: 'Histórico', icon: History },
+              { id: 'documents', label: 'Documentos', icon: Upload },
               { id: 'proposals', label: 'Propostas', icon: FileText },
             ].map(tab => (
               <button
@@ -960,17 +1275,13 @@ export default function LeadDetail() {
               <div className="p-6 space-y-6">
                 <div className="space-y-2">
                   <h4 className="font-bold text-graphite">Resumo de tracking do lead</h4>
-                  <p className="text-sm text-gray-500">Identificação da origem comercial capturada pelo tracking e pelo Lead Form da Meta.</p>
+                  <p className="text-sm text-gray-500">Origem comercial, campanha, conjunto, anúncio, página e eventos capturados para este lead.</p>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-xl bg-gray-50 p-4"><span className="text-gray-400">Origem</span><p className="font-bold text-graphite">{lead.leadSource || 'Não informada'}</p></div>
-                  <div className="rounded-xl bg-gray-50 p-4"><span className="text-gray-400">Origem / mídia</span><p className="font-bold text-graphite">{lead.utmSource || 'sem origem'} / {lead.utmMedium || 'sem medium'}</p></div>
-                </div>
-                {metaAttribution.length > 0 ? (
+                {trackingDetails.length > 0 ? (
                   <div className="rounded-2xl border border-gray-100 bg-white p-5">
-                    <h5 className="font-bold text-graphite">Meta Ads: campanha, conjunto, anúncio e proposta</h5>
+                    <h5 className="font-bold text-graphite">Atribuição e origem</h5>
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                      {metaAttribution.map((item) => (
+                      {trackingDetails.map((item) => (
                         <div key={item.label} className="rounded-xl bg-gray-50 p-4">
                           <span className="text-xs font-bold uppercase tracking-wide text-gray-400">{item.label}</span>
                           <p className="mt-1 break-words font-semibold text-graphite">{item.value}</p>
@@ -979,9 +1290,33 @@ export default function LeadDetail() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-5 text-sm text-gray-500">Este lead ainda não tem campanha/conjunto/anúncio do Meta registrados.</div>
+                  <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-5 text-sm text-gray-500">Este lead ainda não tem origem, campanha, conjunto, anúncio ou página registrados.</div>
                 )}
-                <p className="text-xs text-gray-500">IDs técnicos são exibidos para permitir conferência direta no Gerenciador de Anúncios.</p>
+                <div className="rounded-2xl border border-gray-100 bg-white p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <h5 className="font-bold text-graphite">Eventos enviados</h5>
+                    <Badge variant="default">{trackingEvents.length} evento(s)</Badge>
+                  </div>
+                  {trackingEvents.length === 0 ? (
+                    <div className="mt-4 rounded-xl border border-dashed border-gray-200 bg-gray-50 p-4 text-sm text-gray-500">Nenhum evento de tracking encontrado para este lead.</div>
+                  ) : (
+                    <div className="mt-4 space-y-3">
+                      {trackingEvents.map((event) => (
+                        <article key={event.id} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                          <div className="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-bold text-graphite">{event.eventName}</p>
+                              <p className="text-xs text-gray-500">{event.platform} | {event.status} | tentativas: {event.attempts}</p>
+                            </div>
+                            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-500">{event.sentAt ? formatDate(event.sentAt) : event.nextRetryAt ? `Fila: ${formatDate(event.nextRetryAt)}` : 'Sem envio'}</span>
+                          </div>
+                          {event.errorMessage && <p className="mt-3 rounded-lg bg-red-50 p-2 text-xs font-semibold text-red-700">{event.errorMessage}</p>}
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">IDs técnicos e sinais de clique aparecem quando foram capturados no lead, metadata ou payload dos eventos.</p>
               </div>
             )}
 
@@ -1014,13 +1349,104 @@ export default function LeadDetail() {
                             {entry.changes.map((change) => (
                               <div key={`${entry.id}-${change.field}`} className="rounded-xl bg-gray-50 p-3 text-sm">
                                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400">{change.label}</p>
-                                <p className="mt-1 text-gray-600"><span className="font-semibold text-graphite">{historyValue(change.before)}</span> → <span className="font-semibold text-graphite">{historyValue(change.after)}</span></p>
+                                <p className="mt-1 text-gray-600"><span className="font-semibold text-graphite">{historyValue(change.before)}</span>{' '}{String.fromCharCode(8594)}{' '}<span className="font-semibold text-graphite">{historyValue(change.after)}</span></p>
                               </div>
                             ))}
                           </div>
                         ) : null}
                       </article>
                     ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'documents' && (
+              <div className="p-6 space-y-6">
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h4 className="font-bold text-graphite">Documentos do lead</h4>
+                    <p className="text-sm text-gray-500">Arquivos, imagens e comprovantes vinculados somente a este lead.</p>
+                  </div>
+                  <Badge variant="default">{documents.length} arquivo(s)</Badge>
+                </div>
+
+                {documentMessage && <div className="rounded-2xl border border-green-100 bg-green-50 p-3 text-sm font-semibold text-green-700">{documentMessage}</div>}
+                {documentError && <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">{documentError}</div>}
+
+                <label className={`block rounded-2xl border border-dashed p-6 text-center transition ${canEditLead ? 'cursor-pointer border-solar-orange/40 bg-solar-orange/5 hover:bg-solar-orange/10' : 'border-gray-200 bg-gray-50 opacity-70'}`}>
+                  <Upload size={28} className="mx-auto mb-3 text-solar-orange" />
+                  <span className="block text-sm font-bold text-graphite">{documentsUploading ? 'Enviando arquivos...' : 'Enviar documentos'}</span>
+                  <span className="mt-1 block text-xs text-gray-500">PDF, imagens, planilhas, textos, videos e arquivos ate 20 MB.</span>
+                  <input
+                    type="file"
+                    multiple
+                    disabled={!canEditLead || documentsUploading}
+                    className="sr-only"
+                    onChange={(event) => {
+                      if (event.target.files) void handleDocumentFiles(event.target.files);
+                      event.currentTarget.value = '';
+                    }}
+                  />
+                </label>
+
+                {documents.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-10 text-center">
+                    <FileText size={42} className="mx-auto mb-3 text-gray-300" />
+                    <h5 className="font-bold text-graphite">Nenhum documento anexado</h5>
+                    <p className="mt-1 text-sm text-gray-500">Os arquivos enviados para este lead aparecem aqui.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {documents.map((document) => (
+                      <article key={document.id} className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gray-50 text-solar-orange">
+                            <FileText size={20} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h5 className="truncate font-bold text-graphite" title={document.fileName}>{document.fileName}</h5>
+                            <p className="mt-1 text-xs text-gray-500">{document.mimeType || 'application/octet-stream'} | {fileSizeLabel(document.fileSize ?? 0)} | {formatDate(document.createdAt)}</p>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          <Button variant="outline" size="sm" className="gap-2" onClick={() => setPreviewDocument(document)}><Eye size={15} /> Preview</Button>
+                          <a href={document.downloadUrl || document.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-graphite hover:bg-gray-50"><Download size={15} /> Baixar</a>
+                          {canEditLead && <Button variant="ghost" size="sm" className="gap-2 text-red-600" onClick={() => void handleDeleteDocument(document)}><Trash2 size={15} /> Excluir</Button>}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+
+                {previewDocument && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
+                    <div className="flex max-h-[90vh] w-full max-w-5xl flex-col rounded-2xl bg-white shadow-2xl">
+                      <div className="flex items-start justify-between gap-4 border-b border-gray-100 p-4">
+                        <div className="min-w-0">
+                          <h5 className="truncate font-bold text-graphite">{previewDocument.fileName}</h5>
+                          <p className="text-xs text-gray-500">{previewDocument.mimeType || 'application/octet-stream'} | {fileSizeLabel(previewDocument.fileSize ?? 0)}</p>
+                        </div>
+                        <div className="flex shrink-0 gap-2">
+                          <a href={previewDocument.downloadUrl || previewDocument.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-xl border border-gray-200 px-3 text-sm font-semibold text-graphite hover:bg-gray-50"><Download size={15} /> Baixar</a>
+                          <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setPreviewDocument(null)}><X size={16} /></Button>
+                        </div>
+                      </div>
+                      <div className="min-h-[360px] overflow-auto bg-gray-50 p-4">
+                        {documentPreviewType(previewDocument) === 'image' && <img src={previewDocument.previewUrl || previewDocument.fileUrl || ''} alt={previewDocument.fileName} className="mx-auto max-h-[72vh] max-w-full rounded-xl bg-white object-contain" />}
+                        {documentPreviewType(previewDocument) === 'pdf' && <iframe src={previewDocument.previewUrl || previewDocument.fileUrl || ''} title={previewDocument.fileName} className="h-[72vh] w-full rounded-xl border border-gray-200 bg-white" />}
+                        {documentPreviewType(previewDocument) === 'video' && <video src={previewDocument.previewUrl || previewDocument.fileUrl || ''} controls className="mx-auto max-h-[72vh] max-w-full rounded-xl bg-black" />}
+                        {documentPreviewType(previewDocument) === 'text' && <iframe src={previewDocument.previewUrl || previewDocument.fileUrl || ''} title={previewDocument.fileName} className="h-[72vh] w-full rounded-xl border border-gray-200 bg-white" />}
+                        {documentPreviewType(previewDocument) === 'download' && (
+                          <div className="flex min-h-[360px] flex-col items-center justify-center rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center">
+                            <FileText size={48} className="mb-4 text-gray-300" />
+                            <h5 className="font-bold text-graphite">Preview indisponível para este tipo de arquivo</h5>
+                            <p className="mt-2 max-w-md text-sm text-gray-500">Use o botao de download para abrir o arquivo no aplicativo adequado.</p>
+                            <a href={previewDocument.downloadUrl || previewDocument.fileUrl || '#'} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-solar-orange px-4 py-2 text-sm font-bold text-white"><ExternalLink size={16} /> Abrir / baixar</a>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1094,14 +1520,22 @@ export default function LeadDetail() {
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <Button type="button" size="sm" variant={proposalDraft.sourceType === 'editor' ? 'primary' : 'outline'} onClick={() => setProposalDraft((current) => ({ ...current, sourceType: 'editor' }))}><Copy size={14} className="mr-2" /> Criar no editor</Button>
+                    <Button type="button" size="sm" variant={proposalDraft.sourceType === 'editor' ? 'primary' : 'outline'} onClick={() => setProposalDraft((current) => ({ ...current, sourceType: 'editor', importedFile: undefined, removeImportedFile: false }))}><Copy size={14} className="mr-2" /> Criar no editor</Button>
                     <label className="inline-flex cursor-pointer items-center rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-bold text-graphite hover:border-solar-orange/40">
                       <Upload size={14} className="mr-2 text-solar-orange" /> Importar arquivo
-                      <input type="file" className="hidden" onChange={(event) => void handleProposalFile(event.target.files?.[0])} />
+                      <input type="file" className="hidden" onChange={(event) => void handleProposalFile(event.target.files?.[0])} disabled={isProposalBusy} />
                     </label>
                     <label className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-bold text-gray-600"><input type="checkbox" checked={proposalDraft.isTemplate} onChange={(event) => setProposalDraft((current) => ({ ...current, isTemplate: event.target.checked }))} /> Salvar como modelo</label>
-                    {proposalDraft.importedFile && <span className="inline-flex items-center rounded-xl bg-energy-green/10 px-3 py-2 text-xs font-bold text-energy-green">{proposalDraft.importedFile.name}</span>}
                   </div>
+                  {proposalDraft.importedFile && (
+                    <div className="rounded-2xl border border-gray-200 bg-white p-3 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-gray-500">
+                        <span>{proposalDraft.importedFile.name}</span>
+                        <span>{fileSizeLabel(proposalDraft.importedFile.size)}</span>
+                      </div>
+                      {renderProposalFilePreview(proposalDraft.importedFile)}
+                    </div>
+                  )}
 
                   {proposalDraft.sourceType === 'editor' ? (
                     <textarea aria-label="Conteúdo editável da proposta" value={proposalDraft.contentText} onChange={(event) => setProposalDraft((current) => ({ ...current, contentText: event.target.value }))} className="min-h-[190px] w-full rounded-2xl border border-gray-200 bg-white p-4 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-solar-orange/30" placeholder="Escreva a proposta: diagnóstico, economia estimada, condições comerciais, validade e próximos passos..." />
@@ -1111,9 +1545,9 @@ export default function LeadDetail() {
 
                   <textarea aria-label="Observações da proposta" value={proposalDraft.notes} onChange={(event) => setProposalDraft((current) => ({ ...current, notes: event.target.value }))} className="w-full rounded-xl border border-gray-200 bg-white p-2 text-sm" placeholder="Observações internas opcionais..." />
                   {editingProposalId ? (
-                    <Button variant="primary" size="sm" className="gap-2" onClick={handleUpdateProposal} disabled={savingProposal}><Save size={16} /> {savingProposal ? 'Salvando...' : 'Atualizar proposta'}</Button>
+                    <Button variant="primary" size="sm" className="gap-2" onClick={handleUpdateProposal} disabled={isProposalBusy}><Save size={16} /> {isProposalBusy ? 'Enviando...' : 'Atualizar proposta'}</Button>
                   ) : (
-                    <Button variant="primary" size="sm" className="gap-2" onClick={handleCreateProposal} disabled={savingProposal}><Save size={16} /> {savingProposal ? 'Salvando...' : 'Salvar proposta no lead'}</Button>
+                    <Button variant="primary" size="sm" className="gap-2" onClick={handleCreateProposal} disabled={isProposalBusy}><Save size={16} /> {isProposalBusy ? 'Enviando...' : 'Salvar proposta no lead'}</Button>
                   )}
                 </div>
 
@@ -1133,12 +1567,23 @@ export default function LeadDetail() {
                             <div className="flex items-center gap-1">
                               <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar proposta" onClick={() => handleEditProposal(proposal)}><Edit3 size={14} /></Button>
                               {proposal.status !== 'accepted' && <Button size="sm" onClick={() => handleAcceptProposal(proposal.id)}>Marcar aceita</Button>}
-                              {isAdminUser(user) && <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-alert-red/10" aria-label="Excluir proposta" onClick={() => void handleDeleteProposal(proposal.id)}><Trash2 size={14} className="text-alert-red" /></Button>}
+                              {isAdminUser(user) && <Button variant="ghost" size="sm" className="h-8 hover:bg-alert-red/10" aria-label="Excluir" onClick={() => void handleDeleteProposal(proposal.id)}>Excluir</Button>}
                             </div>
                           </div>
                         </div>
                         {proposal.contentText && <p className="mt-3 line-clamp-3 whitespace-pre-wrap rounded-xl bg-gray-50 p-3 text-sm text-gray-600">{proposal.contentText}</p>}
-                        {proposal.importedFileDataBase64 && proposal.importedFileName && <a className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-solar-orange hover:underline" download={proposal.importedFileName} href={`data:${proposal.importedFileMimeType || 'application/octet-stream'};base64,${proposal.importedFileDataBase64}`}><Download size={14} /> Baixar arquivo</a>}
+                        {getProposalAttachment(proposal) && (
+                          <div className="mt-3 space-y-2">
+                            <p className="text-xs font-bold text-gray-500">Arquivo: {proposal.importedFileName}</p>
+                            {renderProposalFilePreview(getProposalAttachment(proposal)!)}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <a className="inline-flex items-center gap-2 text-sm font-bold text-solar-orange hover:underline" download={proposal.importedFileName} href={proposalFileDataUrl(getProposalAttachment(proposal)!) ?? ''}>
+                                <Download size={14} /> Baixar arquivo
+                              </a>
+                              <Button variant="ghost" size="sm" onClick={() => void handleDeleteProposalFile(proposal.id)}>Excluir</Button>
+                            </div>
+                          </div>
+                        )}
                       </article>
                     ))}
                   </div>

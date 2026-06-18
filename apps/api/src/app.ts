@@ -6,6 +6,7 @@ import { createPgUsersRepository, type UsersRepository } from './modules/users/r
 import { registerUsersRoutes } from './modules/users/users.routes.ts';
 import { createPgLeadsRepository, type LeadsRepository } from './modules/leads/repository.ts';
 import { registerLeadsRoutes } from './modules/leads/leads.routes.ts';
+import { registerLeadDocumentsRoutes } from './modules/leads/documents.routes.ts';
 import { createPgEngagementRepository, type EngagementRepository } from './modules/engagement/repository.ts';
 import { createPgNotificationsRepository, type NotificationsRepository } from './modules/notifications/repository.ts';
 import { registerEngagementRoutes } from './modules/engagement/engagement.routes.ts';
@@ -23,8 +24,6 @@ import { registerAdsRoutes } from './modules/ads/ads.routes.ts';
 import { createPgAdsRepository, createStaticAdsRepository, type AdsRepository } from './modules/ads/repository.ts';
 import { registerAnalyticsRoutes } from './modules/analytics/analytics.routes.ts';
 import { createPgAnalyticsRepository, createStaticAnalyticsRepository, type AnalyticsRepository } from './modules/analytics/repository.ts';
-import { registerInsightsRoutes } from './modules/analytics/analytics-insights.routes.ts';
-import { createPgInsightsRepository, createStaticInsightsRepository, type InsightsRepository } from './modules/analytics/insights.repository.ts';
 import { registerAiRoutes } from './modules/ai/ai.routes.ts';
 import { createPgAiSqlRunner, type AiSqlRunner } from './modules/ai/ai.service.ts';
 import type { AiConfig } from './config/env.ts';
@@ -41,7 +40,6 @@ export type CreateAppOptions = {
   integrationsRepository?: IntegrationsRepository;
   adsRepository?: AdsRepository;
   analyticsRepository?: AnalyticsRepository;
-  insightsRepository?: InsightsRepository;
   aiConfig?: AiConfig;
   aiSqlRunner?: AiSqlRunner;
   aiFetchImpl?: typeof fetch;
@@ -51,7 +49,7 @@ export type CreateAppOptions = {
 
 export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   const env = readEnv();
-  const app = Fastify({ logger: false });
+  const app = Fastify({ logger: false, bodyLimit: 40 * 1024 * 1024 });
   app.addContentTypeParser(/^multipart\/form-data/i, { parseAs: 'buffer' }, (_request, body, done) => done(null, body));
   const userRepository = options.userRepository ?? createPgUserRepository(env.databaseUrl);
   const usersRepository = options.usersRepository ?? createPgUsersRepository(env.databaseUrl);
@@ -64,7 +62,6 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   const integrationsRepository = options.integrationsRepository ?? (options.userRepository ? createStaticIntegrationsRepository() : createPgIntegrationsRepository(env.databaseUrl, env.n8nDatabaseUrl));
   const adsRepository = options.adsRepository ?? (options.userRepository ? createStaticAdsRepository() : createPgAdsRepository(env.databaseUrl, env.metaAds));
   const analyticsRepository = options.analyticsRepository ?? (options.userRepository ? createStaticAnalyticsRepository() : createPgAnalyticsRepository(env.databaseUrl));
-  const insightsRepository = options.insightsRepository ?? (options.userRepository ? createStaticInsightsRepository() : createPgInsightsRepository(env.databaseUrl));
   const aiSqlRunner = options.aiSqlRunner ?? createPgAiSqlRunner(env.databaseUrl);
   const sessionSecret = options.sessionSecret ?? env.sessionSecret;
   const secureCookies = options.secureCookies ?? env.nodeEnv === 'production';
@@ -74,6 +71,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   void registerAuthRoutes(app, { userRepository, sessionSecret, secureCookies });
   void registerUsersRoutes(app, { userRepository, usersRepository, sessionSecret });
   void registerLeadsRoutes(app, { userRepository, leadsRepository, sessionSecret });
+  void registerLeadDocumentsRoutes(app, { userRepository, leadsRepository, sessionSecret });
   void registerEngagementRoutes(app, { userRepository, engagementRepository, sessionSecret });
   void registerNotificationsRoutes(app, { userRepository, notificationsRepository, sessionSecret });
   void registerFollowUpsRoutes(app, { userRepository, followUpsRepository, sessionSecret });
@@ -83,7 +81,6 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   void registerProposalsRoutes(app, { userRepository, proposalsRepository, sessionSecret });
   void registerAdsRoutes(app, { userRepository, adsRepository, sessionSecret });
   void registerAnalyticsRoutes(app, { userRepository, analyticsRepository, sessionSecret });
-  void registerInsightsRoutes(app, { userRepository, insightsRepository, sessionSecret });
   void registerAiRoutes(app, { userRepository, sessionSecret, aiConfig: options.aiConfig ?? env.ai, sqlRunner: aiSqlRunner, fetchImpl: options.aiFetchImpl });
 
   app.addHook('onClose', async () => {
@@ -98,7 +95,6 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
     await integrationsRepository.close?.();
     await adsRepository.close?.();
     await analyticsRepository.close?.();
-    await insightsRepository.close?.();
     await aiSqlRunner.close?.();
   });
 

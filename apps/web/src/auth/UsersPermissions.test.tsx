@@ -17,9 +17,10 @@ vi.mock('recharts', async () => {
   };
 });
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
+import { getFieldBySemanticName, waitForFetchCalled } from '../test/testHelpers';
 
 const admin = { id: 'u1', name: 'Admin Enervita', email: 'admin@example.com', role: 'admin', roles: ['admin'], permissions: [], allowedStages: [] };
 const restricted = { id: 'u2', name: 'Operador', email: 'op@example.com', roles: [], permissions: ['page.dashboard'], allowedStages: [] };
@@ -49,7 +50,7 @@ function jsonResponse(body: unknown, status = 200) {
 function mockFetchForUser(user: unknown) {
   return vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
-    if (url === '/api/me') return jsonResponse({ user });
+    if (url === '/api/me') return jsonResponse({ user });if(url.startsWith('/api/notifications'))return jsonResponse({notifications:[],unreadCount:0});if(url.startsWith('/api/follow-ups'))return jsonResponse({followUps:[]});if(url==='/api/automations/n8n-workflows')return jsonResponse({workflows:[]});
     if (url === '/api/dashboard') return jsonResponse({
     metrics: {
       newLeadsToday: 1,
@@ -112,11 +113,9 @@ describe('administração de usuários e permissões', () => {
 
     await userEvent.click(screen.getByText('Gerenciar usuários'));
     await userEvent.click(screen.getByText('Qualificação'));
-    await userEvent.click(screen.getByRole('button', { name: /salvar usuário/i }));
+    await userEvent.click(screen.getByTestId('save-user-button'));
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/users/user-1', expect.objectContaining({ method: 'PATCH' }));
-    });
+    await waitForFetchCalled(fetchMock, '/api/users/user-1', { method: 'PATCH' });
     const patchCall = fetchMock.mock.calls.find(([url, init]) => url === '/api/users/user-1' && init?.method === 'PATCH');
     expect(JSON.parse(String(patchCall?.[1]?.body))).toMatchObject({
       permissions: ['lead.view', 'user.manage'],
@@ -136,15 +135,13 @@ describe('administração de usuários e permissões', () => {
     await userEvent.type(screen.getByLabelText(/^nome$/i), 'Novo Consultor');
     await userEvent.type(screen.getByLabelText(/^e-mail$/i), 'novo@example.com');
     await userEvent.type(screen.getByLabelText(/^senha temporária$/i), 'SenhaTemporaria123!');
-    await userEvent.type(screen.getByLabelText(/^cargo$/i), 'Consultor');
-    await userEvent.type(screen.getByLabelText(/^departamento$/i), 'Comercial');
+    await userEvent.type(getFieldBySemanticName('jobTitle'), 'Consultor');
+    await userEvent.selectOptions(getFieldBySemanticName('department'), 'vendedor');
     await userEvent.click(screen.getByText('Visualizar leads'));
     await userEvent.click(screen.getByText('Novo lead'));
-    await userEvent.click(screen.getByRole('button', { name: /salvar usuário/i }));
+    await userEvent.click(screen.getByTestId('save-user-button'));
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/users', expect.objectContaining({ method: 'POST' }));
-    });
+    await waitForFetchCalled(fetchMock, '/api/users', { method: 'POST' });
     const createCall = fetchMock.mock.calls.find(([url, init]) => url === '/api/users' && init?.method === 'POST');
     expect(JSON.parse(String(createCall?.[1]?.body))).toMatchObject({
       name: 'Novo Consultor',
@@ -152,7 +149,7 @@ describe('administração de usuários e permissões', () => {
       temporaryPassword: 'SenhaTemporaria123!',
       permissions: ['lead.view'],
       allowedStages: ['novo_lead'],
-      profile: { jobTitle: 'Consultor', department: 'Comercial' },
+      profile: { jobTitle: 'Consultor', department: 'vendedor' },
     });
   });
 
@@ -167,9 +164,7 @@ describe('administração de usuários e permissões', () => {
     await userEvent.type(screen.getByLabelText(/senha temporária para reset/i), 'SenhaTemporaria123!');
     await userEvent.click(screen.getByRole('button', { name: /redefinir senha/i }));
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/users/user-1/reset-password', expect.objectContaining({ method: 'POST' }));
-    });
+    await waitForFetchCalled(fetchMock, '/api/users/user-1/reset-password', { method: 'POST' });
     const resetCall = fetchMock.mock.calls.find(([url, init]) => url === '/api/users/user-1/reset-password' && init?.method === 'POST');
     expect(JSON.parse(String(resetCall?.[1]?.body))).toEqual({ temporaryPassword: 'SenhaTemporaria123!' });
   });

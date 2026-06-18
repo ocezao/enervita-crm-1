@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import bcrypt from 'bcryptjs';
 import { createApp } from '../app.ts';
 import type { AuthUser, UserRepository } from '../modules/auth/userRepository.ts';
-import type { DashboardMetrics, DashboardRepository } from '../modules/dashboard/repository.ts';
+import type { DashboardFilters, DashboardMetrics, DashboardRepository } from '../modules/dashboard/repository.ts';
 
 const SESSION_SECRET = 'test-secret-dashboard-1234567890';
 const TENANT_ID = '22222222-2222-4222-8222-222222222222';
@@ -78,10 +78,10 @@ function makeMetrics(): DashboardMetrics {
   };
 }
 
-function makeDashboardRepository(calls: Array<{ tenantId: string; allowedStages: string[] | null }>): DashboardRepository {
+function makeDashboardRepository(calls: Array<{ tenantId: string; allowedStages: string[] | null; filters?: DashboardFilters }>): DashboardRepository {
   return {
-    async getMetrics(tenantId, allowedStages) {
-      calls.push({ tenantId, allowedStages });
+    async getMetrics(tenantId, allowedStages, filters) {
+      calls.push({ tenantId, allowedStages, filters });
       return makeMetrics();
     },
   };
@@ -94,16 +94,31 @@ async function loginAndGetCookie(app: ReturnType<typeof createApp>): Promise<str
 }
 
 test('GET /api/dashboard requires page.dashboard and returns real metrics scoped by allowed stages', async (t) => {
-  const calls: Array<{ tenantId: string; allowedStages: string[] | null }> = [];
+  const calls: Array<{ tenantId: string; allowedStages: string[] | null; filters?: DashboardFilters }> = [];
   const actor = makeAuthUser();
   const app = createApp({ userRepository: makeUserRepository(actor), dashboardRepository: makeDashboardRepository(calls), sessionSecret: SESSION_SECRET });
   t.after(async () => app.close());
   const cookie = await loginAndGetCookie(app);
 
-  const response = await app.inject({ method: 'GET', url: '/api/dashboard', headers: { cookie } });
+  const response = await app.inject({
+    method: 'GET',
+    url: '/api/dashboard?startDate=2026-05-01&endDate=2026-05-31&stage=proposta_enviada&source=site&platform=meta&activityType=call',
+    headers: { cookie },
+  });
 
   assert.equal(response.statusCode, 200);
-  assert.deepEqual(calls, [{ tenantId: TENANT_ID, allowedStages: ['novo_lead', 'proposta_enviada'] }]);
+  assert.deepEqual(calls, [{
+    tenantId: TENANT_ID,
+    allowedStages: ['novo_lead', 'proposta_enviada'],
+    filters: {
+      startDate: '2026-05-01',
+      endDate: '2026-05-31',
+      stage: 'proposta_enviada',
+      source: 'site',
+      platform: 'meta',
+      activityType: 'call',
+    },
+  }]);
   assert.equal(response.json().metrics.newLeadsToday, 3);
   assert.equal(response.json().metrics.recentEvents[0].outcome, 'Atividade real do dashboard');
 });

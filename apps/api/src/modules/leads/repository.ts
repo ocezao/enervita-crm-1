@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import pg, { type PoolClient } from 'pg';
 import type { PipelineStageKey } from '@enervita/shared';
 import type { AuditContext } from '../users/repository.ts';
@@ -88,6 +89,39 @@ export type LeadHistoryEvent = {
   stage: PipelineStageKey | null;
 };
 
+export type LeadDocument = {
+  id: string;
+  tenantId: string;
+  leadId: string;
+  fileName: string;
+  mimeType: string | null;
+  fileSize: number | null;
+  fileUrl: string | null;
+  previewUrl: string;
+  downloadUrl: string;
+  storageBackend: 'postgres' | 'legacy_url' | 'external_url';
+  checksumSha256: string | null;
+  isPublic: boolean;
+  uploadedByUserId: string | null;
+  uploadedByUserAgent: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type LeadDocumentContent = LeadDocument & {
+  content: Buffer | null;
+};
+
+export type AddLeadDocumentInput = {
+  fileName: string;
+  mimeType?: string | null;
+  fileSize?: number | null;
+  fileData?: Buffer | null;
+  fileUrl?: string | null;
+  storageBackend?: LeadDocument['storageBackend'];
+  uploadedByUserAgent?: string | null;
+};
+
 export type LeadsRepository = {
   listLeads(tenantId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, filters?: LeadListFilters): Promise<Lead[]>;
   getLead(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<Lead | null>;
@@ -99,6 +133,10 @@ export type LeadsRepository = {
   bulkSetLeadTags(context: AuditContext, leadIds: string[], allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: SetLeadTagsInput): Promise<Lead[]>;
   deleteLead(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<void>;
   bulkDeleteLeads(context: AuditContext, leadIds: string[], allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<{ deleted: number }>;
+  listLeadDocuments(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<LeadDocument[]>;
+  addLeadDocument(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: AddLeadDocumentInput): Promise<LeadDocument>;
+  getLeadDocumentContent(tenantId: string, leadId: string, documentId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<LeadDocumentContent | null>;
+  deleteLeadDocument(context: AuditContext, leadId: string, documentId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<void>;
   countStageHistory?(tenantId: string, leadId: string): Promise<number>;
   close?(): Promise<void>;
 };
@@ -191,6 +229,46 @@ function rowToLeadHistoryEvent(row: Record<string, unknown>): LeadHistoryEvent {
     actor: row.actorId ? { id: row.actorId as string, name: row.actorName as string, email: row.actorEmail as string } : null,
     changes,
     stage: historyStage(after?.stage, before?.stage),
+  };
+}
+
+function documentPublicUrls(leadId: string, documentId: string) {
+  const encodedLeadId = encodeURIComponent(leadId);
+  const encodedDocumentId = encodeURIComponent(documentId);
+  return {
+    previewUrl: `/api/leads/${encodedLeadId}/documents/${encodedDocumentId}/preview`,
+    downloadUrl: `/api/leads/${encodedLeadId}/documents/${encodedDocumentId}/download`,
+  };
+}
+
+function rowToLeadDocument(row: Record<string, unknown>): LeadDocument {
+  const id = String(row.id);
+  const leadId = String(row.leadId);
+  const urls = documentPublicUrls(leadId, id);
+  return {
+    id,
+    tenantId: String(row.tenantId),
+    leadId,
+    fileName: String(row.fileName ?? 'document'),
+    mimeType: row.mimeType ? String(row.mimeType) : null,
+    fileSize: row.fileSize === null || row.fileSize === undefined ? null : Number(row.fileSize),
+    fileUrl: row.fileUrl ? String(row.fileUrl) : null,
+    previewUrl: urls.previewUrl,
+    downloadUrl: urls.downloadUrl,
+    storageBackend: (row.storageBackend as LeadDocument['storageBackend']) ?? 'postgres',
+    checksumSha256: row.checksumSha256 ? String(row.checksumSha256) : null,
+    isPublic: row.isPublic === true,
+    uploadedByUserId: row.uploadedByUserId ? String(row.uploadedByUserId) : null,
+    uploadedByUserAgent: row.uploadedByUserAgent ? String(row.uploadedByUserAgent) : null,
+    createdAt: String(row.createdAt),
+    updatedAt: String(row.updatedAt),
+  };
+}
+
+function rowToLeadDocumentContent(row: Record<string, unknown>): LeadDocumentContent {
+  return {
+    ...rowToLeadDocument(row),
+    content: Buffer.isBuffer(row.content) ? row.content : null,
   };
 }
 
@@ -320,6 +398,41 @@ const leadSelect = `select l.id,
                         where lta.tenant_id = l.tenant_id and lta.lead_id = l.id
                      ) tag_rows on true`;
 
+const leadDocumentSelect = `select d.id,
+                                   d.tenant_id as "tenantId",
+                                   d.lead_id as "leadId",
+                                   d.file_name as "fileName",
+                                   d.mime_type as "mimeType",
+                                   d.file_size as "fileSize",
+                                   d.file_url as "fileUrl",
+                                   d.storage_backend as "storageBackend",
+                                   d.checksum_sha256 as "checksumSha256",
+                                   d.is_public as "isPublic",
+                                   d.uploaded_by_user_id as "uploadedByUserId",
+                                   d.uploaded_by_user_agent as "uploadedByUserAgent",
+                                   d.created_at::text as "createdAt",
+                                   d.updated_at::text as "updatedAt"
+                              from lead_documents d
+                              join leads l on l.tenant_id = d.tenant_id and l.id = d.lead_id`;
+
+const leadDocumentContentSelect = `select d.id,
+                                          d.tenant_id as "tenantId",
+                                          d.lead_id as "leadId",
+                                          d.file_name as "fileName",
+                                          d.mime_type as "mimeType",
+                                          d.file_size as "fileSize",
+                                          d.file_data as content,
+                                          d.file_url as "fileUrl",
+                                          d.storage_backend as "storageBackend",
+                                          d.checksum_sha256 as "checksumSha256",
+                                          d.is_public as "isPublic",
+                                          d.uploaded_by_user_id as "uploadedByUserId",
+                                          d.uploaded_by_user_agent as "uploadedByUserAgent",
+                                          d.created_at::text as "createdAt",
+                                          d.updated_at::text as "updatedAt"
+                                     from lead_documents d
+                                     join leads l on l.tenant_id = d.tenant_id and l.id = d.lead_id`;
+
 function stageClause(allowedStages: PipelineStageKey[] | null, offset: number): string {
   return allowedStages === null ? '' : ` and l.stage = any($${offset}::lead_stage[])`;
 }
@@ -329,7 +442,7 @@ function stageParams(allowedStages: PipelineStageKey[] | null): unknown[] {
 }
 
 function ownerClause(ownerUserId: string | null, offset: number): string {
-  return ownerUserId === null ? '' : ` and l.sdr_owner_id = $${offset}::uuid`;
+  return ownerUserId === null ? '' : ` and l.sdr_owner_id = ${offset}::uuid`;
 }
 
 function ownerParams(ownerUserId: string | null): unknown[] {
@@ -338,8 +451,7 @@ function ownerParams(ownerUserId: string | null): unknown[] {
 
 async function resolveSdrOwnerId(client: PoolClient, tenantId: string, requestedOwnerId?: string | null): Promise<string | null> {
   if (requestedOwnerId) return requestedOwnerId;
-  // Round-robin rotation: find all SDRs, check last assigned, pick next
-  const sdrList = await client.query(
+  const result = await client.query(
     `select u.id::text as id
        from users u
        join user_roles ur on ur.tenant_id = u.tenant_id and ur.user_id = u.id
@@ -355,19 +467,14 @@ async function resolveSdrOwnerId(client: PoolClient, tenantId: string, requested
              and admin_ur.user_id = u.id
              and admin_r.name = 'admin'
         )
-      order by u.name`,
+      group by u.id, u.name
+      order by (select count(*) from leads l where l.tenant_id = u.tenant_id and l.sdr_owner_id = u.id) asc,
+               u.name asc,
+               u.id asc
+      limit 1`,
     [tenantId],
   );
-  if (sdrList.rows.length === 0) return null;
-  if (sdrList.rows.length === 1) return sdrList.rows[0].id;
-  const lastLead = await client.query(
-    `select sdr_owner_id from leads where tenant_id = $1 and sdr_owner_id is not null order by created_at desc limit 1`,
-    [tenantId],
-  );
-  const lastId = lastLead.rows[0]?.sdr_owner_id ?? null;
-  const lastIdx = sdrList.rows.findIndex(r => r.id === lastId);
-  const nextIdx = (lastIdx + 1) % sdrList.rows.length;
-  return sdrList.rows[nextIdx].id;
+  return (result.rows[0]?.id as string | undefined) ?? null;
 }
 
 function tagFilterClause(filters: LeadListFilters | undefined, offset: number): { clause: string; params: unknown[] } {
@@ -406,6 +513,14 @@ async function writeAudit(client: PoolClient, context: AuditContext, entityId: s
     `insert into audit_logs (tenant_id, actor_user_id, entity_type, entity_id, action, before_data, after_data, ip_address, user_agent)
      values ($1, $2, 'lead', $3, $4, $5::jsonb, $6::jsonb, nullif($7, '')::inet, $8)`,
     [context.tenantId, context.actorUserId, entityId, action, before ? JSON.stringify(before) : null, after ? JSON.stringify(after) : null, context.ipAddress ?? null, context.userAgent ?? null],
+  );
+}
+
+async function writeLeadDocumentAudit(client: PoolClient, context: AuditContext, entityId: string, action: string, beforeData: unknown, afterData: unknown): Promise<void> {
+  await client.query(
+    `insert into audit_logs (tenant_id, actor_user_id, entity_type, entity_id, action, before_data, after_data, ip_address, user_agent)
+     values ($1, $2, 'lead_document', $3, $4, $5::jsonb, $6::jsonb, nullif($7, '')::inet, $8)`,
+    [context.tenantId, context.actorUserId, entityId, action, beforeData ? JSON.stringify(beforeData) : null, afterData ? JSON.stringify(afterData) : null, context.ipAddress ?? null, context.userAgent ?? null],
   );
 }
 
@@ -620,7 +735,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
       const result = await pool.query(
         `${leadSelect}
           where l.tenant_id = $1${stageClause(allowedStages, 2)}${ownerClause(ownerUserId, 2 + stageParams(allowedStages).length)}${tagFilter.clause}
-          order by l.created_at desc`,
+          order by l.updated_at desc, l.created_at desc`,
         [...baseParams, ...tagFilter.params],
       );
       return result.rows.map(rowToLead);
@@ -813,7 +928,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         const beforeResult = await client.query(
           `${leadSelect}
             where l.tenant_id = $1 and l.id = any($2::uuid[])${stageClause(allowedStages, 3)}${ownerClause(ownerUserId, 3 + stageParams(allowedStages).length)}
-            order by l.created_at desc
+            order by l.updated_at desc, l.created_at desc
             for update of l, c`,
           beforeParams,
         );
@@ -842,7 +957,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         const afterResult = await client.query(
           `${leadSelect}
             where l.tenant_id = $1 and l.id = any($2::uuid[])
-            order by l.created_at desc`,
+            order by l.updated_at desc, l.created_at desc`,
           [context.tenantId, visibleIds],
         );
         const afterLeads = afterResult.rows.map(rowToLead);
@@ -886,7 +1001,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         const beforeResult = await client.query(
           `${leadSelect}
             where l.tenant_id = $1 and l.id = any($2::uuid[])${stageClause(allowedStages, 3)}${ownerClause(ownerUserId, 3 + stageParams(allowedStages).length)}
-            order by l.created_at desc
+            order by l.updated_at desc, l.created_at desc
             for update of l, c`,
           beforeParams,
         );
@@ -900,6 +1015,107 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         }
         await client.query('commit');
         return { deleted: visibleIds.length };
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async listLeadDocuments(tenantId, leadId, allowedStages, ownerUserId) {
+      const params = [tenantId, leadId, ...stageParams(allowedStages), ...ownerParams(ownerUserId)];
+      const result = await pool.query(
+        `${leadDocumentSelect}
+          where d.tenant_id = $1 and d.lead_id = $2${stageClause(allowedStages, 3)}${ownerClause(ownerUserId, 3 + stageParams(allowedStages).length)}
+          order by d.created_at desc`,
+        params,
+      );
+      return result.rows.map(rowToLeadDocument);
+    },
+
+    async addLeadDocument(context, leadId, allowedStages, ownerUserId, input) {
+      const client = await pool.connect();
+      try {
+        await client.query('begin');
+        const lead = await selectOne(client, context.tenantId, leadId, allowedStages, ownerUserId, true);
+        if (!lead) throw new LeadsNotFoundError('Lead not found');
+        const fileData = input.fileData ?? null;
+        const storageBackend = input.storageBackend ?? (fileData ? 'postgres' : 'external_url');
+        const checksum = fileData ? createHash('sha256').update(fileData).digest('hex') : null;
+        const inserted = await client.query(
+          `insert into lead_documents (
+             tenant_id, lead_id, file_name, mime_type, file_size, file_data, file_url,
+             storage_backend, checksum_sha256, is_public, uploaded_by_user_id, uploaded_by_user_agent
+           )
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, false, $10, $11)
+           returning id,
+                     tenant_id as "tenantId",
+                     lead_id as "leadId",
+                     file_name as "fileName",
+                     mime_type as "mimeType",
+                     file_size as "fileSize",
+                     file_url as "fileUrl",
+                     storage_backend as "storageBackend",
+                     checksum_sha256 as "checksumSha256",
+                     is_public as "isPublic",
+                     uploaded_by_user_id as "uploadedByUserId",
+                     uploaded_by_user_agent as "uploadedByUserAgent",
+                     created_at::text as "createdAt",
+                     updated_at::text as "updatedAt"`,
+          [
+            context.tenantId,
+            leadId,
+            input.fileName,
+            input.mimeType ?? null,
+            input.fileSize ?? fileData?.length ?? null,
+            fileData,
+            input.fileUrl ?? null,
+            storageBackend,
+            checksum,
+            context.actorUserId,
+            input.uploadedByUserAgent ?? context.userAgent ?? null,
+          ],
+        );
+        const document = rowToLeadDocument(inserted.rows[0]);
+        await writeLeadDocumentAudit(client, context, document.id, 'lead_document.uploaded', null, document);
+        await client.query('commit');
+        return document;
+      } catch (error) {
+        await client.query('rollback');
+        throw error;
+      } finally {
+        client.release();
+      }
+    },
+
+    async getLeadDocumentContent(tenantId, leadId, documentId, allowedStages, ownerUserId) {
+      const params = [tenantId, leadId, documentId, ...stageParams(allowedStages), ...ownerParams(ownerUserId)];
+      const result = await pool.query(
+        `${leadDocumentContentSelect}
+          where d.tenant_id = $1 and d.lead_id = $2 and d.id = $3${stageClause(allowedStages, 4)}${ownerClause(ownerUserId, 4 + stageParams(allowedStages).length)}
+          limit 1`,
+        params,
+      );
+      return result.rows[0] ? rowToLeadDocumentContent(result.rows[0]) : null;
+    },
+
+    async deleteLeadDocument(context, leadId, documentId, allowedStages, ownerUserId) {
+      const client = await pool.connect();
+      try {
+        await client.query('begin');
+        const params = [context.tenantId, leadId, documentId, ...stageParams(allowedStages), ...ownerParams(ownerUserId)];
+        const current = await client.query(
+          `${leadDocumentSelect}
+            where d.tenant_id = $1 and d.lead_id = $2 and d.id = $3${stageClause(allowedStages, 4)}${ownerClause(ownerUserId, 4 + stageParams(allowedStages).length)}
+            for update of d`,
+          params,
+        );
+        const document = current.rows[0] ? rowToLeadDocument(current.rows[0]) : null;
+        if (!document) throw new LeadsNotFoundError('Document not found');
+        await client.query('delete from lead_documents where tenant_id = $1 and lead_id = $2 and id = $3', [context.tenantId, leadId, documentId]);
+        await writeLeadDocumentAudit(client, context, document.id, 'lead_document.deleted', document, null);
+        await client.query('commit');
       } catch (error) {
         await client.query('rollback');
         throw error;

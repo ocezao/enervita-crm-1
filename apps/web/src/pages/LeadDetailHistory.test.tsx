@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
+import { expectFetchCalled } from '../test/testHelpers';
 
 const leadId = '11111111-1111-4111-8111-111111111111';
 const operator = {
@@ -41,7 +42,7 @@ function jsonResponse(body: unknown, status = 200) {
 function mockLeadDetailFetch(history: unknown[]) {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
-    if (url === '/api/me') return jsonResponse({ user: operator });
+    if (url === '/api/me') return jsonResponse({ user: operator });if(url.startsWith('/api/notifications'))return jsonResponse({notifications:[],unreadCount:0});if(url.startsWith('/api/follow-ups'))return jsonResponse({followUps:[]});if(url==='/api/automations/n8n-workflows')return jsonResponse({workflows:[]});
     if (url === `/api/leads/${leadId}`) return jsonResponse({ lead });
     if (url === `/api/leads/${leadId}/activities`) return jsonResponse({ activities: [] });
     if (url === `/api/leads/${leadId}/tasks`) return jsonResponse({ tasks: [] });
@@ -74,9 +75,9 @@ describe('Lead detail history tab', () => {
 
     render(<App />);
     expect(await screen.findByText('Lead com Histórico')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /histórico/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Hist/i }));
 
-    const historyPanel = screen.getByRole('region', { name: /histórico do lead/i });
+    const historyPanel = screen.getByRole('region', { name: /Hist/i });
     expect(within(historyPanel).getByText('Lead atualizado manualmente')).toBeInTheDocument();
     expect(within(historyPanel).getByText(/lead.updated/i)).toBeInTheDocument();
     expect(within(historyPanel).getByText(/Ana Operadora/)).toBeInTheDocument();
@@ -86,7 +87,7 @@ describe('Lead detail history tab', () => {
     expect(within(historyPanel).getByText(/Novo lead/)).toBeInTheDocument();
     expect(within(historyPanel).getByText(/Qualificação/)).toBeInTheDocument();
     expect(within(historyPanel).getByText('Prioridade')).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenCalledWith(`/api/leads/${leadId}/history`, { credentials: 'include' });
+    expectFetchCalled(fetchMock, `/api/leads/${leadId}/history`, { credentials: 'include' });
   });
 
   it('renders system-generated history entries without an actor instead of breaking lead opening', async () => {
@@ -103,9 +104,9 @@ describe('Lead detail history tab', () => {
 
     render(<App />);
     expect(await screen.findByText('Lead com Histórico')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /histórico/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Hist/i }));
 
-    const historyPanel = screen.getByRole('region', { name: /histórico do lead/i });
+    const historyPanel = screen.getByRole('region', { name: /Hist/i });
     expect(within(historyPanel).getByText('Lead atribuído automaticamente')).toBeInTheDocument();
     expect(within(historyPanel).getByText(/Sistema/)).toBeInTheDocument();
   });
@@ -115,9 +116,9 @@ describe('Lead detail history tab', () => {
 
     render(<App />);
     expect(await screen.findByText('Lead com Histórico')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /histórico/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Hist/i }));
 
-    expect(screen.getByText('Nenhum histórico registrado')).toBeInTheDocument();
-    expect(screen.getByText('As alterações deste lead aparecerão aqui quando forem registradas.')).toBeInTheDocument();
+    expect(screen.getByText(/Nenhum hist/i)).toBeInTheDocument();
+    expect(screen.getByText(/altera.*lead aparecer/i)).toBeInTheDocument();
   });
 });

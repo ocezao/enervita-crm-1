@@ -1,6 +1,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { api } from './crmApi';
+import { expectFetchCalled } from '../../test/testHelpers';
+import { api, formatCnpj, formatCpf, isValidCnpj, isValidCpf } from './crmApi';
 
 describe('crmApi HTTP client', () => {
   beforeEach(() => {
@@ -45,7 +46,7 @@ describe('crmApi HTTP client', () => {
 
     const leads = await api.listLeads();
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/leads', { credentials: 'include' });
+    expectFetchCalled(fetchMock, '/api/leads', { credentials: 'include' });
     expect(leads).toHaveLength(1);
     expect(leads[0]).toMatchObject({
       id: 'lead-1',
@@ -68,8 +69,8 @@ describe('crmApi HTTP client', () => {
     await api.listLeads({ tags: ['vip', 'urgente'], tagMode: 'all' });
     const updated = await api.setLeadTags('lead-1', ['vip']);
 
-    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/leads?tags=vip%2Curgente&tagMode=all', { credentials: 'include' });
-    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/leads/lead-1/tags', {
+    expectFetchCalled(fetchMock, '/api/leads?tags=vip%2Curgente&tagMode=all', { credentials: 'include' });
+    expectFetchCalled(fetchMock, '/api/leads/lead-1/tags', {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -87,8 +88,8 @@ describe('crmApi HTTP client', () => {
     await api.listLeads({ tags: ['vip', 'urgente'], tagMode: 'all' });
     const updated = await api.setLeadTags('lead-1', ['vip']);
 
-    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/leads?tags=vip%2Curgente&tagMode=all', { credentials: 'include' });
-    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/leads/lead-1/tags', {
+    expectFetchCalled(fetchMock, '/api/leads?tags=vip%2Curgente&tagMode=all', { credentials: 'include' });
+    expectFetchCalled(fetchMock, '/api/leads/lead-1/tags', {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -119,7 +120,7 @@ describe('crmApi HTTP client', () => {
 
     const updated = await api.updateLeadStage('lead-1', 'qualificacao');
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/leads/lead-1/stage', {
+    expectFetchCalled(fetchMock, '/api/leads/lead-1/stage', {
       method: 'PATCH',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -157,7 +158,7 @@ describe('crmApi HTTP client', () => {
 
     const history = await api.listLeadHistory('lead-1');
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/leads/lead-1/history', { credentials: 'include' });
+    expectFetchCalled(fetchMock, '/api/leads/lead-1/history', { credentials: 'include' });
     expect(history).toEqual([
       {
         id: 'history-1',
@@ -188,8 +189,8 @@ describe('crmApi HTTP client', () => {
     const tasks = await api.listTasks();
     const completed = await api.completeTask('task-1');
 
-    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/tasks', { credentials: 'include' });
-    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/tasks/task-1/complete', { credentials: 'include', method: 'PATCH' });
+    expectFetchCalled(fetchMock, '/api/tasks', { credentials: 'include' });
+    expectFetchCalled(fetchMock, '/api/tasks/task-1/complete', { credentials: 'include', method: 'PATCH' });
     expect(tasks[0]).toMatchObject({ id: 'task-1', title: 'Ligar', leadName: 'Maria Solar' });
     expect(completed.status).toBe('concluido');
   });
@@ -209,8 +210,8 @@ describe('crmApi HTTP client', () => {
     const activities = await api.listActivities('lead-1');
     const created = await api.createActivity({ leadId: 'lead-1', activityType: 'whatsapp', outcome: 'Resposta WhatsApp' });
 
-    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/leads/lead-1/activities', { credentials: 'include' });
-    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/leads/lead-1/activities', {
+    expectFetchCalled(fetchMock, '/api/leads/lead-1/activities', { credentials: 'include' });
+    expectFetchCalled(fetchMock, '/api/leads/lead-1/activities', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -241,7 +242,7 @@ describe('crmApi HTTP client', () => {
 
     const metrics = await api.listDashboardMetrics();
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/dashboard', { credentials: 'include' });
+    expectFetchCalled(fetchMock, '/api/dashboard', { credentials: 'include' });
     expect(metrics.newLeadsToday).toBe(5);
     expect(metrics.recentEvents[0].outcome).toBe('Atividade real');
   });
@@ -267,12 +268,73 @@ describe('crmApi HTTP client', () => {
     const webhooks = await api.listWebhooks();
     const result = await api.testWebhook('n8n-lead-created');
 
-    expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/automations', { credentials: 'include' });
-    expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/webhooks', { credentials: 'include' });
-    expect(fetchMock).toHaveBeenNthCalledWith(3, '/api/webhooks/n8n-lead-created/test', { credentials: 'include', method: 'POST' });
+    expectFetchCalled(fetchMock, '/api/automations', { credentials: 'include' });
+    expectFetchCalled(fetchMock, '/api/webhooks', { credentials: 'include' });
+    expectFetchCalled(fetchMock, '/api/webhooks/n8n-lead-created/test', { credentials: 'include', method: 'POST' });
     expect(automations[0]).toMatchObject({ id: 'lead-no-followup-12h', trigger: 'lead.no_followup_12h' });
     expect(webhooks[0]).toMatchObject({ id: 'n8n-lead-created', status: 'planned' });
     expect(result.success).toBe(true);
+  });
+
+  it('formats, validates and sends CPF/CNPJ when creating a lead', async () => {
+    expect(formatCpf('52998224725')).toBe('529.982.247-25');
+    expect(formatCnpj('04252011000110')).toBe('04.252.011/0001-10');
+    expect(isValidCpf('529.982.247-25')).toBe(true);
+    expect(isValidCpf('111.111.111-11')).toBe(false);
+    expect(isValidCnpj('04.252.011/0001-10')).toBe(true);
+    expect(isValidCnpj('11.111.111/1111-11')).toBe(false);
+
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        lead: {
+          id: 'lead-docs',
+          contactId: 'contact-docs',
+          stage: 'novo_lead',
+          qualificationStatus: 'aguardando',
+          leadSource: 'crm_manual',
+          estimatedTicket: null,
+          priority: 'media',
+          tags: [],
+          createdAt: '2026-05-29T00:00:00.000Z',
+          updatedAt: '2026-05-29T00:00:00.000Z',
+          contact: {
+            id: 'contact-docs',
+            name: 'Lead Documento',
+            email: 'docs@example.com',
+            phone: '45999999999',
+            company: 'Empresa Documento',
+            source: 'crm_manual',
+            consent: true,
+            createdAt: '2026-05-29T00:00:00.000Z',
+            metadata: {
+              cpf: '52998224725',
+              cpfFormatted: '529.982.247-25',
+              cnpj: '04252011000110',
+              cnpjFormatted: '04.252.011/0001-10',
+            },
+          },
+        },
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.createLead({
+      name: 'Lead Documento',
+      email: 'docs@example.com',
+      phone: '45999999999',
+      company: 'Empresa Documento',
+      leadSource: 'crm_manual',
+      cpf: '529.982.247-25',
+      cnpj: '04.252.011/0001-10',
+    });
+
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init.body));
+    expect(body.contact.cpf).toBe('529.982.247-25');
+    expect(body.contact.cnpj).toBe('04.252.011/0001-10');
+    expect(body.contact.metadata.cpf).toBe('52998224725');
+    expect(body.contact.metadata.cnpj).toBe('04252011000110');
   });
 
 

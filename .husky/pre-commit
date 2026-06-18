@@ -1,0 +1,6 @@
+if [ "${SKIP_HUSKY-}" = "1" ]; then
+  echo "SKIP_HUSKY=1. skipping pre-commit checks"
+  exit 0
+fi
+
+npm run -s verify:production

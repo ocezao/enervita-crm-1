@@ -1,4 +1,4 @@
-import type { CrmApi } from './crmApi';
+import type { CrmApi, CrmInsightsData, UpdateLeadPayload } from './crmApi';
 import type {
   Activity,
   AdsOverview,
@@ -6,115 +6,442 @@ import type {
   AutomationRule,
   AutomationRun,
   CreateProposalPayload,
+  UpdateProposalPayload,
   CrmAnalyticsOverview,
   DashboardMetrics,
   FollowUpQueueItem,
   FollowUpRuleRunResult,
   FollowUpStatus,
   Lead,
+  LeadDocument,
   LeadHistoryEntry,
-  N8nWorkflow,
-  N8nWorkflowToggleResult,
+  LeadStage,
   Notification,
   Proposal,
-  TrackingEvent,
   Task,
+  TrackingEvent,
   Webhook,
   WebhookDelivery,
   WebhookTestResult,
 } from './types';
+import {
+  mockLeads,
+  mockTasks,
+  mockActivities,
+  mockAutomations,
+  mockWebhooks
+} from '../../data/mockData';
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-function randomBetween(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
+const mockLeadDocuments: LeadDocument[] = [];
 
 export class MockCrmApi implements CrmApi {
-  private mockLeads: Lead[] = [];
-
   async listLeads(): Promise<Lead[]> {
-    await delay(300);
-    return this.mockLeads;
+    await delay(500);
+    return [...mockLeads];
   }
 
-  async getLead(): Promise<Lead | undefined> {
-    return this.mockLeads[0];
+  async getLead(id: string): Promise<Lead | undefined> {
+    await delay(300);
+    return mockLeads.find(l => l.id === id);
   }
-  async updateLead(): Promise<Lead> {
-    return this.mockLeads[0];
+
+  async createLead(payload: Record<string, unknown>): Promise<Lead> {
+    await delay(250);
+    const text = (key: string) => (typeof payload[key] === 'string' ? payload[key] : '');
+    const numeric = (key: string) => {
+      const raw = text(key).replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
+      const value = Number(raw);
+      return Number.isFinite(value) ? value : 0;
+    };
+    const metadata = {
+      visibility: 'team',
+      createdVia: text('createdVia') || 'crm_manual',
+      serviceInterest: text('serviceInterest'),
+      unitType: text('unitType'),
+      city: text('city'),
+      state: text('state'),
+      concessionaria: text('concessionaria'),
+      energyBillValue: numeric('monthlyBillValue'),
+      averageConsumptionKwh: numeric('averageConsumptionKwh'),
+      offer: text('serviceInterest'),
+    };
+    const lead: Lead = {
+      id: Math.random().toString(36).slice(2),
+      contactId: Math.random().toString(36).slice(2),
+      stage: 'novo_lead',
+      qualificationStatus: typeof payload.qualificationStatus === 'string' ? payload.qualificationStatus : 'aguardando',
+      leadSource: typeof payload.leadSource === 'string' ? payload.leadSource : '',
+      estimatedTicket: numeric('monthlyBillValue'),
+      sdrOwner: null,
+      nextActionAt: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      energyBillValue: numeric('monthlyBillValue'),
+      averageConsumptionKwh: numeric('averageConsumptionKwh'),
+      concessionaria: text('concessionaria'),
+      offer: text('serviceInterest') || 'Enervita',
+      projectedSavings: 0,
+      priority: (payload.priority as Lead['priority']) ?? 'media',
+      notes: typeof payload.notes === 'string' ? payload.notes : undefined,
+      metadata,
+      contact: {
+        id: Math.random().toString(36).slice(2),
+        name: text('name'),
+        email: text('email'),
+        phone: text('phone'),
+        company: text('company'),
+        source: text('leadSource'),
+        consent: true,
+        createdAt: new Date().toISOString(),
+        metadata: {
+          city: text('city'),
+          state: text('state'),
+          serviceInterest: text('serviceInterest'),
+          unitType: text('unitType'),
+        },
+      },
+      tags: [],
+    };
+    mockLeads.unshift(lead);
+    return { ...lead };
   }
-  async updateLeadStage(): Promise<Lead> {
-    return this.mockLeads[0];
+
+
+  async updateLead(id: string, payload: UpdateLeadPayload): Promise<Lead> {
+    await delay(200);
+    const lead = mockLeads.find(l => l.id === id);
+    if (!lead) throw new Error('Lead not found');
+    if (payload.contact) {
+      lead.contact = {
+        ...(lead.contact ?? { id: lead.contactId, name: '', email: '', phone: '', company: '', source: '', consent: true, createdAt: lead.createdAt }),
+        name: payload.contact.name ?? lead.contact?.name ?? '',
+        email: payload.contact.email ?? lead.contact?.email ?? '',
+        phone: payload.contact.phone ?? lead.contact?.phone ?? '',
+        company: payload.contact.company ?? lead.contact?.company ?? '',
+        source: payload.contact.source ?? lead.contact?.source ?? '',
+        consent: payload.contact.consent ?? lead.contact?.consent ?? true,
+        metadata: payload.contact.metadata ?? lead.contact?.metadata,
+      };
+    }
+    if (payload.leadSource !== undefined) lead.leadSource = payload.leadSource ?? '';
+    if (payload.qualificationStatus !== undefined) lead.qualificationStatus = payload.qualificationStatus ?? 'aguardando';
+    if (payload.priority !== undefined) lead.priority = payload.priority;
+    if (payload.notes !== undefined) lead.notes = payload.notes ?? undefined;
+    if (payload.estimatedTicket !== undefined) lead.estimatedTicket = payload.estimatedTicket ?? 0;
+    if (payload.metadata !== undefined) {
+      lead.metadata = payload.metadata;
+      lead.energyBillValue = Number(payload.metadata.energyBillValue ?? lead.energyBillValue ?? 0);
+      lead.averageConsumptionKwh = Number(payload.metadata.averageConsumptionKwh ?? lead.averageConsumptionKwh ?? 0);
+      lead.concessionaria = String(payload.metadata.concessionaria ?? lead.concessionaria ?? '');
+      lead.offer = String(payload.metadata.offer ?? lead.offer ?? '');
+      lead.projectedSavings = Number(payload.metadata.projectedSavings ?? lead.projectedSavings ?? 0);
+    }
+    lead.updatedAt = new Date().toISOString();
+    return { ...lead, contact: lead.contact ? { ...lead.contact } : undefined, metadata: { ...(lead.metadata ?? {}) } };
   }
-  async setLeadTags(): Promise<Lead> {
-    return this.mockLeads[0];
+
+  async updateLeadStage(id: string, stage: LeadStage): Promise<Lead> {
+    await delay(400);
+    const lead = mockLeads.find(l => l.id === id);
+    if (!lead) throw new Error('Lead not found');
+    lead.stage = stage;
+    lead.updatedAt = new Date().toISOString();
+    return { ...lead };
   }
-  async bulkSetLeadTags(): Promise<Lead[]> {
-    return this.mockLeads;
+
+
+  async setLeadTags(id: string, tags: string[]): Promise<Lead> {
+    await delay(150);
+    const lead = mockLeads.find(l => l.id === id);
+    if (!lead) throw new Error('Lead not found');
+    lead.tags = tags.map((tag, index) => ({ id: `mock-tag-${index}`, name: tag, slug: tag.toLowerCase().replace(/[^a-z0-9]+/g, '-'), color: null }));
+    lead.updatedAt = new Date().toISOString();
+    return { ...lead, tags: [...lead.tags] };
   }
-  async deleteLead(): Promise<void> {}
-  async bulkDeleteLeads(): Promise<number> {
-    return 0;
+
+  async bulkSetLeadTags(leadIds: string[], tags: string[]): Promise<Lead[]> {
+    await delay(200);
+    const ids = new Set(leadIds);
+    return mockLeads.filter((lead) => ids.has(lead.id)).map((lead) => {
+      lead.tags = tags.map((tag, index) => ({ id: `mock-tag-${index}`, name: tag, slug: tag.toLowerCase().replace(/[^a-z0-9]+/g, '-'), color: null }));
+      lead.updatedAt = new Date().toISOString();
+      return { ...lead, tags: [...lead.tags] };
+    });
+  }
+
+  async deleteLead(id: string): Promise<void> {
+    await delay(150);
+    const index = mockLeads.findIndex((lead) => lead.id === id);
+    if (index === -1) throw new Error('Lead not found');
+    mockLeads.splice(index, 1);
+  }
+
+  async bulkDeleteLeads(leadIds: string[]): Promise<number> {
+    await delay(200);
+    const ids = new Set(leadIds);
+    let deleted = 0;
+    for (let index = mockLeads.length - 1; index >= 0; index -= 1) {
+      if (ids.has(mockLeads[index].id)) {
+        mockLeads.splice(index, 1);
+        deleted += 1;
+      }
+    }
+    return deleted;
   }
 
   async listProposals(): Promise<Proposal[]> {
-    return [];
+    await delay(300);
+    return mockLeads.slice(0, 2).map((lead, index) => ({
+      id: `mock-proposal-${index + 1}`,
+      leadId: lead.id,
+      title: `Proposta ${lead.contact?.name || lead.id}`,
+      status: index === 0 ? 'draft' : 'sent',
+      monthlyBillValue: lead.energyBillValue || 2500,
+      estimatedKwh: lead.averageConsumptionKwh || 1800,
+      discountPercentage: 20,
+      projectedMonthlySavings: lead.projectedSavings || 500,
+      projectedAnnualSavings: (lead.projectedSavings || 500) * 12,
+      sourceType: 'editor',
+      isTemplate: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      leadName: lead.contact?.name,
+      leadStage: lead.stage,
+    }));
   }
-  async listProposalsForLead(): Promise<Proposal[]> {
-    return [];
-  }
-  async createProposal(payload: CreateProposalPayload): Promise<Proposal> {
-    return { id: 'p-1', ...payload, tenantId: '', status: 'rascunho', leadId: payload.leadId ?? '', monthlyBillValue: payload.monthlyBillValue ?? 0, estimatedKwh: payload.estimatedKwh ?? 0, discountPercentage: payload.discountPercentage ?? 0, projectedMonthlySavings: payload.projectedMonthlySavings ?? 0, projectedAnnualSavings: payload.projectedAnnualSavings ?? 0, sourceType: payload.sourceType ?? 'editor', isTemplate: payload.isTemplate ?? false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as unknown as Proposal;
-  }
+
   async listTemplates(): Promise<Proposal[]> {
-    return [];
+    const proposals = await this.listProposals();
+    return proposals.filter((proposal) => proposal.isTemplate);
   }
-  async getProposal(): Promise<Proposal> {
-    return { id: 'p-1', tenantId: '', title: 'Mock', status: 'rascunho', leadId: '', monthlyBillValue: 0, estimatedKwh: 0, discountPercentage: 0, projectedMonthlySavings: 0, projectedAnnualSavings: 0, sourceType: 'editor', isTemplate: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as unknown as Proposal;
+
+  async getProposal(id: string): Promise<Proposal> {
+    const proposals = await this.listProposals();
+    const proposal = proposals.find((item) => item.id === id);
+    if (!proposal) throw new Error('Proposal not found');
+    return proposal;
   }
-  async updateProposal(): Promise<Proposal> {
-    return { id: 'p-1', tenantId: '', title: 'Mock', status: 'rascunho', leadId: '', monthlyBillValue: 0, estimatedKwh: 0, discountPercentage: 0, projectedMonthlySavings: 0, projectedAnnualSavings: 0, sourceType: 'editor', isTemplate: false, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } as unknown as Proposal;
+
+  async updateProposal(id: string, payload: UpdateProposalPayload): Promise<Proposal> {
+    const proposal = await this.getProposal(id);
+    return { ...proposal, ...payload, updatedAt: new Date().toISOString() };
   }
-  async deleteProposal(): Promise<void> {}
-  async listTrackingEventsForLead(): Promise<TrackingEvent[]> {
-    return [];
+
+  async deleteProposal(_id: string): Promise<void> {
+    void _id;
+    await delay(150);
+  }
+
+  async listProposalsForLead(leadId: string): Promise<Proposal[]> {
+    const proposals = await this.listProposals();
+    return proposals.filter((proposal) => proposal.leadId === leadId);
+  }
+
+  async createProposal(payload: CreateProposalPayload): Promise<Proposal> {
+    await delay(300);
+    const lead = mockLeads.find((item) => item.id === payload.leadId);
+    return {
+      id: Math.random().toString(36).substr(2, 9),
+      ...payload,
+      sourceType: payload.sourceType ?? 'editor',
+      isTemplate: payload.isTemplate ?? false,
+      estimatedKwh: payload.estimatedKwh || 0,
+      status: 'draft',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      leadName: lead?.contact?.name,
+      leadStage: lead?.stage,
+    };
+  }
+
+  async listTrackingEventsForLead(leadId: string): Promise<TrackingEvent[]> {
+    await delay(200);
+    return [
+      { id: 'mock-event-meta', leadId, platform: 'meta', eventName: 'Lead', status: 'sent', attempts: 1, payload: { source: 'mock' } },
+      { id: 'mock-event-site', leadId, platform: 'site', eventName: 'lead.created', status: 'sent', attempts: 1, payload: { source: 'mock' } },
+    ];
+  }
+
+  async listLeadDocuments(leadId: string): Promise<LeadDocument[]> {
+    await delay(150);
+    return mockLeadDocuments.filter((document) => document.leadId === leadId).map((document) => ({ ...document }));
+  }
+
+  async uploadLeadDocument(leadId: string, file: File): Promise<LeadDocument> {
+    await delay(250);
+    const document: LeadDocument = {
+      id: Math.random().toString(36).slice(2),
+      tenantId: 'mock-tenant',
+      leadId,
+      fileName: file.name,
+      mimeType: file.type || 'application/octet-stream',
+      fileSize: file.size,
+      fileUrl: null,
+      previewUrl: URL.createObjectURL(file),
+      downloadUrl: URL.createObjectURL(file),
+      storageBackend: 'postgres',
+      checksumSha256: null,
+      isPublic: false,
+      uploadedByUserId: 'mock-user',
+      uploadedByUserAgent: navigator.userAgent,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    mockLeadDocuments.unshift(document);
+    return { ...document };
+  }
+
+  async deleteLeadDocument(_leadId: string, documentId: string): Promise<void> {
+    await delay(150);
+    const index = mockLeadDocuments.findIndex((document) => document.id === documentId);
+    if (index !== -1) mockLeadDocuments.splice(index, 1);
   }
 
   async listTasks(): Promise<Task[]> {
-    return [];
-  }
-  async listTasksForLead(): Promise<Task[]> {
-    return [];
-  }
-  async createTask(): Promise<Task> {
-    return {} as Task;
-  }
-  async completeTask(): Promise<Task> {
-    return {} as Task;
+    await delay(400);
+    return [...mockTasks];
   }
 
-  async listActivities(): Promise<Activity[]> {
-    return [];
+  async listTasksForLead(leadId: string): Promise<Task[]> {
+    await delay(150);
+    return mockTasks.filter((task) => task.leadId === leadId);
   }
-  async createActivity(): Promise<Activity> {
-    return { id: 'a-1', leadId: 'l-1', activityType: 'note', outcome: 'ok', occurredAt: new Date().toISOString() } as Activity;
+
+  async createTask(payload: Partial<Task>): Promise<Task> {
+    await delay(300);
+    const newTask: Task = {
+      id: Math.random().toString(36).substr(2, 9),
+      leadId: payload.leadId || '',
+      title: payload.title || 'Nova Tarefa',
+      status: 'pendente',
+      priority: payload.priority || 'media',
+      owner: payload.owner || 'Usuário',
+      dueDate: payload.dueDate || new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      leadName: payload.leadName
+    };
+    mockTasks.push(newTask);
+    return newTask;
   }
-  async listLeadHistory(): Promise<LeadHistoryEntry[]> {
-    return [];
+
+  async completeTask(id: string): Promise<Task> {
+    await delay(300);
+    const task = mockTasks.find(t => t.id === id);
+    if (!task) throw new Error('Task not found');
+    task.status = 'concluido';
+    task.updatedAt = new Date().toISOString();
+    return { ...task };
+  }
+
+  async listActivities(leadId: string): Promise<Activity[]> {
+    await delay(300);
+    return mockActivities.filter(a => a.leadId === leadId);
+  }
+
+  async createActivity(payload: Partial<Activity>): Promise<Activity> {
+    await delay(300);
+    const newActivity: Activity = {
+      id: Math.random().toString(36).substr(2, 9),
+      leadId: payload.leadId || '',
+      contactId: payload.contactId || '',
+      activityType: payload.activityType || 'note',
+      outcome: payload.outcome || '',
+      occurredAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      notes: payload.notes
+    };
+    mockActivities.push(newActivity);
+    return newActivity;
+  }
+
+  async listLeadHistory(leadId: string): Promise<LeadHistoryEntry[]> {
+    await delay(150);
+    const lead = mockLeads.find((item) => item.id === leadId);
+    if (!lead) return [];
+    return [
+      {
+        id: `mock-history-${leadId}`,
+        action: 'lead.created',
+        occurredAt: lead.createdAt,
+        actor: { id: 'mock-system', name: 'Sistema Enervita', email: 'sistema@enervita.local' },
+        summary: `Lead criado via ${lead.leadSource || 'origem não informada'}`,
+        changes: [],
+      },
+    ];
   }
 
   async listNotifications(): Promise<{ notifications: Notification[]; unreadCount: number }> {
+    await delay(150);
     return { notifications: [], unreadCount: 0 };
   }
-  async markNotificationRead(): Promise<Notification> {
-    return { id: 'n-1', tenantId: 't-1', userId: 'u-1', taskId: null, leadId: null, type: 'system', severity: 'info', title: 'mock', body: 'mock', href: null, metadata: {}, readAt: new Date().toISOString(), createdAt: new Date().toISOString() } as unknown as Notification;
+
+  async markNotificationRead(id: string): Promise<Notification> {
+    await delay(150);
+    return { id, tenantId: 'mock-tenant', userId: 'mock-user', taskId: null, leadId: null, type: 'task_assigned', severity: 'info', title: 'Notificação lida', body: '', href: '', metadata: {}, readAt: new Date().toISOString(), createdAt: new Date().toISOString() };
   }
+
   async markAllNotificationsRead(): Promise<{ updated: number }> {
-    return { updated: 1 };
+    await delay(150);
+    return { updated: 0 };
+  }
+
+  async listFollowUps(filters: { status?: FollowUpStatus; ruleKey?: string; limit?: number } = {}): Promise<FollowUpQueueItem[]> {
+    await delay(150);
+    const now = new Date().toISOString();
+    const item: FollowUpQueueItem = {
+      id: 'mock-follow-up-1',
+      tenantId: 'mock-tenant',
+      leadId: mockLeads[0]?.id ?? 'mock-lead',
+      ruleKey: 'lead_without_next_action',
+      channel: 'manual',
+      reason: 'Lead sem próxima ação há mais de 7 dias',
+      status: 'pending',
+      scheduledAt: now,
+      sentAt: null,
+      skippedAt: null,
+      failedAt: null,
+      attempts: 0,
+      lastError: null,
+      idempotencyKey: 'mock-follow-up-key',
+      metadata: {},
+      contactName: 'Lead',
+      contactPhone: null,
+      contactEmail: null,
+      suggestedMessage: 'Olá, tudo bem? Estou passando para dar continuidade ao seu atendimento.',
+      createdAt: now,
+      updatedAt: now,
+    };
+    const items = filters.status && filters.status !== 'pending' ? [] : [item];
+    return items.slice(0, filters.limit ?? 50);
+  }
+
+  async runFollowUpRules(): Promise<FollowUpRuleRunResult> {
+    await delay(150);
+    return {
+      created: { task_overdue: 0, lead_without_next_action: 1, proposal_no_response: 0, opportunity_stale: 0 },
+      existing: { task_overdue: 0, lead_without_next_action: 0, proposal_no_response: 0, opportunity_stale: 0 },
+    };
+  }
+
+  async skipFollowUp(id: string, reason?: string): Promise<FollowUpQueueItem> {
+    const [item] = await this.listFollowUps();
+    return { ...item, id, status: 'skipped', skippedAt: new Date().toISOString(), lastError: reason ?? null };
+  }
+
+  async markFollowUpSent(id: string): Promise<FollowUpQueueItem> {
+    const [item] = await this.listFollowUps();
+    return { ...item, id, status: 'sent', sentAt: new Date().toISOString(), attempts: item.attempts + 1 };
+  }
+
+  async markFollowUpFailed(id: string, error: string): Promise<FollowUpQueueItem> {
+    const [item] = await this.listFollowUps();
+    return { ...item, id, status: 'failed', failedAt: new Date().toISOString(), attempts: item.attempts + 1, lastError: error };
   }
 
   async listDashboardMetrics(): Promise<DashboardMetrics> {
+    await delay(600);
     return {
       newLeadsToday: 3,
       leadsWithoutFollowup: 2,
@@ -138,136 +465,162 @@ export class MockCrmApi implements CrmApi {
         { platform: 'GA4', count: 32 },
         { platform: 'Google Ads', count: 18 },
       ],
-      recentEvents: [],
+      recentEvents: mockActivities.slice(0, 5)
     };
-  }
-  async listFollowUps(): Promise<FollowUpQueueItem[]> {
-    return [{
-      id: 'f-1',
-      tenantId: 't-1',
-      leadId: 'l-1',
-      ruleKey: 'task_overdue',
-      channel: 'manual',
-      reason: 'Lead sem follow-up há 7 dias',
-      status: 'pending',
-      scheduledAt: new Date().toISOString(),
-      sentAt: null,
-      skippedAt: null,
-      failedAt: null,
-      attempts: 0,
-      lastError: null,
-      idempotencyKey: 'key-1',
-      metadata: {},
-      contactName: 'Mock Lead',
-      contactPhone: '+5500000000000',
-      contactEmail: 'mock@test.com',
-      suggestedMessage: 'Olá, tudo bem?',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    } as FollowUpQueueItem];
-  }
-  async runFollowUpRules(): Promise<FollowUpRuleRunResult> {
-    return { created: { task_overdue: 0, lead_without_next_action: 0, proposal_no_response: 0, opportunity_stale: 0 }, existing: { task_overdue: 0, lead_without_next_action: 0, proposal_no_response: 0, opportunity_stale: 0 } } as FollowUpRuleRunResult;
-  }
-  async skipFollowUp(id: string, reason?: string): Promise<FollowUpQueueItem> {
-    return { id, leadId: 'l-1', ruleKey: 'task_overdue', status: 'skipped', priority: 'medium', attempts: 1, reason: reason ?? '', ruleSnapshot: {}, createdAt: new Date().toISOString() } as unknown as FollowUpQueueItem;
-  }
-  async markFollowUpSent(id: string): Promise<FollowUpQueueItem> {
-    return { id, leadId: 'l-1', ruleKey: 'task_overdue', status: 'sent', priority: 'medium', attempts: 1, sentAt: new Date().toISOString(), ruleSnapshot: {}, createdAt: new Date().toISOString() } as unknown as FollowUpQueueItem;
-  }
-  async markFollowUpFailed(id: string, error: string): Promise<FollowUpQueueItem> {
-    return { id, leadId: 'l-1', ruleKey: 'task_overdue', status: 'failed', priority: 'medium', attempts: 1, lastError: error, ruleSnapshot: {}, createdAt: new Date().toISOString() } as unknown as FollowUpQueueItem;
   }
 
-  async getInsights(days: number = 30): Promise<{
-    generatedAt: string;
-    period: string;
-    insights: Array<{
-      id: string;
-      type: 'pattern' | 'recommendation' | 'alert' | 'opportunity';
-      priority: 'high' | 'medium' | 'low';
-      title: string;
-      description: string;
-      metric?: string;
-      trend?: 'up' | 'down' | 'stable';
-      comparison?: string;
-      action?: string;
-      category: 'conversion' | 'source' | 'timing' | 'pipeline';
-    }>;
-    summary: {
-      totalLeads: number;
-      conversionRate: number;
-      avgTimeToConvert: number;
-      topSource: string;
-      bottleneck: string;
+
+  async getAnalyticsOverview(filters: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage } = {}): Promise<CrmAnalyticsOverview> {
+    await delay(250);
+    const days = filters.days ?? 30;
+    const defaultStart = new Date(Date.now() - (days - 1) * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const startDate = filters.startDate ?? defaultStart;
+    const endDate = filters.endDate ?? new Date().toISOString().slice(0, 10);
+    const since = new Date(`${startDate}T00:00:00.000Z`).getTime();
+    const scoped = mockLeads.filter((lead) => {
+      if (new Date(lead.createdAt).getTime() < since || lead.createdAt.slice(0, 10) > endDate) return false;
+      if (filters.stage && lead.stage !== filters.stage) return false;
+      if (filters.source && (lead.utmSource ?? lead.leadSource ?? '').toLowerCase() !== filters.source.toLowerCase()) return false;
+      if (filters.campaign && (lead.utmCampaign ?? '').toLowerCase() !== filters.campaign.toLowerCase()) return false;
+      return true;
+    });
+    const tracked = scoped.filter((lead) => lead.utmSource || lead.utmMedium || lead.utmCampaign || lead.utmContent || lead.utmTerm).length;
+    const won = scoped.filter((lead) => lead.stage === 'contrato_enervita').length;
+    const bySource = new Map<string, typeof scoped>();
+    for (const lead of scoped) {
+      const key = lead.utmSource || lead.leadSource || 'desconhecido';
+      bySource.set(key, [...(bySource.get(key) ?? []), lead]);
+    }
+    const stages: LeadStage[] = ['novo_lead', 'qualificacao', 'atendimento_iniciado', 'conta_recebida', 'diagnostico', 'proposta_enviada', 'contrato_enervita', 'perdido'];
+    return {
+      filters: { days, period: filters.period ?? `last_${days}_days`, startDate, endDate, source: filters.source, campaign: filters.campaign, stage: filters.stage },
+      generatedAt: new Date().toISOString(),
+      kpis: [
+        { key: 'totalLeads', label: 'Leads capturados', value: scoped.length, displayValue: String(scoped.length), helper: 'Mock local usado só em desenvolvimento', tone: 'blue' },
+        { key: 'trackedLeads', label: 'Leads com rastreio', value: tracked, displayValue: `${tracked} / ${scoped.length ? Math.round((tracked / scoped.length) * 100) : 0}%`, helper: 'UTMs preservadas no lead', tone: 'green' },
+        { key: 'wonRate', label: 'Conversão contrato', value: scoped.length ? (won / scoped.length) * 100 : 0, displayValue: `${scoped.length ? Math.round((won / scoped.length) * 100) : 0}%`, helper: 'Leads em contrato', tone: 'green' },
+        { key: 'estimatedPipeline', label: 'Pipeline estimado', value: scoped.reduce((sum, lead) => sum + lead.estimatedTicket, 0), displayValue: `R$ ${scoped.reduce((sum, lead) => sum + lead.estimatedTicket, 0).toLocaleString('pt-BR')}`, helper: 'Ticket estimado', tone: 'slate' },
+      ],
+      daily: Array.from({ length: Math.min(days, 14) }, (_, index) => ({ date: new Date(Date.now() - (Math.min(days, 14) - 1 - index) * 86400000).toISOString().slice(0, 10), leads: index % 3, trackedLeads: index % 2, proposals: index % 2, won: index % 5 === 0 ? 1 : 0, trackingEvents: index % 4 })),
+      funnel: stages.map((stage) => ({ key: stage, label: stage.replace(/_/g, ' '), value: scoped.filter((lead) => lead.stage === stage).length, rateFromPrevious: null })),
+      trafficSources: [...bySource.entries()].map(([source, leads]) => ({ source, label: source, leads: leads.length, trackedLeads: leads.filter((lead) => lead.utmSource || lead.utmCampaign).length, proposals: leads.filter((lead) => lead.stage === 'proposta_enviada').length, won: leads.filter((lead) => lead.stage === 'contrato_enervita').length, estimatedTicket: leads.reduce((sum, lead) => sum + lead.estimatedTicket, 0), conversionRate: leads.length ? Math.round((leads.filter((lead) => lead.stage === 'contrato_enervita').length / leads.length) * 1000) / 10 : 0 })),
+      campaigns: scoped.map((lead) => ({ campaign: lead.utmCampaign || 'sem_campaign', source: lead.utmSource || lead.leadSource || 'desconhecido', medium: lead.utmMedium || 'sem_medium', leads: 1, trackedLeads: lead.utmSource || lead.utmCampaign ? 1 : 0, proposals: lead.stage === 'proposta_enviada' ? 1 : 0, won: lead.stage === 'contrato_enervita' ? 1 : 0, estimatedTicket: lead.estimatedTicket, conversionRate: lead.stage === 'contrato_enervita' ? 100 : 0 })),
+      signals: [
+        { key: 'utm_source', label: 'UTM source', count: scoped.filter((lead) => lead.utmSource).length, coverageRate: scoped.length ? Math.round((scoped.filter((lead) => lead.utmSource).length / scoped.length) * 1000) / 10 : 0 },
+        { key: 'utm_campaign', label: 'UTM campaign', count: scoped.filter((lead) => lead.utmCampaign).length, coverageRate: scoped.length ? Math.round((scoped.filter((lead) => lead.utmCampaign).length / scoped.length) * 1000) / 10 : 0 },
+      ],
+      trackingStatus: [],
+      eventNames: [],
+      recentLeads: scoped.slice(0, 10).map((lead) => ({ id: lead.id, name: lead.contact?.name ?? lead.id, stage: lead.stage, source: lead.utmSource || lead.leadSource, campaign: lead.utmCampaign || 'sem campaign', signals: [lead.utmSource ? 'utm_source' : '', lead.utmCampaign ? 'utm_campaign' : ''].filter(Boolean), createdAt: lead.createdAt })),
+      notes: ['MockCrmApi usado apenas quando o app não está conectado ao backend real.'],
     };
-  }> {
+  }
+
+  async getInsights(): Promise<CrmInsightsData> {
+    await delay(200);
     return {
       generatedAt: new Date().toISOString(),
-      period: `${days}d`,
+      period: 'mock',
       insights: [],
-      summary: {
-        totalLeads: 0,
-        conversionRate: 0,
-        avgTimeToConvert: 0,
-        topSource: 'Mock',
-        bottleneck: 'Ambiente de mock sem dados históricos',
+      summary: { totalLeads: mockLeads.length, conversionRate: 0, avgTimeToConvert: 0, topSource: 'mock', bottleneck: 'mock' },
+    };
+  }
+
+  async listAutomations(): Promise<AutomationRule[]> {
+    await delay(400);
+    return [...mockAutomations];
+  }
+
+  async runAutomation(id: string): Promise<AutomationRun> {
+    await delay(400);
+    return {
+      id: 'mock-run-1',
+      automationId: id,
+      status: 'success',
+      inputPayload: { reason: 'mock' },
+      outputPayload: { queuedWebhookDeliveries: 0, externalHttpCalled: false },
+      startedAt: new Date().toISOString(),
+      finishedAt: new Date().toISOString(),
+    };
+  }
+
+  async getAdsOverview(): Promise<AdsOverview> {
+    await delay(200);
+    const detectedCampaigns = mockLeads
+      .filter((lead) => lead.utmCampaign || lead.utmSource)
+      .map((lead) => ({
+        platform: (lead.utmSource ?? '').toLowerCase().includes('google') ? 'google_ads' as const : (lead.utmSource ?? '').toLowerCase().includes('facebook') || (lead.utmSource ?? '').toLowerCase().includes('meta') || (lead.utmSource ?? '').toLowerCase().includes('instagram') ? 'meta' as const : 'unknown' as const,
+        utmSource: lead.utmSource ?? null,
+        utmCampaign: lead.utmCampaign ?? null,
+        utmContent: lead.utmContent ?? null,
+        leads: 1,
+        firstLeadAt: lead.createdAt,
+        lastLeadAt: lead.createdAt,
+      }));
+
+    return {
+      accounts: [
+        { id: 'mock-meta', platform: 'meta', accountName: 'Meta Ads - Enervita', externalAccountId: null, status: 'pending_credentials', credentialHint: 'Aguardando system user token, ad account id e pixel/dataset id', lastSyncAt: null, syncError: null, metadata: {} },
+        { id: 'mock-google', platform: 'google_ads', accountName: 'Google Ads - Enervita', externalAccountId: null, status: 'pending_credentials', credentialHint: 'Aguardando customer id, developer token e OAuth/refresh token', lastSyncAt: null, syncError: null, metadata: {} },
+      ],
+      campaigns: [],
+      detectedCampaigns,
+      summary: { connectedAccounts: 0, pendingCredentialAccounts: 2, activeCampaigns: 0, activeAdSets: 0, activeAds: 0, detectedUtmCampaigns: detectedCampaigns.length },
+      credentialRequirements: {
+        meta: ['Business Manager autorizado', 'System User Token com ads_read/read_insights', 'Ad Account ID', 'Pixel/Dataset ID para cruzar eventos'],
+        google_ads: ['Customer ID da conta', 'Developer token', 'OAuth client/refresh token', 'MCC/conta autorizada para leitura'],
       },
     };
   }
 
-  async getAnalyticsOverview(): Promise<CrmAnalyticsOverview> {
-    return {
-      generatedAt: new Date().toISOString(),
-      filters: { days: 30, startDate: '', endDate: '' },
-      kpis: [],
-      daily: [],
-      funnel: [],
-      trafficSources: [],
-      campaigns: [],
-      signals: [],
-      trackingStatus: [],
-      eventNames: [],
-      recentLeads: [],
-      notes: [],
-    } as unknown as CrmAnalyticsOverview;
+
+  async syncMetaAds(): Promise<{ result: AdsSyncResult; overview: AdsOverview }> {
+    const overview = await this.getAdsOverview();
+    return { result: { platform: "meta", accountId: "act_mock", pixelId: "872374598469267", pixelName: "Enervita - Site", campaigns: overview.campaigns.length, adSets: 0, ads: 0, customAudiences: 0, syncedAt: new Date().toISOString() }, overview };
+  }
+  async listN8nWorkflows() {
+    return [{
+      id: 'env-crm-preview-webhook-homologacao',
+      name: 'Enervita | CRM Custom Webhooks',
+      description: 'Recebe eventos do CRM custom e confirma a integração com os fluxos comerciais.',
+      active: true,
+      status: 'active' as const,
+      triggerSummary: 'Webhook',
+      nodeSummary: ['Webhook', 'Resposta webhook'],
+      webhookPaths: ['POST /webhook/lead-created'],
+    }];
   }
 
-  async listAutomations(): Promise<AutomationRule[]> {
-    return [];
-  }
-  async runAutomation(): Promise<AutomationRun> {
-    return { id: 'run-1', automationId: 'a-1', status: 'completed', inputPayload: {}, results: [], startedAt: new Date().toISOString(), completedAt: new Date().toISOString() } as unknown as AutomationRun;
-  }
-  async listN8nWorkflows(): Promise<N8nWorkflow[]> {
-    return [];
-  }
-  async setN8nWorkflowActive(): Promise<N8nWorkflowToggleResult> {
-    return { workflow: { id: 'w-1', name: 'Mock', active: true } } as unknown as N8nWorkflowToggleResult;
+  async setN8nWorkflowActive(id: string, active: boolean) {
+    const workflow = (await this.listN8nWorkflows())[0];
+    return { workflow: { ...workflow, id, active, status: active ? 'active' as const : 'paused' as const }, message: active ? 'Workflow despausado no modo mock.' : 'Workflow pausado no modo mock.' };
   }
 
   async listWebhooks(): Promise<Webhook[]> {
-    return [];
-  }
-  async listWebhookDeliveries(): Promise<WebhookDelivery[]> {
-    return [];
-  }
-  async testWebhook(): Promise<WebhookTestResult> {
-    return { delivery: { id: 'd-1', status: 'success', statusCode: 200, responseBody: '', deliveredAt: new Date().toISOString(), createdAt: new Date().toISOString() } } as unknown as WebhookTestResult;
+    await delay(400);
+    return [...mockWebhooks];
   }
 
-  async getAdsOverview(): Promise<AdsOverview> {
-    return {
-      accounts: [],
-      campaigns: [],
-      detectedCampaigns: [],
-      summary: { importedThisMonth: 0, totalActive: 0 },
-      credentialRequirements: [],
-    } as unknown as AdsOverview;
+  async listWebhookDeliveries(): Promise<WebhookDelivery[]> {
+    await delay(200);
+    return [];
   }
-  async syncMetaAds(): Promise<{ result: AdsSyncResult; overview: AdsOverview }> {
-    const overview = await this.getAdsOverview();
-    return { result: { totalImported: randomBetween(0, 20), totalUpdated: 0, totalErrors: 0, durationMs: 0, imported: [], updated: [], errors: [] } as unknown as AdsSyncResult, overview };
+
+  async testWebhook(id: string): Promise<WebhookTestResult> {
+    await delay(1000);
+    return {
+      success: true,
+      message: 'Validação registrada na fila com segurança.',
+      delivery: {
+        id: 'mock-delivery-1',
+        webhookId: id,
+        eventType: 'webhook.test',
+        status: 'queued',
+        httpStatus: null,
+        attempts: 0,
+        createdAt: new Date().toISOString(),
+      },
+    };
   }
 }
 

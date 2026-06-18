@@ -1,15 +1,84 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { useLeads } from '../hooks/useCrm';
 import { PageHeader } from '../components/ui/LayoutComponents';
 import { Button, Card, Badge } from '../components/ui/Base';
 import { StageBadge, PriorityBadge } from '../components/ui/StatusBadges';
-import { Search, Filter, MoreHorizontal, Eye, MessageSquare, Download, Users, Flame, Clock, X, Trash2, Tags } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, Eye, MessageSquare, Download, Users, Flame, Clock, X, Trash2, Tags, UserPlus, Save } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/useAuth';
 import { userHasPermission } from '../auth/permissions';
 import type { Lead, LeadStage } from '../lib/api/types';
 import { countAudienceReadyLeads, exportLeadsForAudience } from '../lib/api/leadAudienceExport';
+import { api, documentDigits, formatCnpj, formatCpf, isValidCnpj, isValidCpf } from '../lib/api/crmApi';
+
+type ManualLeadForm = {
+  name: string;
+  phone: string;
+  email: string;
+  company: string;
+  cpf: string;
+  cnpj: string;
+  city: string;
+  state: string;
+  serviceInterest: string;
+  unitType: string;
+  concessionaria: string;
+  monthlyBillValue: string;
+  averageConsumptionKwh: string;
+  leadSource: string;
+  priority: Lead['priority'];
+  qualificationStatus: string;
+  notes: string;
+  utmSource: string;
+  utmMedium: string;
+  utmCampaign: string;
+  utmContent: string;
+  utmTerm: string;
+};
+
+const emptyManualLeadForm: ManualLeadForm = {
+  name: '',
+  phone: '',
+  email: '',
+  company: '',
+  cpf: '',
+  cnpj: '',
+  city: '',
+  state: '',
+  serviceInterest: 'assinatura_energia',
+  unitType: 'residencial',
+  concessionaria: '',
+  monthlyBillValue: '',
+  averageConsumptionKwh: '',
+  leadSource: 'crm_manual',
+  priority: 'media',
+  qualificationStatus: 'aguardando',
+  notes: '',
+  utmSource: '',
+  utmMedium: '',
+  utmCampaign: '',
+  utmContent: '',
+  utmTerm: '',
+};
+
+const serviceOptions = [
+  { value: 'assinatura_energia', label: 'Assinatura de energia' },
+  { value: 'solar_fotovoltaica', label: 'Energia solar' },
+  { value: 'bateria_backup', label: 'Baterias e backup' },
+  { value: 'usina_investimento', label: 'Usina ou investimento' },
+  { value: 'gestao_energia', label: 'Gestão de energia' },
+  { value: 'outro', label: 'Outro serviço' },
+];
+
+const unitTypeOptions = [
+  { value: 'residencial', label: 'Residencial' },
+  { value: 'comercial', label: 'Comercial' },
+  { value: 'industrial', label: 'Industrial' },
+  { value: 'rural', label: 'Rural' },
+  { value: 'condominio', label: 'Condomínio' },
+  { value: 'poder_publico', label: 'Poder público' },
+];
 
 function whatsappUrl(lead: Lead): string | null {
   const digits = String(lead.contact?.phone ?? '').replace(/\D/g, '');
@@ -35,7 +104,7 @@ export default function Leads() {
   const [tagQuery, setTagQuery] = useState('');
   const [tagMode, setTagMode] = useState<'any' | 'all'>('any');
   const activeTags = useMemo(() => Array.from(new Set(tagQuery.split(',').map((tag) => tag.trim().toLowerCase()).filter(Boolean))), [tagQuery]);
-  const { leads, loading, bulkSetTags, bulkDelete, deleteLead } = useLeads(activeTags.length ? { tags: activeTags, tagMode } : undefined);
+  const { leads, loading, bulkSetTags, bulkDelete, deleteLead, refresh } = useLeads(activeTags.length ? { tags: activeTags, tagMode } : undefined);
   const { user } = useAuth();
   const navigate = useNavigate();
   const canExportCsv = userHasPermission(user, 'csv.export');
@@ -46,15 +115,28 @@ export default function Leads() {
   const [bulkTags, setBulkTags] = useState('');
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkMessage, setBulkMessage] = useState<string | null>(null);
+  const [showCreateLead, setShowCreateLead] = useState(false);
+  const [manualLeadForm, setManualLeadForm] = useState<ManualLeadForm>(emptyManualLeadForm);
+  const [createBusy, setCreateBusy] = useState(false);
+  const [createMessage, setCreateMessage] = useState<string | null>(null);
 
   const tagCatalog = useMemo(() => Array.from(new Set(leads.flatMap((lead) => (lead.tags ?? []).map((tag) => tag.slug)))).sort(), [leads]);
 
   const filteredLeads = useMemo(() => {
     const q = query.trim().toLowerCase();
+    const queryDigits = documentDigits(query);
     return leads.filter((lead) => {
       const tagValues = (lead.tags ?? []).flatMap((item) => [item.slug, item.name]).map((value) => value.toLowerCase());
+      const contactMetadata = lead.contact?.metadata ?? {};
+      const documentValues = [
+        contactMetadata.cpf,
+        contactMetadata.cpfFormatted,
+        contactMetadata.cnpj,
+        contactMetadata.cnpjFormatted,
+      ];
+      const matchesDocumentDigits = Boolean(queryDigits) && documentValues.some((value) => documentDigits(value).includes(queryDigits));
       return (stage === 'todos' || lead.stage === stage)
-        && (!q || [lead.contact?.name, lead.contact?.company, lead.contact?.email, lead.leadSource, lead.qualificationStatus, ...tagValues].some((value) => String(value ?? '').toLowerCase().includes(q)));
+        && (!q || matchesDocumentDigits || [lead.contact?.name, lead.contact?.company, lead.contact?.email, lead.leadSource, lead.qualificationStatus, ...documentValues, ...tagValues].some((value) => String(value ?? '').toLowerCase().includes(q)));
     });
   }, [leads, query, stage]);
 
@@ -116,6 +198,47 @@ export default function Leads() {
     }
   };
 
+  const updateManualLeadField = <K extends keyof ManualLeadForm>(field: K, value: ManualLeadForm[K]) => {
+    setManualLeadForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const createManualLead = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!manualLeadForm.name.trim()) {
+      setCreateMessage('Informe o nome do lead.');
+      return;
+    }
+    if (!manualLeadForm.phone.trim() && !manualLeadForm.email.trim()) {
+      setCreateMessage('Informe telefone ou e-mail para o time conseguir contato.');
+      return;
+    }
+    if (manualLeadForm.cpf.trim() && !isValidCpf(manualLeadForm.cpf)) {
+      setCreateMessage('CPF inválido. Confira os dígitos antes de salvar.');
+      return;
+    }
+    if (manualLeadForm.cnpj.trim() && !isValidCnpj(manualLeadForm.cnpj)) {
+      setCreateMessage('CNPJ inválido. Confira os dígitos antes de salvar.');
+      return;
+    }
+    setCreateBusy(true);
+    setCreateMessage(null);
+    try {
+      const created = await api.createLead({
+        ...manualLeadForm,
+        createdVia: 'crm_manual',
+      });
+      setManualLeadForm(emptyManualLeadForm);
+      setShowCreateLead(false);
+      await refresh();
+      setBulkMessage(`Lead ${created.contact?.name || created.id} criado e liberado para o time.`);
+      navigate(`/leads/${created.id}`);
+    } catch (error) {
+      setCreateMessage(error instanceof Error ? error.message : 'Erro ao criar lead.');
+    } finally {
+      setCreateBusy(false);
+    }
+  };
+
   const qualified = leads.filter((lead) => ['qualificado', 'em_andamento', 'concluido'].includes(String(lead.qualificationStatus).toLowerCase())).length;
   const waiting = leads.filter(l => l.stage === 'novo_lead').length;
   const hot = leads.filter(l => l.priority === 'alta' || l.priority === 'urgente').length;
@@ -139,7 +262,15 @@ export default function Leads() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+        <Card className="p-5 border-solar-orange/20 bg-white">
+          <UserPlus className="text-solar-orange" size={20} />
+          <p className="mt-3 text-xs font-bold text-solar-orange uppercase tracking-wider">Novo lead</p>
+          <h4 className="text-lg font-black text-graphite mt-1">Cadastro manual</h4>
+          <Button type="button" variant="primary" size="sm" className="mt-4 w-full gap-2" onClick={() => { setCreateMessage(null); setShowCreateLead(true); }}>
+            <UserPlus size={15} /> Criar lead
+          </Button>
+        </Card>
         <Card className="p-5 bg-solar-orange/5 border-solar-orange/10"><Users className="text-solar-orange" size={20} /><p className="mt-3 text-xs font-bold text-solar-orange uppercase tracking-wider">Total de Leads</p><h4 className="text-3xl font-black text-graphite mt-1">{leads.length}</h4></Card>
         <Card className="p-5 bg-energy-green/5 border-energy-green/10"><Flame className="text-energy-green" size={20} /><p className="mt-3 text-xs font-bold text-energy-green uppercase tracking-wider">Qualificados</p><h4 className="text-3xl font-black text-graphite mt-1">{qualified}</h4></Card>
         <Card className="p-5 bg-graphite/5 border-graphite/10"><Clock className="text-graphite" size={20} /><p className="mt-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Aguardando Contato</p><h4 className="text-3xl font-black text-graphite mt-1">{waiting}</h4></Card>
@@ -252,6 +383,124 @@ export default function Leads() {
         </div>
         <div className="p-4 border-t border-gray-100 bg-gray-50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><p className="text-xs text-gray-500">Mostrando {filteredLeads.length} de {leads.length} leads{activeTags.length ? ` filtrados por ${activeTags.join(', ')} (${tagMode === 'all' ? 'todas' : 'qualquer'})` : ''}</p><p className="text-xs text-gray-400">{audienceReadyCount} lead(s) têm e-mail ou telefone para público Meta/Google.</p></div>
       </Card>
+
+      {showCreateLead ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-graphite/45 p-4">
+          <Card className="w-full max-w-5xl max-h-[92vh] overflow-hidden">
+            <form onSubmit={createManualLead} className="flex max-h-[92vh] flex-col">
+              <div className="flex items-start justify-between gap-4 border-b border-gray-100 p-5">
+                <div>
+                  <h2 className="text-xl font-black text-graphite">Criar novo lead</h2>
+                  <p className="mt-1 text-sm text-gray-500">Lead manual com acesso para todo o time comercial.</p>
+                </div>
+                <Button type="button" variant="ghost" size="icon" aria-label="Fechar cadastro de lead" onClick={() => setShowCreateLead(false)}>
+                  <X size={18} />
+                </Button>
+              </div>
+
+              <div className="flex-1 space-y-6 overflow-y-auto p-5">
+                <section className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                  <div className="md:col-span-2"><h3 className="text-xs font-black uppercase tracking-wider text-solar-orange">Contato</h3></div>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Nome *
+                    <input required value={manualLeadForm.name} onChange={(event) => updateManualLeadField('name', event.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Empresa
+                    <input value={manualLeadForm.company} onChange={(event) => updateManualLeadField('company', event.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Telefone
+                    <input value={manualLeadForm.phone} onChange={(event) => updateManualLeadField('phone', event.target.value)} placeholder="WhatsApp ou telefone" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">E-mail
+                    <input type="email" value={manualLeadForm.email} onChange={(event) => updateManualLeadField('email', event.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">CPF do contato
+                    <input inputMode="numeric" value={manualLeadForm.cpf} onChange={(event) => updateManualLeadField('cpf', formatCpf(event.target.value))} placeholder="000.000.000-00" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">CNPJ da empresa
+                    <input inputMode="numeric" value={manualLeadForm.cnpj} onChange={(event) => updateManualLeadField('cnpj', formatCnpj(event.target.value))} placeholder="00.000.000/0000-00" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Cidade
+                    <input value={manualLeadForm.city} onChange={(event) => updateManualLeadField('city', event.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Estado
+                    <input value={manualLeadForm.state} onChange={(event) => updateManualLeadField('state', event.target.value.toUpperCase().slice(0, 2))} maxLength={2} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                </section>
+
+                <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="md:col-span-3"><h3 className="text-xs font-black uppercase tracking-wider text-solar-orange">Necessidade energética</h3></div>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Serviço de interesse
+                    <select value={manualLeadForm.serviceInterest} onChange={(event) => updateManualLeadField('serviceInterest', event.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30">
+                      {serviceOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Tipo de unidade
+                    <select value={manualLeadForm.unitType} onChange={(event) => updateManualLeadField('unitType', event.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30">
+                      {unitTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                    </select>
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Concessionária
+                    <input value={manualLeadForm.concessionaria} onChange={(event) => updateManualLeadField('concessionaria', event.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Conta média mensal
+                    <input inputMode="decimal" value={manualLeadForm.monthlyBillValue} onChange={(event) => updateManualLeadField('monthlyBillValue', event.target.value)} placeholder="R$" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Consumo médio kWh
+                    <input inputMode="decimal" value={manualLeadForm.averageConsumptionKwh} onChange={(event) => updateManualLeadField('averageConsumptionKwh', event.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Prioridade
+                    <select value={manualLeadForm.priority} onChange={(event) => updateManualLeadField('priority', event.target.value as Lead['priority'])} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30">
+                      <option value="baixa">Baixa</option>
+                      <option value="media">Média</option>
+                      <option value="alta">Alta</option>
+                      <option value="urgente">Urgente</option>
+                    </select>
+                  </label>
+                </section>
+
+                <section className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                  <div className="md:col-span-3"><h3 className="text-xs font-black uppercase tracking-wider text-solar-orange">Origem e tracking</h3></div>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Origem
+                    <input value={manualLeadForm.leadSource} onChange={(event) => updateManualLeadField('leadSource', event.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">Status comercial
+                    <select value={manualLeadForm.qualificationStatus} onChange={(event) => updateManualLeadField('qualificationStatus', event.target.value)} className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30">
+                      <option value="aguardando">Aguardando</option>
+                      <option value="em_andamento">Em andamento</option>
+                      <option value="qualificado">Qualificado</option>
+                    </select>
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">UTM source
+                    <input value={manualLeadForm.utmSource} onChange={(event) => updateManualLeadField('utmSource', event.target.value)} placeholder="meta, google, indicacao" className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">UTM medium
+                    <input value={manualLeadForm.utmMedium} onChange={(event) => updateManualLeadField('utmMedium', event.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">UTM campaign
+                    <input value={manualLeadForm.utmCampaign} onChange={(event) => updateManualLeadField('utmCampaign', event.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite">UTM content
+                    <input value={manualLeadForm.utmContent} onChange={(event) => updateManualLeadField('utmContent', event.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                  <label className="space-y-1 text-sm font-bold text-graphite md:col-span-3">Observações
+                    <textarea value={manualLeadForm.notes} onChange={(event) => updateManualLeadField('notes', event.target.value)} rows={3} className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                  </label>
+                </section>
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-gray-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <p className="min-h-5 text-sm font-semibold text-alert-red">{createMessage}</p>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" disabled={createBusy} onClick={() => setShowCreateLead(false)}>Cancelar</Button>
+                  <Button type="submit" variant="primary" className="gap-2" disabled={createBusy}>
+                    <Save size={16} /> {createBusy ? 'Salvando...' : 'Salvar lead'}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </Card>
+        </div>
+      ) : null}
     </div>
   );
 }

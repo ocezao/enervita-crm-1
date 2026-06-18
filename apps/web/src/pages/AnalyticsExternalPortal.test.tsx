@@ -41,6 +41,7 @@ describe('Analytics external portal access', () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url === '/api/me') return jsonResponse({ user: admin });
+      if (url.startsWith('/api/insights')) return jsonResponse({ recommendations: [], alerts: [], summary: [] });
       if (url.startsWith('/api/analytics')) {
         return jsonResponse({
           overview: {

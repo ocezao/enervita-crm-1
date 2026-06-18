@@ -274,10 +274,41 @@ export function createPgProposalsRepository(databaseUrl: string): ProposalsRepos
         const proposal = rowToProposal(selected.rows[0]);
         if (proposal.status === 'accepted' && proposal.leadId) {
           await client.query(
-            `update lead_opportunities
-                set status = 'won', accepted_proposal_id = $3, accepted_at = coalesce(accepted_at, now()), updated_at = now()
-              where tenant_id = $1 and lead_id = $2`,
-            [context.tenantId, proposal.leadId, proposal.id],
+            `update proposals
+                set accepted_at = coalesce(accepted_at, now()), updated_at = now()
+              where tenant_id = $1 and id = $2`,
+            [context.tenantId, proposal.id],
+          );
+          const previousStage = await client.query(
+            `select stage from leads where tenant_id = $1 and id = $2 for update`,
+            [context.tenantId, proposal.leadId],
+          );
+          const fromStage = previousStage.rows[0]?.stage ?? null;
+          if (fromStage !== 'contrato_enervita') {
+            await client.query(
+              `update leads set stage = 'contrato_enervita', updated_at = now() where tenant_id = $1 and id = $2`,
+              [context.tenantId, proposal.leadId],
+            );
+            await client.query(
+              `insert into lead_stage_history (tenant_id, lead_id, from_stage, to_stage, changed_by, notes)
+               values ($1, $2, $3::lead_stage, 'contrato_enervita', $4, $5)`,
+              [context.tenantId, proposal.leadId, fromStage, context.actorUserId, 'Contrato marcado por aceite de proposta'],
+            );
+          }
+          await client.query(
+            `insert into lead_opportunities (tenant_id, lead_id, title, status, expected_value, probability, converted_by, converted_at, accepted_proposal_id, accepted_at)
+             values ($1, $2, $3, 'won', $4, 100, $5, now(), $6, now())
+             on conflict (tenant_id, lead_id) do update
+                set status = 'won',
+                    title = excluded.title,
+                    expected_value = excluded.expected_value,
+                    probability = 100,
+                    converted_by = coalesce(lead_opportunities.converted_by, excluded.converted_by),
+                    converted_at = coalesce(lead_opportunities.converted_at, excluded.converted_at),
+                    accepted_proposal_id = excluded.accepted_proposal_id,
+                    accepted_at = coalesce(lead_opportunities.accepted_at, excluded.accepted_at),
+                    updated_at = now()`,
+            [context.tenantId, proposal.leadId, proposal.title, proposal.projectedAnnualSavings ?? proposal.monthlyBillValue ?? 0, context.actorUserId, proposal.id],
           );
         }
         await writeAudit(client, context, 'proposal', proposal.id, proposal.status === 'accepted' ? 'proposal.accepted' : 'proposal.updated', proposal);

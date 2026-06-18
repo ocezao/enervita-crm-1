@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspace @enervita/web",
+    "build": "npm run check:quality-gates && npm run build --workspace @enervita/web",
     "lint": "npm run lint --workspace @enervita/web",
     "dev:web": "npm run dev --workspace @enervita/web",
     "preview:web": "npm run preview --workspace @enervita/web",
@@ -20,9 +20,24 @@
     "dev:api": "npm run dev --workspace @enervita/api",
     "test:api": "npm run test --workspace @enervita/api",
     "typecheck:api": "npm run typecheck --workspace @enervita/api",
+    "check:text-integrity": "node scripts/check-text-integrity.mjs",
+    "check:meta-url-tags": "node scripts/check-meta-url-tags.mjs",
+    "check:quality-gates": "npm run check:text-integrity && npm run check:meta-url-tags",
     "test": "npm run test:api && npm run test --workspace @enervita/web",
-    "verify:production": "npm run typecheck:api && npm run test:api && npm run lint --workspace @enervita/web && npm run test --workspace @enervita/web && npm run build --workspace @enervita/web && npm run test:migration",
+    "verify:production": "npm run check:quality-gates && npm run typecheck:api && npm run test:api && npm run lint --workspace @enervita/web && npm run test --workspace @enervita/web && npm run build --workspace @enervita/web && npm run test:migration",
     "dispatch:meta-capi": "npm run dispatch:meta-capi --workspace @enervita/api",
-    "run:notification-rules": "npm run run:notification-rules --workspace @enervita/api"
+    "run:notification-rules": "npm run run:notification-rules --workspace @enervita/api",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "apps/api/src/**/*.ts": "npm run typecheck:api",
+    "apps/web/src/**/*.{ts,tsx}": [
+      "eslint --no-warn-ignored"
+    ],
+    "infra/migrations/*.sql": "npm run test:migration"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0"
   }
 }

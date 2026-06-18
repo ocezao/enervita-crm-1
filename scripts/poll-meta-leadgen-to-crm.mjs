@@ -34,6 +34,73 @@ function text(value) {
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+const META_LEADGEN_EVENT_NAME = 'Lead';
+
+function buildMetaLeadgenTrackingPayload(params) {
+  const {
+    leadId,
+    stage,
+    ticket,
+    priority,
+    monthlyBill,
+    leadgenId,
+    fields = {},
+    city,
+    state,
+    email,
+    phone,
+    message,
+  } = params ?? {};
+
+  return {
+    action: 'created',
+    leadId,
+    stage,
+    fromStage: null,
+    transitionDirection: 'created',
+    source: 'meta_lead_form',
+    utm: {
+      source: null,
+      medium: null,
+      campaign: null,
+      content: null,
+      term: null,
+    },
+    attribution: { fbp: null, fbc: null, fbclid: null, gclid: null },
+    tags: [],
+    priority,
+    qualificationStatus: 'pending',
+    qualification: {
+      status: 'pending',
+      estimatedTicket: ticket ? Number(ticket) : null,
+      energyBillValue: monthlyBill,
+      message: message ?? null,
+      city,
+      state,
+      rawFormFields: fields,
+    },
+    estimatedTicket: ticket ? String(ticket) : null,
+    actorUserId: null,
+    leadgenId,
+    request: {
+      clientIpAddress: null,
+      clientUserAgent: 'meta_leadgen_poll',
+    },
+    location: {
+      city: city ?? null,
+      state: state ?? null,
+      country: 'BR',
+    },
+    contact: {
+      email,
+      phone,
+      name: null,
+      metadata: { leadgen_id: leadgenId, source: 'meta_leadgen_poll' },
+    },
+    leadEventSource: 'Enervita Custom CRM',
+  };
+}
+
 function extractFieldData(fieldData) {
   const result = {};
   if (!Array.isArray(fieldData)) return result;
@@ -193,7 +260,10 @@ async function main() {
 
           // Check if lead already exists
           const leadExists = await db.query(
-            `select l.id from leads l
+            `select l.id as lead_id,
+                    l.contact_id as lead_contact_id,
+                    c.id as contact_id_from_match
+               from leads l
                left join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id
               where l.tenant_id = $1
                 and (l.metadata->>'leadgen_id' = $2 or (c.email = $3 and $3 is not null) or (c.phone = $4 and $4 is not null))
@@ -202,10 +272,16 @@ async function main() {
           );
 
           if (leadExists.rows[0]) {
+            const existingLead = leadExists.rows[0];
+            const resolvedContactId = existingLead.lead_contact_id ?? existingLead.contact_id_from_match ?? null;
             await db.query(
-              `update meta_leadgen_events set status = 'processed', lead_id = $3, updated_at = now()
+              `update meta_leadgen_events
+                  set status = 'processed',
+                      lead_id = $3,
+                      contact_id = $4,
+                      updated_at = now()
                 where tenant_id = $1 and leadgen_id = $2`,
-              [tenantId, leadgenId, leadExists.rows[0].id],
+              [tenantId, leadgenId, existingLead.lead_id, resolvedContactId],
             );
             await db.query('commit');
             totalSkipped += 1;
@@ -271,10 +347,34 @@ async function main() {
           );
 
           if (newLead.rows[0]) {
+            const leadId = newLead.rows[0].id;
+            await db.query(
+              `insert into tracking_events (tenant_id, lead_id, platform, event_name, status, payload, next_retry_at)
+               values ($1, $2, 'meta', $3, 'queued', $4::jsonb, now())`,
+              [
+                tenantId,
+                leadId,
+                META_LEADGEN_EVENT_NAME,
+                JSON.stringify(buildMetaLeadgenTrackingPayload({
+                  leadId,
+                  stage,
+                  ticket,
+                  priority,
+                  monthlyBill,
+                  leadgenId,
+                  fields,
+                  city,
+                  state,
+                  email,
+                  phone,
+                  message,
+                })),
+              ],
+            );
             await db.query(
               `update meta_leadgen_events set status = 'processed', lead_id = $3, contact_id = $4, updated_at = now()
                 where tenant_id = $1 and leadgen_id = $2`,
-              [tenantId, leadgenId, newLead.rows[0].id, contact.rows[0].id],
+              [tenantId, leadgenId, leadId, contact.rows[0].id],
             );
 
             // Assign sdr

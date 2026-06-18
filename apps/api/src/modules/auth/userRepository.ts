@@ -14,6 +14,10 @@ export type AuthUser = {
   roles: string[];
   permissions: string[];
   allowedStages: string[];
+  profile?: {
+    department: string | null;
+    jobTitle: string | null;
+  } | null;
 };
 
 export type PublicUser = Omit<AuthUser, 'passwordHash'>;
@@ -46,6 +50,7 @@ export function toPublicUser(user: AuthUser): PublicUser {
     roles: user.roles,
     permissions: isAdmin ? [...PERMISSION_KEYS] : user.permissions,
     allowedStages: isAdmin ? [...PIPELINE_STAGE_KEYS] : user.allowedStages,
+    profile: user.profile,
   };
 }
 
@@ -60,6 +65,13 @@ export function createPgUserRepository(databaseUrl: string): UserRepository {
               u.email,
               nullif(u.metadata->>'avatarUrl', '') as "avatarUrl",
               u.password_hash as "passwordHash",
+              case
+                when ep.id is null then null
+                else jsonb_build_object(
+                  'department', ep.department,
+                  'jobTitle', ep.job_title
+                )
+              end as profile,
               coalesce(array_agg(distinct r.name) filter (where r.name is not null), array[]::text[]) as roles,
               coalesce(array_agg(distinct p.key) filter (
                 where p.key is not null
@@ -93,6 +105,7 @@ export function createPgUserRepository(databaseUrl: string): UserRepository {
                    )
               ), array[]::text[]) as "allowedStages"
          from users u
+         left join employee_profiles ep on ep.tenant_id = u.tenant_id and ep.user_id = u.id
          left join user_roles ur on ur.tenant_id = u.tenant_id and ur.user_id = u.id
          left join roles r on r.tenant_id = ur.tenant_id and r.id = ur.role_id
          left join user_permissions up on up.tenant_id = u.tenant_id and up.user_id = u.id
@@ -100,7 +113,7 @@ export function createPgUserRepository(databaseUrl: string): UserRepository {
         where ${whereClause}
           and u.status = 'active'
           and u.password_hash is not null
-        group by u.id, u.tenant_id, u.name, u.email, u.metadata, u.password_hash
+        group by u.id, u.tenant_id, u.name, u.email, u.metadata, u.password_hash, ep.id, ep.department, ep.job_title
         limit 1`,
       [value],
     );

@@ -47,12 +47,38 @@ type RouteContext = {
 
 function readVerifyToken(req: FastifyRequest): string {
   const query = req.query as Record<string, string | undefined>;
-  return String(query.verify_token || query.token || query.secret || '') || '';
+  return String(query['hub.verify_token'] || query.verify_token || query.token || query.secret || '') || '';
+}
+
+function readHubChallenge(req: FastifyRequest): string {
+  const query = req.query as Record<string, string | undefined>;
+  return String(query['hub.challenge'] || query.challenge || '') || '';
+}
+
+function readHubMode(req: FastifyRequest): string {
+  const query = req.query as Record<string, string | undefined>;
+  return String(query['hub.mode'] || query.mode || '') || '';
 }
 
 export function registerMetaWebhookRoutes(app: FastifyInstance): void {
   const verifyToken = getFirstStringEnv(DEFAULT_VERIFY_TOKEN_ENV_KEYS);
   const appSecret = getFirstStringEnv(['META_LEADGEN_APP_SECRET', 'META_APP_SECRET', 'APP_SECRET']);
+
+  app.get('/api/public/integrations/meta/leadgen/webhook', async (request, reply: FastifyReply) => {
+    const queryToken = readVerifyToken(request);
+    const challenge = readHubChallenge(request);
+    const mode = readHubMode(request);
+
+    if (!verifyToken || !queryToken || queryToken !== verifyToken || (mode && mode !== 'subscribe')) {
+      return reply.code(403).send({ ok: false, error: 'Webhook verification failed' });
+    }
+
+    if (challenge) {
+      return reply.type('text/plain').code(200).send(challenge);
+    }
+
+    return reply.code(200).send({ ok: true, verified: true });
+  });
 
   app.post('/api/public/integrations/meta/leadgen/webhook', async (request, reply: FastifyReply) => {
     const rawBody = getRawBody(request);

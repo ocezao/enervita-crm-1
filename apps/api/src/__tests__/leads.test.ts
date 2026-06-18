@@ -5,7 +5,7 @@ import type { PipelineStageKey } from '@enervita/shared';
 import { createApp } from '../app.ts';
 import type { AuthUser, UserRepository } from '../modules/auth/userRepository.ts';
 import type { AuditContext } from '../modules/users/repository.ts';
-import { buildMetaStageEventPayloadForTest, queueMetaStageEventForTest, LeadsNotFoundError, type Lead, type LeadHistoryEvent, type LeadsRepository } from '../modules/leads/repository.ts';
+import { buildMetaStageEventPayloadForTest, queueMetaStageEventForTest, LeadsNotFoundError, type Lead, type LeadDocument, type LeadHistoryEvent, type LeadsRepository } from '../modules/leads/repository.ts';
 import type { CreateLeadInput, UpdateLeadInput } from '../modules/leads/validation.ts';
 
 const SESSION_SECRET = 'test-session-secret-with-32-characters';
@@ -106,6 +106,7 @@ function makeLeadsRepository(initialLeads: Lead[] = [makeLead()], options: FakeO
   const leads = initialLeads.map((lead) => ({ ...lead, contact: { ...lead.contact } }));
   const auditHistory = initialHistory.map((event) => ({ ...event, actor: event.actor ? { ...event.actor } : null, changes: event.changes.map((change) => ({ ...change })) }));
   const history: Array<{ tenantId: string; leadId: string; fromStage: PipelineStageKey; toStage: PipelineStageKey }> = [];
+  const documents: LeadDocument[] = [];
 
   function visible(lead: Lead, tenantId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null) {
     return lead.tenantId === tenantId && (allowedStages === null || allowedStages.includes(lead.stage)) && (ownerUserId === null || lead.sdrOwnerId === ownerUserId);
@@ -145,7 +146,7 @@ function makeLeadsRepository(initialLeads: Lead[] = [makeLead()], options: FakeO
         fbc: input.fbc ?? null,
         fbclid: input.fbclid ?? null,
         gclid: input.gclid ?? null,
-        contact: { ...makeLead().contact, name: input.contact.name, email: input.contact.email ?? null },
+        contact: { ...makeLead().contact, name: input.contact.name, email: input.contact.email ?? null, metadata: { ...(input.contact.metadata ?? {}) } },
       });
       leads.push(lead);
       history.push({ tenantId: context.tenantId, leadId: lead.id, fromStage: input.stage, toStage: input.stage });
@@ -191,6 +192,48 @@ function makeLeadsRepository(initialLeads: Lead[] = [makeLead()], options: FakeO
         if (visibleIds.has(leads[index].id)) leads.splice(index, 1);
       }
       return { deleted: visibleIds.size };
+    },
+    async listLeadDocuments(tenantId, leadId, allowedStages, ownerUserId) {
+      const lead = leads.find((item) => item.id === leadId && visible(item, tenantId, allowedStages, ownerUserId));
+      if (!lead) throw new LeadsNotFoundError('Lead not found');
+      return documents.filter((document) => document.tenantId === tenantId && document.leadId === leadId);
+    },
+    async addLeadDocument(context, leadId, allowedStages, ownerUserId, input) {
+      const lead = leads.find((item) => item.id === leadId && visible(item, context.tenantId, allowedStages, ownerUserId));
+      if (!lead) throw new LeadsNotFoundError('Lead not found');
+      const document: LeadDocument = {
+        id: `doc-${documents.length + 1}`,
+        tenantId: context.tenantId,
+        leadId,
+        fileName: input.fileName,
+        mimeType: input.mimeType ?? null,
+        fileSize: input.fileSize ?? input.fileData?.length ?? null,
+        fileUrl: input.fileUrl ?? null,
+        previewUrl: `/api/leads/${leadId}/documents/doc-${documents.length + 1}/preview`,
+        downloadUrl: `/api/leads/${leadId}/documents/doc-${documents.length + 1}/download`,
+        storageBackend: input.storageBackend ?? 'postgres',
+        checksumSha256: null,
+        isPublic: false,
+        uploadedByUserId: context.actorUserId,
+        uploadedByUserAgent: input.uploadedByUserAgent ?? null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      documents.unshift(document);
+      return document;
+    },
+    async getLeadDocumentContent(tenantId, leadId, documentId, allowedStages, ownerUserId) {
+      const lead = leads.find((item) => item.id === leadId && visible(item, tenantId, allowedStages, ownerUserId));
+      if (!lead) return null;
+      const document = documents.find((item) => item.tenantId === tenantId && item.leadId === leadId && item.id === documentId);
+      return document ? { ...document, content: Buffer.from('test') } : null;
+    },
+    async deleteLeadDocument(context, leadId, documentId, allowedStages, ownerUserId) {
+      const lead = leads.find((item) => item.id === leadId && visible(item, context.tenantId, allowedStages, ownerUserId));
+      if (!lead) throw new LeadsNotFoundError('Lead not found');
+      const index = documents.findIndex((document) => document.tenantId === context.tenantId && document.leadId === leadId && document.id === documentId);
+      if (index === -1) throw new LeadsNotFoundError('Document not found');
+      documents.splice(index, 1);
     },
     async countStageHistory(tenantId, leadId) {
       return history.filter((row) => row.tenantId === tenantId && row.leadId === leadId).length;
@@ -686,6 +729,63 @@ test('POST /api/leads preserves attribution identifiers needed for Meta and Goog
   assert.equal(capturedInput.gclid, payload.gclid);
   assert.equal(response.json().lead.fbp, payload.fbp);
   assert.equal(response.json().lead.fbc, payload.fbc);
+});
+
+test('POST /api/leads normalizes valid CPF and CNPJ into contact metadata', async (t) => {
+  let captured: CreateLeadInput | null = null;
+  const app = createApp({
+    userRepository: makeUserRepository(makeAuthUser()),
+    leadsRepository: makeLeadsRepository([], { onCreate: (_context, input) => { captured = input; } }),
+    sessionSecret: SESSION_SECRET,
+  });
+  t.after(async () => app.close());
+
+  const cookie = await loginAndGetCookie(app);
+  const response = await app.inject({
+    method: 'POST',
+    url: '/api/leads',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: {
+      contact: {
+        name: 'Lead Documento',
+        email: 'documento@example.com',
+        cpf: '529.982.247-25',
+        cnpj: '04.252.011/0001-10',
+      },
+    },
+  });
+
+  assert.equal(response.statusCode, 201);
+  const capturedInput = captured as CreateLeadInput | null;
+  assert.ok(capturedInput);
+  assert.equal(capturedInput.contact.metadata?.cpf, '52998224725');
+  assert.equal(capturedInput.contact.metadata?.cpfFormatted, '529.982.247-25');
+  assert.equal(capturedInput.contact.metadata?.cnpj, '04252011000110');
+  assert.equal(capturedInput.contact.metadata?.cnpjFormatted, '04.252.011/0001-10');
+});
+
+test('POST /api/leads rejects invalid CPF and CNPJ', async (t) => {
+  const app = createApp({ userRepository: makeUserRepository(makeAuthUser()), leadsRepository: makeLeadsRepository(), sessionSecret: SESSION_SECRET });
+  t.after(async () => app.close());
+  const cookie = await loginAndGetCookie(app);
+
+  const invalidCpf = await app.inject({
+    method: 'POST',
+    url: '/api/leads',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: { contact: { name: 'Lead CPF', cpf: '111.111.111-11' } },
+  });
+  assert.equal(invalidCpf.statusCode, 400);
+  assert.match(invalidCpf.json().error, /contact\.cpf.*valid/);
+
+  const invalidCnpj = await app.inject({
+    method: 'POST',
+    url: '/api/leads',
+    headers: { cookie, 'content-type': 'application/json' },
+    payload: { contact: { name: 'Lead CNPJ', cnpj: '11.111.111/1111-11' } },
+  });
+  assert.equal(invalidCnpj.statusCode, 400);
+  assert.match(invalidCnpj.json().error, /contact\.cnpj.*valid/);
 });
 
 test('POST /api/leads rejects invalid sdrOwnerId with 400', async (t) => {

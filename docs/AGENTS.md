@@ -2,6 +2,24 @@
 
 Monorepo de CRM comercial para a Enervita (energia solar). API Fastify + React/Vite frontend + pacote shared de tipos/permissões. Multi-tenant por design, com PostgreSQL como banco.
 
+## Production Gate Obrigatório
+
+Antes de declarar o CRM pronto para produção ou autorizar deploy público, rode ou exija o gate rígido de homologação:
+
+```bash
+ssh -T -o BatchMode=yes agencia-vps-new '/opt/clients/cesarmachado/homologacao/run-production-gate.sh configs/clientes/enervita-crm.yml'
+```
+
+Também pode ser acionado pela API interna/n8n:
+
+```json
+{ "client": "enervita-crm", "mode": "production-gate", "notify": true }
+```
+
+`npm run build`, smoke isolado ou screenshot manual não liberam produção. A liberação exige `GO_PRODUCTION` no relatório `reports/enervita/<timestamp>-crm-custom-production-gate/summary.md`; `BLOCKED_PRODUCTION` bloqueia deploy. `GO_WITH_WARNINGS` é aceito apenas para homologação informativa, nunca como aprovação de produção.
+
+Para comandos remotos, prefira sempre `ssh -T -o BatchMode=yes agencia-vps-new '...'` e evite quoting complexo PowerShell -> Ubuntu.
+
 ## Essential Commands
 
 ```bash

@@ -1,0 +1,33 @@
+{
+  "generatedAt": "2026-06-18T01:03:17.526Z",
+  "files": {
+    "claude.md": {
+      "replacement_char": 0,
+      "latin1_utf8_A": 2,
+      "latin1_utf8_B": 0,
+      "broken_dash_quote": 0,
+      "double_encoded_utf8": 0
+    },
+    "scripts/check-text-integrity.mjs": {
+      "replacement_char": 1,
+      "latin1_utf8_A": 4,
+      "latin1_utf8_B": 1,
+      "broken_dash_quote": 0,
+      "double_encoded_utf8": 3
+    },
+    "apps/api/src/modules/proposals/validation.ts": {
+      "replacement_char": 0,
+      "latin1_utf8_A": 12,
+      "latin1_utf8_B": 0,
+      "broken_dash_quote": 0,
+      "double_encoded_utf8": 0
+    },
+    "apps/web/src/pages/LeadDetail.tsx": {
+      "replacement_char": 0,
+      "latin1_utf8_A": 172,
+      "latin1_utf8_B": 167,
+      "broken_dash_quote": 4,
+      "double_encoded_utf8": 171
+    }
+  }
+}

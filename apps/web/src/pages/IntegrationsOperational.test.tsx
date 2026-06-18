@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
+import { waitForFetchCalled, expectFetchCalled } from '../test/testHelpers';
 
 const operator = {
   id: 'user-integrations',
@@ -25,7 +26,7 @@ describe('Operational integrations pages', () => {
     window.history.pushState({}, '', '/automations');
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url === '/api/me') return jsonResponse({ user: operator });
+      if (url === '/api/me') return jsonResponse({ user: operator });if(url.startsWith('/api/notifications'))return jsonResponse({notifications:[],unreadCount:0});if(url.startsWith('/api/follow-ups'))return jsonResponse({followUps:[]});if(url==='/api/automations/n8n-workflows')return jsonResponse({workflows:[]});
       if (url === '/api/automations') return jsonResponse({ automations: [{ id: 'lead-no-followup-12h', name: 'Alerta sem follow-up', trigger: 'lead.no_followup_12h', conditions: ['Sem atividade há 12h'], actions: ['Criar tarefa urgente'], active: false, status: 'planned' }] });
       return jsonResponse({ error: 'Not found' }, 404);
     });
@@ -35,14 +36,14 @@ describe('Operational integrations pages', () => {
 
     expect(await screen.findByText('Alerta sem follow-up')).toBeInTheDocument();
     expect(screen.getAllByText(/Planejada/i).length).toBeGreaterThan(0);
-    expect(fetchMock).toHaveBeenCalledWith('/api/automations', { credentials: 'include' });
+    expectFetchCalled(fetchMock, '/api/automations', { credentials: 'include' });
   });
 
   it('records controlled webhook test deliveries through the API and shows dispatcher status details', async () => {
     window.history.pushState({}, '', '/webhooks');
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url === '/api/me') return jsonResponse({ user: operator });
+      if (url === '/api/me') return jsonResponse({ user: operator });if(url.startsWith('/api/notifications'))return jsonResponse({notifications:[],unreadCount:0});if(url.startsWith('/api/follow-ups'))return jsonResponse({followUps:[]});if(url==='/api/automations/n8n-workflows')return jsonResponse({workflows:[]});
       if (url === '/api/webhooks') return jsonResponse({ webhooks: [{ id: 'n8n-lead-created', name: 'n8n - lead criado', url: 'https://n8n.enervita.com.br/webhook/lead-created', eventTypes: ['lead.created'], status: 'planned', successRate: 0, secretConfigured: false }] });
       if (url === '/api/webhooks/deliveries') return jsonResponse({ deliveries: [{ id: 'delivery-sent', webhookId: 'n8n-lead-created', webhookName: 'n8n - lead criado', eventType: 'lead.created', status: 'sent', httpStatus: 200, attempts: 1, createdAt: '2026-05-29T09:00:00.000Z', deliveredAt: '2026-05-29T09:00:02.000Z', responseBody: 'ok' }] });
       if (url === '/api/webhooks/n8n-lead-created/test' && init?.method === 'POST') return jsonResponse({ result: { success: true, message: 'Entrega de teste registrada na fila controlada', delivery: { id: 'delivery-1', webhookId: 'n8n-lead-created', webhookName: 'n8n - lead criado', eventType: 'webhook.test', status: 'queued', httpStatus: null, attempts: 0, createdAt: '2026-05-29T10:00:00.000Z' } } });
@@ -58,9 +59,7 @@ describe('Operational integrations pages', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /validar integração n8n - lead criado/i }));
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/webhooks/n8n-lead-created/test', { credentials: 'include', method: 'POST' });
-    });
+    await waitForFetchCalled(fetchMock, '/api/webhooks/n8n-lead-created/test', { credentials: 'include', method: 'POST' });
     expect(await screen.findByText('Entrega de teste registrada na fila controlada')).toBeInTheDocument();
     expect(await screen.findByText(/webhook.test/)).toBeInTheDocument();
     expect(screen.getByText('Na fila')).toBeInTheDocument();
@@ -70,7 +69,7 @@ describe('Operational integrations pages', () => {
     window.history.pushState({}, '', '/settings');
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
-      if (url === '/api/me') return jsonResponse({ user: operator });
+      if (url === '/api/me') return jsonResponse({ user: operator });if(url.startsWith('/api/notifications'))return jsonResponse({notifications:[],unreadCount:0});if(url.startsWith('/api/follow-ups'))return jsonResponse({followUps:[]});if(url==='/api/automations/n8n-workflows')return jsonResponse({workflows:[]});
       if (url === '/api/automations') return jsonResponse({ automations: [{ id: 'lead-no-followup-12h', name: 'Alerta de lead sem follow-up em 12h', trigger: 'lead.no_followup_12h', conditions: ['Lead sem atividade recente'], actions: ['Criar tarefa urgente'], active: true, status: 'active' }] });
       if (url === '/api/webhooks') return jsonResponse({ webhooks: [{ id: 'n8n-lead-created', name: 'n8n - lead criado', url: 'https://n8n.enervita.com.br/webhook/lead-created', eventTypes: ['lead.created', 'automation.run'], status: 'active', successRate: 98, secretConfigured: false }] });
       if (url === '/api/webhooks/deliveries') return jsonResponse({ deliveries: [{ id: 'delivery-queued', webhookId: 'n8n-lead-created', webhookName: 'n8n - lead criado', eventType: 'lead.created', status: 'queued', httpStatus: null, attempts: 0, createdAt: '2026-05-29T09:00:00.000Z' }] });
@@ -92,9 +91,7 @@ describe('Operational integrations pages', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /validar automação alerta de lead sem follow-up/i }));
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/automations/lead-no-followup-12h/run', expect.objectContaining({ method: 'POST' }));
-    });
+    await waitForFetchCalled(fetchMock, '/api/automations/lead-no-followup-12h/run', { method: 'POST' });
     expect(await screen.findByText(/1 entrega\(s\) enfileirada\(s\)/)).toBeInTheDocument();
   });
 
@@ -103,7 +100,7 @@ describe('Operational integrations pages', () => {
     window.history.pushState({}, '', '/settings');
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url === '/api/me') return jsonResponse({ user: operator });
+      if (url === '/api/me') return jsonResponse({ user: operator });if(url.startsWith('/api/notifications'))return jsonResponse({notifications:[],unreadCount:0});if(url.startsWith('/api/follow-ups'))return jsonResponse({followUps:[]});if(url==='/api/automations/n8n-workflows')return jsonResponse({workflows:[]});
       if (url === '/api/leads') return jsonResponse({ leads: [
         { id: 'lead-1', contactId: 'contact-1', stage: 'novo_lead', qualificationStatus: 'novo', leadSource: 'Meta Ads', estimatedTicket: 0, sdrOwner: 'João', createdAt: '2026-05-29T09:00:00.000Z', updatedAt: '2026-05-29T09:00:00.000Z', energyBillValue: 600, averageConsumptionKwh: 500, concessionaria: 'Elektro', offer: 'Assinatura', projectedSavings: 120, priority: 'alta' },
         { id: 'lead-2', contactId: 'contact-2', stage: 'proposta_enviada', qualificationStatus: 'qualificado', leadSource: 'Google', estimatedTicket: 0, sdrOwner: 'Maria', createdAt: '2026-05-29T09:00:00.000Z', updatedAt: '2026-05-29T09:00:00.000Z', energyBillValue: 900, averageConsumptionKwh: 700, concessionaria: 'Energisa', offer: 'Instalação', projectedSavings: 180, priority: 'media' }

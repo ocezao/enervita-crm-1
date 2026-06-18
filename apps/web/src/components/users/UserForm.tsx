@@ -20,6 +20,19 @@ type Props = {
   onDelete?: () => Promise<void>;
 };
 
+const COMPANY_AREAS = [
+  { value: '', label: 'Sem área definida' },
+  { value: 'vendedor', label: 'Vendedor' },
+  { value: 'financeiro', label: 'Financeiro' },
+  { value: 'ceo', label: 'CEO' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'ti', label: 'TI' },
+  { value: 'arquiteto', label: 'Arquiteto' },
+  { value: 'operacional', label: 'Operacional' },
+  { value: 'administrativo', label: 'Administrativo' },
+  { value: 'outro', label: 'Outro' },
+];
+
 const emptyState: FormState = {
   name: '',
   email: '',
@@ -68,6 +81,9 @@ export function UserForm({ catalog, user, saving, onSubmit, onResetPassword, onD
   const [state, setState] = useState<FormState>(() => stateFromUser(user));
   const [resetPassword, setResetPassword] = useState('');
   const editing = Boolean(user);
+  const areaOptions = COMPANY_AREAS.some((area) => area.value === state.department)
+    ? COMPANY_AREAS
+    : [...COMPANY_AREAS, { value: state.department, label: state.department }];
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -115,8 +131,10 @@ export function UserForm({ catalog, user, saving, onSubmit, onResetPassword, onD
           <label className="text-sm font-medium text-graphite">Cargo
             <input value={state.jobTitle} onChange={(event) => setState({ ...state, jobTitle: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
           </label>
-          <label className="text-sm font-medium text-graphite">Departamento
-            <input value={state.department} onChange={(event) => setState({ ...state, department: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+          <label className="text-sm font-medium text-graphite">Área/Função
+            <select data-testid="user-area-select" value={state.department} onChange={(event) => setState({ ...state, department: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30">
+              {areaOptions.map((area) => <option key={area.value || 'empty'} value={area.value}>{area.label}</option>)}
+            </select>
           </label>
         </div>
 
@@ -131,7 +149,7 @@ export function UserForm({ catalog, user, saving, onSubmit, onResetPassword, onD
         </section>
 
         <div className="flex justify-end">
-          <Button type="submit" disabled={saving}>{saving ? 'Salvando...' : 'Salvar usuário'}</Button>
+          <Button type="submit" disabled={saving} data-testid="save-user-button">{saving ? 'Salvando...' : 'Salvar usuário'}</Button>
         </div>
       </form>
 

@@ -53,11 +53,20 @@ export async function listLeadHistory(repository: LeadsRepository, actor: Public
 export async function createLead(repository: LeadsRepository, actor: PublicUser, input: CreateLeadInput, metadata: RequestAuditMetadata) {
   ensureStageAllowed(actor, input.stage);
   ensureMarkLostAllowed(actor, input.stage);
+  const enrichedInput: CreateLeadInput = {
+    ...input,
+    metadata: {
+      ...(input.metadata ?? {}),
+      createdByUserId: actor.id,
+      createdByName: actor.name,
+      createdByEmail: actor.email,
+    },
+  };
   if (!isAdminUser(actor)) {
     if (input.sdrOwnerId && input.sdrOwnerId !== actor.id) throw new LeadsOperationError('Lead owner is not allowed for this user');
-    return repository.createLead(makeAuditContext(actor, metadata), { ...input, sdrOwnerId: actor.id });
+    return repository.createLead(makeAuditContext(actor, metadata), { ...enrichedInput, sdrOwnerId: actor.id });
   }
-  return repository.createLead(makeAuditContext(actor, metadata), input);
+  return repository.createLead(makeAuditContext(actor, metadata), enrichedInput);
 }
 
 export async function updateLead(repository: LeadsRepository, actor: PublicUser, leadId: string, input: UpdateLeadInput, metadata: RequestAuditMetadata) {

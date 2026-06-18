@@ -1,0 +1,8 @@
+if [ "${SKIP_HUSKY-}" = "1" ]; then
+  echo "SKIP_HUSKY=1. skipping pre-push checks"
+  exit 0
+fi
+npm run -s typecheck:api
+npm run -s test:ui:smoke --workspace @enervita/web
+npm run -s typecheck --workspace @enervita/web
+npm run -s build --workspace @enervita/web

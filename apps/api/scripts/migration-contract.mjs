@@ -32,3 +32,32 @@ export const requiredColumns = {
   notifications: ['id', 'tenant_id', 'user_id', 'type', 'metadata'],
   follow_up_queue: ['id', 'tenant_id', 'lead_id', 'rule_key', 'status'],
 };
+
+export const requiredEnums = [
+  'lead_stage',
+  'priority_level',
+  'task_status',
+  'activity_type',
+  'delivery_status',
+  'permission_effect',
+];
+
+export const requiredNotNullColumns = {
+  tenants: ['slug', 'name'],
+  users: ['tenant_id', 'email'],
+  leads: ['tenant_id', 'stage'],
+  notifications: ['tenant_id', 'user_id', 'type', 'metadata'],
+  follow_up_queue: ['tenant_id', 'lead_id', 'rule_key', 'status'],
+};
+
+export const requiredConstraints = [
+  'users_tenant_email_unique',
+  'users_id_tenant_unique',
+  'roles_tenant_name_unique',
+  'contacts_id_tenant_unique',
+  'leads_contact_tenant_fk',
+  'tasks_lead_tenant_fk',
+  'activities_lead_tenant_fk',
+  'tracking_events_lead_tenant_fk',
+];
+

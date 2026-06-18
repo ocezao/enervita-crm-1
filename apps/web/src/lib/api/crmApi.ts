@@ -12,8 +12,10 @@ import {
   type DashboardMetrics,
   type LeadStage,
   type CreateProposalPayload,
+  type UpdateProposalPayload,
   type Proposal,
   type TrackingEvent,
+  type LeadDocument,
   type AdsOverview,
   type AdsSyncResult,
   type LeadTag,
@@ -27,9 +29,36 @@ import {
   type FollowUpRuleRunResult,
 } from './types';
 
+export type CrmInsight = {
+  id: string;
+  type: 'pattern' | 'recommendation' | 'alert' | 'opportunity';
+  priority: 'high' | 'medium' | 'low';
+  title: string;
+  description: string;
+  metric?: string;
+  trend?: 'up' | 'down' | 'stable';
+  comparison?: string;
+  action?: string;
+  category: 'conversion' | 'source' | 'timing' | 'pipeline';
+};
+
+export type CrmInsightsData = {
+  generatedAt: string;
+  period: string;
+  insights: CrmInsight[];
+  summary: {
+    totalLeads: number;
+    conversionRate: number;
+    avgTimeToConvert: number;
+    topSource: string;
+    bottleneck: string;
+  };
+};
+
 export interface CrmApi {
   listLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' }): Promise<Lead[]>;
   getLead(id: string): Promise<Lead | undefined>;
+  createLead(payload: Record<string, unknown>): Promise<Lead>;
   updateLead(id: string, payload: UpdateLeadPayload): Promise<Lead>;
   updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string; createOpportunity?: boolean }): Promise<Lead>;
   setLeadTags(id: string, tags: string[]): Promise<Lead>;
@@ -42,9 +71,12 @@ export interface CrmApi {
   createProposal(payload: CreateProposalPayload): Promise<Proposal>;
   listTemplates(): Promise<Proposal[]>;
   getProposal(id: string): Promise<Proposal>;
-  updateProposal(id: string, payload: Partial<CreateProposalPayload>): Promise<Proposal>;
+  updateProposal(id: string, payload: UpdateProposalPayload): Promise<Proposal>;
   deleteProposal(id: string): Promise<void>;
   listTrackingEventsForLead(leadId: string): Promise<TrackingEvent[]>;
+  listLeadDocuments(leadId: string): Promise<LeadDocument[]>;
+  uploadLeadDocument(leadId: string, file: File): Promise<LeadDocument>;
+  deleteLeadDocument(leadId: string, documentId: string): Promise<void>;
 
   listTasks(): Promise<Task[]>;
   listTasksForLead(leadId: string): Promise<Task[]>;
@@ -60,34 +92,12 @@ export interface CrmApi {
   listDashboardMetrics(filters?: DashboardMetricFilters): Promise<DashboardMetrics>;
   listDashboardMetrics(): Promise<DashboardMetrics>;
   getAnalyticsOverview(filters?: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage }): Promise<CrmAnalyticsOverview>;
-  getInsights(days?: number): Promise<{
-    generatedAt: string;
-    period: string;
-    insights: Array<{
-      id: string;
-      type: 'pattern' | 'recommendation' | 'alert' | 'opportunity';
-      priority: 'high' | 'medium' | 'low';
-      title: string;
-      description: string;
-      metric?: string;
-      trend?: 'up' | 'down' | 'stable';
-      comparison?: string;
-      action?: string;
-      category: 'conversion' | 'source' | 'timing' | 'pipeline';
-    }>;
-    summary: {
-      totalLeads: number;
-      conversionRate: number;
-      avgTimeToConvert: number;
-      topSource: string;
-      bottleneck: string;
-    };
-  }>;
   listFollowUps(filters?: { status?: FollowUpStatus; ruleKey?: string; limit?: number }): Promise<FollowUpQueueItem[]>;
   runFollowUpRules(): Promise<FollowUpRuleRunResult>;
   skipFollowUp(id: string, reason?: string): Promise<FollowUpQueueItem>;
   markFollowUpSent(id: string): Promise<FollowUpQueueItem>;
   markFollowUpFailed(id: string, error: string): Promise<FollowUpQueueItem>;
+  getInsights(days?: number): Promise<CrmInsightsData>;
 
   listAutomations(): Promise<AutomationRule[]>;
   runAutomation(id: string, payload?: Record<string, unknown>): Promise<AutomationRun>;
@@ -110,6 +120,8 @@ export type UpdateLeadPayload = {
     company?: string | null;
     source?: string | null;
     consent?: boolean;
+    cpf?: string | null;
+    cnpj?: string | null;
     metadata?: Record<string, unknown>;
   };
   qualificationStatus?: string | null;
@@ -201,6 +213,7 @@ type BackendProposal = {
 };
 
 type BackendTrackingEvent = TrackingEvent;
+type BackendLeadDocument = LeadDocument;
 
 type BackendTask = {
   id: string;
@@ -261,6 +274,27 @@ type DashboardMetricFilters = {
 
 type ApiErrorBody = { error?: string };
 
+const DEFAULT_REQUEST_TIMEOUT_MS = 120_000;
+const PROPOSAL_UPLOAD_REQUEST_TIMEOUT_MS = 180_000;
+
+type RequestJsonInit = RequestInit & {
+  timeoutMs?: number;
+};
+
+type RequestTimeoutController = {
+  controller: AbortController;
+  cancel: () => void;
+};
+
+function createTimeoutController(ms: number): RequestTimeoutController {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ms);
+  return {
+    controller,
+    cancel: () => clearTimeout(timeoutId),
+  };
+}
+
 function numeric(value: unknown, fallback = 0): number {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
   if (typeof value === 'string' && value.trim() !== '') {
@@ -268,6 +302,56 @@ function numeric(value: unknown, fallback = 0): number {
     if (Number.isFinite(parsed)) return parsed;
   }
   return fallback;
+}
+
+export function documentDigits(value: unknown): string {
+  return typeof value === 'string' ? value.replace(/\D/g, '') : '';
+}
+
+function hasRepeatedDigits(value: string): boolean {
+  return /^(\d)\1+$/.test(value);
+}
+
+export function formatCpf(value: unknown): string {
+  const digits = documentDigits(value).slice(0, 11);
+  return digits
+    .replace(/^(\d{3})(\d)/, '$1.$2')
+    .replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
+}
+
+export function formatCnpj(value: unknown): string {
+  const digits = documentDigits(value).slice(0, 14);
+  return digits
+    .replace(/^(\d{2})(\d)/, '$1.$2')
+    .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+    .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, '$1.$2.$3/$4')
+    .replace(/^(\d{2})\.(\d{3})\.(\d{3})\/(\d{4})(\d{1,2})$/, '$1.$2.$3/$4-$5');
+}
+
+export function isValidCpf(value: unknown): boolean {
+  const digits = documentDigits(value);
+  if (digits.length !== 11 || hasRepeatedDigits(digits)) return false;
+  const digit = (factor: number) => {
+    let total = 0;
+    for (let index = 0; index < factor - 1; index += 1) total += Number(digits[index]) * (factor - index);
+    const rest = (total * 10) % 11;
+    return rest === 10 ? 0 : rest;
+  };
+  return digit(10) === Number(digits[9]) && digit(11) === Number(digits[10]);
+}
+
+export function isValidCnpj(value: unknown): boolean {
+  const digits = documentDigits(value);
+  if (digits.length !== 14 || hasRepeatedDigits(digits)) return false;
+  const calculate = (base: string, factors: number[]) => {
+    const total = factors.reduce((sum, factor, index) => sum + Number(base[index]) * factor, 0);
+    const rest = total % 11;
+    return rest < 2 ? 0 : 11 - rest;
+  };
+  const first = calculate(digits.slice(0, 12), [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  const second = calculate(digits.slice(0, 13), [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  return first === Number(digits[12]) && second === Number(digits[13]);
 }
 
 function stringFromMetadata(metadata: Record<string, unknown> | null | undefined, keys: string[], fallback = ''): string {
@@ -469,10 +553,27 @@ async function parseError(response: Response): Promise<string> {
   }
 }
 
-async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, { credentials: 'include', ...init });
-  if (!response.ok) throw new Error(await parseError(response));
-  return (await response.json()) as T;
+async function requestJson<T>(url: string, init: RequestJsonInit = {}): Promise<T> {
+  const timeoutMs = init.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
+  const timeout = timeoutMs > 0 ? createTimeoutController(timeoutMs) : undefined;
+  try {
+  const response = await fetch(url, {
+    credentials: 'include',
+    ...init,
+    signal: init.signal ?? (timeout ? timeout.controller.signal : undefined),
+    });
+    if (!response.ok) throw new Error(await parseError(response));
+    return (await response.json()) as T;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error(`Tempo limite de resposta excedido (${timeoutMs}ms).`, { cause: error });
+    }
+    throw error;
+  } finally {
+    if (timeout) {
+      timeout.cancel();
+    }
+  }
 }
 
 export class HttpCrmApi implements CrmApi {
@@ -490,6 +591,72 @@ export class HttpCrmApi implements CrmApi {
     if (response.status === 404) return undefined;
     if (!response.ok) throw new Error(await parseError(response));
     const body = (await response.json()) as { lead: BackendLead };
+    return mapLead(body.lead);
+  }
+
+  async createLead(payload: Record<string, unknown>): Promise<Lead> {
+    const text = (key: string) => (typeof payload[key] === 'string' && payload[key].trim() ? payload[key].trim() : null);
+    const decimal = (key: string) => {
+      if (typeof payload[key] !== 'string' || !payload[key].trim()) return null;
+      const normalized = payload[key].replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
+      const value = Number(normalized);
+      return Number.isFinite(value) ? value : null;
+    };
+    const monthlyBillValue = decimal('monthlyBillValue');
+    const averageConsumptionKwh = decimal('averageConsumptionKwh');
+    const cpf = text('cpf');
+    const cnpj = text('cnpj');
+    const cpfDigits = cpf ? documentDigits(cpf) : null;
+    const cnpjDigits = cnpj ? documentDigits(cnpj) : null;
+    const metadata = {
+      visibility: 'team',
+      createdVia: text('createdVia') ?? 'crm_manual',
+      serviceInterest: text('serviceInterest'),
+      unitType: text('unitType'),
+      city: text('city'),
+      state: text('state'),
+      concessionaria: text('concessionaria'),
+      energyBillValue: monthlyBillValue,
+      averageConsumptionKwh,
+      offer: text('serviceInterest'),
+    };
+    const body = await requestJson<{ lead: BackendLead }>('/api/leads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contact: {
+          name: String(payload.name ?? '').trim(),
+          email: text('email'),
+          phone: text('phone'),
+          company: text('company'),
+          source: text('leadSource'),
+          metadata: {
+            city: text('city'),
+            state: text('state'),
+            serviceInterest: text('serviceInterest'),
+            unitType: text('unitType'),
+            cpf: cpfDigits,
+            cpfFormatted: cpfDigits ? formatCpf(cpfDigits) : null,
+            cnpj: cnpjDigits,
+            cnpjFormatted: cnpjDigits ? formatCnpj(cnpjDigits) : null,
+          },
+          cpf,
+          cnpj,
+        },
+        stage: 'novo_lead',
+        leadSource: text('leadSource'),
+        qualificationStatus: text('qualificationStatus'),
+        priority: payload.priority,
+        notes: text('notes'),
+        estimatedTicket: monthlyBillValue,
+        utmSource: text('utmSource'),
+        utmMedium: text('utmMedium'),
+        utmCampaign: text('utmCampaign'),
+        utmContent: text('utmContent'),
+        utmTerm: text('utmTerm'),
+        metadata,
+      }),
+    });
     return mapLead(body.lead);
   }
 
@@ -557,6 +724,7 @@ export class HttpCrmApi implements CrmApi {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      timeoutMs: PROPOSAL_UPLOAD_REQUEST_TIMEOUT_MS,
     });
     return mapProposal(body.proposal);
   }
@@ -571,11 +739,12 @@ export class HttpCrmApi implements CrmApi {
     return mapProposal(body.proposal);
   }
 
-  async updateProposal(id: string, payload: Partial<CreateProposalPayload>): Promise<Proposal> {
+  async updateProposal(id: string, payload: UpdateProposalPayload): Promise<Proposal> {
     const body = await requestJson<{ proposal: BackendProposal }>(`/api/proposals/${encodeURIComponent(id)}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      timeoutMs: PROPOSAL_UPLOAD_REQUEST_TIMEOUT_MS,
     });
     return mapProposal(body.proposal);
   }
@@ -587,6 +756,30 @@ export class HttpCrmApi implements CrmApi {
   async listTrackingEventsForLead(leadId: string): Promise<TrackingEvent[]> {
     const body = await requestJson<{ events: BackendTrackingEvent[] }>(`/api/leads/${encodeURIComponent(leadId)}/tracking-events`);
     return body.events;
+  }
+
+  async listLeadDocuments(leadId: string): Promise<LeadDocument[]> {
+    const body = await requestJson<{ documents: BackendLeadDocument[] }>(`/api/leads/${encodeURIComponent(leadId)}/documents`);
+    return body.documents;
+  }
+
+  async uploadLeadDocument(leadId: string, file: File): Promise<LeadDocument> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const body = await requestJson<{ document: BackendLeadDocument }>(`/api/leads/${encodeURIComponent(leadId)}/documents`, {
+      method: 'POST',
+      body: formData,
+      timeoutMs: PROPOSAL_UPLOAD_REQUEST_TIMEOUT_MS,
+    });
+    return body.document;
+  }
+
+  async deleteLeadDocument(leadId: string, documentId: string): Promise<void> {
+    const response = await fetch(`/api/leads/${encodeURIComponent(leadId)}/documents/${encodeURIComponent(documentId)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!response.ok) throw new Error(await parseError(response));
   }
 
   async listTasks(): Promise<Task[]> {
@@ -675,55 +868,6 @@ export class HttpCrmApi implements CrmApi {
     };
   }
 
-  async getInsights(days: number = 30): Promise<{
-    generatedAt: string;
-    period: string;
-    insights: Array<{
-      id: string;
-      type: 'pattern' | 'recommendation' | 'alert' | 'opportunity';
-      priority: 'high' | 'medium' | 'low';
-      title: string;
-      description: string;
-      metric?: string;
-      trend?: 'up' | 'down' | 'stable';
-      comparison?: string;
-      action?: string;
-      category: 'conversion' | 'source' | 'timing' | 'pipeline';
-    }>;
-    summary: {
-      totalLeads: number;
-      conversionRate: number;
-      avgTimeToConvert: number;
-      topSource: string;
-      bottleneck: string;
-    };
-  }> {
-    const query = new URLSearchParams({ days: String(days) });
-    return requestJson<{
-      generatedAt: string;
-      period: string;
-      insights: Array<{
-        id: string;
-        type: 'pattern' | 'recommendation' | 'alert' | 'opportunity';
-        priority: 'high' | 'medium' | 'low';
-        title: string;
-        description: string;
-        metric?: string;
-        trend?: 'up' | 'down' | 'stable';
-        comparison?: string;
-        action?: string;
-        category: 'conversion' | 'source' | 'timing' | 'pipeline';
-      }>;
-      summary: {
-        totalLeads: number;
-        conversionRate: number;
-        avgTimeToConvert: number;
-        topSource: string;
-        bottleneck: string;
-      };
-    }>(`/api/analytics/insights?${query}`);
-  }
-
   async getAnalyticsOverview(filters: { days?: number; period?: string; startDate?: string; endDate?: string; source?: string; campaign?: string; stage?: LeadStage } = {}): Promise<CrmAnalyticsOverview> {
     const params = new URLSearchParams();
     if (filters.days) params.set('days', String(filters.days));
@@ -774,6 +918,10 @@ export class HttpCrmApi implements CrmApi {
       body: JSON.stringify({ error }),
     });
     return body.followUp;
+  }
+
+  async getInsights(days = 30): Promise<CrmInsightsData> {
+    return requestJson(`/api/insights?days=${encodeURIComponent(String(days))}`);
   }
 
   async listAutomations(): Promise<AutomationRule[]> {

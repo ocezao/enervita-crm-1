@@ -202,6 +202,25 @@ export interface TrackingEvent {
   payload: Record<string, unknown>;
 }
 
+export interface LeadDocument {
+  id: string;
+  tenantId: string;
+  leadId: string;
+  fileName: string;
+  mimeType: string | null;
+  fileSize: number | null;
+  fileUrl: string | null;
+  previewUrl: string;
+  downloadUrl: string;
+  storageBackend: 'postgres' | 'legacy_url' | 'external_url';
+  checksumSha256: string | null;
+  isPublic: boolean;
+  uploadedByUserId: string | null;
+  uploadedByUserAgent: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 
 export interface Proposal {
   id: string;
@@ -235,6 +254,13 @@ export interface Proposal {
   leadStage?: LeadStage;
 }
 
+export type ProposalImportedFilePayload = {
+  name: string;
+  mimeType: string;
+  size: number;
+  dataBase64?: string;
+};
+
 export type CreateProposalPayload = {
   leadId: string;
   title: string;
@@ -250,13 +276,12 @@ export type CreateProposalPayload = {
   contentText?: string;
   templateName?: string;
   isTemplate?: boolean;
-  importedFile?: {
-    name: string;
-    mimeType: string;
-    size: number;
-    dataBase64?: string;
-  };
+  importedFile?: ProposalImportedFilePayload;
   status?: Proposal['status'];
+};
+
+export type UpdateProposalPayload = Omit<Partial<CreateProposalPayload>, 'importedFile' | 'leadId'> & {
+  importedFile?: ProposalImportedFilePayload | null;
 };
 
 

@@ -6,12 +6,14 @@ import type {
   AutomationRule,
   AutomationRun,
   CreateProposalPayload,
+  UpdateProposalPayload,
   CrmAnalyticsOverview,
   DashboardMetrics,
   FollowUpQueueItem,
   FollowUpRuleRunResult,
   FollowUpStatus,
   Lead,
+  LeadDocument,
   LeadHistoryEntry,
   LeadStage,
   N8nWorkflow,
@@ -93,6 +95,8 @@ export function useLeadDetail(id: string | undefined) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [history, setHistory] = useState<LeadHistoryEntry[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [trackingEvents, setTrackingEvents] = useState<TrackingEvent[]>([]);
+  const [documents, setDocuments] = useState<LeadDocument[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -104,15 +108,19 @@ export function useLeadDetail(id: string | undefined) {
           api.listActivities(id),
           api.listTasksForLead(id),
           api.listLeadHistory(id),
-          api.listProposalsForLead(id).catch(() => [])
+          api.listProposalsForLead(id).catch(() => []),
+          api.listTrackingEventsForLead(id).catch(() => []),
+          api.listLeadDocuments(id).catch(() => [])
         ]);
       })
-      .then(([l, a, t, h, p]) => {
+      .then(([l, a, t, h, p, te, d]) => {
         setLead(l);
         setActivities(a);
         setTasks(t);
         setHistory(h);
         setProposals(p);
+        setTrackingEvents(te);
+        setDocuments(d);
         setLoading(false);
       });
   }, [id]);
@@ -141,7 +149,7 @@ export function useLeadDetail(id: string | undefined) {
     return fresh;
   };
 
-  const updateProposalItem = async (proposalId: string, payload: Partial<CreateProposalPayload>) => {
+  const updateProposalItem = async (proposalId: string, payload: UpdateProposalPayload) => {
     const updated = await api.updateProposal(proposalId, payload);
     setProposals(prev => prev.map(p => p.id === proposalId ? updated : p));
     if (id && payload.status === 'accepted') {
@@ -153,6 +161,26 @@ export function useLeadDetail(id: string | undefined) {
   const deleteProposalItem = async (proposalId: string) => {
     await api.deleteProposal(proposalId);
     setProposals(prev => prev.filter(p => p.id !== proposalId));
+  };
+
+  const uploadDocument = async (file: File) => {
+    if (!id) return undefined;
+    const document = await api.uploadLeadDocument(id, file);
+    setDocuments(prev => [document, ...prev]);
+    return document;
+  };
+
+  const deleteDocument = async (documentId: string) => {
+    if (!id) return;
+    await api.deleteLeadDocument(id, documentId);
+    setDocuments(prev => prev.filter(document => document.id !== documentId));
+  };
+
+  const refreshDocuments = async () => {
+    if (!id) return [];
+    const fresh = await api.listLeadDocuments(id);
+    setDocuments(fresh);
+    return fresh;
   };
 
   const updateLead = async (payload: UpdateLeadPayload) => {
@@ -183,7 +211,7 @@ export function useLeadDetail(id: string | undefined) {
     return updated;
   };
 
-  return { lead, activities, tasks, history, proposals, loading, addActivity, addTask, completeTask, addProposal, updateProposal: updateProposalItem, deleteProposal: deleteProposalItem, updateLead, convertToOpportunity, deleteLead, setTags };
+  return { lead, activities, tasks, history, proposals, trackingEvents, documents, loading, addActivity, addTask, completeTask, addProposal, updateProposal: updateProposalItem, deleteProposal: deleteProposalItem, uploadDocument, deleteDocument, refreshDocuments, updateLead, convertToOpportunity, deleteLead, setTags };
 }
 
 export function useTasks() {

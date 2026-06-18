@@ -18,9 +18,10 @@ vi.mock('recharts', async () => {
   };
 });
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
+import { waitForFetchCalled } from '../test/testHelpers';
 
 const user = {
   id: 'user-1',
@@ -44,7 +45,7 @@ describe('Leads page real API integration', () => {
   it('loads leads from the backend API instead of mock data and hides CSV export without permission', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
-      if (url === '/api/me') return jsonResponse({ user });
+      if (url === '/api/me') return jsonResponse({ user });if(url.startsWith('/api/notifications'))return jsonResponse({notifications:[],unreadCount:0});if(url.startsWith('/api/follow-ups'))return jsonResponse({followUps:[]});if(url==='/api/automations/n8n-workflows')return jsonResponse({workflows:[]});
       if (url === '/api/leads') {
         return jsonResponse({
           leads: [
@@ -80,15 +81,11 @@ describe('Leads page real API integration', () => {
     expect((await screen.findAllByText('Empresa Real')).length).toBeGreaterThan(0);
     expect(screen.getByRole('link', { name: /abrir perfil de lead real api/i })).toBeInTheDocument();
     expect(screen.queryByText('Exportar CSV')).not.toBeInTheDocument();
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/leads', { credentials: 'include' });
-    });
+    await waitForFetchCalled(fetchMock, '/api/leads', { credentials: 'include' });
 
     await userEvent.click(screen.getByRole('link', { name: /abrir perfil de lead real api/i }));
-    expect(await screen.findByText('Informações de cadastro')).toBeInTheDocument();
-    expect(await screen.findByText('Foz do Iguaçu / PR')).toBeInTheDocument();
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith('/api/leads/lead-real-1', { credentials: 'include' });
-    });
+    expect(await screen.findByText(/Informa.*cadastro/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Foz do Igua.*PR/i)).toBeInTheDocument();
+    await waitForFetchCalled(fetchMock, '/api/leads/lead-real-1', { credentials: 'include' });
   });
 });

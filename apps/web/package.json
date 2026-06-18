@@ -8,7 +8,12 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "node scripts/run-vitest.mjs",
+    "ci": "npm run -s lint && npm run -s typecheck && npm run -s build",
+    "typecheck": "tsc --noEmit --pretty false",
+    "test:ui": "playwright test",
+    "test:ui:smoke": "playwright test --grep @smoke",
+    "validate:ui": "npm run -s test:ui"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",

@@ -10,7 +10,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "dispatch:webhooks": "node --import tsx scripts/dispatch-webhooks.ts",
     "dispatch:meta-capi": "node --import tsx scripts/dispatch-meta-capi.ts",
-    "run:notification-rules": "node --import tsx scripts/run-notification-rules.ts"
+    "run:notification-rules": "node --import tsx scripts/run-notification-rules.ts",
+    "ci": "npm run test && npm run typecheck"
   },
   "dependencies": {
     "@enervita/shared": "0.0.0",
