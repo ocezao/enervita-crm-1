@@ -19,6 +19,14 @@ function authenticatedUser(request: FastifyRequest): PublicUser {
   return user;
 }
 
+async function getInsightsResponse(request: FastifyRequest, options: InsightsRouteOptions) {
+  const query = request.query as Record<string, unknown>;
+  const daysValue = Number(query.days);
+  const validDays = Number.isFinite(daysValue) ? Math.max(7, Math.min(365, daysValue)) : 30;
+  const actor = authenticatedUser(request);
+  return options.insightsRepository.getInsights(actor.tenantId, validDays);
+}
+
 export async function registerInsightsRoutes(app: FastifyInstance, options: InsightsRouteOptions): Promise<void> {
   const insightsPreHandler = requirePermission('page.analytics', {
     userRepository: options.userRepository,
@@ -26,14 +34,10 @@ export async function registerInsightsRoutes(app: FastifyInstance, options: Insi
   });
 
   app.get('/api/analytics/insights', { preHandler: insightsPreHandler }, async (request) => {
-    const query = request.query as Record<string, unknown>;
-    const daysValue = Number(query.days);
-    const validDays = Number.isFinite(daysValue) ? Math.max(7, Math.min(365, daysValue)) : 30;
+    return { insights: await getInsightsResponse(request, options) };
+  });
 
-    const actor = authenticatedUser(request);
-
-    return {
-      insights: await options.insightsRepository.getInsights(actor.tenantId, validDays),
-    };
+  app.get('/api/insights', { preHandler: insightsPreHandler }, async (request) => {
+    return getInsightsResponse(request, options);
   });
 }
