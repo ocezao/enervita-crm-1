@@ -27,7 +27,8 @@
     "verify:production": "npm run check:quality-gates && npm run typecheck:api && npm run test:api && npm run lint --workspace @enervita/web && npm run test --workspace @enervita/web && npm run build --workspace @enervita/web && npm run test:migration",
     "dispatch:meta-capi": "npm run dispatch:meta-capi --workspace @enervita/api",
     "run:notification-rules": "npm run run:notification-rules --workspace @enervita/api",
-    "prepare": "husky"
+    "prepare": "husky",
+    "run:auto-reassign": "npm run run:auto-reassign --workspace @enervita/api"
   },
   "lint-staged": {
     "apps/api/src/**/*.ts": "npm run typecheck:api",

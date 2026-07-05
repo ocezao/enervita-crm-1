@@ -1,5 +1,6 @@
 import https from 'node:https';
 import pg from 'pg';
+import { detectLeadRoutingServiceKey } from './lead-routing-utils.mjs';
 
 const { Client } = pg;
 
@@ -128,6 +129,384 @@ function normalizeFieldNames(fields) {
   return mapped;
 }
 
+function clean(value) {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
+}
+
+function normalizeKeywords(value) {
+  if (Array.isArray(value)) return value.filter(item => typeof item === 'string');
+  return [];
+}
+
+async function loadLeadRoutingServices(db, tenantId) {
+  const result = await db.query(
+    `select key, label, keywords, pipeline_key
+       from lead_routing_services
+      where tenant_id = $1
+        and is_active = true
+      order by sort_order asc, label asc`,
+    [tenantId],
+  );
+  return result.rows.map(row => ({
+    key: row.key,
+    label: row.label,
+    keywords: normalizeKeywords(row.keywords),
+    pipelineKey: row.pipeline_key ?? 'geral',
+  }));
+}
+
+async function loadLeadRoutingSettings(db, tenantId) {
+  const result = await db.query(
+    `select random_enabled
+       from lead_routing_settings
+      where tenant_id = $1`,
+    [tenantId],
+  );
+  return { randomEnabled: result.rows[0]?.random_enabled !== false };
+}
+
+async function loadRoutingCandidates(db, tenantId, ruleKey) {
+  const result = await db.query(
+    `select u.id::text as id
+       from lead_routing_user_rules rule
+       join users u on u.tenant_id = rule.tenant_id and u.id = rule.user_id
+      where rule.tenant_id = $1
+        and rule.rule_key = $2
+        and u.status = 'active'
+        and not exists (
+          select 1
+            from user_roles admin_ur
+            join roles admin_r on admin_r.tenant_id = admin_ur.tenant_id and admin_r.id = admin_ur.role_id
+           where admin_ur.tenant_id = u.tenant_id
+             and admin_ur.user_id = u.id
+             and admin_r.name = 'admin'
+        )
+      order by u.name asc, u.id asc`,
+    [tenantId, ruleKey],
+  );
+  return result.rows;
+}
+
+async function loadPipelineCandidates(db, tenantId, pipelineKey) {
+  const result = await db.query(
+    `select u.id::text as id
+       from lead_pipeline_user_access access
+       join users u on u.tenant_id = access.tenant_id and u.id = access.user_id
+      where access.tenant_id = $1
+        and access.pipeline_key = $2
+        and u.status = 'active'
+        and not exists (
+          select 1
+            from user_roles admin_ur
+            join roles admin_r on admin_r.tenant_id = admin_ur.tenant_id and admin_r.id = admin_ur.role_id
+           where admin_ur.tenant_id = u.tenant_id
+             and admin_ur.user_id = u.id
+             and admin_r.name = 'admin'
+        )
+      order by u.name asc, u.id asc`,
+    [tenantId, pipelineKey],
+  );
+  return result.rows;
+}
+
+async function pickNextRoutingCandidate(db, tenantId, bucketKey, candidates) {
+  if (candidates.length < 1) return null;
+  await db.query(
+    `insert into lead_routing_state (tenant_id, bucket_key, last_user_id, updated_at)
+     values ($1, $2, null, now())
+     on conflict (tenant_id, bucket_key) do nothing`,
+    [tenantId, bucketKey],
+  );
+  const state = await db.query(
+    `select last_user_id::text as last_user_id
+       from lead_routing_state
+      where tenant_id = $1 and bucket_key = $2
+      for update`,
+    [tenantId, bucketKey],
+  );
+  const lastId = state.rows[0]?.last_user_id ?? null;
+  const lastIdx = candidates.findIndex(candidate => candidate.id === lastId);
+  const nextIdx = candidates.length === 1 ? 0 : (lastIdx + 1) % candidates.length;
+  const selected = candidates[nextIdx];
+  await db.query(
+    `update lead_routing_state
+        set last_user_id = $3::uuid,
+            updated_at = now()
+      where tenant_id = $1 and bucket_key = $2`,
+    [tenantId, bucketKey, selected.id],
+  );
+  return selected.id;
+}
+
+async function resolveLeadRoutingOwner(db, tenantId, attribution, fields) {
+  const services = await loadLeadRoutingServices(db, tenantId);
+  const serviceKey = detectLeadRoutingServiceKey(services, attribution, fields);
+  const service = services.find(item => item.key === serviceKey) ?? null;
+  const pipelineKey = service?.pipelineKey ?? 'geral';
+
+  if (serviceKey && pipelineKey !== 'geral') {
+    const serviceCandidates = await loadPipelineCandidates(db, tenantId, pipelineKey);
+    const ownerId = await pickNextRoutingCandidate(db, tenantId, `pipeline:${pipelineKey}`, serviceCandidates);
+    if (ownerId) return { ownerId, reason: `pipeline_${pipelineKey}`, serviceKey, pipelineKey, pipelineStageKey: 'novo_lead', bucketKey: `pipeline:${pipelineKey}` };
+  }
+
+  const settings = await loadLeadRoutingSettings(db, tenantId);
+  if (!settings.randomEnabled) {
+    return { ownerId: null, reason: serviceKey ? `service_${serviceKey}_no_candidate_random_disabled` : 'random_disabled', serviceKey, pipelineKey: 'geral', pipelineStageKey: 'novo_lead', bucketKey: null };
+  }
+
+  const randomCandidates = await loadRoutingCandidates(db, tenantId, 'random');
+  const ownerId = await pickNextRoutingCandidate(db, tenantId, 'random', randomCandidates);
+  return {
+    ownerId,
+    reason: ownerId ? 'random_cycle' : (serviceKey ? `service_${serviceKey}_no_candidate` : 'random_no_candidate'),
+    serviceKey,
+    pipelineKey: 'geral',
+    pipelineStageKey: 'novo_lead',
+    bucketKey: ownerId ? 'random' : null,
+  };
+}
+
+function hasAnyName(attribution) {
+  return Boolean(attribution.formName || attribution.campaignName || attribution.adsetName || attribution.adName);
+}
+
+function attributionConfidence(attribution) {
+  return attribution.campaignId && attribution.adsetId && attribution.adId && hasAnyName(attribution) ? 'complete' : 'partial';
+}
+
+async function resolveMetaAttribution(db, tenantId, params) {
+  const campaignId = clean(params.campaignId);
+  const adsetId = clean(params.adsetId);
+  const adId = clean(params.adId);
+  const formId = clean(params.formId);
+  const formName = clean(params.formName);
+
+  const campaignResult = campaignId
+    ? await db.query(`select name from ad_campaigns where tenant_id = $1 and platform = 'meta' and external_campaign_id = $2 order by last_seen_at desc nulls last limit 1`, [tenantId, campaignId])
+    : { rows: [] };
+  const adSetResult = adsetId
+    ? await db.query(`select name from ad_sets where tenant_id = $1 and platform = 'meta' and external_ad_set_id = $2 order by last_seen_at desc nulls last limit 1`, [tenantId, adsetId])
+    : { rows: [] };
+  const adResult = adId
+    ? await db.query(`select name, creative_name from ads where tenant_id = $1 and platform = 'meta' and external_ad_id = $2 order by last_seen_at desc nulls last limit 1`, [tenantId, adId])
+    : { rows: [] };
+
+  const attribution = {
+    sourceSystem: 'meta',
+    sourceChannel: 'meta_lead_form',
+    leadgenId: clean(params.leadgenId),
+    formId,
+    formName,
+    campaignId,
+    campaignName: clean(campaignResult.rows[0]?.name) ?? null,
+    adsetId,
+    adsetName: clean(adSetResult.rows[0]?.name) ?? null,
+    adId,
+    adName: clean(adResult.rows[0]?.name) ?? clean(adResult.rows[0]?.creative_name) ?? null,
+    utmSource: 'meta',
+    utmMedium: 'lead_ads',
+    utmCampaign: clean(campaignResult.rows[0]?.name) ?? campaignId,
+    utmContent: clean(adResult.rows[0]?.name) ?? clean(adResult.rows[0]?.creative_name) ?? adId,
+    utmTerm: clean(adSetResult.rows[0]?.name) ?? adsetId,
+  };
+  return { ...attribution, confidence: attributionConfidence(attribution) };
+}
+
+function attributionMeta(attribution, fields) {
+  return {
+    sourceSystem: attribution.sourceSystem,
+    sourceChannel: attribution.sourceChannel,
+    leadgenId: attribution.leadgenId,
+    formId: attribution.formId,
+    formName: attribution.formName,
+    campaignId: attribution.campaignId,
+    campaignName: attribution.campaignName,
+    adsetId: attribution.adsetId,
+    adsetName: attribution.adsetName,
+    adId: attribution.adId,
+    adName: attribution.adName,
+    confidence: attribution.confidence,
+    rawLeadDetails: {
+      leadgen_id: attribution.leadgenId,
+      form_id: attribution.formId,
+      form_name: attribution.formName,
+      campaign_id: attribution.campaignId,
+      campaign_name: attribution.campaignName,
+      adset_id: attribution.adsetId,
+      adset_name: attribution.adsetName,
+      ad_id: attribution.adId,
+      ad_name: attribution.adName,
+    },
+    rawFormFields: fields,
+  };
+}
+
+async function persistLeadAttribution(db, tenantId, leadId, contactId, attribution, fields, rawEventId = null) {
+  const meta = attributionMeta(attribution, fields);
+  const topLevelMetadata = {
+    source: attribution.sourceChannel,
+    leadgen_id: attribution.leadgenId,
+    form_id: attribution.formId,
+    formName: attribution.formName,
+    campaign_id: attribution.campaignId,
+    adset_id: attribution.adsetId,
+    ad_id: attribution.adId,
+  };
+
+  await db.query(
+    `insert into lead_attributions (
+       tenant_id, lead_id, source_system, source_channel, leadgen_id, form_id, form_name,
+       campaign_id, campaign_name, adset_id, adset_name, ad_id, ad_name,
+       utm_source, utm_medium, utm_campaign, utm_content, utm_term, raw_event_id, confidence, metadata
+     ) values (
+       $1, $2, $3, $4, $5, $6, $7,
+       $8, $9, $10, $11, $12, $13,
+       $14, $15, $16, $17, $18, $19::uuid, $20, $21::jsonb
+     )
+     on conflict (tenant_id, lead_id) do update set
+       source_system = excluded.source_system,
+       source_channel = excluded.source_channel,
+       leadgen_id = coalesce(excluded.leadgen_id, lead_attributions.leadgen_id),
+       form_id = coalesce(excluded.form_id, lead_attributions.form_id),
+       form_name = coalesce(excluded.form_name, lead_attributions.form_name),
+       campaign_id = coalesce(excluded.campaign_id, lead_attributions.campaign_id),
+       campaign_name = coalesce(excluded.campaign_name, lead_attributions.campaign_name),
+       adset_id = coalesce(excluded.adset_id, lead_attributions.adset_id),
+       adset_name = coalesce(excluded.adset_name, lead_attributions.adset_name),
+       ad_id = coalesce(excluded.ad_id, lead_attributions.ad_id),
+       ad_name = coalesce(excluded.ad_name, lead_attributions.ad_name),
+       utm_source = coalesce(excluded.utm_source, lead_attributions.utm_source),
+       utm_medium = coalesce(excluded.utm_medium, lead_attributions.utm_medium),
+       utm_campaign = coalesce(excluded.utm_campaign, lead_attributions.utm_campaign),
+       utm_content = coalesce(excluded.utm_content, lead_attributions.utm_content),
+       utm_term = coalesce(excluded.utm_term, lead_attributions.utm_term),
+       raw_event_id = coalesce(excluded.raw_event_id, lead_attributions.raw_event_id),
+       confidence = case when excluded.confidence = 'complete' then excluded.confidence else lead_attributions.confidence end,
+       metadata = lead_attributions.metadata || excluded.metadata,
+       last_reconciled_at = now(),
+       updated_at = now()`,
+    [
+      tenantId,
+      leadId,
+      attribution.sourceSystem,
+      attribution.sourceChannel,
+      attribution.leadgenId,
+      attribution.formId,
+      attribution.formName,
+      attribution.campaignId,
+      attribution.campaignName,
+      attribution.adsetId,
+      attribution.adsetName,
+      attribution.adId,
+      attribution.adName,
+      attribution.utmSource,
+      attribution.utmMedium,
+      attribution.utmCampaign,
+      attribution.utmContent,
+      attribution.utmTerm,
+      rawEventId,
+      attribution.confidence,
+      JSON.stringify(meta),
+    ],
+  );
+
+  await db.query(
+    `update leads
+        set lead_source = case when lead_source is null or lead_source in ('', 'desconhecido', 'api') then $3 else lead_source end,
+            utm_source = coalesce(utm_source, $4),
+            utm_medium = coalesce(utm_medium, $5),
+            utm_campaign = coalesce(utm_campaign, $6),
+            utm_content = coalesce(utm_content, $7),
+            utm_term = coalesce(utm_term, $8),
+            metadata = jsonb_set(coalesce(metadata, '{}'::jsonb), '{meta}', coalesce(metadata->'meta', '{}'::jsonb) || $9::jsonb, true) || $10::jsonb,
+            updated_at = now()
+      where tenant_id = $1 and id = $2`,
+    [
+      tenantId,
+      leadId,
+      attribution.sourceChannel,
+      attribution.utmSource,
+      attribution.utmMedium,
+      attribution.utmCampaign,
+      attribution.utmContent,
+      attribution.utmTerm,
+      JSON.stringify(meta),
+      JSON.stringify(topLevelMetadata),
+    ],
+  );
+
+  if (contactId) {
+    await db.query(
+      `update contacts
+          set source = case when source is null or source in ('', 'desconhecido', 'api') then $3 else source end,
+              metadata = jsonb_set(coalesce(metadata, '{}'::jsonb), '{meta}', coalesce(metadata->'meta', '{}'::jsonb) || $4::jsonb, true) || $5::jsonb,
+              updated_at = now()
+        where tenant_id = $1 and id = $2`,
+      [tenantId, contactId, attribution.sourceChannel, JSON.stringify(meta), JSON.stringify(topLevelMetadata)],
+    );
+  }
+}
+
+function trackingPayloadForAttribution(base, attribution) {
+  return {
+    ...base,
+    source: attribution.sourceChannel,
+    leadEventSource: 'Enervita Custom CRM',
+    attribution: {
+      ...(base.attribution ?? {}),
+      campaign_id: attribution.campaignId,
+      adset_id: attribution.adsetId,
+      ad_id: attribution.adId,
+      form_id: attribution.formId,
+      leadgen_id: attribution.leadgenId,
+    },
+    meta: attributionMeta(attribution, base.qualification?.rawFormFields ?? {}),
+    campaignName: attribution.campaignName,
+    adsetName: attribution.adsetName,
+    adName: attribution.adName,
+    formName: attribution.formName,
+    campaign: { id: attribution.campaignId, name: attribution.campaignName },
+    adset: { id: attribution.adsetId, name: attribution.adsetName },
+    ad: { id: attribution.adId, name: attribution.adName },
+    form: { id: attribution.formId, name: attribution.formName },
+    utm: {
+      source: attribution.utmSource,
+      medium: attribution.utmMedium,
+      campaign: attribution.utmCampaign,
+      content: attribution.utmContent,
+      term: attribution.utmTerm,
+    },
+  };
+}
+
+async function upsertMetaLeadTrackingEvent(db, tenantId, leadId, payload) {
+  const existing = await db.query(
+    `select id, payload from tracking_events
+      where tenant_id = $1 and lead_id = $2 and platform = 'meta' and event_name = $3
+      order by created_at asc
+      limit 1`,
+    [tenantId, leadId, META_LEADGEN_EVENT_NAME],
+  );
+  if (existing.rows[0]) {
+    await db.query(
+      `update tracking_events
+          set payload = coalesce(payload, '{}'::jsonb) || $3::jsonb,
+              updated_at = now()
+        where tenant_id = $1 and id = $2`,
+      [tenantId, existing.rows[0].id, JSON.stringify(payload)],
+    );
+    return existing.rows[0].id;
+  }
+  const inserted = await db.query(
+    `insert into tracking_events (tenant_id, lead_id, platform, event_name, status, payload, next_retry_at)
+     values ($1, $2, 'meta', $3, 'queued', $4::jsonb, now())
+     returning id`,
+    [tenantId, leadId, META_LEADGEN_EVENT_NAME, JSON.stringify(payload)],
+  );
+  return inserted.rows[0]?.id ?? null;
+}
+
 async function main() {
   const db = new Client({ connectionString: DATABASE_URL });
   await db.connect();
@@ -235,6 +614,14 @@ async function main() {
           campaign_id: campaignId,
           raw_fields: fields,
         };
+        const attribution = await resolveMetaAttribution(db, tenantId, {
+          leadgenId,
+          formId,
+          formName: form.name,
+          campaignId,
+          adsetId,
+          adId,
+        });
 
         await db.query('begin');
         try {
@@ -274,49 +661,42 @@ async function main() {
           if (leadExists.rows[0]) {
             const existingLead = leadExists.rows[0];
             const resolvedContactId = existingLead.lead_contact_id ?? existingLead.contact_id_from_match ?? null;
+            const basePayload = buildMetaLeadgenTrackingPayload({
+              leadId: existingLead.lead_id,
+              stage: 'novo_lead',
+              ticket: null,
+              priority: null,
+              monthlyBill,
+              leadgenId,
+              fields,
+              city,
+              state,
+              email,
+              phone,
+              message,
+            });
+            const trackingPayload = trackingPayloadForAttribution(basePayload, attribution);
+            const trackingEventId = await upsertMetaLeadTrackingEvent(db, tenantId, existingLead.lead_id, trackingPayload);
+            await persistLeadAttribution(db, tenantId, existingLead.lead_id, resolvedContactId, attribution, fields, eventResult.rows[0].id);
             await db.query(
               `update meta_leadgen_events
                   set status = 'processed',
                       lead_id = $3,
                       contact_id = $4,
+                      normalized_payload = normalized_payload || $5::jsonb,
                       updated_at = now()
                 where tenant_id = $1 and leadgen_id = $2`,
-              [tenantId, leadgenId, existingLead.lead_id, resolvedContactId],
+              [tenantId, leadgenId, existingLead.lead_id, resolvedContactId, JSON.stringify({ attribution, tracking_event_id: trackingEventId })],
             );
             await db.query('commit');
             totalSkipped += 1;
             continue;
           }
 
+          const sdrRouting = await resolveLeadRoutingOwner(db, tenantId, attribution, fields);
+          const sdrOwnerId = sdrRouting.ownerId;
+
           // Insert contact
-          // Round-robin: find all SDRs, check last assigned, pick next in rotation
-          const sdrList = await db.query(
-            `select u.id::text as id
-               from users u
-               join user_roles ur on ur.tenant_id = u.tenant_id and ur.user_id = u.id
-               join roles r on r.tenant_id = ur.tenant_id and r.id = ur.role_id
-              where u.tenant_id = $1
-                and u.status = 'active'
-                and r.name in ('sdr', 'vendedor', 'seller', 'closer')
-                and not exists (
-                  select 1 from user_roles admin_ur
-                  join roles admin_r on admin_r.tenant_id = admin_ur.tenant_id and admin_r.id = admin_ur.role_id
-                  where admin_ur.tenant_id = u.tenant_id and admin_ur.user_id = u.id and admin_r.name = 'admin'
-                )
-              order by u.name`,
-            [tenantId],
-          );
-          let sdrOwnerId = null;
-          if (sdrList.rows.length > 0) {
-            const lastLead = await db.query(
-              `select sdr_owner_id from leads where tenant_id = $1 and sdr_owner_id is not null order by created_at desc limit 1`,
-              [tenantId],
-            );
-            const lastId = lastLead.rows[0]?.sdr_owner_id ?? null;
-            const lastIdx = sdrList.rows.findIndex(r => r.id === lastId);
-            const nextIdx = sdrList.rows.length === 1 ? 0 : (lastIdx + 1) % sdrList.rows.length;
-            sdrOwnerId = sdrList.rows[nextIdx].id;
-          }
           const contact = await db.query(
             `insert into contacts (tenant_id, name, email, phone, company, source, consent, metadata, created_at, updated_at)
              values ($1, $2, $3, $4, $5, 'meta_lead_form', true, $6::jsonb, $7, now())
@@ -331,50 +711,49 @@ async function main() {
 
           const newLead = await db.query(
             `insert into leads (
-               id, tenant_id, contact_id, stage, qualification_status, lead_source,
+               id, tenant_id, contact_id, stage, pipeline_key, pipeline_stage_key, qualification_status, lead_source,
                energy_bill_value, sdr_owner_id, priority, notes, metadata, created_at, updated_at
              ) values (
-               gen_random_uuid(), $1, $2, $3::lead_stage, 'pending', 'meta_lead_form',
-               $4, $5::uuid, $6::priority_level, $7, $8::jsonb, $9, now()
+               gen_random_uuid(), $1, $2, $3::lead_stage, $4, $5, 'pending', 'meta_lead_form',
+               $6, $7::uuid, $8::priority_level, $9, $10::jsonb, $11, now()
              )
              returning id`,
             [
-              tenantId, contact.rows[0].id, stage,
+              tenantId, contact.rows[0].id, stage, sdrRouting.pipelineKey ?? 'geral', sdrRouting.pipelineStageKey ?? 'novo_lead',
               ticket ? String(ticket) : null, sdrOwnerId, priority, message,
-              JSON.stringify({ leadgen_id: leadgenId, form_id: formId, ad_id: adId, campaign_id: campaignId, city, state, source: 'meta_leadgen_poll' }),
+              JSON.stringify({ leadgen_id: leadgenId, form_id: formId, ad_id: adId, adset_id: adsetId, campaign_id: campaignId, city, state, source: 'meta_leadgen_poll', routing: sdrRouting, meta: attributionMeta(attribution, fields) }),
               createdTime,
             ],
           );
 
           if (newLead.rows[0]) {
             const leadId = newLead.rows[0].id;
+            const basePayload = buildMetaLeadgenTrackingPayload({
+              leadId,
+              stage,
+              ticket,
+              priority,
+              monthlyBill,
+              leadgenId,
+              fields,
+              city,
+              state,
+              email,
+              phone,
+              message,
+            });
+            const trackingPayload = trackingPayloadForAttribution(basePayload, attribution);
+            const trackingEventId = await upsertMetaLeadTrackingEvent(db, tenantId, leadId, trackingPayload);
+            await persistLeadAttribution(db, tenantId, leadId, contact.rows[0].id, attribution, fields, eventResult.rows[0].id);
             await db.query(
-              `insert into tracking_events (tenant_id, lead_id, platform, event_name, status, payload, next_retry_at)
-               values ($1, $2, 'meta', $3, 'queued', $4::jsonb, now())`,
-              [
-                tenantId,
-                leadId,
-                META_LEADGEN_EVENT_NAME,
-                JSON.stringify(buildMetaLeadgenTrackingPayload({
-                  leadId,
-                  stage,
-                  ticket,
-                  priority,
-                  monthlyBill,
-                  leadgenId,
-                  fields,
-                  city,
-                  state,
-                  email,
-                  phone,
-                  message,
-                })),
-              ],
-            );
-            await db.query(
-              `update meta_leadgen_events set status = 'processed', lead_id = $3, contact_id = $4, updated_at = now()
+              `update meta_leadgen_events
+                  set status = 'processed',
+                      lead_id = $3,
+                      contact_id = $4,
+                      normalized_payload = normalized_payload || $5::jsonb,
+                      updated_at = now()
                 where tenant_id = $1 and leadgen_id = $2`,
-              [tenantId, leadgenId, leadId, contact.rows[0].id],
+              [tenantId, leadgenId, leadId, contact.rows[0].id, JSON.stringify({ attribution, tracking_event_id: trackingEventId })],
             );
 
             // Assign sdr
@@ -382,12 +761,12 @@ async function main() {
               await db.query(
                 `insert into audit_logs (tenant_id, actor_user_id, entity_type, entity_id, action, after_data)
                  values ($1, null, 'lead', $2, 'lead.created', $3::jsonb)`,
-                [tenantId, newLead.rows[0].id, JSON.stringify({ sdrOwnerId, source: 'meta_leadgen_poll' })],
+                [tenantId, newLead.rows[0].id, JSON.stringify({ sdrOwnerId, source: 'meta_leadgen_poll', routing: sdrRouting })],
               );
               await db.query(
                 `insert into audit_logs (tenant_id, actor_user_id, entity_type, entity_id, action, after_data)
                  values ($1, null, 'lead', $2, 'lead.assigned', $3::jsonb)`,
-                [tenantId, newLead.rows[0].id, JSON.stringify({ sdrOwnerId, reason: 'round_robin_new_lead' })],
+                [tenantId, newLead.rows[0].id, JSON.stringify({ sdrOwnerId, reason: sdrRouting.reason, serviceKey: sdrRouting.serviceKey, bucketKey: sdrRouting.bucketKey })],
               );
             }
 

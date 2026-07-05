@@ -36,7 +36,9 @@ export type NotificationRuleKey =
   | "task_overdue"
   | "lead_without_next_action"
   | "proposal_no_response"
-  | "opportunity_stale";
+  | "opportunity_stale"
+  | "lead_stale"
+  | "seller_inactive";
 
 export type NotificationRuleRunResult = {
   created: Record<NotificationRuleKey, number>;
@@ -222,6 +224,8 @@ export function createPgNotificationsRepository(
         lead_without_next_action: 0,
         proposal_no_response: 0,
         opportunity_stale: 0,
+        lead_stale: 0,
+        seller_inactive: 0,
       };
       const bucket = new Date().toISOString().slice(0, 10);
 
@@ -392,6 +396,129 @@ export function createPgNotificationsRepository(
           if (notification) created.opportunity_stale += 1;
         }
 
+        // FASE 2: Lead parado - notifica vendedor e admin
+        const staleLeads = await client.query(
+          `select l.id,
+                  l.stage,
+                  l.pipeline_key as "pipelineKey",
+                  l.sdr_owner_id as "sellerId",
+                  c.name as "contactName",
+                  u.name as "sellerName",
+                  extract(epoch from (now() - l.updated_at)) / 3600 as "hoursStale"
+             from leads l
+             join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id
+             join users u on u.tenant_id = l.tenant_id and u.id = l.sdr_owner_id
+            where l.tenant_id = $1
+              and l.stage not in ('perdido', 'contrato_enervita')
+              and l.updated_at < now() - interval '24 hours'
+              and l.sdr_owner_id is not null
+            order by l.updated_at asc
+            limit 100`,
+          [tenantId],
+        );
+        for (const row of staleLeads.rows) {
+          const hours = Math.floor(Number(row.hoursStale));
+          const days = Math.floor(hours / 24);
+          const timeLabel = days > 0 ? `${days} dia${days > 1 ? 's' : ''}` : `${hours} hora${hours > 1 ? 's' : ''}`;
+          const severity = hours >= 72 ? 'error' : hours >= 48 ? 'warning' : 'info';
+
+          // Notifica vendedor
+          const sellerNotification = await createIfRuleNotificationMissing(
+            {
+              tenantId,
+              userId: row.sellerId,
+              leadId: row.id,
+              type: 'lead_stale',
+              severity,
+              title: `Lead parado há ${timeLabel}`,
+              body: `O lead "${row.contactName}" está parado no estágio "${row.stage}" há ${timeLabel}.`,
+              href: `/leads/${row.id}`,
+              metadata: {
+                rule: 'lead_stale',
+                entityType: 'lead',
+                entityId: row.id,
+                bucket,
+                hoursStale: hours,
+                pipelineKey: row.pipelineKey,
+              },
+            },
+            client,
+          );
+          if (sellerNotification) created.lead_stale += 1;
+
+          // FASE 5: Enviar evento de lead parado para Meta Ads
+          try {
+            await client.query(
+              `insert into tracking_events (tenant_id, lead_id, platform, event_name, status, payload)
+               values ($1, $2, 'meta', 'EnervitaLeadStale', 'queued', $3::jsonb)`,
+              [tenantId, row.id, JSON.stringify({
+                leadId: row.id,
+                stage: row.stage,
+                hoursStale: hours,
+                pipelineKey: row.pipelineKey,
+                leadEventSource: 'Enervita Custom CRM',
+              })],
+            );
+          } catch {
+            // Não falhar a notificação se o Meta event falhar
+          }
+        }
+
+        // FASE 3: Alerta para admin - agrega por vendedor (1 notificação por vendedor)
+        const inactiveSellers = await client.query(
+          `select l.sdr_owner_id as "sellerId",
+                  u.name as "sellerName",
+                  count(*) as "staleCount",
+                  min(l.updated_at) as "oldestStale",
+                  extract(epoch from (now() - min(l.updated_at))) / 3600 as "hoursInactive",
+                  string_agg(distinct l.stage::text, ', ') as "affectedStages",
+                  string_agg(distinct l.pipeline_key::text, ', ') as "affectedPipelines"
+             from leads l
+             join users u on u.tenant_id = l.tenant_id and u.id = l.sdr_owner_id
+            where l.tenant_id = $1
+              and l.stage not in ('perdido', 'contrato_enervita')
+              and l.updated_at < now() - interval '48 hours'
+              and l.sdr_owner_id is not null
+            group by l.sdr_owner_id, u.name
+            order by "hoursInactive" desc
+            limit 50`,
+          [tenantId],
+        );
+        for (const seller of inactiveSellers.rows) {
+          if (!adminUserId) continue;
+          const hours = Math.floor(Number(seller.hoursInactive));
+          const days = Math.floor(hours / 24);
+          const timeLabel = days > 0 ? `${days} dia${days > 1 ? 's' : ''}` : `${hours} hora${hours > 1 ? 's' : ''}`;
+          const severity = hours >= 168 ? 'error' : hours >= 72 ? 'warning' : 'info';
+          const stagesLabel = seller.affectedStages || 'N/A';
+
+          const adminNotification = await createIfRuleNotificationMissing(
+            {
+              tenantId,
+              userId: adminUserId,
+              type: 'seller_inactive',
+              severity,
+              title: `${seller.sellerName} com ${seller.staleCount} lead${seller.staleCount > 1 ? 's' : ''} parado${seller.staleCount > 1 ? 's' : ''}`,
+              body: `O vendedor ${seller.sellerName} não movimenta ${seller.staleCount} lead(s) há ${timeLabel}. Estágios: ${stagesLabel}. Isso pode causar atraso na inteligência dos anúncios do Meta Ads.`,
+              href: `/pipeline?seller=${seller.sellerId}`,
+              metadata: {
+                rule: 'seller_inactive',
+                entityType: 'seller',
+                entityId: seller.sellerId,
+                bucket,
+                sellerId: seller.sellerId,
+                sellerName: seller.sellerName,
+                staleCount: Number(seller.staleCount),
+                hoursInactive: hours,
+                affectedStages: seller.affectedStages,
+                affectedPipelines: seller.affectedPipelines,
+              },
+            },
+            client,
+          );
+          if (adminNotification) created.seller_inactive += 1;
+        }
+
         await client.query("commit");
         return {
           created,
@@ -399,7 +526,9 @@ export function createPgNotificationsRepository(
             created.task_overdue +
             created.lead_without_next_action +
             created.proposal_no_response +
-            created.opportunity_stale,
+            created.opportunity_stale +
+            created.lead_stale +
+            created.seller_inactive,
         };
       } catch (error) {
         await client.query("rollback").catch(() => {});

@@ -42,6 +42,10 @@ services:
       META_TEST_EVENT_CODE: ${META_TEST_EVENT_CODE:-}
       META_ASSET_SCOPE: ${META_ASSET_SCOPE:-}
       N8N_DATABASE_URL: postgres://${N8N_DB_USER:-n8n}:${N8N_DB_PASSWORD:-n8n}@enervita-n8n-db:5432/${N8N_DB_NAME:-n8n}
+      AI_PROVIDER: ${AI_PROVIDER:-mimo}
+      MIMO_API_KEY: ${MIMO_API_KEY:-}
+      MIMO_MODEL: ${MIMO_MODEL:-mimo-v2.5}
+      MIMO_BASE_URL: ${MIMO_BASE_URL:-https://token-plan-sgp.xiaomimimo.com/v1}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-deepseek/deepseek-chat-v3-0324}
       OPENROUTER_BASE_URL: ${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}

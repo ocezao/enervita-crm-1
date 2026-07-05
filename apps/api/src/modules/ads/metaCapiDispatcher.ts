@@ -165,6 +165,9 @@ function standardEventName(name: string): string {
     ProposalSent: 'Lead',
     WonLead: 'Purchase',
     LeadUnqualified: 'Lead',
+    EnervitaQualificationScore: 'Lead',
+    EnervitaLeadStale: 'Lead',
+    EnervitaLeadReassigned: 'Lead',
   };
   return map[name] ?? name;
 }
@@ -253,6 +256,16 @@ export function buildMetaCapiEvent(event: QueuedMetaTrackingEvent): MetaCapiEven
   }
   if (estimatedTicket !== undefined) customData.value = estimatedTicket;
   customData.currency = 'BRL';
+
+  // FASE 5: Dados de qualificação e engajamento
+  const qualificationScore = numericValue(payload.qualificationScore);
+  if (qualificationScore !== undefined) customData.qualification_score = qualificationScore;
+  const hoursStale = numericValue(payload.hoursStale);
+  if (hoursStale !== undefined) customData.hours_stale = hoursStale;
+  const staleStage = stringValue(payload.staleStage);
+  if (staleStage) customData.stale_stage = staleStage;
+  const sellerName = stringValue(payload.sellerName);
+  if (sellerName) customData.seller_name = sellerName;
 
   for (const [key, value] of Object.entries(customData)) {
     if (value === undefined || value === null || (Array.isArray(value) && value.length === 0)) delete customData[key];

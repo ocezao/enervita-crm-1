@@ -29,8 +29,15 @@ import {
   Type,
   Lock,
   Image as ImageIcon,
+  Shuffle,
+  UsersRound,
+  Tag,
+  Zap,
+  DollarSign,
+  Hand,
 } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { autoReassignApi, type AutoReassignConfig } from '../lib/api/autoReassignApi';
 import { useSearchParams } from 'react-router-dom';
 import {
   type AppearanceSettings,
@@ -41,9 +48,10 @@ import {
   loadAppearanceSettings,
   saveAppearanceSettings,
 } from '../lib/appearance';
-import { userHasAnyPermission } from '../auth/permissions';
+import { isAdminUser, userHasAnyPermission } from '../auth/permissions';
 import { useAuth } from '../auth/useAuth';
 import { useAutomations, useLeads, useTasks, useWebhooks } from '../hooks/useCrm';
+import { leadRoutingApi, type LeadRoutingConfig, type DistributionRule } from '../lib/api/leadRoutingApi';
 import UsersPermissions from './UsersPermissions';
 
 type AnyIcon = typeof SunMedium;
@@ -55,12 +63,13 @@ export default function Settings() {
   const tabs = useMemo(() => [
     { id: 'general', label: 'Geral', icon: Settings2, requiredAny: ['page.settings', 'settings.manage'] },
     { id: 'users', label: 'Usuários', icon: User, requiredAny: ['user.manage'] },
+    { id: 'lead-routing', label: 'Atribuir Leads', icon: Shuffle, requiredAny: ['settings.manage'] },
     { id: 'pipeline', label: 'Etapas do Funil', icon: Layers, requiredAny: ['page.settings', 'settings.manage'] },
     { id: 'integrations', icon: LinkIcon, label: 'Integrações', requiredAny: ['page.settings', 'settings.manage'] },
     { id: 'appearance', label: 'Aparência', icon: Monitor, requiredAny: ['page.settings', 'settings.manage'] },
   ], []);
 
-  const visibleTabs = useMemo(() => tabs.filter(tab => userHasAnyPermission(user, tab.requiredAny)), [tabs, user]);
+  const visibleTabs = useMemo(() => tabs.filter(tab => tab.id === 'lead-routing' ? isAdminUser(user) : userHasAnyPermission(user, tab.requiredAny)), [tabs, user]);
   const requestedTab = searchParams.get('tab') ?? 'general';
   const activeTab = visibleTabs.some(tab => tab.id === requestedTab) ? requestedTab : visibleTabs[0]?.id ?? 'general';
 
@@ -91,14 +100,417 @@ export default function Settings() {
         <main className="flex-1 min-w-0">
           {activeTab === 'general' && <GeneralSettings onOpenTab={openTab} />}
           {activeTab === 'users' && <UsersPermissions embedded />}
+          {activeTab === 'lead-routing' && <LeadRoutingSettings />}
           {activeTab === 'pipeline' && <PipelineSettings />}
           {activeTab === 'appearance' && <AppearanceSettingsPanel />}
           {activeTab === 'integrations' && <IntegrationsSettings />}
-          {activeTab !== 'general' && activeTab !== 'users' && activeTab !== 'pipeline' && activeTab !== 'appearance' && activeTab !== 'integrations' && (
+          {activeTab !== 'general' && activeTab !== 'users' && activeTab !== 'lead-routing' && activeTab !== 'pipeline' && activeTab !== 'appearance' && activeTab !== 'integrations' && (
             <Card className="p-12 text-center text-gray-400">Esta seção de configurações será implementada na versão final.</Card>
           )}
         </main>
       </div>
+    </div>
+  );
+}
+
+function LeadRoutingSettings() {
+  const [config, setConfig] = useState<LeadRoutingConfig | null>(null);
+  const [rules, setRules] = useState<DistributionRule[]>([]);
+  const [serviceAssignments, setServiceAssignments] = useState<Record<string, string>>({});
+  const [rulesLoading, setRulesLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [autoReassign, setAutoReassign] = useState<AutoReassignConfig | null>(null);
+  const [autoReassignLoading, setAutoReassignLoading] = useState(true);
+  const [autoReassignSaving, setAutoReassignSaving] = useState(false);
+
+  useEffect(() => {
+    // Carregar assignments do servico by_service
+    leadRoutingApi.getRuleAssignments('by_service')
+      .then((assignments) => {
+        const map: Record<string, string> = {};
+        for (const a of assignments) {
+          const serviceKey = (a.config as any)?.serviceKey;
+          if (serviceKey) map[serviceKey] = a.userId;
+        }
+        setServiceAssignments(map);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    setRulesLoading(true);
+    leadRoutingApi.getRules()
+      .then((loaded) => {
+        if (alive) setRules(loaded);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (alive) setRulesLoading(false);
+      });
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    setError(null);
+    leadRoutingApi.get()
+      .then((loaded) => {
+        if (alive) setConfig(loaded);
+      })
+      .catch((err) => {
+        if (alive) setError(err instanceof Error ? err.message : 'Nao foi possivel carregar a atribuicao.');
+      })
+      .finally(() => {
+        if (alive) setLoading(false);
+      });
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
+    let alive = true;
+    setAutoReassignLoading(true);
+    autoReassignApi.get()
+      .then((data) => {
+        if (alive) setAutoReassign(data.config);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (alive) setAutoReassignLoading(false);
+      });
+    return () => { alive = false; };
+  }, []);
+
+  const activeServices = useMemo(() => config?.services.filter((service) => service.isActive) ?? [], [config]);
+  const summary = useMemo(() => {
+    const users = config?.users ?? [];
+    const random = users.filter((user) => user.ruleKey === 'random').length;
+    const none = users.filter((user) => user.ruleKey === 'none').length;
+    const serviceUsers = users.length - random - none;
+    return { random, none, serviceUsers };
+  }, [config]);
+
+  async function toggleRule(ruleKey: string, isActive: boolean) {
+    try {
+      const updated = await leadRoutingApi.updateRule(ruleKey, { isActive });
+      setRules((current) => current.map((r) => r.key === ruleKey ? updated : r));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nao foi possivel atualizar a regra.');
+    }
+  }
+
+  function setRandomEnabled(randomEnabled: boolean) {
+    setSaved(false);
+    setConfig((current) => current ? { ...current, randomEnabled } : current);
+  }
+
+  async function toggleAutoReassign(enabled: boolean) {
+    setAutoReassignSaving(true);
+    try {
+      const result = await autoReassignApi.update(enabled);
+      setAutoReassign(result.config);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nao foi possivel atualizar reatribuicao automatica.');
+    } finally {
+      setAutoReassignSaving(false);
+    }
+  }
+
+  function setUserRule(userId: string, ruleKey: string) {
+    setSaved(false);
+    setConfig((current) => current ? {
+      ...current,
+      users: current.users.map((user) => user.id === userId ? { ...user, ruleKey } : user),
+    } : current);
+  }
+
+  function togglePipelineUser(pipelineKey: string, userId: string, checked: boolean) {
+    setSaved(false);
+    setConfig((current) => current ? {
+      ...current,
+      pipelines: current.pipelines.map((pipeline) => {
+        if (pipeline.key !== pipelineKey) return pipeline;
+        const userIds = new Set(pipeline.userIds);
+        if (checked) userIds.add(userId);
+        else userIds.delete(userId);
+        return { ...pipeline, userIds: Array.from(userIds) };
+      }),
+    } : current);
+  }
+
+  async function handleServiceAssignment(serviceKey: string, userId: string) {
+    try {
+      if (userId) {
+        await leadRoutingApi.updateRuleAssignment('by_service', userId, { serviceKey });
+      }
+      setServiceAssignments(prev => ({ ...prev, [serviceKey]: userId }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nao foi possivel salvar a atribuicao.');
+    }
+  }
+
+  async function save() {
+    if (!config) return;
+    setSaving(true);
+    setError(null);
+    setSaved(false);
+    try {
+      const updated = await leadRoutingApi.update({
+        randomEnabled: config.randomEnabled,
+        userRules: config.users.map((user) => ({ userId: user.id, ruleKey: user.ruleKey })),
+        pipelineAccess: config.pipelines.map((pipeline) => ({ pipelineKey: pipeline.key, userIds: pipeline.userIds })),
+      });
+      setConfig(updated);
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Nao foi possivel salvar.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const ruleOptions = [
+    { key: 'none', label: 'Nao recebe leads' },
+    { key: 'random', label: 'Aleatorio' },
+    ...activeServices.map((service) => ({ key: service.key, label: service.label })),
+  ];
+
+  if (loading) {
+    return <Card className="p-8 text-sm font-semibold text-gray-500">Carregando atribuicao de leads...</Card>;
+  }
+
+  if (!config) {
+    return <Card className="p-8 text-sm font-semibold text-red-600">{error ?? 'Atribuicao indisponivel.'}</Card>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Hero Card */}
+      <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
+        <div className="absolute -right-24 -top-28 h-64 w-64 rounded-full bg-solar-orange/10 blur-3xl" />
+        <div className="absolute bottom-0 right-28 h-36 w-36 rounded-full bg-energy-green/10 blur-2xl" />
+        <div className="relative p-6 md:p-8">
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="p-2.5 rounded-xl bg-solar-orange text-white"><Shuffle size={20} /></div>
+                <Badge variant="solar">Distribuicao comercial</Badge>
+              </div>
+              <h3 className="text-2xl font-black text-graphite">Atribuir Leads</h3>
+              <p className="text-sm text-gray-500 leading-relaxed mt-1 max-w-3xl">
+                Defina quem recebe leads por servico da Enervita. Ative regras de distribuicao para personalizar como os leads sao atribuidos aos vendedores.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-3 min-w-[280px]">
+              <div className="rounded-2xl bg-white/80 border border-white p-4">
+                <p className="text-xs text-gray-500">No aleatorio</p>
+                <p className="text-2xl font-black text-graphite">{summary.random}</p>
+              </div>
+              <div className="rounded-2xl bg-white/80 border border-white p-4">
+                <p className="text-xs text-gray-500">Por servico</p>
+                <p className="text-2xl font-black text-graphite">{summary.serviceUsers}</p>
+              </div>
+              <div className="rounded-2xl bg-white/80 border border-white p-4">
+                <p className="text-xs text-gray-500">Nao recebem</p>
+                <p className="text-2xl font-black text-graphite">{summary.none}</p>
+              </div>
+              <div className="rounded-2xl bg-white/80 border border-white p-4">
+                <p className="text-xs text-gray-500">Reatribuicao</p>
+                <p className="text-2xl font-black text-graphite">{autoReassign?.enabled ? 'Ativa' : 'Inativa'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Section 1: Distribution Rules */}
+      <Card className="p-6">
+        <SectionTitle icon={Shuffle} title="Regras de Distribuicao" description="Escolha como os leads sao atribuidos aos vendedores. Ative uma ou mais regras para personalizar a distribuicao." />
+        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {rulesLoading ? (
+            <p className="text-sm text-gray-500">Carregando regras...</p>
+          ) : (
+            rules.map((rule) => (
+              <div
+                key={rule.key}
+                className={`rounded-2xl border p-4 transition-all ${
+                  rule.isActive
+                    ? 'border-solar-orange/30 bg-solar-orange/5'
+                    : 'border-gray-200 bg-white hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      {rule.key === 'round_robin' && <RotateCcw size={16} className="text-solar-orange" />}
+                      {rule.key === 'random' && <Shuffle size={16} className="text-solar-orange" />}
+                      {rule.key === 'by_service' && <Tag size={16} className="text-solar-orange" />}
+                      {rule.key === 'by_priority' && <Zap size={16} className="text-solar-orange" />}
+                      {rule.key === 'by_bill_value' && <DollarSign size={16} className="text-solar-orange" />}
+                      {rule.key === 'manual' && <Hand size={16} className="text-solar-orange" />}
+                      <h4 className="font-bold text-sm text-graphite">{rule.name}</h4>
+                    </div>
+                    <p className="text-xs text-gray-500 leading-relaxed">{rule.description}</p>
+                  </div>
+                  <button
+                    onClick={() => toggleRule(rule.key, !rule.isActive)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      rule.isActive ? 'bg-solar-orange' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        rule.isActive ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+                {rule.isActive && (
+                  <div className="mt-3 pt-3 border-t border-gray-100">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Configuracao</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {rule.key === 'round_robin' && 'Distribuicao circular ativa'}
+                      {rule.key === 'random' && 'Distribuicao aleatoria ativa'}
+                      {rule.key === 'by_service' && 'Configure servicos na secao abaixo'}
+                      {rule.key === 'by_priority' && 'Leads urgentes vao para melhor vendedor'}
+                      {rule.key === 'by_bill_value' && 'Leads de maior valor vao para melhor vendedor'}
+                      {rule.key === 'manual' && 'Admin atribui manualmente'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+        
+        {/* Random and Auto-reassign toggles */}
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label className={`rounded-2xl border p-4 flex items-center justify-between gap-4 ${config.randomEnabled ? 'border-energy-green/30 bg-energy-green/10' : 'border-gray-200 bg-gray-50'}`}>
+            <span className="min-w-0">
+              <strong className="block text-sm text-graphite">Aleatorio</strong>
+              <small className="text-xs text-gray-500 leading-relaxed">Liga o ciclo entre contas selecionadas como Aleatorio.</small>
+            </span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 accent-energy-green"
+              checked={config.randomEnabled}
+              onChange={(event) => setRandomEnabled(event.target.checked)}
+            />
+          </label>
+          <label className={`rounded-2xl border p-4 flex items-center justify-between gap-4 ${autoReassign?.enabled ? 'border-solar-orange/30 bg-solar-orange/10' : 'border-gray-200 bg-gray-50'}`}>
+            <span className="min-w-0">
+              <strong className="block text-sm text-graphite">Reatribuicao Automatica</strong>
+              <small className="text-xs text-gray-500 leading-relaxed">Reatribui leads parados ha 7 dias para outro vendedor.</small>
+            </span>
+            <input
+              type="checkbox"
+              className="h-5 w-5 accent-solar-orange"
+              checked={autoReassign?.enabled ?? false}
+              disabled={autoReassignLoading || autoReassignSaving}
+              onChange={(event) => toggleAutoReassign(event.target.checked)}
+            />
+          </label>
+        </div>
+      </Card>
+
+      {/* Section 1.5: Service Assignments (when by_service is active) */}
+      {rules.find(r => r.key === 'by_service')?.isActive && (
+        <Card className="p-6">
+          <SectionTitle icon={Tag} title="Atribuicao por Servico" description="Cada servico pode ter um vendedor especifico. Se nao configurado, o lead vai para round-robin." />
+          <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {activeServices.map(service => (
+              <div key={service.key} className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
+                <p className="font-bold text-sm text-graphite">{service.label}</p>
+                <select
+                  value={serviceAssignments[service.key] ?? ''}
+                  onChange={(e) => handleServiceAssignment(service.key, e.target.value)}
+                  className="mt-2 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white"
+                >
+                  <option value="">Nenhum (round-robin)</option>
+                  {config.users.filter(u => u.status === 'active').map(user => (
+                    <option key={user.id} value={user.id}>{user.name}</option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {/* Section 2: Pipelines */}
+      <Card className="p-5">
+        <SectionTitle icon={Layers} title="Pipelines e responsaveis" description="Defina quais contas podem visualizar e receber leads em cada pipeline operacional." />
+        <div className="mt-5 grid grid-cols-1 xl:grid-cols-3 gap-4">
+          {config.pipelines.map((pipeline) => (
+            <div key={pipeline.key} className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-graphite">{pipeline.label}</p>
+                  <p className="text-xs text-gray-500 mt-1">{pipeline.userIds.length} responsavel(is)</p>
+                </div>
+                <Badge variant={pipeline.key === 'energia_assinatura' ? 'solar' : pipeline.key === 'usina_solar' ? 'success' : 'default'}>{pipeline.key === 'geral' ? 'Fallback' : 'Servico'}</Badge>
+              </div>
+              <div className="mt-4 space-y-2">
+                {config.users.filter((user) => user.status === 'active').map((user) => (
+                  <label key={`${pipeline.key}-${user.id}`} className="flex items-center justify-between gap-3 rounded-xl bg-white border border-gray-100 px-3 py-2">
+                    <span className="min-w-0">
+                      <strong className="block truncate text-xs text-graphite">{user.name}</strong>
+                      <small className="block truncate text-[10px] text-gray-400">{user.email}</small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-solar-orange"
+                      checked={pipeline.userIds.includes(user.id)}
+                      onChange={(event) => togglePipelineUser(pipeline.key, user.id, event.target.checked)}
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Section 3: Eligible Accounts */}
+      <Card className="p-5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+          <SectionTitle icon={UsersRound} title="Contas elegiveis" description="Admins ficam fora da lista. Contas inativas aparecem para conferencia, mas nao entram na distribuicao." />
+          <div className="flex items-center gap-2">
+            {saved && <Badge variant="success">Salvo</Badge>}
+            {error && <Badge variant="error">{error}</Badge>}
+            <Button variant="primary" size="sm" className="gap-2" onClick={save} disabled={saving}>
+              <Save size={15} /> {saving ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="divide-y divide-gray-100">
+          {config.users.map((user) => (
+            <div key={user.id} className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_260px] gap-4 py-4 items-center">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-bold text-sm text-graphite">{user.name}</p>
+                  <Badge variant={user.status === 'active' ? 'success' : 'error'}>{user.status === 'active' ? 'Ativo' : 'Inativo'}</Badge>
+                  {user.roles.slice(0, 3).map((role) => <Badge key={role} variant="default">{role}</Badge>)}
+                </div>
+                <p className="text-xs text-gray-500 mt-1 break-all">{user.email}</p>
+              </div>
+              <select
+                value={user.ruleKey}
+                disabled={user.status !== 'active'}
+                onChange={(event) => setUserRule(user.id, event.target.value)}
+                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400"
+              >
+                {ruleOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
+              </select>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }

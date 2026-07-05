@@ -8,7 +8,7 @@ import { assertSafeAiSelect } from '../modules/ai/sqlGuard.ts';
 const SESSION_SECRET='test-s...7890';
 const TENANT_ID = '22222222-2222-4222-8222-222222222222';
 const aiSqlRunner = { async query() { return { rows: [] }; } };
-const aiConfig = { provider: 'openrouter' as const, model: 'deepseek/deepseek-chat-v3-0324', apiKey: '', baseUrl: 'https://openrouter.ai/api/v1' };
+const aiConfig = { provider: 'mimo' as const, model: 'mimo-v2.5', apiKey: '', baseUrl: 'https://token-plan-sgp.xiaomimimo.com/v1' };
 
 
 type TestUser = AuthUser & { status: 'active' | 'inactive' };
@@ -57,7 +57,7 @@ test('POST /api/ai/chat requires page.ai_assistant permission', async (t) => {
   assert.equal(response.statusCode, 403);
 });
 
-test('POST /api/ai/chat returns 503 when OpenRouter key is not configured and never asks the frontend for a key', async (t) => {
+test('POST /api/ai/chat returns 503 when MiMo key is not configured and never asks the frontend for a key', async (t) => {
   const actor = makeAuthUser();
   const app = createApp({ userRepository: makeUserRepository(actor), sessionSecret: SESSION_SECRET, aiConfig, aiSqlRunner });
   t.after(async () => app.close());

@@ -27,6 +27,13 @@ import {
   type FollowUpQueueItem,
   type FollowUpStatus,
   type FollowUpRuleRunResult,
+  type SolarCustosCalculados,
+  type SolarDimensionamento,
+  type SolarDimensionamentoPayload,
+  type SolarIrradiacaoCidade,
+  type SolarModeloInversor,
+  type SolarModeloPlaca,
+  type SolarTipoTelhado,
 } from './types';
 
 export type CrmInsight = {
@@ -56,11 +63,12 @@ export type CrmInsightsData = {
 };
 
 export interface CrmApi {
-  listLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' }): Promise<Lead[]>;
+  listLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all'; pipelineKey?: string }): Promise<Lead[]>;
   getLead(id: string): Promise<Lead | undefined>;
   createLead(payload: Record<string, unknown>): Promise<Lead>;
   updateLead(id: string, payload: UpdateLeadPayload): Promise<Lead>;
-  updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string; createOpportunity?: boolean }): Promise<Lead>;
+  updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string; createOpportunity?: boolean; pipelineKey?: string; pipelineStageKey?: string }): Promise<Lead>;
+  assignLead(id: string, sdrOwnerId: string | null): Promise<Lead>;
   setLeadTags(id: string, tags: string[]): Promise<Lead>;
   bulkSetLeadTags(leadIds: string[], tags: string[]): Promise<Lead[]>;
   deleteLead(id: string): Promise<void>;
@@ -73,6 +81,12 @@ export interface CrmApi {
   getProposal(id: string): Promise<Proposal>;
   updateProposal(id: string, payload: UpdateProposalPayload): Promise<Proposal>;
   deleteProposal(id: string): Promise<void>;
+  listSolarIrradiacao(filters?: { q?: string; uf?: string; limit?: number }): Promise<SolarIrradiacaoCidade[]>;
+  listSolarPlacas(): Promise<SolarModeloPlaca[]>;
+  listSolarInversores(): Promise<SolarModeloInversor[]>;
+  listSolarTelhados(): Promise<SolarTipoTelhado[]>;
+  calcularDimensionamentoSolar(payload: SolarDimensionamentoPayload): Promise<{ dimensionamento: SolarDimensionamento; resultado: Record<string, unknown> }>;
+  calcularCustosSolar(payload: { dimensionamento_id?: string; quantidade_modulos?: number; distancia_km?: number }): Promise<SolarCustosCalculados>;
   listTrackingEventsForLead(leadId: string): Promise<TrackingEvent[]>;
   listLeadDocuments(leadId: string): Promise<LeadDocument[]>;
   uploadLeadDocument(leadId: string, file: File): Promise<LeadDocument>;
@@ -155,6 +169,9 @@ type BackendLead = {
   tenantId?: string;
   contactId: string;
   stage: LeadStage;
+  pipelineKey?: string | null;
+  pipelineStageKey?: string | null;
+  pipelineStageLabel?: string | null;
   qualificationStatus?: string | null;
   leadSource?: string | null;
   utmSource?: string | null;
@@ -178,6 +195,7 @@ type BackendLead = {
   contact?: BackendContact | null;
   tags?: LeadTag[] | null;
   opportunity?: LeadOpportunity | null;
+  attribution?: Lead['attribution'] | null;
 };
 
 type BackendProposal = {
@@ -210,6 +228,7 @@ type BackendProposal = {
   updatedAt: string;
   leadName?: string | null;
   leadStage?: LeadStage | null;
+  solarSummary?: Proposal['solarSummary'];
 };
 
 type BackendTrackingEvent = TrackingEvent;
@@ -302,6 +321,90 @@ function numeric(value: unknown, fallback = 0): number {
     if (Number.isFinite(parsed)) return parsed;
   }
   return fallback;
+}
+
+function numericOrNull(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = numeric(value, Number.NaN);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function mapSolarSummary(raw: Proposal['solarSummary'] | null | undefined): Proposal['solarSummary'] {
+  if (!raw) return null;
+  return {
+    ...raw,
+    quantidadeSugerida: numericOrNull(raw.quantidadeSugerida),
+    potenciaTotalKwp: numericOrNull(raw.potenciaTotalKwp),
+  };
+}
+
+function mapSolarIrradiacao(raw: SolarIrradiacaoCidade): SolarIrradiacaoCidade {
+  return {
+    ...raw,
+    lat: numericOrNull(raw.lat),
+    lon: numericOrNull(raw.lon),
+    irradiacao_kwh_m2_dia: numeric(raw.irradiacao_kwh_m2_dia),
+  };
+}
+
+function mapSolarPlaca(raw: SolarModeloPlaca): SolarModeloPlaca {
+  return {
+    ...raw,
+    potencia_wp: numeric(raw.potencia_wp),
+    area_util_m2: numeric(raw.area_util_m2),
+    eficiencia_decimal: numeric(raw.eficiencia_decimal),
+  };
+}
+
+function mapSolarInversor(raw: SolarModeloInversor): SolarModeloInversor {
+  return {
+    ...raw,
+    capacidade_kw: numeric(raw.capacidade_kw),
+    sobrecarga_decimal: numeric(raw.sobrecarga_decimal),
+  };
+}
+
+function mapSolarTelhado(raw: SolarTipoTelhado): SolarTipoTelhado {
+  return {
+    ...raw,
+    perda_padrao_decimal: numeric(raw.perda_padrao_decimal),
+  };
+}
+
+function mapSolarDimensionamento(raw: SolarDimensionamento): SolarDimensionamento {
+  return {
+    ...raw,
+    consumo_medio_mensal_kwh: numeric(raw.consumo_medio_mensal_kwh),
+    perda_decimal: numeric(raw.perda_decimal),
+    sobra_decimal: numeric(raw.sobra_decimal),
+    modelo_placa_potencia_wp: numeric(raw.modelo_placa_potencia_wp),
+    irradiacao_kwh_m2_dia: numeric(raw.irradiacao_kwh_m2_dia),
+    producao_mensal_real_placa: numericOrNull(raw.producao_mensal_real_placa),
+    consumo_com_sobra_kwh: numericOrNull(raw.consumo_com_sobra_kwh),
+    quantidade_bruta_placas: numericOrNull(raw.quantidade_bruta_placas),
+    quantidade_sugerida: numericOrNull(raw.quantidade_sugerida),
+    potencia_total_sugerida_kwp: numericOrNull(raw.potencia_total_sugerida_kwp),
+    inversor_capacidade_real_kw: numericOrNull(raw.inversor_capacidade_real_kw),
+    inversor_sobra_percentual: numericOrNull(raw.inversor_sobra_percentual),
+  };
+}
+
+function mapSolarCustos(raw: SolarCustosCalculados): SolarCustosCalculados {
+  return {
+    ...raw,
+    linhas: raw.linhas.map((linha) => ({
+      ...linha,
+      valor_calculado: numeric(linha.valor_calculado),
+      quantidade_modulos: numericOrNull(linha.quantidade_modulos),
+      distancia_km: numericOrNull(linha.distancia_km),
+      percentual: numericOrNull(linha.percentual),
+    })),
+    subtotal_nao_percentual: numeric(raw.subtotal_nao_percentual),
+    soma_percentuais: numeric(raw.soma_percentuais),
+    total_final: numeric(raw.total_final),
+    total_geral: numeric(raw.total_geral),
+    quantidade_modulos: numeric(raw.quantidade_modulos),
+  };
 }
 
 export function documentDigits(value: unknown): string {
@@ -410,6 +513,9 @@ function mapLead(raw: BackendLead): Lead {
     contactId: raw.contactId,
     clientId: raw.tenantId,
     stage: raw.stage,
+    pipelineKey: raw.pipelineKey ?? 'geral',
+    pipelineStageKey: raw.pipelineStageKey ?? raw.stage,
+    pipelineStageLabel: raw.pipelineStageLabel ?? null,
     qualificationStatus: raw.qualificationStatus ?? 'aguardando',
     leadSource: raw.leadSource ?? contact.source ?? 'desconhecido',
     utmSource: raw.utmSource ?? undefined,
@@ -423,6 +529,7 @@ function mapLead(raw: BackendLead): Lead {
     gclid: raw.gclid ?? undefined,
     estimatedTicket: numeric(raw.estimatedTicket),
     sdrOwner: raw.sdrOwner ?? raw.sdrOwnerId ?? 'Sem responsável',
+      sdrOwnerId: raw.sdrOwnerId ?? undefined,
     nextActionAt: raw.nextActionAt ?? null,
     notes: raw.notes ?? undefined,
     submittedAt: extractSubmittedAt(metadata, contact.metadata ?? {}, raw.createdAt, raw.updatedAt),
@@ -437,6 +544,7 @@ function mapLead(raw: BackendLead): Lead {
     metadata,
     tags: Array.isArray(raw.tags) ? raw.tags : [],
     opportunity: raw.opportunity ?? null,
+    attribution: raw.attribution ?? null,
     contact: {
       id: contact.id ?? raw.contactId,
       name: contact.name ?? 'Lead sem nome',
@@ -482,6 +590,7 @@ function mapProposal(raw: BackendProposal): Proposal {
     updatedAt: raw.updatedAt,
     leadName: raw.leadName ?? undefined,
     leadStage: raw.leadStage ?? undefined,
+    solarSummary: mapSolarSummary(raw.solarSummary),
   };
 }
 
@@ -577,10 +686,11 @@ async function requestJson<T>(url: string, init: RequestJsonInit = {}): Promise<
 }
 
 export class HttpCrmApi implements CrmApi {
-  async listLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' }): Promise<Lead[]> {
+  async listLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all'; pipelineKey?: string }): Promise<Lead[]> {
     const params = new URLSearchParams();
     if (filters?.tags?.length) params.set('tags', filters.tags.join(','));
     if (filters?.tagMode && filters.tagMode !== 'any') params.set('tagMode', filters.tagMode);
+    if (filters?.pipelineKey) params.set('pipelineKey', filters.pipelineKey);
     const query = params.toString();
     const body = await requestJson<{ leads: BackendLead[] }>(`/api/leads${query ? `?${query}` : ''}`);
     return body.leads.map(mapLead);
@@ -669,11 +779,20 @@ export class HttpCrmApi implements CrmApi {
     return mapLead(body.lead);
   }
 
-  async updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string; createOpportunity?: boolean }): Promise<Lead> {
+  async updateLeadStage(id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string; createOpportunity?: boolean; pipelineKey?: string; pipelineStageKey?: string }): Promise<Lead> {
     const body = await requestJson<{ lead: BackendLead }>(`/api/leads/${encodeURIComponent(id)}/stage`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ stage, notes: options?.notes, lostReason: options?.lostReason, createOpportunity: options?.createOpportunity }),
+      body: JSON.stringify({ stage, notes: options?.notes, lostReason: options?.lostReason, createOpportunity: options?.createOpportunity, pipelineKey: options?.pipelineKey, pipelineStageKey: options?.pipelineStageKey }),
+    });
+    return mapLead(body.lead);
+  }
+
+  async assignLead(id: string, sdrOwnerId: string | null): Promise<Lead> {
+    const body = await requestJson<{ lead: BackendLead }>(`/api/leads/${encodeURIComponent(id)}/assign`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sdrOwnerId }),
     });
     return mapLead(body.lead);
   }
@@ -751,6 +870,49 @@ export class HttpCrmApi implements CrmApi {
 
   async deleteProposal(id: string): Promise<void> {
     await requestJson<{ deleted: boolean }>(`/api/proposals/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  }
+
+  async listSolarIrradiacao(filters: { q?: string; uf?: string; limit?: number } = {}): Promise<SolarIrradiacaoCidade[]> {
+    const params = new URLSearchParams();
+    if (filters.q) params.set('q', filters.q);
+    if (filters.uf) params.set('uf', filters.uf);
+    if (filters.limit) params.set('limit', String(filters.limit));
+    const suffix = params.toString() ? `?${params.toString()}` : '';
+    const body = await requestJson<{ irradiacao: SolarIrradiacaoCidade[] }>(`/api/solar/irradiacao${suffix}`);
+    return body.irradiacao.map(mapSolarIrradiacao);
+  }
+
+  async listSolarPlacas(): Promise<SolarModeloPlaca[]> {
+    const body = await requestJson<{ placas: SolarModeloPlaca[] }>('/api/solar/placas');
+    return body.placas.map(mapSolarPlaca);
+  }
+
+  async listSolarInversores(): Promise<SolarModeloInversor[]> {
+    const body = await requestJson<{ inversores: SolarModeloInversor[] }>('/api/solar/inversores');
+    return body.inversores.map(mapSolarInversor);
+  }
+
+  async listSolarTelhados(): Promise<SolarTipoTelhado[]> {
+    const body = await requestJson<{ telhados: SolarTipoTelhado[] }>('/api/solar/telhados');
+    return body.telhados.map(mapSolarTelhado);
+  }
+
+  async calcularDimensionamentoSolar(payload: SolarDimensionamentoPayload): Promise<{ dimensionamento: SolarDimensionamento; resultado: Record<string, unknown> }> {
+    const body = await requestJson<{ dimensionamento: SolarDimensionamento; resultado: Record<string, unknown> }>('/api/solar/dimensionar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return { ...body, dimensionamento: mapSolarDimensionamento(body.dimensionamento) };
+  }
+
+  async calcularCustosSolar(payload: { dimensionamento_id?: string; quantidade_modulos?: number; distancia_km?: number }): Promise<SolarCustosCalculados> {
+    const body = await requestJson<SolarCustosCalculados>('/api/solar/calcular-custos', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return mapSolarCustos(body);
   }
 
   async listTrackingEventsForLead(leadId: string): Promise<TrackingEvent[]> {

@@ -26,6 +26,11 @@ export interface IrradiacaoCidade {
   cidade: string;
   uf: string;
   codigo_ibge: string | null;
+  lat: number | null;
+  lon: number | null;
+  classe: string | null;
+  estado_nome: string | null;
+  fonte_id: string | null;
   irradiacao_kwh_m2_dia: number;
   fonte: string | null;
   ativo: boolean;
@@ -167,10 +172,21 @@ export function createDimensioningRepository(databaseUrl: string) {
   return {
     // ── Irradiation ───────────────────────────
 
-    async listIrradiacao(tenantId: string): Promise<IrradiacaoCidade[]> {
+    async listIrradiacao(tenantId: string, filters: { q?: string; uf?: string; limit?: number } = {}): Promise<IrradiacaoCidade[]> {
+      const params: unknown[] = [tenantId];
+      const where = ['tenant_id = $1', 'ativo = true'];
+      if (filters.q?.trim()) {
+        params.push(`%${filters.q.trim()}%`);
+        where.push(`lower(cidade) like lower($${params.length})`);
+      }
+      if (filters.uf?.trim()) {
+        params.push(filters.uf.trim().toUpperCase());
+        where.push(`uf = $${params.length}`);
+      }
+      params.push(Math.max(1, Math.min(filters.limit ?? 80, 200)));
       const { rows } = await pool.query(
-        'SELECT * FROM irradiacao_cidades WHERE tenant_id = $1 AND ativo = true ORDER BY cidade',
-        [tenantId]
+        `SELECT * FROM irradiacao_cidades WHERE ${where.join(' AND ')} ORDER BY cidade, uf LIMIT $${params.length}`,
+        params
       );
       return rows;
     },
@@ -185,16 +201,21 @@ export function createDimensioningRepository(databaseUrl: string) {
 
     async upsertIrradiacao(tenantId: string, data: Omit<IrradiacaoCidade, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>): Promise<IrradiacaoCidade> {
       const { rows } = await pool.query(
-        `INSERT INTO irradiacao_cidades (tenant_id, cidade, uf, codigo_ibge, irradiacao_kwh_m2_dia, fonte, ativo)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO irradiacao_cidades (tenant_id, cidade, uf, codigo_ibge, lat, lon, classe, estado_nome, fonte_id, irradiacao_kwh_m2_dia, fonte, ativo)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
          ON CONFLICT (tenant_id, cidade, uf) DO UPDATE SET
            codigo_ibge = EXCLUDED.codigo_ibge,
+           lat = EXCLUDED.lat,
+           lon = EXCLUDED.lon,
+           classe = EXCLUDED.classe,
+           estado_nome = EXCLUDED.estado_nome,
+           fonte_id = EXCLUDED.fonte_id,
            irradiacao_kwh_m2_dia = EXCLUDED.irradiacao_kwh_m2_dia,
            fonte = EXCLUDED.fonte,
            ativo = EXCLUDED.ativo,
            updated_at = now()
          RETURNING *`,
-        [tenantId, data.cidade, data.uf, data.codigo_ibge, data.irradiacao_kwh_m2_dia, data.fonte, data.ativo]
+        [tenantId, data.cidade, data.uf, data.codigo_ibge, data.lat, data.lon, data.classe, data.estado_nome, data.fonte_id, data.irradiacao_kwh_m2_dia, data.fonte, data.ativo]
       );
       return rows[0];
     },
@@ -272,7 +293,7 @@ export function createDimensioningRepository(databaseUrl: string) {
 
     async listCustos(tenantId: string): Promise<CustoPadrao[]> {
       const { rows } = await pool.query(
-        'SELECT * FROM custos_padrao WHERE tenant_id = $1 AND ativo = true ORDER BY tipo, nome',
+        'SELECT * FROM custos_padrao WHERE tenant_id = $1 AND ativo = true ORDER BY ordem_execucao NULLS LAST, tipo, nome',
         [tenantId]
       );
       return rows;
@@ -453,6 +474,10 @@ export function createDimensioningRepository(databaseUrl: string) {
         'DELETE FROM linhas_custo_proposta WHERE tenant_id = $1 AND proposal_id = $2',
         [tenantId, proposalId]
       );
+    },
+
+    async close(): Promise<void> {
+      await pool.end();
     },
   };
 }

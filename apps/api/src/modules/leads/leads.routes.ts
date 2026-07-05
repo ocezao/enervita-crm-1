@@ -2,7 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { requirePermission } from '../../middleware/requireAuth.ts';
 import type { PublicUser, UserRepository } from '../auth/userRepository.ts';
 import { LeadsNotFoundError, LeadsOperationError, type LeadsRepository } from './repository.ts';
-import { bulkDeleteLeads, bulkSetLeadTags, changeLeadStage, createLead, deleteLead, getLead, listLeadHistory, listLeads, setLeadTags, updateLead } from './leads.service.ts';
+import { assignLead, bulkDeleteLeads, bulkSetLeadTags, changeLeadStage, createLead, deleteLead, getLead, listLeadHistory, listLeads, setLeadTags, updateLead } from './leads.service.ts';
 import { validateBulkSetLeadTagsBody, validateCreateLeadBody, validateLeadIdsBody, validateListLeadsQuery, validateSetLeadTagsBody, validateStageChangeBody, validateUpdateLeadBody, validateUuid, ValidationError } from './validation.ts';
 
 type LeadsRouteOptions = {
@@ -49,6 +49,17 @@ export async function registerLeadsRoutes(app: FastifyInstance, options: LeadsRo
     }
   });
 
+  app.get('/api/leads/:id', { preHandler: viewPreHandler }, async (request, reply) => {
+    try {
+      const { id: rawId } = request.params as { id: string };
+      const id = validateUuid(rawId, "id");
+      const lead = await getLead(options.leadsRepository, authenticatedUser(request), id);
+      return { lead };
+    } catch (error) {
+      return handleLeadsError(error, reply);
+    }
+  });
+
   app.get('/api/leads/:id/history', { preHandler: viewPreHandler }, async (request, reply) => {
     try {
       const { id: rawId } = request.params as { id: string };
@@ -60,23 +71,11 @@ export async function registerLeadsRoutes(app: FastifyInstance, options: LeadsRo
     }
   });
 
-  app.get('/api/leads/:id', { preHandler: viewPreHandler }, async (request, reply) => {
-    try {
-      const { id: rawId } = request.params as { id: string };
-      const id = validateUuid(rawId, "id");
-      const lead = await getLead(options.leadsRepository, authenticatedUser(request), id);
-      if (!lead) return reply.code(404).send({ error: 'Lead not found' });
-      return { lead };
-    } catch (error) {
-      return handleLeadsError(error, reply);
-    }
-  });
-
   app.post('/api/leads', { preHandler: createPreHandler }, async (request, reply) => {
     try {
       const input = validateCreateLeadBody(request.body);
       const lead = await createLead(options.leadsRepository, authenticatedUser(request), input, auditMetadata(request));
-      return reply.code(201).send({ lead });
+      return { lead };
     } catch (error) {
       return handleLeadsError(error, reply);
     }
@@ -94,7 +93,7 @@ export async function registerLeadsRoutes(app: FastifyInstance, options: LeadsRo
     }
   });
 
-  app.patch('/api/leads/:id/tags', { preHandler: editPreHandler }, async (request, reply) => {
+  app.put('/api/leads/:id/tags', { preHandler: editPreHandler }, async (request, reply) => {
     try {
       const { id: rawId } = request.params as { id: string };
       const id = validateUuid(rawId, "id");
@@ -106,11 +105,11 @@ export async function registerLeadsRoutes(app: FastifyInstance, options: LeadsRo
     }
   });
 
-  app.post('/api/leads/bulk/tags', { preHandler: editPreHandler }, async (request, reply) => {
+  app.put('/api/leads/bulk/tags', { preHandler: editPreHandler }, async (request, reply) => {
     try {
       const input = validateBulkSetLeadTagsBody(request.body);
-      const leads = await bulkSetLeadTags(options.leadsRepository, authenticatedUser(request), input, auditMetadata(request));
-      return { leads };
+      const result = await bulkSetLeadTags(options.leadsRepository, authenticatedUser(request), input, auditMetadata(request));
+      return result;
     } catch (error) {
       return handleLeadsError(error, reply);
     }
@@ -148,4 +147,35 @@ export async function registerLeadsRoutes(app: FastifyInstance, options: LeadsRo
       return handleLeadsError(error, reply);
     }
   });
+
+  // FASE 4: Score de qualificação
+  app.get('/api/leads/:id/score', { preHandler: viewPreHandler }, async (request, reply) => {
+    try {
+      const { id: rawId } = request.params as { id: string };
+      const id = validateUuid(rawId, 'id');
+      const user = authenticatedUser(request);
+      const lead = await options.leadsRepository.getLead(user.tenantId, id, null, null);
+      if (!lead) return reply.code(404).send({ error: 'Lead not found' });
+      const score = await options.leadsRepository.calculateQualificationScore?.(user.tenantId, id, lead.pipelineKey || 'geral');
+      return { score };
+    } catch (error) {
+      return handleLeadsError(error, reply);
+    }
+  });
+
+  // Atribuir responsável ao lead
+  app.patch('/api/leads/:id/assign', { preHandler: editPreHandler }, async (request, reply) => {
+    try {
+      const { id: rawId } = request.params as { id: string };
+      const id = validateUuid(rawId, 'id');
+      const body = request.body as { sdrOwnerId?: string | null };
+      const sdrOwnerId = body.sdrOwnerId === null ? null : body.sdrOwnerId ? validateUuid(body.sdrOwnerId, 'sdrOwnerId') : undefined;
+      if (sdrOwnerId === undefined) return reply.code(400).send({ error: 'sdrOwnerId is required (string or null)' });
+      const lead = await assignLead(options.leadsRepository, options.userRepository, authenticatedUser(request), id, sdrOwnerId, auditMetadata(request));
+      return { lead };
+    } catch (error) {
+      return handleLeadsError(error, reply);
+    }
+  });
+
 }

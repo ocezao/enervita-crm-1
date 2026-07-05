@@ -38,6 +38,15 @@ export type Proposal = {
   updatedAt: string;
   leadName: string | null;
   leadStage: PipelineStageKey | null;
+  solarSummary?: {
+    dimensionamentoId: string;
+    quantidadeSugerida: number | null;
+    potenciaTotalKwp: number | null;
+    inversorSugeridoNome: string | null;
+    cidade: string | null;
+    uf: string | null;
+    tipoTelhado: string | null;
+    } | null;
 };
 
 export type TrackingEventSummary = {
@@ -104,6 +113,7 @@ function rowToProposal(row: Record<string, unknown>): Proposal {
     updatedAt: row.updatedAt as string,
     leadName: row.leadName as string | null,
     leadStage: row.leadStage as PipelineStageKey | null,
+    solarSummary: (row.solarSummary as Proposal['solarSummary']) ?? null,
   };
 }
 
@@ -152,10 +162,27 @@ const proposalTemplateSelect = `select p.id,
                                p.created_at::text as "createdAt",
                                p.updated_at::text as "updatedAt",
                                c.name as "leadName",
-                               l.stage::text as "leadStage"
+                               l.stage::text as "leadStage",
+                               case when ds.id is null then null else jsonb_build_object(
+                                 'dimensionamentoId', ds.id,
+                                 'quantidadeSugerida', ds.quantidade_sugerida,
+                                 'potenciaTotalKwp', ds.potencia_total_sugerida_kwp,
+                                 'inversorSugeridoNome', ds.inversor_sugerido_nome,
+                                 'cidade', ds.cidade,
+                                 'uf', ds.uf,
+                                 'tipoTelhado', ds.tipo_telhado
+                               ) end as "solarSummary"
                           from proposals p
                           left join leads l on l.tenant_id = p.tenant_id and l.id = p.lead_id
-                          left join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id`;
+                          left join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id
+                          left join lateral (
+                            select d.*
+                              from dimensionamentos d
+                             where d.tenant_id = p.tenant_id
+                               and (d.proposal_id = p.id or d.lead_id = p.lead_id)
+                             order by case when d.proposal_id = p.id then 0 else 1 end, d.created_at desc
+                             limit 1
+                          ) ds on true`;
 
 const proposalSelect = `select p.id,
                                p.tenant_id as "tenantId",
@@ -185,10 +212,27 @@ const proposalSelect = `select p.id,
                                p.created_at::text as "createdAt",
                                p.updated_at::text as "updatedAt",
                                c.name as "leadName",
-                               l.stage::text as "leadStage"
+                               l.stage::text as "leadStage",
+                               case when ds.id is null then null else jsonb_build_object(
+                                 'dimensionamentoId', ds.id,
+                                 'quantidadeSugerida', ds.quantidade_sugerida,
+                                 'potenciaTotalKwp', ds.potencia_total_sugerida_kwp,
+                                 'inversorSugeridoNome', ds.inversor_sugerido_nome,
+                                 'cidade', ds.cidade,
+                                 'uf', ds.uf,
+                                 'tipoTelhado', ds.tipo_telhado
+                               ) end as "solarSummary"
                           from proposals p
                           join leads l on l.tenant_id = p.tenant_id and l.id = p.lead_id
-                          join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id`;
+                          join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id
+                          left join lateral (
+                            select d.*
+                              from dimensionamentos d
+                             where d.tenant_id = p.tenant_id
+                               and (d.proposal_id = p.id or d.lead_id = p.lead_id)
+                             order by case when d.proposal_id = p.id then 0 else 1 end, d.created_at desc
+                             limit 1
+                          ) ds on true`;
 
 
 function ownerClause(ownerUserId: string | null | undefined, offset: number): string {

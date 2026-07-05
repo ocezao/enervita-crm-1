@@ -1,4 +1,5 @@
 import type { AdminUser } from '../../lib/api/usersApi';
+import { ROLE_PROFILES, type RoleKey } from '@enervita/shared';
 import { Badge, Button, Card } from '../ui/Base';
 
 type Props = {

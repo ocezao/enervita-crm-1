@@ -15,6 +15,8 @@ export const migrationFiles = [
   'infra/migrations/012_notifications.sql',
   'infra/migrations/013_opportunity_proposal_contract.sql',
   'infra/migrations/014_follow_up_queue.sql',
+  'infra/migrations/019_lead_routing.sql',
+  'infra/migrations/020_multi_pipelines.sql',
 ];
 
 export const migrationFile = migrationFiles[0];
@@ -60,4 +62,3 @@ export const requiredConstraints = [
   'activities_lead_tenant_fk',
   'tracking_events_lead_tenant_fk',
 ];
-

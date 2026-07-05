@@ -30,6 +30,12 @@ function ProposalMoney({ value }: { value: number | null | undefined }) {
   return <>{formatCurrency(Number(value ?? 0))}</>;
 }
 
+function solarNumberText(value: unknown, digits = 2, fallback = '-'): string {
+  if (value === null || value === undefined || value === '') return fallback;
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed.toFixed(digits) : fallback;
+}
+
 export default function Proposals() {
   const { proposals, templates, loading, error, refresh } = useProposals();
 
@@ -40,6 +46,7 @@ export default function Proposals() {
     .filter((proposal) => proposal.status === 'draft' || proposal.status === 'sent')
     .reduce((sum, proposal) => sum + Number(proposal.projectedAnnualSavings ?? 0), 0);
   const sentOrAccepted = leadProposals.filter((proposal) => proposal.status === 'sent' || proposal.status === 'accepted').length;
+  const withSolarDimensioning = leadProposals.filter((proposal) => proposal.solarSummary).length;
 
   return (
     <div className="space-y-8">
@@ -72,9 +79,9 @@ export default function Proposals() {
           <p className="mt-1 text-xs text-gray-500">Rascunhos e enviadas.</p>
         </Card>
         <Card className="p-5">
-          <p className="text-xs font-bold text-gray-400 uppercase">Enviadas / aceitas</p>
-          <h3 className="text-2xl font-bold text-graphite mt-1">{loading ? '...' : sentOrAccepted}</h3>
-          <p className="mt-1 text-xs text-gray-500">Propostas com tração comercial.</p>
+          <p className="text-xs font-bold text-gray-400 uppercase">Dimensionadas</p>
+          <h3 className="text-2xl font-bold text-graphite mt-1">{loading ? '...' : withSolarDimensioning}</h3>
+          <p className="mt-1 text-xs text-gray-500">{sentOrAccepted} enviadas ou aceitas.</p>
         </Card>
       </div>
 
@@ -136,6 +143,7 @@ export default function Proposals() {
                 <div className="grid grid-cols-2 gap-3 text-xs text-gray-500">
                   <div><span className="block font-bold text-gray-400 uppercase">Conta</span><ProposalMoney value={proposal.monthlyBillValue} /></div>
                   <div><span className="block font-bold text-gray-400 uppercase">Desconto</span>{proposal.discountPercentage}%</div>
+                  {proposal.solarSummary && <div className="col-span-2"><span className="block font-bold text-gray-400 uppercase">Sistema</span>{proposal.solarSummary.quantidadeSugerida ?? '-'} módulos · {solarNumberText(proposal.solarSummary.potenciaTotalKwp)} kWp · {proposal.solarSummary.cidade}/{proposal.solarSummary.uf}</div>}
                   <div className="col-span-2"><span className="block font-bold text-gray-400 uppercase">Economia anual</span><span className="font-bold text-energy-success"><ProposalMoney value={proposal.projectedAnnualSavings} /></span></div>
                 </div>
               </article>
@@ -149,6 +157,7 @@ export default function Proposals() {
                   <th className="px-6 py-4">Proposta</th>
                   <th className="px-6 py-4">Lead</th>
                   <th className="px-6 py-4">Conta</th>
+                  <th className="px-6 py-4">Sistema</th>
                   <th className="px-6 py-4">Desconto</th>
                   <th className="px-6 py-4">Economia anual</th>
                   <th className="px-6 py-4">Status</th>
@@ -161,6 +170,14 @@ export default function Proposals() {
                     <td className="px-6 py-4 font-bold text-graphite"><div className="flex items-center gap-2"><FileText size={16} className="text-solar-orange" />{proposal.title}</div></td>
                     <td className="px-6 py-4 text-gray-600">{proposal.leadName ?? proposal.leadId}</td>
                     <td className="px-6 py-4 text-gray-600"><ProposalMoney value={proposal.monthlyBillValue} /></td>
+                    <td className="px-6 py-4 text-xs text-gray-600">
+                      {proposal.solarSummary ? (
+                        <div className="leading-relaxed">
+                          <p className="font-bold text-graphite">{proposal.solarSummary.quantidadeSugerida ?? '-'} módulos · {solarNumberText(proposal.solarSummary.potenciaTotalKwp)} kWp</p>
+                          <p>{proposal.solarSummary.cidade}/{proposal.solarSummary.uf} · {proposal.solarSummary.inversorSugeridoNome ?? 'inversor a validar'}</p>
+                        </div>
+                      ) : '-'}
+                    </td>
                     <td className="px-6 py-4 text-gray-600">{proposal.discountPercentage}%</td>
                     <td className="px-6 py-4 font-bold text-energy-success"><span className="flex items-center gap-1"><TrendingUp size={14} /><ProposalMoney value={proposal.projectedAnnualSavings} /></span></td>
                     <td className="px-6 py-4"><ProposalStatusBadge proposal={proposal} /></td>
@@ -169,7 +186,7 @@ export default function Proposals() {
                 ))}
                 {!loading && leadProposals.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-6 py-12 text-center text-gray-400">
+                    <td colSpan={8} className="px-6 py-12 text-center text-gray-400">
                       <Send className="mx-auto mb-3" />Nenhum lead com proposta ainda.
                     </td>
                   </tr>

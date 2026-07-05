@@ -4,6 +4,7 @@ import { Button, Card, Badge } from '../components/ui/Base';
 import { StageBadge, PriorityBadge } from '../components/ui/StatusBadges';
 import {
   ArrowLeft,
+  User,
   Phone,
   Mail,
   MapPin,
@@ -25,11 +26,23 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '../lib/utils';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../auth/useAuth';
 import { userHasPermission } from '../auth/permissions';
 import { isAdminUser } from '../auth/permissions';
-import type { LeadDocument, ProposalImportedFilePayload, TrackingEvent, UpdateProposalPayload } from '../lib/api/types';
+import type {
+  LeadDocument,
+  ProposalImportedFilePayload,
+  SolarCustosCalculados,
+  SolarDimensionamento,
+  SolarIrradiacaoCidade,
+  SolarModeloInversor,
+  SolarModeloPlaca,
+  SolarTipoTelhado,
+  TrackingEvent,
+  UpdateProposalPayload,
+} from '../lib/api/types';
 import type { Proposal } from '../lib/api/types';
 import { api, formatCnpj, formatCpf, isValidCnpj, isValidCpf } from '../lib/api/crmApi';
 
@@ -91,26 +104,27 @@ function trackingDetailItems(lead: NonNullable<ReturnType<typeof useLeadDetail>[
   const meta = getObject(metadata.meta);
   const rawLeadDetails = getObject(meta.rawLeadDetails);
   const allMetadata = { ...contactMetadata, ...metadata };
+  const attribution = lead.attribution;
   const items: DetailItem[] = [
     {
       label: 'Origem do lead',
-      value: firstTextValue(lead.leadSource, allMetadata.source, allMetadata.importSource, trackingPayloadValue(events, [['source'], ['leadEventSource']])),
+      value: firstTextValue(attribution?.sourceChannel, attribution?.sourceSystem, lead.leadSource, allMetadata.source, allMetadata.importSource, trackingPayloadValue(events, [['source'], ['leadEventSource']])),
     },
     {
       label: 'Campanha',
-      value: firstTextValue(lead.utmCampaign, meta.campaignName, rawLeadDetails.campaign_name, trackingPayloadValue(events, [['utm', 'campaign'], ['campaignName'], ['campaign', 'name']])),
+      value: firstTextValue(attribution?.campaignName, lead.utmCampaign, attribution?.utmCampaign, meta.campaignName, rawLeadDetails.campaign_name, trackingPayloadValue(events, [['utm', 'campaign'], ['campaignName'], ['campaign', 'name']])),
     },
     {
       label: 'Conjunto',
-      value: firstTextValue(meta.adsetName, rawLeadDetails.adset_name, trackingPayloadValue(events, [['adsetName'], ['adset', 'name']])),
+      value: firstTextValue(attribution?.adsetName, attribution?.utmTerm, meta.adsetName, rawLeadDetails.adset_name, trackingPayloadValue(events, [['adsetName'], ['adset', 'name']])),
     },
     {
       label: 'Anuncio / criativo',
-      value: firstTextValue(lead.utmContent, meta.adName, rawLeadDetails.ad_name, trackingPayloadValue(events, [['adName'], ['ad', 'name'], ['creative', 'name']])),
+      value: firstTextValue(attribution?.adName, lead.utmContent, attribution?.utmContent, meta.adName, rawLeadDetails.ad_name, trackingPayloadValue(events, [['adName'], ['ad', 'name'], ['creative', 'name']])),
     },
     {
       label: 'Formulario / pagina',
-      value: firstTextValue(meta.formName, rawLeadDetails.form_name, allMetadata.formName, allMetadata.landingPage, trackingPayloadValue(events, [['formName'], ['page', 'title'], ['landingPage']])),
+      value: firstTextValue(attribution?.formName, meta.formName, rawLeadDetails.form_name, allMetadata.formName, allMetadata.landingPage, trackingPayloadValue(events, [['formName'], ['page', 'title'], ['landingPage']])),
     },
     {
       label: 'Pagina de entrada',
@@ -118,20 +132,24 @@ function trackingDetailItems(lead: NonNullable<ReturnType<typeof useLeadDetail>[
     },
     {
       label: 'UTM source / medium',
-      value: [lead.utmSource || trackingPayloadValue(events, [['utm', 'source']]), lead.utmMedium || trackingPayloadValue(events, [['utm', 'medium']])].filter(Boolean).join(' / '),
+      value: [attribution?.utmSource || lead.utmSource || trackingPayloadValue(events, [['utm', 'source']]), attribution?.utmMedium || lead.utmMedium || trackingPayloadValue(events, [['utm', 'medium']])].filter(Boolean).join(' / '),
     },
     {
       label: 'UTM content / term',
-      value: [lead.utmContent || trackingPayloadValue(events, [['utm', 'content']]), lead.utmTerm || trackingPayloadValue(events, [['utm', 'term']])].filter(Boolean).join(' / '),
+      value: [attribution?.utmContent || lead.utmContent || trackingPayloadValue(events, [['utm', 'content']]), attribution?.utmTerm || lead.utmTerm || trackingPayloadValue(events, [['utm', 'term']])].filter(Boolean).join(' / '),
     },
     {
       label: 'IDs Meta',
       value: [
-        firstTextValue(meta.campaignId, rawLeadDetails.campaign_id) && `Campanha ${firstTextValue(meta.campaignId, rawLeadDetails.campaign_id)}`,
-        firstTextValue(meta.adsetId, rawLeadDetails.adset_id, meta.adgroupId, rawLeadDetails.adgroup_id) && `Conjunto ${firstTextValue(meta.adsetId, rawLeadDetails.adset_id, meta.adgroupId, rawLeadDetails.adgroup_id)}`,
-        firstTextValue(meta.adId, rawLeadDetails.ad_id) && `Anuncio ${firstTextValue(meta.adId, rawLeadDetails.ad_id)}`,
-        firstTextValue(meta.formId, rawLeadDetails.form_id) && `Formulario ${firstTextValue(meta.formId, rawLeadDetails.form_id)}`,
+        firstTextValue(attribution?.campaignId, meta.campaignId, rawLeadDetails.campaign_id) && `Campanha ${firstTextValue(attribution?.campaignId, meta.campaignId, rawLeadDetails.campaign_id)}`,
+        firstTextValue(attribution?.adsetId, meta.adsetId, rawLeadDetails.adset_id, meta.adgroupId, rawLeadDetails.adgroup_id) && `Conjunto ${firstTextValue(attribution?.adsetId, meta.adsetId, rawLeadDetails.adset_id, meta.adgroupId, rawLeadDetails.adgroup_id)}`,
+        firstTextValue(attribution?.adId, meta.adId, rawLeadDetails.ad_id) && `Anuncio ${firstTextValue(attribution?.adId, meta.adId, rawLeadDetails.ad_id)}`,
+        firstTextValue(attribution?.formId, meta.formId, rawLeadDetails.form_id) && `Formulario ${firstTextValue(attribution?.formId, meta.formId, rawLeadDetails.form_id)}`,
       ].filter(Boolean).join(' | '),
+    },
+    {
+      label: 'Qualidade da atribuição',
+      value: attribution ? (attribution.confidence === 'complete' ? 'Completa' : 'Parcial - exibindo IDs técnicos quando nomes não estiverem disponíveis') : '',
     },
     {
       label: 'Sinais de clique/browser',
@@ -347,6 +365,44 @@ function proposalHtmlFromText(text: string) {
   return text.split('\n').map((line) => `<p>${line.replace(/[&<>]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[char] ?? char)) || '<br />'}</p>`).join('');
 }
 
+function percentInputToDecimal(value: string, fallbackPercent: number): number {
+  const parsed = Number(value.trim().replace(',', '.'));
+  if (!Number.isFinite(parsed)) return fallbackPercent / 100;
+  return Math.max(0, parsed) / 100;
+}
+
+function solarNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const parsed = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function solarNumberText(value: unknown, digits = 2, fallback = '-'): string {
+  const parsed = solarNumber(value);
+  return parsed === null ? fallback : parsed.toFixed(digits);
+}
+
+function solarProposalText(leadName: string, dimensionamento: SolarDimensionamento, custos?: SolarCustosCalculados | null): string {
+  const moduleCount = Number(dimensionamento.quantidade_sugerida ?? 0);
+  const totalKwp = Number(dimensionamento.potencia_total_sugerida_kwp ?? 0);
+  const production = Number(dimensionamento.producao_mensal_real_placa ?? 0);
+  const total = Number(custos?.total_geral ?? custos?.total_final ?? 0);
+  return [
+    `Olá ${leadName},`,
+    '',
+    'Segue o dimensionamento inicial do sistema solar com base nos dados informados.',
+    `Cidade/base de irradiação: ${dimensionamento.cidade}/${dimensionamento.uf} (${solarNumberText(dimensionamento.irradiacao_kwh_m2_dia)} kWh/m².dia).`,
+    `Consumo médio considerado: ${Math.round(dimensionamento.consumo_medio_mensal_kwh)} kWh/mês.`,
+    moduleCount ? `Quantidade sugerida de módulos: ${moduleCount}.` : '',
+    totalKwp ? `Potência total estimada: ${totalKwp.toFixed(2)} kWp.` : '',
+    dimensionamento.modelo_inversor_nome ? `Inversor sugerido: ${dimensionamento.modelo_inversor_nome}.` : '',
+    production ? `Produção mensal estimada por módulo: ${production.toFixed(1)} kWh.` : '',
+    total ? `Custo operacional estimado: ${formatCurrency(total)}.` : '',
+    '',
+    'Próximo passo: validar telhado, modelo comercial final e disponibilidade dos equipamentos antes da proposta definitiva.',
+  ].filter(Boolean).join('\n');
+}
+
 
 type EnervitaIntelligence = {
   potential: 'Alto' | 'Médio' | 'Baixo';
@@ -465,6 +521,14 @@ export default function LeadDetail() {
       return left - right;
     })[0];
   const [tagDraft, setTagDraft] = useState<string | null>(null);
+  const [ownerDropdownOpen, setOwnerDropdownOpen] = useState(false);
+  const ownerBtnRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; right: number } | null>(null);
+  const [assigningOwner, setAssigningOwner] = useState(false);
+  const [ownerUsers, setOwnerUsers] = useState<Array<{ id: string; name: string; roles: string[] }>>([]);
+  const [ownerMessage, setOwnerMessage] = useState<string | null>(null);
+  const [ownerSearch, setOwnerSearch] = useState('');
+  const [confirmChange, setConfirmChange] = useState<{ userId: string | null; userName: string } | null>(null);
   const [editing, setEditing] = useState(false);
   const [savingLead, setSavingLead] = useState(false);
   const [convertingOpportunity, setConvertingOpportunity] = useState(false);
@@ -494,6 +558,23 @@ export default function LeadDetail() {
   const [showTemplateSelector, setShowTemplateSelector] = useState(false);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [editingProposalId, setEditingProposalId] = useState<string | null>(null);
+  const [solarCities, setSolarCities] = useState<SolarIrradiacaoCidade[]>([]);
+  const [solarPlacas, setSolarPlacas] = useState<SolarModeloPlaca[]>([]);
+  const [solarInversores, setSolarInversores] = useState<SolarModeloInversor[]>([]);
+  const [solarTelhados, setSolarTelhados] = useState<SolarTipoTelhado[]>([]);
+  const [solarCidadeQuery, setSolarCidadeQuery] = useState('');
+  const [solarCidade, setSolarCidade] = useState<SolarIrradiacaoCidade | null>(null);
+  const [solarConsumo, setSolarConsumo] = useState('');
+  const [solarTelhado, setSolarTelhado] = useState('');
+  const [solarPerda, setSolarPerda] = useState('25');
+  const [solarSobra, setSolarSobra] = useState('30');
+  const [solarPlacaId, setSolarPlacaId] = useState('');
+  const [solarDistancia, setSolarDistancia] = useState('0');
+  const [solarLoadingRefs, setSolarLoadingRefs] = useState(false);
+  const [solarCalculating, setSolarCalculating] = useState(false);
+  const [solarMessage, setSolarMessage] = useState<string | null>(null);
+  const [solarDimensionamento, setSolarDimensionamento] = useState<SolarDimensionamento | null>(null);
+  const [solarCustos, setSolarCustos] = useState<SolarCustosCalculados | null>(null);
   const [documentMessage, setDocumentMessage] = useState<string | null>(null);
   const [documentError, setDocumentError] = useState<string | null>(null);
   const [documentsUploading, setDocumentsUploading] = useState(false);
@@ -503,6 +584,80 @@ export default function LeadDetail() {
   const trackingDetails = useMemo(() => lead ? trackingDetailItems(lead, trackingEvents) : [], [lead, trackingEvents]);
   const sortedProposals = useMemo(() => [...proposals].sort((a, b) => new Date(b.createdAt || b.updatedAt).getTime() - new Date(a.createdAt || a.updatedAt).getTime()), [proposals]);
   const enervitaIntelligence = useMemo(() => lead ? buildEnervitaIntelligence(lead, tasks, proposals) : null, [lead, tasks, proposals]);
+
+    // Carregar usuarios para dropdown de responsavel
+  // Carregar usuarios para dropdown de responsavel
+  useEffect(() => {
+    if (!user) return;
+    fetch('/api/users', { credentials: 'include' })
+      .then(r => {
+        if (!r.ok) throw new Error('Erro ao carregar usuarios');
+        return r.json();
+      })
+      .then(data => {
+        const allUsers = data.users || [];
+        const commercial = allUsers.filter((u: any) =>
+          u.roles?.some((r: string) => ['vendedor','sdr','consultor','gerente','admin'].includes(r))
+        );
+        setOwnerUsers(commercial);
+      })
+      .catch(() => {
+        setOwnerUsers([]);
+      });
+  }, [user]);
+
+  // Fechar dropdown com Escape
+  useEffect(() => {
+    if (!ownerDropdownOpen) return;
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOwnerDropdownOpen(false);
+        setDropdownPos(null);
+        setConfirmChange(null);
+        setOwnerSearch('');
+      }
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [ownerDropdownOpen]);
+
+
+useEffect(() => {
+    if (!lead) return;
+    const metadata = getObject(lead.metadata);
+    const contactMetadata = getObject(lead.contact?.metadata);
+    const city = firstTextValue(metadata.city, contactMetadata.city, metadata.cidade, contactMetadata.cidade);
+    const state = firstTextValue(metadata.state, contactMetadata.state, metadata.uf, contactMetadata.uf);
+    if (!solarConsumo && lead.averageConsumptionKwh) setSolarConsumo(String(Math.round(lead.averageConsumptionKwh)));
+    if (!solarCidadeQuery && city) setSolarCidadeQuery(state ? `${city}/${state}` : city);
+  }, [lead, solarCidadeQuery, solarConsumo]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSolarRefs() {
+      setSolarLoadingRefs(true);
+      setSolarMessage(null);
+      try {
+        const [placas, inversores, telhados] = await Promise.all([
+          api.listSolarPlacas(),
+          api.listSolarInversores(),
+          api.listSolarTelhados(),
+        ]);
+        if (cancelled) return;
+        setSolarPlacas(placas);
+        setSolarInversores(inversores);
+        setSolarTelhados(telhados);
+        setSolarPlacaId((current) => current || placas.find((placa) => placa.padrao)?.id || placas[0]?.id || '');
+        setSolarTelhado((current) => current || telhados[0]?.nome || '');
+      } catch (error) {
+        if (!cancelled) setSolarMessage(error instanceof Error ? error.message : 'Não foi possível carregar modelos solares.');
+      } finally {
+        if (!cancelled) setSolarLoadingRefs(false);
+      }
+    }
+    void loadSolarRefs();
+    return () => { cancelled = true; };
+  }, []);
 
   function startEditing() {
     if (!lead) return;
@@ -594,7 +749,32 @@ export default function LeadDetail() {
     }
   }
 
-  async function handleDeleteLead() {
+    async function handleAssignOwner(newOwnerId: string | null) {
+    if (!lead) return;
+    setAssigningOwner(true);
+    setOwnerMessage(null);
+    setConfirmChange(null);
+    try {
+      const updated = await api.assignLead(lead.id, newOwnerId);
+      // Atualizar campos locais do lead sem reload
+      if (updated) {
+        (lead as any).sdrOwnerId = newOwnerId;
+        (lead as any).sdrOwner = updated.sdrOwner || 'Sem responsavel';
+      }
+      setOwnerMessage(newOwnerId ? 'Responsavel alterado com sucesso' : 'Responsavel removido');
+    } catch (err: any) {
+      setOwnerMessage(err?.message || 'Erro ao alterar responsavel');
+    } finally {
+      setAssigningOwner(false);
+      setOwnerDropdownOpen(false);
+      setDropdownPos(null);
+      setOwnerSearch('');
+      setTimeout(() => setOwnerMessage(null), 4000);
+    }
+  }
+
+
+async function handleDeleteLead() {
     if (!lead || !canEditLead) return;
     const ok = window.confirm(`Excluir o lead ${lead.contact?.name || 'sem nome'}? Essa ação não pode ser desfeita.`);
     if (!ok) return;
@@ -764,6 +944,80 @@ export default function LeadDetail() {
       setProposalUploadState('idle');
     }
   }
+
+  async function handleSearchSolarCity() {
+    const query = solarCidadeQuery.trim().replace(/\/[A-Za-z]{2}$/, '').trim();
+    if (query.length < 2) {
+      setSolarMessage('Digite pelo menos 2 caracteres da cidade.');
+      return;
+    }
+    setSolarLoadingRefs(true);
+    setSolarMessage(null);
+    try {
+      const cities = await api.listSolarIrradiacao({ q: query, limit: 25 });
+      setSolarCities(cities);
+      if (cities.length === 1) {
+        setSolarCidade(cities[0]);
+        setSolarCidadeQuery(`${cities[0].cidade}/${cities[0].uf}`);
+      }
+      if (cities.length === 0) setSolarMessage('Cidade não encontrada na base de irradiação. Tente outro nome ou UF.');
+    } catch (error) {
+      setSolarMessage(error instanceof Error ? error.message : 'Erro ao buscar cidade.');
+    } finally {
+      setSolarLoadingRefs(false);
+    }
+  }
+
+  async function handleCalcularSolar() {
+    if (!lead || solarCalculating) return;
+    const consumo = numberOrUndefined(solarConsumo);
+    if (!solarCidade) { setSolarMessage('Selecione a cidade de irradiação antes de calcular.'); return; }
+    if (!consumo || consumo <= 0) { setSolarMessage('Informe o consumo médio mensal em kWh.'); return; }
+    if (!solarPlacaId) { setSolarMessage('Selecione o modelo de placa padrão.'); return; }
+    setSolarCalculating(true);
+    setSolarMessage(null);
+    try {
+      const dimensionamentoResponse = await api.calcularDimensionamentoSolar({
+        lead_id: lead.id,
+        cidade: solarCidade.cidade,
+        uf: solarCidade.uf,
+        consumo_medio_mensal_kwh: consumo,
+        tipo_telhado: solarTelhado || null,
+        perda_decimal: percentInputToDecimal(solarPerda, 25),
+        sobra_decimal: percentInputToDecimal(solarSobra, 30),
+        modelo_placa_id: solarPlacaId,
+      });
+      const dimensionamento = dimensionamentoResponse.dimensionamento;
+      const custos = await api.calcularCustosSolar({
+        dimensionamento_id: dimensionamento.id,
+        quantidade_modulos: dimensionamento.quantidade_sugerida ?? undefined,
+        distancia_km: numberOrUndefined(solarDistancia) ?? 0,
+      });
+      setSolarDimensionamento(dimensionamento);
+      setSolarCustos(custos);
+      const leadName = lead.contact?.name || 'cliente';
+      const contentText = solarProposalText(leadName, dimensionamento, custos);
+      setProposalDraft((current) => ({
+        ...current,
+        title: current.title || `Proposta Enervita — ${leadName}`,
+        estimatedKwh: String(Math.round(consumo)),
+        sourceType: 'editor',
+        contentText,
+        notes: [
+          current.notes,
+          `Dimensionamento solar ${dimensionamento.id}: ${dimensionamento.quantidade_sugerida ?? '-'} módulos, ${solarNumberText(dimensionamento.potencia_total_sugerida_kwp)} kWp, ${dimensionamento.cidade}/${dimensionamento.uf}.`,
+        ].filter(Boolean).join('\n'),
+      }));
+      setEditingProposalId(null);
+      setProposalMessage('Dimensionamento aplicado ao rascunho. Revise a proposta antes de salvar.');
+      setSolarMessage('Dimensionamento calculado e aplicado ao editor da proposta.');
+    } catch (error) {
+      setSolarMessage(error instanceof Error ? error.message : 'Erro ao calcular dimensionamento.');
+    } finally {
+      setSolarCalculating(false);
+    }
+  }
+
   async function handleCreateProposal() {
     if (!lead || savingProposal || proposalUploadState === 'sending') return;
     const monthlyBillValue = numberOrUndefined(proposalDraft.monthlyBillValue) ?? 0;
@@ -1109,6 +1363,129 @@ export default function LeadDetail() {
                 </div>
               )}
             </div>
+
+
+          {/* Card do Responsavel */}
+          <Card className="p-6">
+            <h3 className="font-bold text-graphite mb-4">Responsavel</h3>
+            {ownerMessage && (
+              <p className={`mb-3 rounded-xl px-3 py-2 text-xs font-semibold ${ownerMessage.includes('sucesso') ? 'bg-energy-green/10 text-energy-green' : 'bg-alert-red/10 text-alert-red'}`}>
+                {ownerMessage}
+              </p>
+            )}
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <User size={16} className="text-gray-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-graphite truncate">{lead.sdrOwner || 'Sem responsavel'}</p>
+              </div>
+              {isAdminUser(user) && (
+                <div className="relative">
+                  <Button
+                    ref={ownerBtnRef}
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (ownerDropdownOpen) {
+                        setOwnerDropdownOpen(false);
+                        setDropdownPos(null);
+                      } else {
+                        const rect = ownerBtnRef.current?.getBoundingClientRect();
+                        if (rect) {
+                          setDropdownPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right });
+                        }
+                        setOwnerDropdownOpen(true);
+                      }
+                    }}
+                    disabled={assigningOwner}
+                    className="gap-1"
+                  >
+                    {assigningOwner ? 'Salvando...' : 'Trocar'}
+                  </Button>
+                  {ownerDropdownOpen && dropdownPos && createPortal(
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => { setOwnerDropdownOpen(false); setDropdownPos(null); setConfirmChange(null); setOwnerSearch(''); }} />
+                      <div
+                        className="fixed w-72 bg-white border border-gray-200 rounded-xl shadow-lg z-50 flex flex-col"
+                        style={{ top: dropdownPos.top, right: dropdownPos.right, maxHeight: '320px' }}
+                      >
+                        {/* Campo de busca */}
+                        <div className="p-2 border-b border-gray-100">
+                          <input
+                            placeholder="Buscar usuario..."
+                            value={ownerSearch}
+                            onChange={(e) => setOwnerSearch(e.target.value)}
+                            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-solar-orange/30"
+                            autoFocus
+                          />
+                        </div>
+
+                        {/* Lista de usuarios */}
+                        <div className="overflow-y-auto flex-1 p-1">
+                          <button
+                            className="w-full text-left px-3 py-2 text-sm text-gray-500 hover:bg-gray-50 rounded-lg transition-colors"
+                            onClick={() => setConfirmChange({ userId: null, userName: 'Sem responsavel' })}
+                          >
+                            Sem responsavel
+                          </button>
+                          {ownerUsers.length === 0 && (
+                            <p className="px-3 py-2 text-xs text-gray-400">Carregando...</p>
+                          )}
+                          {ownerUsers
+                            .filter(u => u.name.toLowerCase().includes(ownerSearch.toLowerCase()))
+                            .map(u => (
+                              <button
+                                key={u.id}
+                                className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
+                                  lead.sdrOwnerId === u.id
+                                    ? 'bg-solar-orange/10 text-solar-orange font-semibold'
+                                    : 'text-graphite hover:bg-gray-50'
+                                }`}
+                                onClick={() => setConfirmChange({ userId: u.id, userName: u.name })}
+                              >
+                                {u.name}
+                                <span className="text-xs text-gray-400 ml-1">({u.roles?.[0] || ''})</span>
+                              </button>
+                            ))
+                          }
+                          {ownerUsers.filter(u => u.name.toLowerCase().includes(ownerSearch.toLowerCase())).length === 0 && ownerSearch && (
+                            <p className="px-3 py-2 text-xs text-gray-400">Nenhum usuario encontrado</p>
+                          )}
+                        </div>
+
+                        {/* Confirmacao inline */}
+                        {confirmChange && (
+                          <div className="p-3 bg-amber-50 border-t border-amber-200 rounded-b-xl">
+                            <p className="text-sm font-semibold text-graphite">
+                              Atribuir para <strong>{confirmChange.userName}</strong>?
+                            </p>
+                            <div className="flex gap-2 mt-2">
+                              <button
+                                className="px-3 py-1.5 text-xs font-bold bg-solar-orange text-white rounded-lg hover:bg-solar-orange/90 transition-colors"
+                                onClick={() => handleAssignOwner(confirmChange.userId)}
+                                disabled={assigningOwner}
+                              >
+                                {assigningOwner ? 'Salvando...' : 'Confirmar'}
+                              </button>
+                              <button
+                                className="px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                                onClick={() => setConfirmChange(null)}
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>,
+                    document.body
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+
 
           <Card className="p-6">
             <h3 className="font-bold text-graphite mb-4">Tags internas</h3>
@@ -1463,6 +1840,84 @@ export default function LeadDetail() {
                 </div>
 
                 {proposalMessage && <div className="rounded-2xl border border-solar-orange/20 bg-solar-orange/5 p-3 text-sm font-semibold text-solar-orange">{proposalMessage}</div>}
+                {solarMessage && <div className="rounded-2xl border border-energy-green/20 bg-energy-green/5 p-3 text-sm font-semibold text-energy-green">{solarMessage}</div>}
+
+                <div className="rounded-2xl border border-solar-orange/20 bg-white p-5 shadow-sm">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Zap size={18} className="text-solar-orange" />
+                        <h5 className="font-black text-graphite">Dimensionamento solar</h5>
+                      </div>
+                      <p className="mt-1 text-sm text-gray-500">Pré-cálculo manual com cidade, consumo, perda, sobra e placa padrão.</p>
+                    </div>
+                    <Badge variant="solar">{solarDimensionamento ? 'Calculado' : 'Pré-proposta'}</Badge>
+                  </div>
+
+                  <div className="mt-5 space-y-5">
+                    <section className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
+                      <label className="block text-xs font-bold uppercase text-gray-500">Cidade de irradiação</label>
+                      <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_120px]">
+                        <input aria-label="Buscar cidade de irradiação" value={solarCidadeQuery} onChange={(event) => { setSolarCidadeQuery(event.target.value); setSolarCidade(null); }} className="h-11 min-w-0 rounded-xl border border-gray-200 bg-white px-3 text-sm outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: Franca/SP" />
+                        <Button type="button" size="sm" variant="outline" className="h-11 justify-center" onClick={handleSearchSolarCity} disabled={solarLoadingRefs}>Buscar</Button>
+                      </div>
+                      {solarCities.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {solarCities.slice(0, 8).map((city) => (
+                            <button key={city.id} type="button" onClick={() => { setSolarCidade(city); setSolarCidadeQuery(`${city.cidade}/${city.uf}`); }} className={`max-w-full rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${solarCidade?.id === city.id ? 'border-solar-orange bg-solar-orange/10 text-solar-orange' : 'border-gray-200 bg-white text-gray-600 hover:border-solar-orange/40'}`}>
+                              <span className="inline-block max-w-[260px] truncate align-bottom">{city.cidade}/{city.uf}</span> · {solarNumberText(city.irradiacao_kwh_m2_dia)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+
+                    <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr]">
+                      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <label className="block text-xs font-bold uppercase text-gray-500">Consumo kWh/mês
+                          <input aria-label="Consumo médio mensal para dimensionamento" value={solarConsumo} onChange={(event) => setSolarConsumo(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: 1800" />
+                        </label>
+                        <label className="block text-xs font-bold uppercase text-gray-500">Tipo de telhado
+                          <select aria-label="Tipo de telhado" value={solarTelhado} onChange={(event) => setSolarTelhado(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-gray-200 bg-white px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20">
+                            {solarTelhados.map((telhado) => <option key={telhado.id} value={telhado.nome}>{telhado.nome}</option>)}
+                          </select>
+                        </label>
+                      </div>
+                      <label className="block text-xs font-bold uppercase text-gray-500">Placa padrão
+                        <select aria-label="Modelo de placa" value={solarPlacaId} onChange={(event) => setSolarPlacaId(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-gray-200 bg-white px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20">
+                          {solarPlacas.map((placa) => <option key={placa.id} value={placa.id}>{placa.nome} · {placa.potencia_wp}Wp</option>)}
+                        </select>
+                      </label>
+                    </section>
+
+                    <section className="grid grid-cols-1 gap-3 md:grid-cols-[repeat(3,minmax(0,1fr))_150px]">
+                      <label className="block text-xs font-bold uppercase text-gray-500">Perda %
+                        <input aria-label="Perda percentual do sistema" value={solarPerda} onChange={(event) => setSolarPerda(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
+                      </label>
+                      <label className="block text-xs font-bold uppercase text-gray-500">Sobra %
+                        <input aria-label="Sobra percentual de energia" value={solarSobra} onChange={(event) => setSolarSobra(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
+                      </label>
+                      <label className="block text-xs font-bold uppercase text-gray-500">Distância km
+                        <input aria-label="Distância em quilômetros" value={solarDistancia} onChange={(event) => setSolarDistancia(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
+                      </label>
+                      <div className="flex items-end">
+                        <Button type="button" size="sm" className="h-11 w-full justify-center gap-2" onClick={handleCalcularSolar} disabled={solarCalculating || solarLoadingRefs || solarPlacas.length === 0}>
+                          <Zap size={15} /> {solarCalculating ? 'Calculando...' : 'Calcular'}
+                        </Button>
+                      </div>
+                    </section>
+
+                    {solarDimensionamento && (
+                      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                        <div className="min-h-20 rounded-xl bg-gray-50 p-3"><p className="text-xs font-bold uppercase text-gray-400">Módulos</p><p className="mt-1 text-lg font-black text-graphite">{solarDimensionamento.quantidade_sugerida ?? '-'}</p></div>
+                        <div className="min-h-20 rounded-xl bg-gray-50 p-3"><p className="text-xs font-bold uppercase text-gray-400">Potência</p><p className="mt-1 text-lg font-black text-graphite">{solarNumberText(solarDimensionamento.potencia_total_sugerida_kwp)} kWp</p></div>
+                        <div className="min-h-20 rounded-xl bg-gray-50 p-3"><p className="text-xs font-bold uppercase text-gray-400">Inversor</p><p className="mt-1 truncate text-sm font-black text-graphite">{solarDimensionamento.modelo_inversor_nome ?? 'A validar'}</p></div>
+                        <div className="min-h-20 rounded-xl bg-gray-50 p-3"><p className="text-xs font-bold uppercase text-gray-400">Irradiação</p><p className="mt-1 text-lg font-black text-graphite">{solarNumberText(solarDimensionamento.irradiacao_kwh_m2_dia)}</p></div>
+                        <div className="min-h-20 rounded-xl bg-gray-50 p-3"><p className="text-xs font-bold uppercase text-gray-400">Custo base</p><p className="mt-1 text-lg font-black text-energy-success">{formatCurrency(solarCustos?.total_geral ?? solarCustos?.total_final ?? 0)}</p></div>
+                      </section>
+                    )}
+                  </div>
+                </div>
 
                 {showTemplateSelector && (
                   <div className="rounded-2xl border border-solar-orange/30 bg-white p-4 space-y-3">
@@ -1571,6 +2026,14 @@ export default function LeadDetail() {
                             </div>
                           </div>
                         </div>
+                        {proposal.solarSummary && (
+                          <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-energy-green/10 bg-energy-green/5 p-3 text-xs text-gray-600 md:grid-cols-4">
+                            <div><span className="block font-bold uppercase text-gray-400">Módulos</span>{proposal.solarSummary.quantidadeSugerida ?? '-'}</div>
+                            <div><span className="block font-bold uppercase text-gray-400">Potência</span>{solarNumberText(proposal.solarSummary.potenciaTotalKwp)} kWp</div>
+                            <div><span className="block font-bold uppercase text-gray-400">Inversor</span>{proposal.solarSummary.inversorSugeridoNome ?? '-'}</div>
+                            <div><span className="block font-bold uppercase text-gray-400">Cidade</span>{proposal.solarSummary.cidade}/{proposal.solarSummary.uf}</div>
+                          </div>
+                        )}
                         {proposal.contentText && <p className="mt-3 line-clamp-3 whitespace-pre-wrap rounded-xl bg-gray-50 p-3 text-sm text-gray-600">{proposal.contentText}</p>}
                         {getProposalAttachment(proposal) && (
                           <div className="mt-3 space-y-2">

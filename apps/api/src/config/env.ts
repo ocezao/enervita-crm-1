@@ -10,8 +10,10 @@ export type MetaAdsEnv = {
   testEventCode: string;
 };
 
+export type AiProvider = 'mimo' | 'openrouter';
+
 export type AiConfig = {
-  provider: 'openrouter';
+  provider: AiProvider;
   apiKey: string;
   model: string;
   baseUrl: string;
@@ -31,6 +33,8 @@ export type AppEnv = {
 const DEFAULT_PORT = 4000;
 const DEFAULT_DATABASE_URL = 'postgres://enervita:enervita@127.0.0.1:55432/enervita_crm';
 const DEVELOPMENT_SESSION_SECRET = 'development-session-secret-minimum-32-chars';
+const DEFAULT_MIMO_BASE_URL = 'https://token-plan-sgp.xiaomimimo.com/v1';
+const DEFAULT_OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 
 function parsePort(value: string | undefined): number {
   if (value === undefined || value.trim() === '') {
@@ -63,6 +67,26 @@ function readSessionSecret(env: NodeJS.ProcessEnv, nodeEnv: string): string {
   return DEVELOPMENT_SESSION_SECRET;
 }
 
+function readAiConfig(env: NodeJS.ProcessEnv): AiConfig {
+  const provider = trimEnv(env.AI_PROVIDER).toLowerCase() === 'openrouter' ? 'openrouter' : 'mimo';
+
+  if (provider === 'openrouter') {
+    return {
+      provider,
+      apiKey: trimEnv(env.OPENROUTER_API_KEY),
+      model: trimEnv(env.OPENROUTER_MODEL) || 'deepseek/deepseek-chat-v3-0324',
+      baseUrl: trimEnv(env.OPENROUTER_BASE_URL) || DEFAULT_OPENROUTER_BASE_URL,
+    };
+  }
+
+  return {
+    provider: 'mimo',
+    apiKey: trimEnv(env.MIMO_API_KEY),
+    model: trimEnv(env.MIMO_MODEL) || 'mimo-v2.5',
+    baseUrl: trimEnv(env.MIMO_BASE_URL) || DEFAULT_MIMO_BASE_URL,
+  };
+}
+
 export function readEnv(env: NodeJS.ProcessEnv = process.env): AppEnv {
   const nodeEnv = env.NODE_ENV?.trim() || 'development';
 
@@ -84,11 +108,6 @@ export function readEnv(env: NodeJS.ProcessEnv = process.env): AppEnv {
       testEventCode: trimEnv(env.META_TEST_EVENT_CODE),
     },
     n8nDatabaseUrl: trimEnv(env.N8N_DATABASE_URL),
-    ai: {
-      provider: 'openrouter',
-      apiKey: trimEnv(env.OPENROUTER_API_KEY),
-      model: trimEnv(env.OPENROUTER_MODEL) || 'deepseek/deepseek-chat-v3-0324',
-      baseUrl: trimEnv(env.OPENROUTER_BASE_URL) || 'https://openrouter.ai/api/v1',
-    },
+    ai: readAiConfig(env),
   };
 }

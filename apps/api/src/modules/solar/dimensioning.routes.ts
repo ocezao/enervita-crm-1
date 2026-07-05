@@ -16,95 +16,115 @@
  * - GET  /api/solar/dimensionamentos/:id - Get dimensioning snapshot
  */
 
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest, preHandlerHookHandler } from 'fastify';
+import type { PermissionKey } from '@enervita/shared';
+import { getAuthenticatedUser } from '../../middleware/requireAuth.ts';
+import { hasPermission } from '../permissions/permission.service.ts';
+import type { PublicUser, UserRepository } from '../auth/userRepository.ts';
 import { calcularDimensionamento } from './dimensioning.engine.js';
-import { createDimensioningRepository, type DimensioningRepository } from './dimensioning.repository.js';
+import { type DimensioningRepository } from './dimensioning.repository.js';
 
 interface SolarDimensioningRouteOptions {
+  userRepository: UserRepository;
   dimensioningRepository: DimensioningRepository;
+  sessionSecret: string;
 }
 
 export async function registerSolarDimensioningRoutes(app: FastifyInstance, options: SolarDimensioningRouteOptions) {
   const repo = options.dimensioningRepository;
 
-  // ── Auth helper ─────────────────────────────
-  function getTenantId(request: any): string {
-    const tenantId = request.user?.tenantId ?? request.session?.tenantId;
-    if (!tenantId) throw new Error('Tenant não identificado');
-    return tenantId;
+  function requestUser(request: FastifyRequest): PublicUser {
+    const user = (request as FastifyRequest & { authenticatedUser?: PublicUser }).authenticatedUser;
+    if (!user) throw new Error('Usuário autenticado não encontrado');
+    return user;
   }
 
-  function getUserId(request: any): string | null {
-    return request.user?.id ?? request.session?.userId ?? null;
+  function requireAnyPermission(permissionKeys: PermissionKey[]): preHandlerHookHandler {
+    return async (request, reply) => {
+      const user = await getAuthenticatedUser(request, options.userRepository, options.sessionSecret);
+      if (!user) {
+        reply.code(401).send({ error: 'Authentication required' });
+        return;
+      }
+      (request as FastifyRequest & { authenticatedUser?: PublicUser }).authenticatedUser = user;
+      if (!permissionKeys.some((permissionKey) => hasPermission(user, permissionKey))) {
+        reply.code(403).send({ error: 'Forbidden' });
+        return;
+      }
+    };
   }
+
+  const viewPreHandler = requireAnyPermission(['proposal.view', 'proposal.create']);
+  const createPreHandler = requireAnyPermission(['proposal.create', 'proposal.edit']);
+  const managePreHandler = requireAnyPermission(['settings.manage', 'user.manage']);
 
   // ── Reference Data ──────────────────────────
 
-  app.get('/api/solar/irradiacao', async (request, reply) => {
-    const tenantId = getTenantId(request);
-    const data = await repo.listIrradiacao(tenantId);
+  app.get('/api/solar/irradiacao', { preHandler: viewPreHandler }, async (request, reply) => {
+    const user = requestUser(request);
+    const { q, uf, limit } = request.query as { q?: string; uf?: string; limit?: string };
+    const data = await repo.listIrradiacao(user.tenantId, { q, uf, limit: limit ? Number(limit) : undefined });
     return reply.send({ irradiacao: data });
   });
 
-  app.get('/api/solar/irradiacao/:cidade/:uf', async (request, reply) => {
-    const tenantId = getTenantId(request);
+  app.get('/api/solar/irradiacao/:cidade/:uf', { preHandler: viewPreHandler }, async (request, reply) => {
+    const user = requestUser(request);
     const { cidade, uf } = request.params as { cidade: string; uf: string };
-    const data = await repo.getIrradiacao(tenantId, decodeURIComponent(cidade), uf.toUpperCase());
+    const data = await repo.getIrradiacao(user.tenantId, decodeURIComponent(cidade), uf.toUpperCase());
     if (!data) return reply.status(404).send({ error: 'Irradiação não cadastrada para esta cidade.' });
     return reply.send({ irradiacao: data });
   });
 
-  app.get('/api/solar/placas', async (request, reply) => {
-    const tenantId = getTenantId(request);
-    const data = await repo.listPlacas(tenantId);
+  app.get('/api/solar/placas', { preHandler: viewPreHandler }, async (request, reply) => {
+    const user = requestUser(request);
+    const data = await repo.listPlacas(user.tenantId);
     return reply.send({ placas: data });
   });
 
-  app.get('/api/solar/placas/:id', async (request, reply) => {
-    const tenantId = getTenantId(request);
+  app.get('/api/solar/placas/:id', { preHandler: viewPreHandler }, async (request, reply) => {
+    const user = requestUser(request);
     const { id } = request.params as { id: string };
-    const data = await repo.getPlaca(tenantId, id);
+    const data = await repo.getPlaca(user.tenantId, id);
     if (!data) return reply.status(404).send({ error: 'Modelo de placa não encontrado.' });
     return reply.send({ placa: data });
   });
 
-  app.get('/api/solar/inversores', async (request, reply) => {
-    const tenantId = getTenantId(request);
-    const data = await repo.listInversores(tenantId);
+  app.get('/api/solar/inversores', { preHandler: viewPreHandler }, async (request, reply) => {
+    const user = requestUser(request);
+    const data = await repo.listInversores(user.tenantId);
     return reply.send({ inversores: data });
   });
 
-  app.get('/api/solar/inversores/:id', async (request, reply) => {
-    const tenantId = getTenantId(request);
+  app.get('/api/solar/inversores/:id', { preHandler: viewPreHandler }, async (request, reply) => {
+    const user = requestUser(request);
     const { id } = request.params as { id: string };
-    const data = await repo.getInversor(tenantId, id);
+    const data = await repo.getInversor(user.tenantId, id);
     if (!data) return reply.status(404).send({ error: 'Modelo de inversor não encontrado.' });
     return reply.send({ inversor: data });
   });
 
-  app.get('/api/solar/telhados', async (request, reply) => {
-    const tenantId = getTenantId(request);
-    const data = await repo.listTelhados(tenantId);
+  app.get('/api/solar/telhados', { preHandler: viewPreHandler }, async (request, reply) => {
+    const user = requestUser(request);
+    const data = await repo.listTelhados(user.tenantId);
     return reply.send({ telhados: data });
   });
 
-  app.get('/api/solar/parametros', async (request, reply) => {
-    const tenantId = getTenantId(request);
-    const data = await repo.listParametros(tenantId);
+  app.get('/api/solar/parametros', { preHandler: managePreHandler }, async (request, reply) => {
+    const user = requestUser(request);
+    const data = await repo.listParametros(user.tenantId);
     return reply.send({ parametros: data });
   });
 
-  app.get('/api/solar/custos', async (request, reply) => {
-    const tenantId = getTenantId(request);
-    const data = await repo.listCustos(tenantId);
+  app.get('/api/solar/custos', { preHandler: viewPreHandler }, async (request, reply) => {
+    const user = requestUser(request);
+    const data = await repo.listCustos(user.tenantId);
     return reply.send({ custos: data });
   });
 
   // ── Dimensioning Calculation ────────────────
 
-  app.post('/api/solar/dimensionar', async (request, reply) => {
-    const tenantId = getTenantId(request);
-    const userId = getUserId(request);
+  app.post('/api/solar/dimensionar', { preHandler: createPreHandler }, async (request, reply) => {
+    const user = requestUser(request);
     const body = request.body as any;
 
     // Validate required fields
@@ -119,9 +139,9 @@ export async function registerSolarDimensioningRoutes(app: FastifyInstance, opti
     }
 
     // Load reference data
-    const irradiacao = await repo.getIrradiacao(tenantId, body.cidade, body.uf.toUpperCase());
-    const placa = await repo.getPlaca(tenantId, body.modelo_placa_id);
-    const inversores = await repo.listInversores(tenantId);
+    const irradiacao = await repo.getIrradiacao(user.tenantId, body.cidade, body.uf.toUpperCase());
+    const placa = await repo.getPlaca(user.tenantId, body.modelo_placa_id);
+    const inversores = await repo.listInversores(user.tenantId);
 
     if (!irradiacao) {
       return reply.status(400).send({
@@ -134,9 +154,9 @@ export async function registerSolarDimensioningRoutes(app: FastifyInstance, opti
     }
 
     // Load default parameters
-    const perdaPadrao = await repo.getParametroDecimal(tenantId, 'perda_padrao', 0.22);
-    const sobraPadrao = await repo.getParametroDecimal(tenantId, 'sobra_padrao', 0.30);
-    const margemInversor = await repo.getParametroDecimal(tenantId, 'margem_inversor', 0.10);
+    const perdaPadrao = await repo.getParametroDecimal(user.tenantId, 'perda_padrao', 0.22);
+    const sobraPadrao = await repo.getParametroDecimal(user.tenantId, 'sobra_padrao', 0.30);
+    const margemInversor = await repo.getParametroDecimal(user.tenantId, 'margem_inversor', 0.10);
 
     // Use provided values or defaults
     const perda = body.perda_decimal ?? perdaPadrao;
@@ -181,7 +201,7 @@ export async function registerSolarDimensioningRoutes(app: FastifyInstance, opti
     });
 
     // Save snapshot
-    const snapshot = await repo.saveDimensionamento(tenantId, {
+    const snapshot = await repo.saveDimensionamento(user.tenantId, {
       lead_id: body.lead_id ?? null,
       proposal_id: body.proposal_id ?? null,
       cidade: body.cidade,
@@ -218,7 +238,7 @@ export async function registerSolarDimensioningRoutes(app: FastifyInstance, opti
       status: resultado.status,
       mensagens_erro: resultado.mensagens_erro,
       mensagens_alerta: resultado.mensagens_alerta,
-      usuario_id: userId,
+      usuario_id: user.id,
     });
 
     return reply.send({
@@ -229,37 +249,37 @@ export async function registerSolarDimensioningRoutes(app: FastifyInstance, opti
 
   // ── Snapshots ───────────────────────────────
 
-  app.get('/api/solar/dimensionamentos', async (request, reply) => {
-    const tenantId = getTenantId(request);
+  app.get('/api/solar/dimensionamentos', { preHandler: viewPreHandler }, async (request, reply) => {
+    const user = requestUser(request);
     const { lead_id } = request.query as { lead_id?: string };
-    const data = await repo.listDimensionamentos(tenantId, lead_id);
+    const data = await repo.listDimensionamentos(user.tenantId, lead_id);
     return reply.send({ dimensionamentos: data });
   });
 
-  app.get('/api/solar/dimensionamentos/:id', async (request, reply) => {
-    const tenantId = getTenantId(request);
+  app.get('/api/solar/dimensionamentos/:id', { preHandler: viewPreHandler }, async (request, reply) => {
+    const user = requestUser(request);
     const { id } = request.params as { id: string };
-    const data = await repo.getDimensionamento(tenantId, id);
+    const data = await repo.getDimensionamento(user.tenantId, id);
     if (!data) return reply.status(404).send({ error: 'Dimensionamento não encontrado.' });
     return reply.send({ dimensionamento: data });
   });
 
   // ── Financial Calculation ───────────────────
 
-  app.post('/api/solar/calcular-custos', async (request, reply) => {
-    const tenantId = getTenantId(request);
+  app.post('/api/solar/calcular-custos', { preHandler: createPreHandler }, async (request, reply) => {
+    const user = requestUser(request);
     const body = request.body as any;
 
     if (!body?.dimensionamento_id && !body?.quantidade_modulos) {
       return reply.status(400).send({ error: 'Informe dimensionamento_id ou quantidade_modulos.' });
     }
 
-    const custosPadrao = await repo.listCustos(tenantId);
+    const custosPadrao = await repo.listCustos(user.tenantId);
     let quantidadeModulos = body.quantidade_modulos ?? 0;
 
     // If dimensionamento_id provided, load snapshot for module count
     if (body.dimensionamento_id) {
-      const dim = await repo.getDimensionamento(tenantId, body.dimensionamento_id);
+      const dim = await repo.getDimensionamento(user.tenantId, body.dimensionamento_id);
       if (dim) quantidadeModulos = dim.quantidade_sugerida ?? 0;
     }
 

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { PermissionsCatalog } from '../../lib/api/permissionsApi';
 import type { AdminUser, CreateUserPayload, UserPayload } from '../../lib/api/usersApi';
+import { ROLE_PROFILES, ROLE_DEFINITIONS, type RoleKey } from '@enervita/shared';
 import { Button, Card } from '../ui/Base';
 import { PermissionCheckboxMatrix } from './PermissionCheckboxMatrix';
 import { StagePermissionCheckboxes } from './StagePermissionCheckboxes';
@@ -9,6 +10,7 @@ type FormState = UserPayload & {
   temporaryPassword: string;
   jobTitle: string;
   department: string;
+  selectedRole: string;
 };
 
 type Props = {
@@ -20,18 +22,7 @@ type Props = {
   onDelete?: () => Promise<void>;
 };
 
-const COMPANY_AREAS = [
-  { value: '', label: 'Sem área definida' },
-  { value: 'vendedor', label: 'Vendedor' },
-  { value: 'financeiro', label: 'Financeiro' },
-  { value: 'ceo', label: 'CEO' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'ti', label: 'TI' },
-  { value: 'arquiteto', label: 'Arquiteto' },
-  { value: 'operacional', label: 'Operacional' },
-  { value: 'administrativo', label: 'Administrativo' },
-  { value: 'outro', label: 'Outro' },
-];
+
 
 const emptyState: FormState = {
   name: '',
@@ -43,10 +34,12 @@ const emptyState: FormState = {
   temporaryPassword: '',
   jobTitle: '',
   department: '',
+  selectedRole: '',
 };
 
 function stateFromUser(user: AdminUser | null): FormState {
   if (!user) return emptyState;
+  const currentRole = user.roles?.[0] ?? '';
   return {
     name: user.name,
     email: user.email,
@@ -57,6 +50,7 @@ function stateFromUser(user: AdminUser | null): FormState {
     temporaryPassword: '',
     jobTitle: user.profile?.jobTitle ?? '',
     department: user.profile?.department ?? '',
+    selectedRole: currentRole,
   };
 }
 
@@ -81,9 +75,32 @@ export function UserForm({ catalog, user, saving, onSubmit, onResetPassword, onD
   const [state, setState] = useState<FormState>(() => stateFromUser(user));
   const [resetPassword, setResetPassword] = useState('');
   const editing = Boolean(user);
-  const areaOptions = COMPANY_AREAS.some((area) => area.value === state.department)
-    ? COMPANY_AREAS
-    : [...COMPANY_AREAS, { value: state.department, label: state.department }];
+
+  const selectedProfile = useMemo(() => {
+    if (!state.selectedRole) return null;
+    return ROLE_PROFILES[state.selectedRole as RoleKey] ?? null;
+  }, [state.selectedRole]);
+
+  function handleRoleChange(roleKey: string) {
+    const profile = ROLE_PROFILES[roleKey as RoleKey];
+    if (profile) {
+      setState({
+        ...state,
+        selectedRole: roleKey,
+        roles: [roleKey],
+        permissions: [...profile.defaultPermissions],
+        allowedStages: [...profile.defaultStages],
+      });
+    } else {
+      setState({
+        ...state,
+        selectedRole: roleKey,
+        roles: [],
+        permissions: [],
+        allowedStages: [],
+      });
+    }
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -131,12 +148,24 @@ export function UserForm({ catalog, user, saving, onSubmit, onResetPassword, onD
           <label className="text-sm font-medium text-graphite">Cargo
             <input value={state.jobTitle} onChange={(event) => setState({ ...state, jobTitle: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
           </label>
-          <label className="text-sm font-medium text-graphite">Área/Função
-            <select data-testid="user-area-select" value={state.department} onChange={(event) => setState({ ...state, department: event.target.value })} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30">
-              {areaOptions.map((area) => <option key={area.value || 'empty'} value={area.value}>{area.label}</option>)}
+          <label className="text-sm font-medium text-graphite">Função
+            <select data-testid="user-role-select" value={state.selectedRole} onChange={(event) => handleRoleChange(event.target.value)} className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30">
+              <option value="">Selecione um perfil</option>
+              {ROLE_DEFINITIONS.map((profile) => <option key={profile.key} value={profile.key}>{profile.label}</option>)}
             </select>
           </label>
+          <label className="text-sm font-medium text-graphite">Departamento
+            <input value={state.department} onChange={(event) => setState({ ...state, department: event.target.value })} placeholder="Ex: Comercial, Operações..." className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+          </label>
         </div>
+
+        {selectedProfile && (
+          <div className="rounded-xl border border-solar-orange/20 bg-solar-orange/5 p-3">
+            <p className="text-sm font-bold text-graphite">{selectedProfile.label}</p>
+            <p className="text-xs text-gray-500 mt-1">{selectedProfile.description}</p>
+            <p className="text-xs text-solar-orange mt-2">{selectedProfile.defaultPermissions.length} permissões • {selectedProfile.defaultStages.length} etapas</p>
+          </div>
+        )}
 
         <section>
           <h3 className="mb-3 text-base font-bold text-graphite">Permissões</h3>

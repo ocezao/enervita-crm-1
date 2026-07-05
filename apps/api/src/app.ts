@@ -4,6 +4,11 @@ import { registerAuthRoutes } from './modules/auth/auth.routes.ts';
 import { createPgUserRepository, type UserRepository } from './modules/auth/userRepository.ts';
 import { createPgUsersRepository, type UsersRepository } from './modules/users/repository.ts';
 import { registerUsersRoutes } from './modules/users/users.routes.ts';
+import { createPgLeadRoutingRepository, createStaticLeadRoutingRepository, type LeadRoutingRepository } from './modules/lead-routing/repository.ts';
+import { registerLeadRoutingRoutes } from './modules/lead-routing/lead-routing.routes.ts';
+import { registerAutoReassignRoutes } from './modules/lead-routing/auto-reassign.routes.ts';
+import { createPgPipelinesRepository, createStaticPipelinesRepository, type PipelinesRepository } from './modules/pipelines/repository.ts';
+import { registerPipelinesRoutes } from './modules/pipelines/pipelines.routes.ts';
 import { createPgLeadsRepository, type LeadsRepository } from './modules/leads/repository.ts';
 import { registerLeadsRoutes } from './modules/leads/leads.routes.ts';
 import { registerLeadDocumentsRoutes } from './modules/leads/documents.routes.ts';
@@ -20,6 +25,8 @@ import { registerMetaWebhookRoutes } from './modules/integrations/metaWebhook.ro
 import { createPgIntegrationsRepository, createStaticIntegrationsRepository, type IntegrationsRepository } from './modules/integrations/repository.ts';
 import { createPgProposalsRepository, type ProposalsRepository } from './modules/proposals/repository.ts';
 import { registerProposalsRoutes } from './modules/proposals/proposals.routes.ts';
+import { createDimensioningRepository, type DimensioningRepository } from './modules/solar/dimensioning.repository.ts';
+import { registerSolarDimensioningRoutes } from './modules/solar/dimensioning.routes.ts';
 import { registerAdsRoutes } from './modules/ads/ads.routes.ts';
 import { createPgAdsRepository, createStaticAdsRepository, type AdsRepository } from './modules/ads/repository.ts';
 import { registerAnalyticsRoutes } from './modules/analytics/analytics.routes.ts';
@@ -33,12 +40,15 @@ import type { AiConfig } from './config/env.ts';
 export type CreateAppOptions = {
   userRepository?: UserRepository;
   usersRepository?: UsersRepository;
+  leadRoutingRepository?: LeadRoutingRepository;
+  pipelinesRepository?: PipelinesRepository;
   leadsRepository?: LeadsRepository;
   engagementRepository?: EngagementRepository;
   notificationsRepository?: NotificationsRepository;
   followUpsRepository?: FollowUpsRepository;
   dashboardRepository?: DashboardRepository;
   proposalsRepository?: ProposalsRepository;
+  dimensioningRepository?: DimensioningRepository;
   integrationsRepository?: IntegrationsRepository;
   adsRepository?: AdsRepository;
   analyticsRepository?: AnalyticsRepository;
@@ -56,12 +66,15 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   app.addContentTypeParser(/^multipart\/form-data/i, { parseAs: 'buffer' }, (_request, body, done) => done(null, body));
   const userRepository = options.userRepository ?? createPgUserRepository(env.databaseUrl);
   const usersRepository = options.usersRepository ?? createPgUsersRepository(env.databaseUrl);
+  const leadRoutingRepository = options.leadRoutingRepository ?? (options.userRepository ? createStaticLeadRoutingRepository() : createPgLeadRoutingRepository(env.databaseUrl));
+  const pipelinesRepository = options.pipelinesRepository ?? (options.userRepository ? createStaticPipelinesRepository() : createPgPipelinesRepository(env.databaseUrl));
   const leadsRepository = options.leadsRepository ?? createPgLeadsRepository(env.databaseUrl);
   const notificationsRepository = options.notificationsRepository ?? createPgNotificationsRepository(env.databaseUrl);
   const followUpsRepository = options.followUpsRepository ?? createPgFollowUpsRepository(env.databaseUrl);
   const engagementRepository = options.engagementRepository ?? createPgEngagementRepository(env.databaseUrl, notificationsRepository);
   const dashboardRepository = options.dashboardRepository ?? createPgDashboardRepository(env.databaseUrl);
   const proposalsRepository = options.proposalsRepository ?? createPgProposalsRepository(env.databaseUrl);
+  const dimensioningRepository = options.dimensioningRepository ?? createDimensioningRepository(env.databaseUrl);
   const integrationsRepository = options.integrationsRepository ?? (options.userRepository ? createStaticIntegrationsRepository() : createPgIntegrationsRepository(env.databaseUrl, env.n8nDatabaseUrl));
   const adsRepository = options.adsRepository ?? (options.userRepository ? createStaticAdsRepository() : createPgAdsRepository(env.databaseUrl, env.metaAds));
   const analyticsRepository = options.analyticsRepository ?? (options.userRepository ? createStaticAnalyticsRepository() : createPgAnalyticsRepository(env.databaseUrl));
@@ -74,6 +87,9 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
 
   void registerAuthRoutes(app, { userRepository, sessionSecret, secureCookies });
   void registerUsersRoutes(app, { userRepository, usersRepository, sessionSecret });
+  void registerLeadRoutingRoutes(app, { userRepository, leadRoutingRepository, sessionSecret });
+  void registerAutoReassignRoutes(app, { userRepository, databaseUrl: env.databaseUrl, sessionSecret });
+  void registerPipelinesRoutes(app, { userRepository, pipelinesRepository, sessionSecret });
   void registerLeadsRoutes(app, { userRepository, leadsRepository, sessionSecret });
   void registerLeadDocumentsRoutes(app, { userRepository, leadsRepository, sessionSecret });
   void registerEngagementRoutes(app, { userRepository, engagementRepository, sessionSecret });
@@ -83,6 +99,7 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   void registerIntegrationsRoutes(app, { userRepository, integrationsRepository, sessionSecret });
   registerMetaWebhookRoutes(app);
   void registerProposalsRoutes(app, { userRepository, proposalsRepository, sessionSecret });
+  void registerSolarDimensioningRoutes(app, { userRepository, dimensioningRepository, sessionSecret });
   void registerAdsRoutes(app, { userRepository, adsRepository, sessionSecret });
   void registerAnalyticsRoutes(app, { userRepository, analyticsRepository, sessionSecret });
   void registerInsightsRoutes(app, { userRepository, insightsRepository, sessionSecret });
@@ -91,12 +108,15 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   app.addHook('onClose', async () => {
     await userRepository.close?.();
     await usersRepository.close?.();
+    await leadRoutingRepository.close?.();
+    await pipelinesRepository.close?.();
     await leadsRepository.close?.();
     await engagementRepository.close?.();
     await notificationsRepository.close?.();
     await followUpsRepository.close?.();
     await dashboardRepository.close?.();
     await proposalsRepository.close?.();
+    await dimensioningRepository.close?.();
     await integrationsRepository.close?.();
     await adsRepository.close?.();
     await analyticsRepository.close?.();

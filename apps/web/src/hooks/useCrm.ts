@@ -61,7 +61,7 @@ export function useLeads(filters?: { tags?: string[]; tagMode?: 'any' | 'all' })
     return () => { active = false; };
   }, [tagsKey, tagMode]);
 
-  const updateStage = async (id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string }) => {
+  const updateStage = async (id: string, stage: LeadStage, options?: { notes?: string; lostReason?: string; pipelineKey?: string; pipelineStageKey?: string }) => {
     const updated = await api.updateLeadStage(id, stage, options);
     setLeads(prev => prev.map(l => l.id === id ? updated : l));
     return updated;

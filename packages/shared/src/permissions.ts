@@ -154,3 +154,227 @@ export const PIPELINE_STAGE_DEFINITIONS = [
 export const PIPELINE_STAGES_BY_KEY = Object.fromEntries(
   PIPELINE_STAGE_DEFINITIONS.map((stage) => [stage.key, stage]),
 ) as Record<PipelineStageKey, PipelineStageDefinition>;
+
+// ============================================================
+// ROLES & ROLE PROFILES
+// ============================================================
+
+
+
+export const ROLE_KEYS = [
+  'admin',
+  'gerente',
+  'vendedor',
+  'sdr',
+  'consultor',
+  'financeiro',
+  'marketing',
+  'operacional',
+  'administrativo',
+  'tecnico',
+  'instalador',
+  'supervisor',
+  'pos_venda',
+  'parceiro',
+  'investidor',
+] as const;
+
+export type RoleKey = typeof ROLE_KEYS[number];
+
+export interface RoleProfile {
+  readonly key: RoleKey;
+  readonly label: string;
+  readonly description: string;
+  readonly category: 'comercial' | 'apoio' | 'tecnico' | 'externo';
+  readonly defaultPermissions: PermissionKey[];
+  readonly defaultStages: PipelineStageKey[];
+}
+
+export const ROLE_PROFILES: Record<RoleKey, RoleProfile> = {
+  admin: {
+    key: 'admin',
+    label: 'Admin',
+    description: 'Acesso total, bypass de todas as verificacoes',
+    category: 'comercial',
+    defaultPermissions: [...PERMISSION_KEYS],
+    defaultStages: [...PIPELINE_STAGE_KEYS],
+  },
+  gerente: {
+    key: 'gerente',
+    label: 'Gerente Comercial',
+    description: 'Gestao comercial, pode retroceder leads',
+    category: 'comercial',
+    defaultPermissions: PERMISSION_KEYS.filter((p) => p !== 'user.manage'),
+    defaultStages: [...PIPELINE_STAGE_KEYS],
+  },
+  vendedor: {
+    key: 'vendedor',
+    label: 'Vendedor',
+    description: 'Vendas completas, propostas, follow-up',
+    category: 'comercial',
+    defaultPermissions: [
+      'page.dashboard', 'page.leads', 'page.pipeline', 'page.lead_detail',
+      'page.proposals', 'page.tasks',
+      'lead.view', 'lead.create', 'lead.edit', 'lead.stage_change', 'lead.mark_lost',
+      'proposal.view', 'proposal.create', 'proposal.edit', 'proposal.send',
+      'task.create', 'task.complete', 'task.reschedule',
+      'activity.create', 'tracking.view',
+    ],
+    defaultStages: ['novo_lead', 'qualificacao', 'atendimento_iniciado', 'conta_recebida', 'diagnostico', 'proposta_enviada', 'contrato_enervita'],
+  },
+  sdr: {
+    key: 'sdr',
+    label: 'SDR',
+    description: 'Qualificacao e primeiro contato',
+    category: 'comercial',
+    defaultPermissions: [
+      'page.dashboard', 'page.leads', 'page.pipeline', 'page.lead_detail', 'page.tasks',
+      'lead.view', 'lead.create', 'lead.edit', 'lead.stage_change',
+      'task.create', 'task.complete', 'task.reschedule',
+      'activity.create',
+    ],
+    defaultStages: ['novo_lead', 'qualificacao', 'atendimento_iniciado'],
+  },
+  consultor: {
+    key: 'consultor',
+    label: 'Consultor Solar',
+    description: 'Consultoria tecnica + comercial',
+    category: 'comercial',
+    defaultPermissions: [
+      'page.dashboard', 'page.leads', 'page.pipeline', 'page.lead_detail',
+      'page.proposals', 'page.tasks',
+      'lead.view', 'lead.create', 'lead.edit', 'lead.stage_change', 'lead.mark_lost',
+      'proposal.view', 'proposal.create', 'proposal.edit', 'proposal.send',
+      'task.create', 'task.complete', 'task.reschedule',
+      'activity.create',
+    ],
+    defaultStages: ['novo_lead', 'qualificacao', 'atendimento_iniciado', 'conta_recebida', 'diagnostico', 'proposta_enviada', 'contrato_enervita'],
+  },
+  financeiro: {
+    key: 'financeiro',
+    label: 'Financeiro',
+    description: 'Propostas, contratos, relatorios',
+    category: 'apoio',
+    defaultPermissions: [
+      'page.dashboard', 'page.proposals', 'page.analytics',
+      'proposal.view', 'proposal.edit', 'proposal.accept',
+      'analytics.view', 'csv.export',
+    ],
+    defaultStages: ['diagnostico', 'proposta_enviada', 'contrato_enervita'],
+  },
+  marketing: {
+    key: 'marketing',
+    label: 'Marketing',
+    description: 'Leads (visualizacao), analytics, anuncios',
+    category: 'apoio',
+    defaultPermissions: [
+      'page.dashboard', 'page.leads', 'page.lead_detail', 'page.analytics', 'page.ads',
+      'lead.view', 'analytics.view', 'ads.view', 'ads.manage', 'tracking.view',
+    ],
+    defaultStages: ['novo_lead', 'qualificacao'],
+  },
+  operacional: {
+    key: 'operacional',
+    label: 'Operacional',
+    description: 'Tarefas, atividades, apoio operacional',
+    category: 'apoio',
+    defaultPermissions: [
+      'page.dashboard', 'page.leads', 'page.lead_detail', 'page.tasks',
+      'lead.view', 'task.create', 'task.complete', 'task.reschedule', 'activity.create',
+    ],
+    defaultStages: ['atendimento_iniciado', 'conta_recebida', 'diagnostico', 'proposta_enviada', 'contrato_enervita'],
+  },
+  administrativo: {
+    key: 'administrativo',
+    label: 'Administrativo',
+    description: 'Suporte administrativo geral',
+    category: 'apoio',
+    defaultPermissions: [
+      'page.dashboard', 'page.leads', 'page.lead_detail', 'page.proposals', 'page.tasks',
+      'lead.view', 'proposal.view', 'proposal.edit', 'task.create', 'task.complete',
+    ],
+    defaultStages: ['proposta_enviada', 'contrato_enervita'],
+  },
+  tecnico: {
+    key: 'tecnico',
+    label: 'Tecnico/Projetista',
+    description: 'Diagnostico tecnico, projetos, pareceres',
+    category: 'tecnico',
+    defaultPermissions: [
+      'page.dashboard', 'page.leads', 'page.pipeline', 'page.lead_detail', 'page.tasks',
+      'lead.view', 'lead.edit', 'task.create', 'task.complete',
+    ],
+    defaultStages: ['conta_recebida', 'diagnostico', 'proposta_enviada'],
+  },
+  instalador: {
+    key: 'instalador',
+    label: 'Instalador',
+    description: 'Execucao de instalacoes, checklist de campo',
+    category: 'tecnico',
+    defaultPermissions: [
+      'page.dashboard', 'page.leads', 'page.lead_detail', 'page.tasks',
+      'lead.view', 'task.create', 'task.complete', 'activity.create',
+    ],
+    defaultStages: ['proposta_enviada', 'contrato_enervita'],
+  },
+  supervisor: {
+    key: 'supervisor',
+    label: 'Supervisor de Obra',
+    description: 'Acompanhamento de instalacoes em campo',
+    category: 'tecnico',
+    defaultPermissions: [
+      'page.dashboard', 'page.leads', 'page.lead_detail', 'page.tasks',
+      'lead.view', 'lead.edit', 'task.create', 'task.complete', 'task.reschedule', 'activity.create',
+    ],
+    defaultStages: ['diagnostico', 'proposta_enviada', 'contrato_enervita'],
+  },
+  pos_venda: {
+    key: 'pos_venda',
+    label: 'Pos-Venda',
+    description: 'Suporte ao cliente pos-instalacao',
+    category: 'tecnico',
+    defaultPermissions: [
+      'page.dashboard', 'page.leads', 'page.lead_detail', 'page.tasks',
+      'lead.view', 'lead.edit', 'task.create', 'task.complete', 'activity.create',
+    ],
+    defaultStages: ['contrato_enervita'],
+  },
+  parceiro: {
+    key: 'parceiro',
+    label: 'Parceiro/Indicacao',
+    description: 'Indicacoes e leads de parceiros',
+    category: 'externo',
+    defaultPermissions: [
+      'page.dashboard', 'page.leads', 'page.lead_detail',
+      'lead.view', 'lead.create',
+    ],
+    defaultStages: ['novo_lead', 'qualificacao'],
+  },
+  investidor: {
+    key: 'investidor',
+    label: 'Investidor',
+    description: 'Visualizacao de usinas e oportunidades',
+    category: 'externo',
+    defaultPermissions: [
+      'page.dashboard', 'page.leads', 'page.lead_detail', 'page.proposals', 'page.analytics',
+      'lead.view', 'proposal.view', 'analytics.view',
+    ],
+    defaultStages: ['diagnostico', 'proposta_enviada', 'contrato_enervita'],
+  },
+};
+
+export const ROLE_DEFINITIONS = ROLE_KEYS.map((key) => ROLE_PROFILES[key]);
+
+export function getRoleProfile(role: string): RoleProfile | undefined {
+  return ROLE_PROFILES[role as RoleKey];
+}
+
+export function isValidRole(role: string): role is RoleKey {
+  return ROLE_KEYS.includes(role as RoleKey);
+}
+
+
+// ============================================================
+// ROLES & ROLE PROFILES
+// ============================================================
+

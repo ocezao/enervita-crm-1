@@ -1,8 +1,10 @@
 import {
   PERMISSION_KEYS,
   PIPELINE_STAGE_KEYS,
+  ROLE_KEYS,
   type PermissionKey,
   type PipelineStageKey,
+  type RoleKey,
 } from '@enervita/shared';
 
 export class ValidationError extends Error {
@@ -14,6 +16,7 @@ export class ValidationError extends Error {
 
 const permissionSet = new Set<string>(PERMISSION_KEYS);
 const stageSet = new Set<string>(PIPELINE_STAGE_KEYS);
+const roleSet = new Set<string>(ROLE_KEYS);
 const PASSWORD_MIN_LENGTH = 8;
 
 export type EmployeeProfileInput = {
@@ -122,6 +125,15 @@ function parseStages(value: unknown, required: boolean): PipelineStageKey[] | un
   return keys as PipelineStageKey[];
 }
 
+function parseRoles(value: unknown, required: boolean): RoleKey[] | undefined {
+  if (value === undefined && !required) return undefined;
+  const keys = parseStringArray(value, 'roles');
+  for (const key of keys) {
+    if (!roleSet.has(key)) throw new ValidationError(`Invalid role: ${key}`);
+  }
+  return keys as RoleKey[];
+}
+
 function parseProfile(value: unknown, required = false): EmployeeProfileInput | undefined {
   if (value === undefined) return required ? {} : undefined;
   const body = asObject(value);
@@ -152,7 +164,7 @@ export function validateCreateUserBody(value: unknown): CreateUserInput {
     email: normalizeEmail(body.email),
     temporaryPassword: parsePassword(body.temporaryPassword),
     status: parseStatus(body.status, 'active'),
-    roles: parseStringArray(body.roles, 'roles'),
+    roles: parseRoles(body.roles, true) ?? [],
     permissions: parsePermissions(body.permissions, true) ?? [],
     allowedStages: parseStages(body.allowedStages, true) ?? [],
     profile: parseProfile(body.profile, true) ?? {},
@@ -165,7 +177,7 @@ export function validateUpdateUserBody(value: unknown): UpdateUserInput {
   if (body.name !== undefined) input.name = requiredString(body, 'name', 2, 120);
   if (body.email !== undefined) input.email = normalizeEmail(body.email);
   if (body.status !== undefined) input.status = parseStatus(body.status);
-  if (body.roles !== undefined) input.roles = parseStringArray(body.roles, 'roles');
+  if (body.roles !== undefined) input.roles = parseRoles(body.roles, false);
   const permissions = parsePermissions(body.permissions, false);
   if (permissions !== undefined) input.permissions = permissions;
   const stages = parseStages(body.allowedStages, false);

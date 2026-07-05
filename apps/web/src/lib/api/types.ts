@@ -56,11 +56,39 @@ export interface LeadOpportunity {
   updatedAt: string;
 }
 
+export interface LeadAttribution {
+  id: string;
+  sourceSystem: string;
+  sourceChannel: string;
+  leadgenId: string | null;
+  formId: string | null;
+  formName: string | null;
+  campaignId: string | null;
+  campaignName: string | null;
+  adsetId: string | null;
+  adsetName: string | null;
+  adId: string | null;
+  adName: string | null;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  utmTerm: string | null;
+  fbclid: string | null;
+  gclid: string | null;
+  confidence: string;
+  metadata: Record<string, unknown>;
+  lastReconciledAt: string;
+}
+
 export interface Lead {
   id: string;
   contactId: string;
   clientId?: string;
   stage: LeadStage;
+  pipelineKey?: string;
+  pipelineStageKey?: string;
+  pipelineStageLabel?: string | null;
   qualificationStatus: string;
   leadSource: string;
   utmSource?: string;
@@ -74,6 +102,7 @@ export interface Lead {
   gclid?: string;
   estimatedTicket: number;
   sdrOwner: string | null;
+  sdrOwnerId?: string | null;
   firstResponseAt?: string;
   lastContactAt?: string;
   nextActionAt: string | null;
@@ -91,6 +120,23 @@ export interface Lead {
   contact?: Contact; // Join result
   tags: LeadTag[];
   opportunity?: LeadOpportunity | null;
+  attribution?: LeadAttribution | null;
+}
+
+export interface PipelineStageDefinition {
+  key: string;
+  label: string;
+  legacyStage: LeadStage;
+  sortOrder: number;
+  isTerminal: boolean;
+}
+
+export interface LeadPipeline {
+  key: string;
+  label: string;
+  description: string | null;
+  sortOrder: number;
+  stages: PipelineStageDefinition[];
 }
 
 export interface Task {
@@ -252,6 +298,117 @@ export interface Proposal {
   updatedAt: string;
   leadName?: string;
   leadStage?: LeadStage;
+  solarSummary?: ProposalSolarSummary | null;
+}
+
+export interface ProposalSolarSummary {
+  dimensionamentoId: string;
+  quantidadeSugerida: number | null;
+  potenciaTotalKwp: number | null;
+  inversorSugeridoNome: string | null;
+  cidade: string | null;
+  uf: string | null;
+  tipoTelhado: string | null;
+}
+
+export interface SolarIrradiacaoCidade {
+  id: string;
+  cidade: string;
+  uf: string;
+  codigo_ibge?: string | null;
+  lat?: number | null;
+  lon?: number | null;
+  classe?: string | null;
+  estado_nome?: string | null;
+  fonte_id?: string | null;
+  irradiacao_kwh_m2_dia: number;
+  fonte?: string | null;
+}
+
+export interface SolarModeloPlaca {
+  id: string;
+  nome: string;
+  fabricante?: string | null;
+  potencia_wp: number;
+  area_util_m2: number;
+  eficiencia_decimal: number;
+  padrao: boolean;
+}
+
+export interface SolarModeloInversor {
+  id: string;
+  nome: string;
+  fabricante?: string | null;
+  capacidade_kw: number;
+  sobrecarga_decimal: number;
+  padrao: boolean;
+}
+
+export interface SolarTipoTelhado {
+  id: string;
+  nome: string;
+  perda_padrao_decimal: number;
+}
+
+export interface SolarDimensionamento {
+  id: string;
+  lead_id: string | null;
+  proposal_id: string | null;
+  cidade: string;
+  uf: string;
+  consumo_medio_mensal_kwh: number;
+  tipo_telhado: string | null;
+  perda_decimal: number;
+  sobra_decimal: number;
+  modelo_placa_nome: string;
+  modelo_placa_potencia_wp: number;
+  modelo_inversor_nome: string | null;
+  irradiacao_kwh_m2_dia: number;
+  producao_mensal_real_placa: number | null;
+  consumo_com_sobra_kwh: number | null;
+  quantidade_bruta_placas: number | null;
+  quantidade_sugerida: number | null;
+  potencia_total_sugerida_kwp: number | null;
+  inversor_capacidade_real_kw: number | null;
+  inversor_sobra_percentual: number | null;
+  status: string;
+  mensagens_erro: string[];
+  mensagens_alerta: string[];
+  created_at: string;
+}
+
+export interface SolarDimensionamentoPayload {
+  lead_id?: string | null;
+  proposal_id?: string | null;
+  cidade: string;
+  uf: string;
+  consumo_medio_mensal_kwh: number;
+  tipo_telhado?: string | null;
+  perda_decimal?: number;
+  sobra_decimal?: number;
+  margem_inversor_decimal?: number;
+  modelo_placa_id: string;
+  dias_mes?: number;
+}
+
+export interface SolarLinhaCusto {
+  custo_padrao_id?: string | null;
+  nome: string;
+  tipo: string;
+  valor_calculado: number;
+  quantidade_modulos?: number | null;
+  distancia_km?: number | null;
+  percentual?: number | null;
+  origem?: string;
+}
+
+export interface SolarCustosCalculados {
+  linhas: SolarLinhaCusto[];
+  subtotal_nao_percentual: number;
+  soma_percentuais: number;
+  total_final: number;
+  total_geral: number;
+  quantidade_modulos: number;
 }
 
 export type ProposalImportedFilePayload = {

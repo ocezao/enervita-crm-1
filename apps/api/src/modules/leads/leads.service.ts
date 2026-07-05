@@ -1,9 +1,12 @@
 import { type PipelineStageKey } from '@enervita/shared';
 import { canAccessStage, getStageScopeForUser, hasPermission, isKnownPipelineStage } from '../permissions/permission.service.ts';
 import { isAdminUser, type PublicUser } from '../auth/userRepository.ts';
+import type { UserRepository } from '../auth/userRepository.ts';
 import type { AuditContext } from '../users/repository.ts';
+import type { UserRepository } from '../auth/userRepository.ts';
 import type { LeadsRepository } from './repository.ts';
 import { LeadsOperationError } from './repository.ts';
+import type { UserRepository } from '../auth/userRepository.ts';
 import type { BulkSetLeadTagsInput, CreateLeadInput, LeadIdsInput, LeadListFilters, SetLeadTagsInput, StageChangeInput, UpdateLeadInput } from './validation.ts';
 
 export type RequestAuditMetadata = {
@@ -78,7 +81,7 @@ export async function changeLeadStage(repository: LeadsRepository, actor: Public
   if (!isKnownPipelineStage(input.stage)) throw new LeadsOperationError('Unknown pipeline stage');
   ensureStageAllowed(actor, input.stage);
   ensureMarkLostAllowed(actor, input.stage);
-  return repository.changeStage(makeAuditContext(actor, metadata), leadId, scopedStages(actor), scopedOwner(actor), input.stage, input.notes, input.lostReason, input.createOpportunity);
+  return repository.changeStage(makeAuditContext(actor, metadata), leadId, scopedStages(actor), scopedOwner(actor), input.stage, input.pipelineKey, input.pipelineStageKey, input.notes, input.lostReason, input.createOpportunity);
 }
 
 
@@ -96,4 +99,46 @@ export async function deleteLead(repository: LeadsRepository, actor: PublicUser,
 
 export async function bulkDeleteLeads(repository: LeadsRepository, actor: PublicUser, input: LeadIdsInput, metadata: RequestAuditMetadata) {
   return repository.bulkDeleteLeads(makeAuditContext(actor, metadata), input.leadIds, scopedStages(actor), scopedOwner(actor));
+}
+
+export async function assignLead(
+  repository: LeadsRepository,
+  userRepository: UserRepository,
+  actor: PublicUser,
+  leadId: string,
+  sdrOwnerId: string | null,
+  metadata: RequestAuditMetadata,
+) {
+  // Verificar se o lead existe
+  const lead = await repository.getLead(actor.tenantId, leadId, null, null);
+  if (!lead) throw new LeadsNotFoundError('Lead not found');
+
+  // Se não for null, verificar se o usuário existe e está ativo
+  if (sdrOwnerId !== null) {
+    const targetUser = await userRepository.findActiveUserById(sdrOwnerId);
+    if (!targetUser) throw new LeadsOperationError('Target user not found or inactive');
+  }
+
+  // Atualizar o owner
+  const updatedLead = await repository.updateLeadOwner(actor.tenantId, leadId, sdrOwnerId);
+  if (!updatedLead) throw new LeadsOperationError('Failed to update lead owner');
+
+  // Registrar audit log
+  try {
+    await repository.createAuditLog?.({
+      tenantId: actor.tenantId,
+      actorUserId: actor.id,
+      entityType: 'lead',
+      entityId: leadId,
+      action: 'lead.owner_changed',
+      beforeData: { sdrOwnerId: lead.sdrOwnerId, sdrOwner: lead.sdrOwner },
+      afterData: { sdrOwnerId, sdrOwner: updatedLead.sdrOwner },
+      ipAddress: metadata.ipAddress,
+      userAgent: metadata.userAgent,
+    });
+  } catch (auditError) {
+    console.error('Failed to write audit log for lead assignment:', auditError);
+  }
+
+  return updatedLead;
 }

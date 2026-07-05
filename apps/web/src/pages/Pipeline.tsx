@@ -9,29 +9,46 @@ import { isAdminUser, userHasPermission } from '../auth/permissions';
 import { PageHeader } from '../components/ui/LayoutComponents';
 import { Badge, Button, Card, type BadgeVariant } from '../components/ui/Base';
 import { PriorityBadge, StageBadge } from '../components/ui/StatusBadges';
-import type { Lead, LeadStage, Priority } from '../lib/api/types';
+import { pipelinesApi } from '../lib/api/pipelinesApi';
+import type { Lead, LeadPipeline, LeadStage, Priority } from '../lib/api/types';
 import { cn, formatCurrency, formatDate } from '../lib/utils';
 
-const stages: Array<{ id: LeadStage; label: string; limit: number; helper: string }> = [
-  { id: 'novo_lead', label: 'Novo lead', limit: 15, helper: 'Entrada e triagem rápida' },
-  { id: 'qualificacao', label: 'Qualificação', limit: 10, helper: 'Confirmar perfil e interesse' },
-  { id: 'atendimento_iniciado', label: 'Atendimento iniciado', limit: 8, helper: 'Primeiro contato em andamento' },
-  { id: 'conta_recebida', label: 'Conta recebida', limit: 8, helper: 'Fatura recebida para análise' },
-  { id: 'diagnostico', label: 'Diagnóstico', limit: 6, helper: 'Dimensionamento e recomendação' },
-  { id: 'proposta_enviada', label: 'Proposta enviada', limit: 6, helper: 'Follow-up de fechamento' },
-  { id: 'contrato_enervita', label: 'Contrato Enervita', limit: 99, helper: 'Ganho / implantação' },
-  { id: 'perdido', label: 'Perdido', limit: 99, helper: 'Motivos e aprendizado' },
+type PipelineColumnStage = { id: string; label: string; legacyStage: LeadStage; limit: number; helper: string };
+
+const STAGE_ORDER: Record<string, number> = {
+  novo_lead: 1,
+  qualificacao: 2,
+  atendimento_iniciado: 3,
+  conta_recebida: 4,
+  diagnostico: 5,
+  proposta_enviada: 6,
+  contrato_enervita: 7,
+  perdido: 8,
+};
+
+const stages: Array<PipelineColumnStage> = [
+  { id: 'novo_lead', label: 'Novo lead', legacyStage: 'novo_lead', limit: 15, helper: 'Entrada e triagem rápida' },
+  { id: 'qualificacao', label: 'Qualificação', legacyStage: 'qualificacao', limit: 10, helper: 'Confirmar perfil e interesse' },
+  { id: 'atendimento_iniciado', label: 'Atendimento iniciado', legacyStage: 'atendimento_iniciado', limit: 8, helper: 'Primeiro contato em andamento' },
+  { id: 'conta_recebida', label: 'Conta recebida', legacyStage: 'conta_recebida', limit: 8, helper: 'Fatura recebida para análise' },
+  { id: 'diagnostico', label: 'Diagnóstico', legacyStage: 'diagnostico', limit: 6, helper: 'Dimensionamento e recomendação' },
+  { id: 'proposta_enviada', label: 'Proposta enviada', legacyStage: 'proposta_enviada', limit: 6, helper: 'Follow-up de fechamento' },
+  { id: 'contrato_enervita', label: 'Contrato Enervita', legacyStage: 'contrato_enervita', limit: 99, helper: 'Ganho / implantação' },
+  { id: 'perdido', label: 'Perdido', legacyStage: 'perdido', limit: 99, helper: 'Motivos e aprendizado' },
 ];
 
 const priorities: Array<'todas' | Priority> = ['todas', 'urgente', 'alta', 'media', 'baixa'];
 type AgingFilter = 'todos' | 'sem_proxima_acao' | 'parados_3d' | 'parados_7d';
 type SortKey = 'entry_desc' | 'oldest_stage' | 'updated_desc' | 'bill_desc' | 'priority_desc' | 'created_asc';
-type KanbanContextState = { lead: Lead; nextStage?: { id: LeadStage; label: string }; lostStage?: { id: LeadStage; label: string }; x: number; y: number } | null;
+type KanbanContextState = { lead: Lead; nextStage?: PipelineColumnStage; lostStage?: PipelineColumnStage; x: number; y: number } | null;
 
-function visibleStagesForUser(user: ReturnType<typeof useAuth>['user']) {
-  if (isAdminUser(user)) return stages;
+function visibleStagesForUser(user: ReturnType<typeof useAuth>['user'], pipeline?: LeadPipeline | null): PipelineColumnStage[] {
+  const sourceStages = pipeline?.stages?.length
+    ? pipeline.stages.map((stage) => ({ id: stage.key, label: stage.label, legacyStage: stage.legacyStage, limit: stage.isTerminal ? 99 : 8, helper: stage.isTerminal ? 'Encerramento do pipeline' : 'Próxima ação comercial' }))
+    : stages;
+  if (isAdminUser(user)) return sourceStages;
   const allowed = new Set(user?.allowedStages ?? []);
-  return stages.filter((stage) => allowed.has(stage.id));
+  return sourceStages.filter((stage) => allowed.has(stage.legacyStage));
 }
 
 function daysSince(date?: string) {
@@ -129,7 +146,11 @@ function sortLeads(leads: Lead[], sort: SortKey) {
 export default function Pipeline() {
   const { leads, updateStage } = useLeads();
   const { user } = useAuth();
-  const visibleStages = visibleStagesForUser(user);
+  const [pipelines, setPipelines] = useState<LeadPipeline[]>([]);
+  const [activePipelineKey, setActivePipelineKey] = useState<string>('geral');
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
+  const activePipeline = useMemo(() => pipelines.find((pipeline) => pipeline.key === activePipelineKey) ?? pipelines[0] ?? null, [pipelines, activePipelineKey]);
+  const visibleStages = useMemo(() => visibleStagesForUser(user, activePipeline), [user, activePipeline]);
   const canMoveStage = userHasPermission(user, 'lead.stage_change');
   const canCreate = userHasPermission(user, 'lead.create');
   const [query, setQuery] = useState('');
@@ -139,10 +160,26 @@ export default function Pipeline() {
   const [sort, setSort] = useState<SortKey>('entry_desc');
   const [minBill, setMinBill] = useState('');
   const [draggingLeadId, setDraggingLeadId] = useState<string | null>(null);
+  const [draggingFromStage, setDraggingFromStage] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<KanbanContextState>(null);
+  useEffect(() => {
+    let alive = true;
+    pipelinesApi.list()
+      .then((items) => {
+        if (!alive) return;
+        setPipelines(items);
+        setActivePipelineKey((current) => items.some((item) => item.key === current) ? current : items[0]?.key ?? 'geral');
+      })
+      .catch((error) => {
+        if (alive) setPipelineError(error instanceof Error ? error.message : 'Nao foi possivel carregar pipelines.');
+      });
+    return () => { alive = false; };
+  }, []);
+
+  const activePipelineKeyResolved = activePipeline?.key ?? 'geral';
   const stageIds = useMemo(() => new Set(visibleStages.map((stage) => stage.id)), [visibleStages]);
   const sources = useMemo(() => Array.from(new Set(leads.map((lead) => lead.leadSource || lead.contact?.source || 'desconhecido'))).sort(), [leads]);
-  const visibleRawLeads = useMemo(() => leads.filter((lead) => stageIds.has(lead.stage)), [leads, stageIds]);
+  const visibleRawLeads = useMemo(() => leads.filter((lead) => (lead.pipelineKey ?? 'geral') === activePipelineKeyResolved && stageIds.has(lead.pipelineStageKey ?? lead.stage)), [leads, stageIds, activePipelineKeyResolved]);
 
   const filteredLeads = useMemo(() => {
     const q = normalize(query.trim());
@@ -163,35 +200,43 @@ export default function Pipeline() {
   const missingNextAction = filteredLeads.filter((lead) => !lead.nextActionAt).length;
   const urgentCount = filteredLeads.filter((lead) => lead.priority === 'urgente' || lead.priority === 'alta').length;
 
-  function leadsInStage(stageId: LeadStage) {
-    return filteredLeads.filter((lead) => lead.stage === stageId);
+  function leadsInStage(stageId: string) {
+    return filteredLeads.filter((lead) => (lead.pipelineStageKey ?? lead.stage) === stageId);
   }
 
-  function nextVisibleStage(currentStage: LeadStage) {
+  function nextVisibleStage(currentStage: string) {
     const index = visibleStages.findIndex((stage) => stage.id === currentStage);
     return index >= 0 ? visibleStages[index + 1] : undefined;
   }
 
-  const lostStage = useMemo(() => visibleStages.find((stage) => stage.id === 'perdido'), [visibleStages]);
+  const lostStage = useMemo(() => visibleStages.find((stage) => stage.legacyStage === 'perdido'), [visibleStages]);
 
   function resetFilters() {
     setQuery(''); setPriority('todas'); setSource('todas'); setAging('todos'); setMinBill(''); setSort('entry_desc');
   }
 
-  function moveLead(lead: Lead, targetStage: LeadStage, notes: string) {
-    if (!canMoveStage || lead.stage === targetStage) return;
-    updateStage(lead.id, targetStage, { notes });
+  function isBackwardMove(currentStageId: string, targetStageId: string) {
+    const currentOrder = STAGE_ORDER[currentStageId] ?? visibleStages.findIndex((s) => s.id === currentStageId) + 1;
+    const targetOrder = STAGE_ORDER[targetStageId] ?? visibleStages.findIndex((s) => s.id === targetStageId) + 1;
+    return targetOrder < currentOrder;
   }
 
-  function handleDrop(event: DragEvent<HTMLDivElement>, targetStage: LeadStage) {
+  function moveLead(lead: Lead, targetStage: PipelineColumnStage, notes: string) {
+    if (!canMoveStage || ((lead.pipelineStageKey ?? lead.stage) === targetStage.id && lead.pipelineKey === activePipelineKeyResolved)) return;
+    if (!isAdminUser(user) && isBackwardMove(lead.pipelineStageKey ?? lead.stage, targetStage.id)) return;
+    updateStage(lead.id, targetStage.legacyStage, { notes, pipelineKey: activePipelineKeyResolved, pipelineStageKey: targetStage.id });
+  }
+
+  function handleDrop(event: DragEvent<HTMLDivElement>, targetStage: PipelineColumnStage) {
     event.preventDefault();
     const leadId = event.dataTransfer.getData('text/plain') || draggingLeadId;
     const lead = filteredLeads.find((item) => item.id === leadId);
     setDraggingLeadId(null);
-    if (lead) moveLead(lead, targetStage, `Movido pelo kanban para ${stages.find((stage) => stage.id === targetStage)?.label ?? targetStage}`);
+    setDraggingFromStage(null);
+    if (lead) moveLead(lead, targetStage, `Movido pelo kanban para ${targetStage.label}`);
   }
 
-  function openCardMenu(event: MouseEvent<HTMLDivElement>, lead: Lead, nextStage?: { id: LeadStage; label: string }) {
+  function openCardMenu(event: MouseEvent<HTMLDivElement>, lead: Lead, nextStage?: PipelineColumnStage) {
     event.preventDefault();
     event.stopPropagation();
     const menuWidth = 270;
@@ -219,7 +264,25 @@ export default function Pipeline() {
 
   return (
     <div className="min-h-[calc(100vh-88px)] flex flex-col gap-4 pb-6">
-      <PageHeader title="Pipeline de Vendas" description="Kanban comercial com drag-and-drop, filtros de operação e alertas de gargalo." actions={canCreate && (<Button variant="primary" size="sm" className="gap-2 opacity-60" disabled title="Criação manual de lead em revisão"><Plus size={16} /> Novo Lead</Button>)} />
+      <PageHeader title={activePipeline ? activePipeline.label : 'Pipeline de Vendas'} description={activePipeline?.description ?? 'Kanban comercial com drag-and-drop, filtros de operação e alertas de gargalo.'} actions={canCreate && (<Button variant="primary" size="sm" className="gap-2 opacity-60" disabled title="Criação manual de lead em revisão"><Plus size={16} /> Novo Lead</Button>)} />
+
+      {pipelines.length > 1 && (
+        <Card className="p-2">
+          <div className="flex flex-wrap gap-2">
+            {pipelines.map((pipeline) => (
+              <button
+                key={pipeline.key}
+                type="button"
+                onClick={() => setActivePipelineKey(pipeline.key)}
+                className={cn('rounded-xl px-4 py-2 text-sm font-bold transition-colors', activePipelineKeyResolved === pipeline.key ? 'bg-solar-orange text-white shadow-sm' : 'bg-gray-50 text-gray-600 hover:bg-gray-100')}
+              >
+                {pipeline.label}
+              </button>
+            ))}
+          </div>
+        </Card>
+      )}
+      {pipelineError && <Badge variant="error">{pipelineError}</Badge>}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
         <Card className="p-4 bg-solar-orange/5 border-solar-orange/10"><Users size={18} className="text-solar-orange" /><p className="mt-2 text-[10px] uppercase font-black text-solar-orange tracking-wider">Leads filtrados</p><strong className="text-2xl text-graphite">{filteredLeads.length}</strong></Card>
@@ -245,12 +308,13 @@ export default function Pipeline() {
           const columnLeads = leadsInStage(stage.id);
           const columnValue = columnLeads.reduce((sum, lead) => sum + (lead.energyBillValue || lead.estimatedTicket || 0), 0);
           const overLimit = columnLeads.length > stage.limit;
+          const isBackwardTarget = draggingLeadId && draggingFromStage && !isAdminUser(user) && isBackwardMove(draggingFromStage, stage.id);
           return (
             <div key={stage.id} className="w-[23rem] 2xl:w-[25rem] h-full min-h-0 flex flex-col gap-3" data-testid={`pipeline-column-${stage.id}`}>
-              <div className="px-1"><div className="flex items-start justify-between gap-2"><div><div className="flex items-center gap-2"><h3 className="font-black text-sm text-graphite uppercase tracking-wider">{stage.label}</h3><span className={cn('text-[10px] font-black px-1.5 py-0.5 rounded-full', overLimit ? 'bg-alert-red/10 text-alert-red' : 'bg-gray-200 text-gray-600')}>{columnLeads.length}</span></div><p className="text-[10px] text-gray-400 mt-1">{stage.helper}</p></div>{canCreate && <Button variant="ghost" size="icon" className="h-7 w-7 opacity-40" aria-label={`Criar lead em ${stage.label}`} disabled title="Criação manual de lead em revisão"><Plus size={14} /></Button>}</div><div className="mt-2 flex items-center justify-between text-[10px] text-gray-400"><span>{formatCurrency(columnValue)}</span><span>WIP {stage.limit >= 90 ? 'livre' : stage.limit}</span></div>{overLimit && <Badge variant="error" className="mt-2">Gargalo</Badge>}</div>
-              <motion.div layout className={cn('flex-1 h-full min-h-0 rounded-[1.65rem] p-3 space-y-3 crm-scroll-panel overflow-y-auto overscroll-contain border-2 border-dashed transition-colors', draggingLeadId ? 'bg-solar-orange/5 border-solar-orange/30 shadow-inner' : 'bg-gray-100/60 border-gray-200/60')} onDragOver={(event) => canMoveStage && event.preventDefault()} onDrop={(event) => handleDrop(event, stage.id)}>
+              <div className="px-1"><div className="flex items-start justify-between gap-2"><div><div className="flex items-center gap-2"><h3 className="font-black text-sm text-graphite uppercase tracking-wider">{stage.label}</h3><span className={cn('text-[10px] font-black px-1.5 py-0.5 rounded-full', overLimit ? 'bg-alert-red/10 text-alert-red' : 'bg-gray-200 text-gray-600')}>{columnLeads.length}</span></div><p className="text-[10px] text-gray-400 mt-1">{stage.helper}</p></div>{canCreate && <Button variant="ghost" size="icon" className="h-7 w-7 opacity-40" aria-label={`Criar lead em ${stage.label}`} disabled title="Criação manual de lead em revisão"><Plus size={14} /></Button>}</div><div className="mt-2 flex items-center justify-between text-[10px] text-gray-400"><span>{formatCurrency(columnValue)}</span><span>WIP {stage.limit >= 90 ? 'livre' : stage.limit}</span></div>{overLimit && <Badge variant="error" className="mt-2">Gargalo</Badge>}{isBackwardTarget && <Badge variant="warning" className="mt-1 text-[9px]">Bloqueado para vendedores</Badge>}</div>
+              <motion.div layout className={cn('flex-1 h-full min-h-0 rounded-[1.65rem] p-3 space-y-3 crm-scroll-panel overflow-y-auto overscroll-contain border-2 border-dashed transition-colors', isBackwardTarget ? 'bg-alert-red/5 border-alert-red/20 opacity-50' : draggingLeadId ? 'bg-solar-orange/5 border-solar-orange/30 shadow-inner' : 'bg-gray-100/60 border-gray-200/60')} onDragOver={(event) => canMoveStage && !isBackwardTarget && event.preventDefault()} onDrop={(event) => !isBackwardTarget && handleDrop(event, stage)}>
                 <AnimatePresence initial={false}>
-                  {columnLeads.map((lead) => <KanbanCard key={lead.id} lead={lead} nextStage={nextVisibleStage(lead.stage)} canMoveStage={canMoveStage} onMove={(target) => moveLead(lead, target, 'Movido pelo pipeline visual')} onDragStart={() => setDraggingLeadId(lead.id)} onDragEnd={() => setDraggingLeadId(null)} onContextMenu={(event) => openCardMenu(event, lead, nextVisibleStage(lead.stage))} />)}
+                  {columnLeads.map((lead) => <KanbanCard key={lead.id} lead={lead} nextStage={nextVisibleStage(lead.pipelineStageKey ?? lead.stage)} canMoveStage={canMoveStage} onMove={(target) => moveLead(lead, target, 'Movido pelo pipeline visual')} onDragStart={() => { setDraggingLeadId(lead.id); setDraggingFromStage(lead.pipelineStageKey ?? lead.stage); }} onDragEnd={() => { setDraggingLeadId(null); setDraggingFromStage(null); }} onContextMenu={(event) => openCardMenu(event, lead, nextVisibleStage(lead.pipelineStageKey ?? lead.stage))} />)}
                 </AnimatePresence>
                 {columnLeads.length === 0 && <div className="py-10 text-center border-2 border-dashed border-gray-200 rounded-xl bg-white/60"><p className="text-[10px] font-black text-gray-400 uppercase">{canMoveStage ? 'Solte cards aqui' : 'Sem leads nesta etapa'}</p></div>}
               </motion.div>
@@ -263,7 +327,7 @@ export default function Pipeline() {
   );
 }
 
-function KanbanCard({ lead, nextStage, canMoveStage, onMove, onDragStart, onDragEnd, onContextMenu }: { lead: Lead; nextStage?: { id: LeadStage; label: string }; canMoveStage: boolean; onMove: (stage: LeadStage) => void; onDragStart: () => void; onDragEnd: () => void; onContextMenu: (event: MouseEvent<HTMLDivElement>) => void }) {
+function KanbanCard({ lead, nextStage, canMoveStage, onMove, onDragStart, onDragEnd, onContextMenu }: { lead: Lead; nextStage?: PipelineColumnStage; canMoveStage: boolean; onMove: (stage: PipelineColumnStage) => void; onDragStart: () => void; onDragEnd: () => void; onContextMenu: (event: MouseEvent<HTMLDivElement>) => void }) {
   const stalledDays = daysSince(lead.updatedAt || lead.createdAt);
   const phone = lead.contact?.phone?.replace(/\D/g, '');
   const whatsapp = phone ? `https://wa.me/${phone.startsWith('55') ? phone : `55${phone}`}` : undefined;
@@ -273,13 +337,13 @@ function KanbanCard({ lead, nextStage, canMoveStage, onMove, onDragStart, onDrag
     <motion.div layout initial={{ opacity: 0, y: 12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8, scale: 0.98 }} whileHover={{ y: -4, scale: 1.012 }} whileTap={{ scale: 0.985 }} transition={{ type: 'spring', stiffness: 430, damping: 34 }} className="bg-white rounded-2xl border border-transparent shadow-sm overflow-hidden p-4 hover:shadow-xl hover:shadow-solar-orange/10 hover:border-solar-orange/30 transition-colors group cursor-grab active:cursor-grabbing select-none" draggable={canMoveStage} onDragStart={() => { onDragStart(); }} onDragEnd={onDragEnd} onContextMenu={onContextMenu}>
       <div className="flex justify-between items-start mb-3"><div className="flex items-center gap-2"><GripVertical size={14} className="text-gray-300" /><PriorityBadge priority={lead.priority} /><Badge variant={entryPriority.variant}>{entryPriority.label}</Badge></div><StageBadge stage={lead.stage} /></div>
       <Link to={`/leads/${lead.id}`} className="block"><h4 className="font-black text-sm text-graphite mb-1 group-hover:text-solar-orange transition-colors">{lead.contact?.name || 'Lead sem nome'}</h4><p className="text-xs text-gray-500 mb-2 truncate">{lead.contact?.company || lead.contact?.email || 'Sem empresa'}</p><p className="mb-3 flex items-center gap-1 text-[10px] font-bold text-gray-500"><CalendarClock size={12} /> Entrada {formatDate(entryDate)} - {formatElapsedSince(entryDate)}</p><div className="grid grid-cols-2 gap-2 mb-4"><div className={cn('rounded-xl p-2 text-[10px] font-bold', stalledDays >= 3 ? 'bg-alert-amber/10 text-alert-amber' : 'bg-gray-50 text-gray-500')}><Clock size={12} className="inline mr-1" />{stalledDays === 0 ? 'Atual hoje' : `Parado ${stalledDays}d`}</div><div className={cn('rounded-xl p-2 text-[10px] font-bold', !lead.nextActionAt || (daysUntil(lead.nextActionAt) ?? 1) <= 0 ? 'bg-alert-red/10 text-alert-red' : 'bg-energy-green/10 text-energy-green')}><Phone size={12} className="inline mr-1" />{nextActionLabel(lead)}</div></div><div className="pt-3 border-t border-gray-50 flex items-center justify-between gap-2"><div><p className="font-black text-sm text-energy-green">{formatCurrency(lead.energyBillValue || lead.estimatedTicket)}</p><p className="text-[10px] text-gray-400 truncate max-w-[150px]">{lead.leadSource || 'origem indefinida'}</p></div><div className="text-right"><p className="text-[10px] font-bold text-graphite truncate max-w-[90px]">{lead.sdrOwner || 'SD'}</p><p className="text-[9px] text-gray-400">vendedor</p></div></div></Link>
-      <div className="mt-3 grid grid-cols-2 gap-2">{whatsapp ? <a href={whatsapp} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-2 py-1.5 text-xs font-bold text-graphite hover:bg-gray-50">WhatsApp</a> : <span className="inline-flex items-center justify-center rounded-lg border border-gray-100 px-2 py-1.5 text-xs font-bold text-gray-300">Sem telefone</span>}{canMoveStage && nextStage ? <Button variant="outline" size="sm" className="gap-1" onClick={() => onMove(nextStage.id)} aria-label={`Mover ${lead.contact?.name ?? 'lead'} para ${nextStage.label}`}><ArrowRight size={14} /> Mover</Button> : <Button variant="ghost" size="sm" disabled>Final</Button>}</div>
+      <div className="mt-3 grid grid-cols-2 gap-2">{whatsapp ? <a href={whatsapp} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-2 py-1.5 text-xs font-bold text-graphite hover:bg-gray-50">WhatsApp</a> : <span className="inline-flex items-center justify-center rounded-lg border border-gray-100 px-2 py-1.5 text-xs font-bold text-gray-300">Sem telefone</span>}{canMoveStage && nextStage ? <Button variant="outline" size="sm" className="gap-1" onClick={() => onMove(nextStage)} aria-label={`Mover ${lead.contact?.name ?? 'lead'} para ${nextStage.label}`}><ArrowRight size={14} /> Mover</Button> : <Button variant="ghost" size="sm" disabled>Final</Button>}</div>
     </motion.div>
   );
 }
 
 
-function KanbanCardContextMenu({ menu, canMoveStage, onClose, onMove }: { menu: KanbanContextState; canMoveStage: boolean; onClose: () => void; onMove: (lead: Lead, target: LeadStage) => void }) {
+function KanbanCardContextMenu({ menu, canMoveStage, onClose, onMove }: { menu: KanbanContextState; canMoveStage: boolean; onClose: () => void; onMove: (lead: Lead, target: PipelineColumnStage) => void }) {
   if (!menu) return null;
   const phone = menu.lead.contact?.phone?.replace(/\D/g, '');
   const whatsapp = phone ? `https://wa.me/${phone.startsWith('55') ? phone : `55${phone}`}` : undefined;
@@ -309,8 +373,8 @@ function KanbanCardContextMenu({ menu, canMoveStage, onClose, onMove }: { menu: 
         <div className="p-2">
           <Link to={`/leads/${menu.lead.id}`} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-graphite hover:bg-gray-50" role="menuitem"><ExternalLink size={15} /> Abrir detalhes do lead</Link>
           {whatsapp ? <a href={whatsapp} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-graphite hover:bg-gray-50" role="menuitem"><MessageCircle size={15} /> Chamar no WhatsApp</a> : <span className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-gray-300"><MessageCircle size={15} /> Sem telefone</span>}
-          {canMoveStage && menu.nextStage ? <button type="button" onClick={() => { onMove(menu.lead, menu.nextStage!.id); onClose(); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold text-graphite hover:bg-solar-orange/10" role="menuitem"><ArrowRight size={15} /> Mover para {menu.nextStage.label}</button> : <span className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-gray-300"><ArrowRight size={15} /> Sem próxima etapa</span>}
-          {canMoveStage && menu.lostStage ? <button type="button" onClick={() => { onMove(menu.lead, menu.lostStage!.id); onClose(); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-black text-alert-red hover:bg-alert-red/10" role="menuitem"><X size={15} /> Marcar como perdido</button> : null}
+          {canMoveStage && menu.nextStage ? <button type="button" onClick={() => { onMove(menu.lead, menu.nextStage!); onClose(); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold text-graphite hover:bg-solar-orange/10" role="menuitem"><ArrowRight size={15} /> Mover para {menu.nextStage.label}</button> : <span className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-gray-300"><ArrowRight size={15} /> Sem próxima etapa</span>}
+          {canMoveStage && menu.lostStage ? <button type="button" onClick={() => { onMove(menu.lead, menu.lostStage!); onClose(); }} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-black text-alert-red hover:bg-alert-red/10" role="menuitem"><X size={15} /> Marcar como perdido</button> : null}
         </div>
       </motion.div>
     </AnimatePresence>

@@ -41,11 +41,39 @@ export type LeadOpportunity = {
   updatedAt: string;
 };
 
+export type LeadAttribution = {
+  id: string;
+  sourceSystem: string;
+  sourceChannel: string;
+  leadgenId: string | null;
+  formId: string | null;
+  formName: string | null;
+  campaignId: string | null;
+  campaignName: string | null;
+  adsetId: string | null;
+  adsetName: string | null;
+  adId: string | null;
+  adName: string | null;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+  utmContent: string | null;
+  utmTerm: string | null;
+  fbclid: string | null;
+  gclid: string | null;
+  confidence: string;
+  metadata: Record<string, unknown>;
+  lastReconciledAt: string;
+};
+
 export type Lead = {
   id: string;
   tenantId: string;
   contactId: string;
   stage: PipelineStageKey;
+  pipelineKey?: string;
+  pipelineStageKey?: string;
+  pipelineStageLabel?: string | null;
   qualificationStatus: string | null;
   leadSource: string | null;
   utmSource: string | null;
@@ -70,6 +98,7 @@ export type Lead = {
   contact: LeadContact;
   tags: LeadTag[];
   opportunity: LeadOpportunity | null;
+  attribution?: LeadAttribution | null;
 };
 
 export type LeadHistoryChange = {
@@ -128,7 +157,7 @@ export type LeadsRepository = {
   listLeadHistory(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<LeadHistoryEvent[]>;
   createLead(context: AuditContext, input: CreateLeadInput): Promise<Lead>;
   updateLead(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: UpdateLeadInput): Promise<Lead>;
-  changeStage(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, targetStage: PipelineStageKey, notes?: string | null, lostReason?: string | null, createOpportunity?: boolean): Promise<Lead>;
+  changeStage(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, targetStage: PipelineStageKey, pipelineKey?: string | null, pipelineStageKey?: string | null, notes?: string | null, lostReason?: string | null, createOpportunity?: boolean): Promise<Lead>;
   setLeadTags(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: SetLeadTagsInput): Promise<Lead>;
   bulkSetLeadTags(context: AuditContext, leadIds: string[], allowedStages: PipelineStageKey[] | null, ownerUserId: string | null, input: SetLeadTagsInput): Promise<Lead[]>;
   deleteLead(context: AuditContext, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<void>;
@@ -138,6 +167,9 @@ export type LeadsRepository = {
   getLeadDocumentContent(tenantId: string, leadId: string, documentId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<LeadDocumentContent | null>;
   deleteLeadDocument(context: AuditContext, leadId: string, documentId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<void>;
   countStageHistory?(tenantId: string, leadId: string): Promise<number>;
+  calculateQualificationScore?(tenantId: string, leadId: string, pipelineKey: string): Promise<{ score: number; factors: Record<string, number> } | null>;
+    updateLeadOwner(tenantId: string, leadId: string, sdrOwnerId: string | null): Promise<Lead | null>;
+  createAuditLog?(entry: { tenantId: string; actorUserId: string; entityType: string; entityId: string; action: string; beforeData?: any; afterData?: any; ipAddress?: string; userAgent?: string }): Promise<void>;
   close?(): Promise<void>;
 };
 
@@ -296,12 +328,44 @@ function rowToOpportunity(row: Record<string, unknown>): LeadOpportunity | null 
   };
 }
 
+function rowToAttribution(value: unknown): LeadAttribution | null {
+  const attribution = jsonObject(value);
+  if (!attribution.id) return null;
+  return {
+    id: String(attribution.id),
+    sourceSystem: String(attribution.sourceSystem ?? ''),
+    sourceChannel: String(attribution.sourceChannel ?? ''),
+    leadgenId: attribution.leadgenId ? String(attribution.leadgenId) : null,
+    formId: attribution.formId ? String(attribution.formId) : null,
+    formName: attribution.formName ? String(attribution.formName) : null,
+    campaignId: attribution.campaignId ? String(attribution.campaignId) : null,
+    campaignName: attribution.campaignName ? String(attribution.campaignName) : null,
+    adsetId: attribution.adsetId ? String(attribution.adsetId) : null,
+    adsetName: attribution.adsetName ? String(attribution.adsetName) : null,
+    adId: attribution.adId ? String(attribution.adId) : null,
+    adName: attribution.adName ? String(attribution.adName) : null,
+    utmSource: attribution.utmSource ? String(attribution.utmSource) : null,
+    utmMedium: attribution.utmMedium ? String(attribution.utmMedium) : null,
+    utmCampaign: attribution.utmCampaign ? String(attribution.utmCampaign) : null,
+    utmContent: attribution.utmContent ? String(attribution.utmContent) : null,
+    utmTerm: attribution.utmTerm ? String(attribution.utmTerm) : null,
+    fbclid: attribution.fbclid ? String(attribution.fbclid) : null,
+    gclid: attribution.gclid ? String(attribution.gclid) : null,
+    confidence: String(attribution.confidence ?? 'partial'),
+    metadata: jsonObject(attribution.metadata),
+    lastReconciledAt: String(attribution.lastReconciledAt ?? ''),
+  };
+}
+
 function rowToLead(row: Record<string, unknown>): Lead {
   return {
     id: row.id as string,
     tenantId: row.tenantId as string,
     contactId: row.contactId as string,
     stage: row.stage as PipelineStageKey,
+    pipelineKey: (row.pipelineKey as string | null) ?? 'geral',
+    pipelineStageKey: (row.pipelineStageKey as string | null) ?? (row.stage as string),
+    pipelineStageLabel: (row.pipelineStageLabel as string | null) ?? null,
     qualificationStatus: row.qualificationStatus as string | null,
     leadSource: row.leadSource as string | null,
     utmSource: row.utmSource as string | null,
@@ -325,6 +389,7 @@ function rowToLead(row: Record<string, unknown>): Lead {
     updatedAt: row.updatedAt as string,
     tags: tagArray(row.tags),
     opportunity: rowToOpportunity(row),
+    attribution: rowToAttribution(row.attribution),
     contact: {
       id: row.contactId as string,
       name: row.contactName as string,
@@ -344,6 +409,9 @@ const leadSelect = `select l.id,
                           l.tenant_id as "tenantId",
                           l.contact_id as "contactId",
                           l.stage::text as stage,
+                          l.pipeline_key as "pipelineKey",
+                          l.pipeline_stage_key as "pipelineStageKey",
+                          pipeline_stage.label as "pipelineStageLabel",
                           l.qualification_status as "qualificationStatus",
                           l.lead_source as "leadSource",
                           l.utm_source as "utmSource",
@@ -382,21 +450,55 @@ const leadSelect = `select l.id,
                           c.phone as "contactPhone",
                           c.company as "contactCompany",
                           c.source as "contactSource",
-                          c.consent as "contactConsent",
-                          c.metadata as "contactMetadata",
-                          c.created_at::text as "contactCreatedAt",
-                          c.updated_at::text as "contactUpdatedAt",
-                          coalesce(tag_rows.tags, '[]'::jsonb) as tags
+                            c.consent as "contactConsent",
+                            c.metadata as "contactMetadata",
+                            c.created_at::text as "contactCreatedAt",
+                            c.updated_at::text as "contactUpdatedAt",
+                            coalesce(tag_rows.tags, '[]'::jsonb) as tags,
+                            attribution_row.attribution
                      from leads l
                      join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id
-                     left join users owner_user on owner_user.tenant_id = l.tenant_id and owner_user.id = l.sdr_owner_id
-                     left join lead_opportunities lo on lo.tenant_id = l.tenant_id and lo.lead_id = l.id
-                     left join lateral (
-                       select jsonb_agg(jsonb_build_object('id', lt.id::text, 'name', lt.name, 'slug', lt.slug, 'color', lt.color) order by lt.name) as tags
-                         from lead_tag_assignments lta
-                         join lead_tags lt on lt.tenant_id = lta.tenant_id and lt.id = lta.tag_id
-                        where lta.tenant_id = l.tenant_id and lta.lead_id = l.id
-                     ) tag_rows on true`;
+                     left join lead_pipeline_stages pipeline_stage
+                       on pipeline_stage.tenant_id = l.tenant_id
+                      and pipeline_stage.pipeline_key = l.pipeline_key
+                      and pipeline_stage.key = l.pipeline_stage_key
+                       left join users owner_user on owner_user.tenant_id = l.tenant_id and owner_user.id = l.sdr_owner_id
+                       left join lead_opportunities lo on lo.tenant_id = l.tenant_id and lo.lead_id = l.id
+                       left join lateral (
+                         select jsonb_agg(jsonb_build_object('id', lt.id::text, 'name', lt.name, 'slug', lt.slug, 'color', lt.color) order by lt.name) as tags
+                           from lead_tag_assignments lta
+                           join lead_tags lt on lt.tenant_id = lta.tenant_id and lt.id = lta.tag_id
+                          where lta.tenant_id = l.tenant_id and lta.lead_id = l.id
+                       ) tag_rows on true
+                       left join lateral (
+                         select jsonb_build_object(
+                                  'id', la.id::text,
+                                  'sourceSystem', la.source_system,
+                                  'sourceChannel', la.source_channel,
+                                  'leadgenId', la.leadgen_id,
+                                  'formId', la.form_id,
+                                  'formName', la.form_name,
+                                  'campaignId', la.campaign_id,
+                                  'campaignName', la.campaign_name,
+                                  'adsetId', la.adset_id,
+                                  'adsetName', la.adset_name,
+                                  'adId', la.ad_id,
+                                  'adName', la.ad_name,
+                                  'utmSource', la.utm_source,
+                                  'utmMedium', la.utm_medium,
+                                  'utmCampaign', la.utm_campaign,
+                                  'utmContent', la.utm_content,
+                                  'utmTerm', la.utm_term,
+                                  'fbclid', la.fbclid,
+                                  'gclid', la.gclid,
+                                  'confidence', la.confidence,
+                                  'metadata', la.metadata,
+                                  'lastReconciledAt', la.last_reconciled_at::text
+                                ) as attribution
+                           from lead_attributions la
+                          where la.tenant_id = l.tenant_id and la.lead_id = l.id
+                          limit 1
+                       ) attribution_row on true`;
 
 const leadDocumentSelect = `select d.id,
                                    d.tenant_id as "tenantId",
@@ -449,33 +551,230 @@ function ownerParams(ownerUserId: string | null): unknown[] {
   return ownerUserId === null ? [] : [ownerUserId];
 }
 
-async function resolveSdrOwnerId(client: PoolClient, tenantId: string, requestedOwnerId?: string | null): Promise<string | null> {
-  if (requestedOwnerId) return requestedOwnerId;
-  const result = await client.query(
-    `select u.id::text as id
-       from users u
-       join user_roles ur on ur.tenant_id = u.tenant_id and ur.user_id = u.id
-       join roles r on r.tenant_id = ur.tenant_id and r.id = ur.role_id
-      where u.tenant_id = $1
-        and u.status = 'active'
-        and r.name in ('sdr', 'vendedor', 'seller', 'closer')
-        and not exists (
-          select 1
-            from user_roles admin_ur
-            join roles admin_r on admin_r.tenant_id = admin_ur.tenant_id and admin_r.id = admin_ur.role_id
-           where admin_ur.tenant_id = u.tenant_id
-             and admin_ur.user_id = u.id
-             and admin_r.name = 'admin'
-        )
-      group by u.id, u.name
-      order by (select count(*) from leads l where l.tenant_id = u.tenant_id and l.sdr_owner_id = u.id) asc,
-               u.name asc,
-               u.id asc
-      limit 1`,
-    [tenantId],
-  );
-  return (result.rows[0]?.id as string | undefined) ?? null;
+function pipelineClause(filters: LeadListFilters | undefined, offset: number): { clause: string; params: unknown[] } {
+  return filters?.pipelineKey ? { clause: ` and l.pipeline_key = $${offset}`, params: [filters.pipelineKey] } : { clause: '', params: [] };
 }
+
+async function resolvePipelineStage(client: PoolClient, tenantId: string, pipelineKey?: string | null, pipelineStageKey?: string | null, fallbackStage: PipelineStageKey = 'novo_lead'): Promise<{ pipelineKey: string; pipelineStageKey: string; legacyStage: PipelineStageKey }> {
+  const normalizedPipelineKey = pipelineKey || 'geral';
+  const normalizedStageKey = pipelineStageKey || fallbackStage;
+  const result = await client.query(
+    `select pipeline_key, key, legacy_stage::text as "legacyStage"
+       from lead_pipeline_stages
+      where tenant_id = $1
+        and pipeline_key = $2
+        and key = $3
+      limit 1`,
+    [tenantId, normalizedPipelineKey, normalizedStageKey],
+  );
+  const row = result.rows[0];
+  if (row) {
+    return { pipelineKey: row.pipeline_key, pipelineStageKey: row.key, legacyStage: row.legacyStage as PipelineStageKey };
+  }
+  return { pipelineKey: 'geral', pipelineStageKey: fallbackStage, legacyStage: fallbackStage };
+}
+
+
+
+const SERVICE_MAPPINGS: Record<string, string[]> = {
+  assinatura: [
+    'ASSINATURA', 'ASSINATURAS', 'ASS', 'ASSIN',
+    'CONSORCIO', 'CONSORCIO/ASSINATURA',
+    'ENERGIAASS', 'ENERGIA ASSINATURA', 'ENERGIA/ASSINATURA',
+    'RESIDENCIAL-ASSINATURA', 'RESIDENCIAL ASSINATURA',
+    'SOLAR POR ASSINATURA', 'ENERGIA POR ASSINATURA',
+    'CONSORCIOS', 'ASSINATURA SOLAR', 'ASSINATURA ENERGIA',
+  ],
+  solar_proprio: [
+    'PLACAS SOLARES', 'PLACAS', 'SOLAR', 'PAINEL', 'PAINEL SOLAR',
+    'SISTEMA PROPRIO', 'SISTEMA PRÓPRIO', 'FOTOVOLTAICO', 'FOTOVOLTAICA',
+    'INSTALACAO', 'INSTALACAO SOLAR', 'INSTALAÇÃO',
+    'ENERGIA SOLAR', 'SOLAR PROPRIO', 'ENERGIA FOTOVOLTAICA',
+    'PAINEL SOLAR', 'PLACAS SOLARES',
+  ],
+  bateria_backup: [
+    'BATERIAS', 'BATERIA', 'BACKUP', 'ARMAZENAMENTO', 'NOBREAK',
+    'BATERIA SOLAR', 'ENERGIA ARMAZENADA', 'BATERIA BACKUP',
+    'BATERIAS SOLAR', 'BATERIAS SOLARES',
+    'ARMAZENAMENTO DE ENERGIA', 'BACKUP DE ENERGIA',
+  ],
+  usina: [
+    'USINA', 'USINAS', 'USINA SOLAR', 'INVESTIMENTO EM USINA',
+    'FAZENDA SOLAR', 'EMPRESAS', 'EMPRESA', 'COMERCIAL', 'INDUSTRIAL',
+    'GERACAO', 'GERAÇÃO', 'GRANDE PORTE',
+    'USINA FOTOVOLTAICA', 'PARQUE SOLAR',
+  ],
+  clube_enervita: [
+    'CLUBE ENERVITA', 'CLUBE', 'ENERGIA CLUB', 'CLUBE SOLAR',
+    'CLUBE DE ENERGIA', 'MEMBRO', 'ASSOCIADO',
+  ],
+  indicacao: [
+    'INDICACAO', 'INDICAÇÃO', 'INDIQUE', 'REFERENCIA', 'REFERÊNCIA',
+    'REFERRAL', 'INDICADO', 'INDICACAO DE AMIGO',
+    'INDICAÇÃO DE AMIGO', 'INDICACAO AMIGO',
+  ],
+};
+
+async function detectLeadService(client: PoolClient, tenantId: string, leadId: string): Promise<string | null> {
+  // Buscar form_name do lead
+  const result = await client.query(
+    'SELECT form_name FROM lead_attributions WHERE lead_id = $1 ORDER BY created_at DESC LIMIT 1',
+    [leadId]
+  );
+  
+  if (result.rows.length === 0 || !result.rows[0].form_name) return null;
+  
+  const formName = result.rows[0].form_name.toUpperCase();
+  
+  // Buscar servicos e suas keywords
+  const services = await client.query(
+    'SELECT key, keywords FROM lead_routing_services WHERE tenant_id = $1 AND is_active = true',
+    [tenantId]
+  );
+  
+  // Match form_name com keywords
+  for (const service of services.rows) {
+    const keywords = service.keywords;
+    const keywordsList = Array.isArray(keywords) ? keywords : [];
+    for (const keyword of keywordsList) {
+      if (formName.includes(keyword.toUpperCase())) {
+        return service.key;
+      }
+    }
+  }
+  
+  // Fallback: match direto por palavras-chave conhecidas
+  const directMappings: Record<string, string> = {
+    'ASSINATURA': 'assinatura',
+    'CONSORCIO': 'assinatura',
+    'ENERGIAASS': 'assinatura',
+    'PLACAS': 'solar_proprio',
+    'SOLAR': 'solar_proprio',
+    'PAINEL': 'solar_proprio',
+    'FOTOVOLTAICO': 'solar_proprio',
+    'BATERIA': 'bateria_backup',
+    'BACKUP': 'bateria_backup',
+    'NOBREAK': 'bateria_backup',
+    'USINA': 'usina',
+    'INVESTIMENTO': 'usina',
+    'FAZENDA': 'usina',
+    'CLUBE': 'clube_enervita',
+    'INDICACAO': 'indicacao',
+    'REFERENCIA': 'indicacao',
+    'REFERRAL': 'indicacao',
+    'EMPRESA': 'usina',
+    'COMERCIAL': 'usina',
+    'INDUSTRIAL': 'usina',
+  };
+  
+  for (const [keyword, serviceKey] of Object.entries(directMappings)) {
+    if (formName.includes(keyword)) {
+      return serviceKey;
+    }
+  }
+  
+  return null;
+}
+
+async function resolveUserByService(client: PoolClient, tenantId: string, serviceKey: string): Promise<string | null> {
+  // Buscar assignment do servico
+  const result = await client.query(
+    "SELECT user_id FROM lead_routing_rule_assignments WHERE tenant_id = $1 AND rule_key = 'by_service' AND config->>'serviceKey' = $2",
+    [tenantId, serviceKey]
+  );
+  
+  if (result.rows.length > 0) return result.rows[0].user_id;
+  
+  return null;
+}
+
+async function resolveSdrOwnerId(client: PoolClient, tenantId: string, requestedOwnerId?: string | null, leadData?: { priority?: string; metadata?: Record<string, unknown> }): Promise<string | null> {
+  if (requestedOwnerId) return requestedOwnerId;
+
+  // Buscar regra ativa com menor prioridade
+  const activeRule = await client.query(
+    `SELECT rule_key FROM lead_routing_rules 
+     WHERE tenant_id = $1 AND is_active = true 
+     ORDER BY priority ASC LIMIT 1`,
+    [tenantId]
+  );
+
+  const ruleKey = activeRule.rows[0]?.rule_key ?? 'round_robin';
+
+  // Buscar usuários elegíveis (não-admin, role comercial)
+  const eligibleQuery = `
+    SELECT u.id::text as id, u.name,
+           (SELECT COUNT(*) FROM leads l WHERE l.tenant_id = u.tenant_id AND l.sdr_owner_id = u.id) as lead_count
+    FROM users u
+    JOIN user_roles ur ON ur.tenant_id = u.tenant_id AND ur.user_id = u.id
+    JOIN roles r ON r.tenant_id = ur.tenant_id AND r.id = ur.role_id
+    WHERE u.tenant_id = $1
+      AND u.status = 'active'
+      AND r.name IN ('sdr', 'vendedor', 'seller', 'closer', 'consultor')
+      AND NOT EXISTS (
+        SELECT 1 FROM user_roles admin_ur
+        JOIN roles admin_r ON admin_r.tenant_id = admin_ur.tenant_id AND admin_r.id = admin_ur.role_id
+        WHERE admin_ur.tenant_id = u.tenant_id AND admin_ur.user_id = u.id AND admin_r.name = 'admin'
+      )
+    GROUP BY u.id, u.name
+    ORDER BY lead_count ASC, u.name ASC, u.id ASC`;
+
+  const eligibleUsers = await client.query(eligibleQuery, [tenantId]);
+
+  if (eligibleUsers.rows.length === 0) return null;
+
+  // Aplicar regra
+  switch (ruleKey) {
+    case 'round_robin': {
+      // Menor quantidade de leads (já ordenado pela query)
+      return eligibleUsers.rows[0].id;
+    }
+
+    case 'random': {
+      // Aleatório entre elegíveis
+      const randomIndex = Math.floor(Math.random() * eligibleUsers.rows.length);
+      return eligibleUsers.rows[randomIndex].id;
+    }
+
+    case 'manual': {
+      // Não atribuir — admin faz manualmente
+      return null;
+    }
+
+    case 'by_service': {
+      // Detectar servico do lead
+      const serviceKey = leadData?.leadId ? await detectLeadService(client, tenantId, leadData.leadId) : null;
+      
+      if (serviceKey) {
+        // Buscar vendedor atribuido ao servico
+        const assignedUser = await resolveUserByService(client, tenantId, serviceKey);
+        if (assignedUser) return assignedUser;
+      }
+      
+      // Fallback: round-robin
+      return eligibleUsers.rows[0].id;
+    }
+
+    case 'by_priority': {
+      // TODO: filtrar por prioridade do lead
+      // Por enquanto, fallback para round-robin
+      return eligibleUsers.rows[0].id;
+    }
+
+    case 'by_bill_value': {
+      // TODO: filtrar por valor da conta
+      // Por enquanto, fallback para round-robin
+      return eligibleUsers.rows[0].id;
+    }
+
+    default: {
+      // Fallback: menor contagem de leads
+      return eligibleUsers.rows[0].id;
+    }
+  }
+}
+
+
 
 function tagFilterClause(filters: LeadListFilters | undefined, offset: number): { clause: string; params: unknown[] } {
   if (!filters?.tags.length) return { clause: '', params: [] };
@@ -567,6 +866,36 @@ function transitionDirection(action: 'created' | 'stage_changed' | 'tags_updated
   if (action === 'tags_updated') return 'tags_updated';
   if (!fromStage || fromStage === stage) return 'lateral';
   return META_STAGE_ORDER[stage] > META_STAGE_ORDER[fromStage] ? 'forward' : 'backward';
+}
+
+// FASE 1: Funções auxiliares para bloqueio de retrocesso
+async function loadPipelineRules(client: PoolClient, tenantId: string, pipelineKey: string) {
+  const result = await client.query(
+    'SELECT * FROM pipeline_rules_config WHERE tenant_id = $1 AND pipeline_key = $2',
+    [tenantId, pipelineKey]
+  );
+  if (result.rows.length > 0) {
+    return result.rows[0];
+  }
+  return {
+    block_backward_movement: true,
+    allowed_backward_roles: ['admin', 'manager'],
+    require_notes_on_backward: true,
+    lead_stale_warn_hours: 24,
+    lead_stale_critical_hours: 72,
+    lead_stale_escalation_hours: 168,
+    seller_inactive_warn_hours: 48,
+    admin_alert_threshold_hours: 48,
+    admin_alert_min_leads: 1,
+  };
+}
+
+async function getUserRole(client: PoolClient, tenantId: string, userId: string): Promise<string> {
+  const result = await client.query(
+    'SELECT r.name FROM roles r JOIN user_roles ur ON ur.tenant_id = r.tenant_id AND ur.role_id = r.id WHERE ur.tenant_id = $1 AND ur.user_id = $2 LIMIT 1',
+    [tenantId, userId]
+  );
+  return result.rows[0]?.name || 'user';
 }
 
 function nestedString(value: unknown, path: string[]): string | null {
@@ -731,12 +1060,13 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
   return {
     async listLeads(tenantId, allowedStages, ownerUserId, filters) {
       const baseParams = [tenantId, ...stageParams(allowedStages), ...ownerParams(ownerUserId)];
-      const tagFilter = tagFilterClause(filters, baseParams.length + 1);
+      const pipelineFilter = pipelineClause(filters, baseParams.length + 1);
+      const tagFilter = tagFilterClause(filters, baseParams.length + pipelineFilter.params.length + 1);
       const result = await pool.query(
         `${leadSelect}
-          where l.tenant_id = $1${stageClause(allowedStages, 2)}${ownerClause(ownerUserId, 2 + stageParams(allowedStages).length)}${tagFilter.clause}
+          where l.tenant_id = $1${stageClause(allowedStages, 2)}${ownerClause(ownerUserId, 2 + stageParams(allowedStages).length)}${pipelineFilter.clause}${tagFilter.clause}
           order by l.updated_at desc, l.created_at desc`,
-        [...baseParams, ...tagFilter.params],
+        [...baseParams, ...pipelineFilter.params, ...tagFilter.params],
       );
       return result.rows.map(rowToLead);
     },
@@ -779,23 +1109,113 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         client.release();
       }
     },
+
+    // FASE 4: Score de qualificação do lead
+    async calculateQualificationScore(tenantId: string, leadId: string, pipelineKey: string) {
+      const client = await pool.connect();
+      try {
+        const lead = await client.query(
+          `select l.id, l.stage, l.estimated_ticket, l.updated_at, l.created_at, l.metadata,
+                  c.name, c.email, c.phone, c.company, c.metadata as "contactMetadata"
+             from leads l
+             join contacts c on c.tenant_id = l.tenant_id and c.id = l.contact_id
+            where l.tenant_id = $1 and l.id = $2`,
+          [tenantId, leadId],
+        );
+        if (lead.rows.length === 0) return null;
+
+        const d = lead.rows[0];
+        const factors: Record<string, number> = {};
+        let total = 0;
+
+        // FIT (max 25)
+        let fit = 0;
+        if (d.name && d.phone && d.email) fit += 10;
+        if (d.company) fit += 5;
+        if (d.email && !/@(gmail|yahoo|hotmail|outlook)\./i.test(d.email)) fit += 5;
+        if (d.phone && /^\+?[\d\s-]{10,}$/.test(d.phone)) fit += 5;
+        factors.fit = fit;
+        total += fit;
+
+        // INTENT (max 30)
+        let intent = 0;
+        const meta = d.metadata || {};
+        const cmeta = d.contactMetadata || {};
+        if (meta.interest || meta.product_interest || cmeta.interest) intent += 10;
+        if (d.estimated_ticket && parseFloat(d.estimated_ticket) > 0) intent += 15;
+        if (meta.budget_defined || cmeta.budget) intent += 5;
+        factors.intent = intent;
+        total += intent;
+
+        // BEHAVIOR (max 25)
+        let behavior = 0;
+        const hoursInStage = (Date.now() - new Date(d.updated_at).getTime()) / 3600000;
+        if (hoursInStage < 24) behavior += 15;
+        else if (hoursInStage < 72) behavior += 10;
+        else if (hoursInStage < 168) behavior += 5;
+        if (meta.meetings_scheduled > 0 || meta.responses_count > 0) behavior += 5;
+        if (d.stage !== 'novo_lead') behavior += 5;
+        factors.behavior = behavior;
+        total += behavior;
+
+        // NEGATIVE (max -15)
+        let negative = 0;
+        if (meta.unsubscribed || cmeta.unsubscribed) negative -= 10;
+        if (hoursInStage > 168) negative -= 5;
+        factors.negative = negative;
+        total += negative;
+
+        total = Math.max(0, Math.min(100, total));
+
+        await client.query(
+          `insert into lead_qualification_scores (tenant_id, lead_id, pipeline_key, score, max_score, factors)
+           values ($1, $2, $3, $4, 100, $5::jsonb)
+           on conflict (tenant_id, lead_id, pipeline_key)
+           do update set score = $4, factors = $5::jsonb, calculated_at = now(), expires_at = now() + interval '7 days'`,
+          [tenantId, leadId, pipelineKey || 'geral', total, JSON.stringify(factors)],
+        );
+
+        // FASE 5: Enviar score para Meta Ads
+        try {
+          const metaPayload = {
+            leadId,
+            stage: d.stage,
+            qualificationScore: total,
+            leadEventSource: 'Enervita Custom CRM',
+          };
+          await client.query(
+            `insert into tracking_events (tenant_id, lead_id, platform, event_name, status, payload)
+             values ($1, $2, 'meta', 'EnervitaQualificationScore', 'queued', $3::jsonb)`,
+            [tenantId, leadId, JSON.stringify(metaPayload)],
+          );
+        } catch {
+          // Não falhar o cálculo do score se o Meta event falhar
+        }
+
+        return { score: total, factors };
+      } finally {
+        client.release();
+      }
+    },
+
     async createLead(context, input) {
       const client = await pool.connect();
       try {
         await client.query('begin');
         const contactId = await insertContact(client, context.tenantId, input.contact);
-        const sdrOwnerId = await resolveSdrOwnerId(client, context.tenantId, input.sdrOwnerId);
+        const sdrOwnerId = await resolveSdrOwnerId(client, context.tenantId, input.sdrOwnerId, { priority: input.priority ?? undefined, metadata: input.metadata ?? undefined, leadId: leadId });
+        const pipeline = await resolvePipelineStage(client, context.tenantId, input.pipelineKey, input.pipelineStageKey, input.stage);
         const leadResult = await client.query(
-          `insert into leads (tenant_id, contact_id, stage, qualification_status, lead_source, utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbp, fbc, fbclid, gclid, estimated_ticket, sdr_owner_id, priority, notes, metadata)
-           values ($1, $2, $3::lead_stage, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, coalesce($17::priority_level, 'media'), $18, coalesce($19::jsonb, '{}'::jsonb))
+          `insert into leads (tenant_id, contact_id, stage, pipeline_key, pipeline_stage_key, qualification_status, lead_source, utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbp, fbc, fbclid, gclid, estimated_ticket, sdr_owner_id, priority, notes, metadata)
+           values ($1, $2, $3::lead_stage, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, coalesce($19::priority_level, 'media'), $20, coalesce($21::jsonb, '{}'::jsonb))
            returning id`,
-          [context.tenantId, contactId, input.stage, input.qualificationStatus ?? null, input.leadSource ?? null, input.utmSource ?? null, input.utmMedium ?? null, input.utmCampaign ?? null, input.utmContent ?? null, input.utmTerm ?? null, input.fbp ?? firstString(input.metadata?.fbp, nestedString(input.metadata, ['attribution', 'fbp']), input.contact.metadata?.fbp), input.fbc ?? firstString(input.metadata?.fbc, nestedString(input.metadata, ['attribution', 'fbc']), input.contact.metadata?.fbc), input.fbclid ?? firstString(input.metadata?.fbclid, nestedString(input.metadata, ['attribution', 'fbclid']), input.contact.metadata?.fbclid), input.gclid ?? firstString(input.metadata?.gclid, nestedString(input.metadata, ['attribution', 'gclid']), input.contact.metadata?.gclid), input.estimatedTicket ?? null, sdrOwnerId, input.priority ?? null, input.notes ?? null, input.metadata ? JSON.stringify(input.metadata) : null],
+          [context.tenantId, contactId, pipeline.legacyStage, pipeline.pipelineKey, pipeline.pipelineStageKey, input.qualificationStatus ?? null, input.leadSource ?? null, input.utmSource ?? null, input.utmMedium ?? null, input.utmCampaign ?? null, input.utmContent ?? null, input.utmTerm ?? null, input.fbp ?? firstString(input.metadata?.fbp, nestedString(input.metadata, ['attribution', 'fbp']), input.contact.metadata?.fbp), input.fbc ?? firstString(input.metadata?.fbc, nestedString(input.metadata, ['attribution', 'fbc']), input.contact.metadata?.fbc), input.fbclid ?? firstString(input.metadata?.fbclid, nestedString(input.metadata, ['attribution', 'fbclid']), input.contact.metadata?.fbclid), input.gclid ?? firstString(input.metadata?.gclid, nestedString(input.metadata, ['attribution', 'gclid']), input.contact.metadata?.gclid), input.estimatedTicket ?? null, sdrOwnerId, input.priority ?? null, input.notes ?? null, input.metadata ? JSON.stringify(input.metadata) : null],
         );
         const leadId = leadResult.rows[0].id as string;
         await client.query(
           `insert into lead_stage_history (tenant_id, lead_id, from_stage, to_stage, changed_by, notes)
            values ($1, $2, null, $3::lead_stage, $4, 'lead.created')`,
-          [context.tenantId, leadId, input.stage, context.actorUserId],
+          [context.tenantId, leadId, pipeline.legacyStage, context.actorUserId],
         );
         const lead = await selectOne(client, context.tenantId, leadId, null, null);
         if (!lead) throw new LeadsNotFoundError('Lead not found after create');
@@ -803,6 +1223,8 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         if (sdrOwnerId) await writeAudit(client, context, leadId, 'lead.assigned', null, lead);
         await queueMetaStageEvent(client, context, lead, 'created', null);
         await client.query('commit');
+        // FASE 4: Calcular score após criar lead (async, não bloqueia)
+        this.calculateQualificationScore(context.tenantId, leadId, pipeline.pipelineKey).catch(() => {});
         return lead;
       } catch (error) {
         await client.query('rollback');
@@ -849,23 +1271,62 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         client.release();
       }
     },
-    async changeStage(context, leadId, allowedStages, ownerUserId, targetStage, notes = null, lostReason = null, createOpportunity = false) {
+    async changeStage(context, leadId, allowedStages, ownerUserId, targetStage, pipelineKey = null, pipelineStageKey = null, notes = null, lostReason = null, createOpportunity = false) {
       const client = await pool.connect();
       try {
         await client.query('begin');
         const before = await selectOne(client, context.tenantId, leadId, allowedStages, ownerUserId, true);
         if (!before) throw new LeadsNotFoundError('Lead not found');
+        const pipeline = await resolvePipelineStage(client, context.tenantId, pipelineKey ?? before.pipelineKey, pipelineStageKey, targetStage);
+
+        // FASE 1: Bloqueio de retrocesso
+        const rulesConfig = await loadPipelineRules(client, context.tenantId, before.pipelineKey || 'geral');
+        const currentOrder = META_STAGE_ORDER[before.stage as PipelineStageKey] || 0;
+        const targetOrder = META_STAGE_ORDER[pipeline.legacyStage as PipelineStageKey] || 0;
+        const isBackward = targetOrder < currentOrder;
+
+        if (isBackward && rulesConfig.block_backward_movement) {
+          const userRole = await getUserRole(client, context.tenantId, context.actorUserId);
+          const allowedRoles = Array.isArray(rulesConfig.allowed_backward_roles) ? rulesConfig.allowed_backward_roles : ['admin', 'manager'];
+
+          if (!allowedRoles.includes(userRole)) {
+            await client.query(
+              `INSERT INTO lead_stage_transitions (tenant_id, lead_id, pipeline_key, from_stage, to_stage, direction, changed_by, blocked, block_reason) VALUES ($1, $2, $3, $4, $5, 'backward', $6, true, $7)`,
+              [context.tenantId, leadId, before.pipelineKey || 'geral', before.stage, pipeline.legacyStage, context.actorUserId, `Role '${userRole}' nao pode mover para tras`]
+            );
+            await client.query('commit');
+            throw new LeadsOperationError(`Vendedores nao podem mover leads para estagios anteriores. Estagio atual: ${before.stage}, Tentativa: ${pipeline.legacyStage}. Entre em contato com um administrador.`);
+          }
+
+          if (rulesConfig.require_notes_on_backward && !notes) {
+            await client.query('commit');
+            throw new LeadsOperationError(`Ao mover um lead para tras, e obrigatorio informar o motivo nas notas.`);
+          }
+        }
+
         await client.query(
           `update leads
-              set stage = $3::lead_stage, lost_reason = coalesce($4, lost_reason), updated_at = now()
+              set stage = $3::lead_stage,
+                  pipeline_key = $4,
+                  pipeline_stage_key = $5,
+                  lost_reason = coalesce($6, lost_reason),
+                  updated_at = now()
             where tenant_id = $1 and id = $2`,
-          [context.tenantId, leadId, targetStage, lostReason ?? null],
+          [context.tenantId, leadId, pipeline.legacyStage, pipeline.pipelineKey, pipeline.pipelineStageKey, lostReason ?? null],
         );
         await client.query(
           `insert into lead_stage_history (tenant_id, lead_id, from_stage, to_stage, changed_by, notes)
            values ($1, $2, $3::lead_stage, $4::lead_stage, $5, $6)`,
-          [context.tenantId, leadId, before.stage, targetStage, context.actorUserId, notes ?? null],
+          [context.tenantId, leadId, before.stage, pipeline.legacyStage, context.actorUserId, notes ?? null],
         );
+
+        // FASE 1: Registrar transicao bem-sucedida
+        const direction = isBackward ? 'backward' : (targetOrder > currentOrder ? 'forward' : 'lateral');
+        await client.query(
+          `INSERT INTO lead_stage_transitions (tenant_id, lead_id, pipeline_key, from_stage, to_stage, direction, changed_by, notes) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [context.tenantId, leadId, before.pipelineKey || 'geral', before.stage, pipeline.legacyStage, direction, context.actorUserId, notes ?? null]
+        );
+
         let after = await selectOne(client, context.tenantId, leadId, null, null);
         if (!after) throw new LeadsNotFoundError('Lead not found after stage change');
         if (createOpportunity) {
@@ -876,6 +1337,8 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         await writeAudit(client, context, leadId, createOpportunity ? 'lead.converted_to_opportunity' : 'lead.stage_changed', before, after);
         await queueMetaStageEvent(client, context, after, 'stage_changed', before.stage);
         await client.query('commit');
+        // FASE 4: Recalcular score após mudança de estágio
+        this.calculateQualificationScore(context.tenantId, leadId, pipeline.pipelineKey).catch(() => {});
         return after;
       } catch (error) {
         await client.query('rollback');
@@ -1124,6 +1587,35 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
       }
     },
 
+    
+    async updateLeadOwner(tenantId: string, leadId: string, sdrOwnerId: string | null) {
+      const result = await pool.query(
+        `UPDATE leads
+         SET sdr_owner_id = $3, updated_at = now()
+         WHERE tenant_id = $1 AND id = $2
+         RETURNING *`,
+        [tenantId, leadId, sdrOwnerId],
+      );
+      if (result.rowCount === 0) return null;
+      return rowToLead(result.rows[0]);
+    },
+    async createAuditLog(entry) {
+      await pool.query(
+        `INSERT INTO audit_logs (tenant_id, actor_user_id, entity_type, entity_id, action, before_data, after_data, ip_address, user_agent)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          entry.tenantId,
+          entry.actorUserId,
+          entry.entityType,
+          entry.entityId,
+          entry.action,
+          entry.beforeData ? JSON.stringify(entry.beforeData) : null,
+          entry.afterData ? JSON.stringify(entry.afterData) : null,
+          entry.ipAddress || null,
+          entry.userAgent || null,
+        ]
+      );
+    },
     async close() {
       await pool.end();
     },

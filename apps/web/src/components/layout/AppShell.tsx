@@ -17,6 +17,18 @@ export const AppShell = () => {
         <main data-crm-app-main className="crm-scroll-panel flex-1 p-8">
           <Outlet />
         </main>
+        <footer className="px-8 py-3 text-center text-[10px] text-graphite-soft/40">
+          Feito por{" "}
+          <a
+            href="https://www.linkedin.com/in/cezao/"
+            target="_blank"
+            rel="noreferrer"
+            className="underline decoration-transparent underline-offset-2 transition hover:decoration-current"
+          >
+            Cesar Machado
+          </a>{" "}
+          — Especialista em IA e Automação
+        </footer>
       </div>
     </div>
   );

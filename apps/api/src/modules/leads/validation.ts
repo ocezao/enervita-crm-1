@@ -29,6 +29,8 @@ export type UpdateContactInput = Partial<ContactInput>;
 export type CreateLeadInput = {
   contact: ContactInput;
   stage: PipelineStageKey;
+  pipelineKey?: string | null;
+  pipelineStageKey?: string | null;
   qualificationStatus?: string | null;
   leadSource?: string | null;
   utmSource?: string | null;
@@ -70,6 +72,8 @@ export type UpdateLeadInput = {
 
 export type StageChangeInput = {
   stage: PipelineStageKey;
+  pipelineKey?: string | null;
+  pipelineStageKey?: string | null;
   notes?: string | null;
   lostReason?: string | null;
   createOpportunity?: boolean;
@@ -80,6 +84,7 @@ export type LeadTagMode = 'any' | 'all';
 export type LeadListFilters = {
   tags: string[];
   tagMode: LeadTagMode;
+  pipelineKey?: string | null;
 };
 
 export type SetLeadTagsInput = {
@@ -241,6 +246,8 @@ export function validateCreateLeadBody(body: unknown): CreateLeadInput {
   return {
     contact: parseContact(body.contact, false),
     stage: body.stage === undefined ? 'novo_lead' : parseStage(body.stage),
+    pipelineKey: optionalString(body.pipelineKey, 'pipelineKey'),
+    pipelineStageKey: optionalString(body.pipelineStageKey, 'pipelineStageKey'),
     qualificationStatus: optionalString(body.qualificationStatus, 'qualificationStatus'),
     leadSource: optionalString(body.leadSource, 'leadSource'),
     utmSource: optionalString(body.utmSource, 'utmSource'),
@@ -289,6 +296,8 @@ export function validateStageChangeBody(body: unknown): StageChangeInput {
   if (!isObject(body)) throw new ValidationError('Request body must be an object');
   return {
     stage: parseStage(body.stage),
+    pipelineKey: optionalString(body.pipelineKey, 'pipelineKey'),
+    pipelineStageKey: optionalString(body.pipelineStageKey, 'pipelineStageKey'),
     notes: optionalString(body.notes, 'notes'),
     lostReason: optionalString(body.lostReason, 'lostReason'),
     createOpportunity: typeof body.createOpportunity === 'boolean' ? body.createOpportunity : undefined,
@@ -331,7 +340,7 @@ export function validateListLeadsQuery(query: unknown): LeadListFilters {
     : uniqueTags(Array.isArray(rawTags) ? rawTags : String(rawTags).split(','), 'tags');
   const tagMode = query.tagMode === undefined ? 'any' : query.tagMode;
   if (tagMode !== 'any' && tagMode !== 'all') throw new ValidationError('tagMode must be any or all');
-  return { tags, tagMode };
+  return { tags, tagMode, pipelineKey: optionalString(query.pipelineKey, 'pipelineKey') };
 }
 
 export function validateSetLeadTagsBody(body: unknown): SetLeadTagsInput {
