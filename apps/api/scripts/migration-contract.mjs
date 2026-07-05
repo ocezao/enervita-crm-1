@@ -15,8 +15,14 @@ export const migrationFiles = [
   'infra/migrations/012_notifications.sql',
   'infra/migrations/013_opportunity_proposal_contract.sql',
   'infra/migrations/014_follow_up_queue.sql',
+  'infra/migrations/015_lead_documents.sql',
+  'infra/migrations/016_solar_dimensioning.sql',
+  'infra/migrations/017_patch01_dimensionamento_architecture.sql',
+  'infra/migrations/018_lead_attributions.sql',
+  'infra/migrations/018_solar_dimensioning_activation.sql',
   'infra/migrations/019_lead_routing.sql',
   'infra/migrations/020_multi_pipelines.sql',
+  'infra/migrations/021_performance_indexes.sql',
 ];
 
 export const migrationFile = migrationFiles[0];

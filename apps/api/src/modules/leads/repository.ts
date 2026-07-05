@@ -3,6 +3,8 @@ import pg, { type PoolClient } from 'pg';
 import type { PipelineStageKey } from '@enervita/shared';
 import type { AuditContext } from '../users/repository.ts';
 import type { ContactInput, CreateLeadInput, LeadListFilters, SetLeadTagsInput, UpdateLeadInput } from './validation.ts';
+import type { CacheService } from '../../services/cache.ts';
+import { createFiltersHash } from '../../services/cache.ts';
 
 const { Pool } = pg;
 
@@ -1054,11 +1056,23 @@ async function insertContact(client: PoolClient, tenantId: string, input: Contac
   return result.rows[0].id as string;
 }
 
-export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
+export function createPgLeadsRepository(databaseUrl: string, cacheService?: CacheService): LeadsRepository {
   const pool = new Pool({ connectionString: databaseUrl });
 
   return {
     async listLeads(tenantId, allowedStages, ownerUserId, filters) {
+      // Gera hash dos filtros para cache key
+      const filtersHash = filters ? createFiltersHash(filters as Record<string, any>) : 'empty';
+      const cacheKey = `${tenantId}:${allowedStages?.join(',') || 'all'}:${ownerUserId || 'all'}:${filtersHash}`;
+      
+      // Tenta obter do cache se estiver habilitado
+      if (cacheService?.isEnabled()) {
+        const cached = await cacheService.get<any[]>(`leads:list:${cacheKey}`);
+        if (cached) {
+          return cached;
+        }
+      }
+
       const baseParams = [tenantId, ...stageParams(allowedStages), ...ownerParams(ownerUserId)];
       const pipelineFilter = pipelineClause(filters, baseParams.length + 1);
       const tagFilter = tagFilterClause(filters, baseParams.length + pipelineFilter.params.length + 1);
@@ -1068,12 +1082,34 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
           order by l.updated_at desc, l.created_at desc`,
         [...baseParams, ...pipelineFilter.params, ...tagFilter.params],
       );
-      return result.rows.map(rowToLead);
+      const leads = result.rows.map(rowToLead);
+      
+      // Armazena no cache com TTL curto (30s)
+      if (cacheService?.isEnabled()) {
+        await cacheService.set(`leads:list:${cacheKey}`, leads, 30);
+      }
+      
+      return leads;
     },
     async getLead(tenantId, leadId, allowedStages, ownerUserId) {
+      // Tenta obter do cache se estiver habilitado
+      if (cacheService?.isEnabled()) {
+        const cached = await cacheService.get<any>(`lead:${leadId}`);
+        if (cached) {
+          return cached;
+        }
+      }
+
       const client = await pool.connect();
       try {
-        return await selectOne(client, tenantId, leadId, allowedStages, ownerUserId);
+        const lead = await selectOne(client, tenantId, leadId, allowedStages, ownerUserId);
+        
+        // Armazena no cache com TTL curto (60s)
+        if (lead && cacheService?.isEnabled()) {
+          await cacheService.set(`lead:${leadId}`, lead, 60);
+        }
+        
+        return lead;
       } finally {
         client.release();
       }

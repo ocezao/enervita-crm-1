@@ -25,6 +25,7 @@ export type AppEnv = {
   port: number;
   databaseUrl: string;
   sessionSecret: string;
+  redisUrl?: string;
   metaAds: MetaAdsEnv;
   n8nDatabaseUrl: string;
   ai: AiConfig;
@@ -95,6 +96,7 @@ export function readEnv(env: NodeJS.ProcessEnv = process.env): AppEnv {
     host: env.HOST?.trim() || '127.0.0.1',
     port: parsePort(env.PORT),
     databaseUrl: env.DATABASE_URL?.trim() || DEFAULT_DATABASE_URL,
+    redisUrl: env.REDIS_URL?.trim(),
     sessionSecret: readSessionSecret(env, nodeEnv),
     metaAds: {
       accessToken: trimEnv(env.META_ADS_ACCESS_TOKEN),

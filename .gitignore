@@ -1,63 +1,49 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+```
+# Dependencies
+node_modules/
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-runtime/
-
-# Local secrets and generated operational backups
+# Environment
 .env
+.env.local
 .env.*
-!.env.example
-*.bak-*
-.hermes-backups/
-runtime/
-backups/
-apps/api/uploads/
 
-# Temporary operational scripts/artifacts created during live audits or ad probes
-tmp_*
-audit-*.cjs
-clean-*.cjs
-*-counts.cjs
-fks.cjs
-list_contacts.cjs
-operational-redacted-counts.cjs
-record_operational_insight.cjs
-ingest_advertorials.cjs
-ingest_advertorials.js
-ingest_meta_snapshot.cjs
-knowledge_search.cjs
-upsert_ad_knowledge.cjs
-meta_*_state_*.json
-meta_*_result_*.json
-meta_*_uploads_*.json
-enervita_form_*_upsert.json
-scripts/meta-traffic-lpv-*.cjs
-scripts/create_lead_form_*.py
-scripts/publish_lead_form_ads_*.py
-scripts/retry_lead_form_publish_*.py
-scripts/source_brand_campaign.json
+# Logs
+*.log
 
-.deploy-reports/
-.env.prod
+# Temporary files
+*.tmp
+*.swp
+
+# IDE
+.vscode/
+.idea/
+
+# Build artifacts
+dist/
+build/
+target/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Compiled
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.a
+*.out
+
+# Coverage
+coverage/
+htmlcov/
+
+# System files
+.DS_Store
+Thumbs.db
+
+```
