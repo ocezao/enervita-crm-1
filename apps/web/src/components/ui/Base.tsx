@@ -43,7 +43,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 export const Card = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-  <div className={cn('bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden', className)}>
+  <div className={cn('crm-card bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden', className)}>
     {children}
   </div>
 );

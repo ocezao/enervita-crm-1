@@ -15,7 +15,6 @@ const Tasks = lazy(() => import('./pages/Tasks'));
 const Proposals = lazy(() => import('./pages/Proposals'));
 const Automations = lazy(() => import('./pages/Automations'));
 const Webhooks = lazy(() => import('./pages/Webhooks'));
-const Analytics = lazy(() => import('./pages/Analytics'));
 const Ads = lazy(() => import('./pages/Ads'));
 const AiAssistant = lazy(() => import('./pages/AiAssistant'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -49,7 +48,6 @@ function App() {
               <Route path="/proposals" element={<ProtectedRoute requiredAnyPermission={["page.proposals", "proposal.view"]}><Proposals /></ProtectedRoute>} />
               <Route path="/automations" element={<ProtectedRoute requiredAnyPermission={["page.automations", "automation.manage"]}><Automations /></ProtectedRoute>} />
               <Route path="/webhooks" element={<ProtectedRoute requiredAnyPermission={["page.webhooks", "webhook.manage", "webhook.test"]}><Webhooks /></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute requiredAnyPermission={["page.analytics", "analytics.view", "tracking.view"]}><Analytics /></ProtectedRoute>} />
               <Route path="/ads" element={<ProtectedRoute requiredAnyPermission={["page.ads", "ads.view"]}><Ads /></ProtectedRoute>} />
               <Route path="/ai" element={<ProtectedRoute requiredAnyPermission={["page.ai_assistant"]}><AiAssistant /></ProtectedRoute>} />
               <Route path="/profile" element={<Profile />} />

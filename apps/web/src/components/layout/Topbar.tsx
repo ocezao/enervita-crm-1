@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, Bot, Command, FileText, Kanban, LayoutDashboard, LogOut, Megaphone, Plus, Search, Settings, Sparkles, UserRound, Users, CheckSquare, Zap, BarChart3 } from 'lucide-react';
+import { Bell, Bot, Command, FileText, Kanban, LayoutDashboard, LogOut, Megaphone, Plus, Search, Settings, Sparkles, UserRound, Users, CheckSquare, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/useAuth';
@@ -26,7 +26,6 @@ const pageSuggestions: SearchSuggestion[] = [
   { id: 'tasks', type: 'page', label: 'Tarefas', description: 'Follow-ups e atividades atribuídas', path: '/tasks', keywords: 'tarefas follow up pendencias agenda atribuida responsavel vencimento', icon: CheckSquare, requiredAny: ['page.tasks'] },
   { id: 'proposals', type: 'page', label: 'Propostas', description: 'Propostas comerciais e simulações', path: '/proposals', keywords: 'propostas orçamento contrato economia simulação', icon: FileText, requiredAny: ['page.proposals', 'proposal.view'] },
   { id: 'automations', type: 'page', label: 'Automações', description: 'Fluxos e rotinas operacionais', path: '/automations', keywords: 'automacao automações n8n workflows fluxos gatilhos', icon: Zap, requiredAny: ['page.automations', 'automation.manage'] },
-  { id: 'analytics', type: 'page', label: 'Analytics', description: 'Métricas, tracking e aquisição', path: '/analytics', keywords: 'analytics metricas trafego eventos tracking capi pixel origem campanha', icon: BarChart3, requiredAny: ['page.analytics', 'analytics.view', 'tracking.view'] },
   { id: 'ads', type: 'page', label: 'Campanhas', description: 'Meta/Google Ads e mídia paga', path: '/ads', keywords: 'ads campanhas anúncios anuncios meta google trafego pago criativos', icon: Megaphone, requiredAny: ['page.ads', 'ads.view'] },
   { id: 'ai', type: 'page', label: 'Assistente IA', description: 'Perguntas sobre dados do CRM', path: '/ai', keywords: 'ia assistente inteligencia artificial chat pergunta dados', icon: Bot, requiredAny: ['page.ai_assistant'] },
   { id: 'settings', type: 'page', label: 'Configurações', description: 'Ajustes, usuários e permissões', path: '/settings', keywords: 'configuracoes ajustes usuários usuarios permissões permissoes aparência', icon: Settings, requiredAny: ['page.settings', 'settings.manage', 'user.manage'] },

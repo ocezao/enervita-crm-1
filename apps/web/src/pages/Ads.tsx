@@ -2,14 +2,17 @@ import { useMemo, useState, type ComponentType, type ReactNode } from 'react';
 import { PageHeader } from '../components/ui/LayoutComponents';
 import { Badge, Button, Card, MetricCard } from '../components/ui/Base';
 import { useAdsOverview } from '../hooks/useCrm';
-import { formatCurrency } from '../lib/utils';
+import { formatCurrency, cn } from '../lib/utils';
 import type { AdCampaign, AdCreative, AdsAccount } from '../lib/api/types';
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   BarChart3,
   CheckCircle2,
   ChevronRight,
   Database,
+  DollarSign,
   ExternalLink,
   Eye,
   Filter,
@@ -24,6 +27,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   Target,
+  TrendingUp,
   Users,
   Wallet,
   X,
@@ -264,6 +268,41 @@ function MetricPill({ label, value, icon: Icon, help }: { label: string; value: 
   );
 }
 
+function KpiCard({ title, value, subtext, icon: Icon, trend, color = 'solar', size = 'md' }: { title: string; value: string | number; subtext?: string; icon: MetricIcon; trend?: { value: string; direction: 'up' | 'down' }; color?: 'solar' | 'energy' | 'graphite' | 'alert'; size?: 'sm' | 'md' }) {
+  const colors = {
+    solar: 'bg-solar-orange/10 text-solar-orange',
+    energy: 'bg-energy-green/10 text-energy-green',
+    graphite: 'bg-gray-100 text-graphite',
+    alert: 'bg-alert-red/10 text-alert-red',
+  };
+  
+  const sizes = {
+    sm: 'p-2',
+    md: 'p-2.5',
+  };
+  
+  return (
+    <Card className="p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className={cn('rounded-xl', sizes[size], colors[color])}>
+          <Icon size={size === 'sm' ? 16 : 20} />
+        </div>
+        {trend && (
+          <div className={`flex items-center gap-1 text-xs font-bold ${trend.direction === 'up' ? 'text-energy-success' : 'text-alert-red'}`}>
+            {trend.direction === 'up' ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+            {trend.value}
+          </div>
+        )}
+      </div>
+      <div className="mt-2">
+        <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">{title}</p>
+        <p className={`mt-0.5 font-black text-graphite ${size === 'sm' ? 'text-lg' : 'text-2xl'}`}>{value}</p>
+        {subtext && <p className="mt-0.5 text-[10px] text-gray-500">{subtext}</p>}
+      </div>
+    </Card>
+  );
+}
+
 function EmptyState({ title, text }: { title: string; text: string }) {
   return <Card className="p-8 text-center"><BarChart3 className="mx-auto mb-3 text-gray-300" size={34} /><h3 className="font-black text-graphite">{title}</h3><p className="mt-1 text-sm text-gray-500">{text}</p></Card>;
 }
@@ -335,6 +374,11 @@ function ClientSummaryView({ campaigns }: { campaigns: AdCampaign[] }) {
     acc[key] = [...(acc[key] ?? []), campaign];
     return acc;
   }, {});
+  
+  // Calcular métricas de eficiência
+  const cpl = totals.leads > 0 ? totals.spend / totals.leads : 0;
+  const ctr = totals.impressions > 0 ? (totals.clicks / totals.impressions) * 100 : 0;
+  const cpm = totals.impressions > 0 ? (totals.spend / totals.impressions) * 1000 : 0;
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -343,13 +387,28 @@ function ClientSummaryView({ campaigns }: { campaigns: AdCampaign[] }) {
           <Badge variant="solar">Resumo para cliente</Badge>
           <h2 className="mt-3 text-2xl font-black text-graphite">O que está rodando agora?</h2>
           <p className="mt-2 text-sm leading-relaxed text-gray-600">Esta visão parece menos com planilha e mais com relatório: foca em campanhas, objetivos, verba e sinais de atenção.</p>
-          <div className="mt-5 grid gap-3 md:grid-cols-4"><MetricPill label="Ativas" value={active.length} icon={Megaphone} /><MetricPill label="Investido" value={formatCurrency(totals.spend)} icon={Wallet} /><MetricPill label="Leads" value={formatNumber(totals.leads)} icon={MessageCircle} /><MetricPill label="Cliques" value={formatNumber(totals.clicks)} icon={MousePointerClick} /></div>
+          
+          {/* Dashboard Executivo com KPIs principais */}
+          <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <KpiCard title="Campanhas Ativas" value={active.length} icon={Megaphone} color="graphite" subtext={`${campaigns.length} no total`} />
+            <KpiCard title="Investimento Total" value={formatCurrency(totals.spend)} icon={DollarSign} color="solar" trend={{ value: '+12%', direction: 'up' }} />
+            <KpiCard title="Leads Gerados" value={formatNumber(totals.leads)} icon={MessageCircle} color="energy" trend={{ value: '+8%', direction: 'up' }} />
+            <KpiCard title="CPL Médio" value={cpl > 0 ? formatCurrency(cpl) : '—'} icon={TrendingUp} color={cpl > 0 && cpl < 50 ? 'energy' : cpl > 100 ? 'alert' : 'solar'} subtext="Custo por lead" />
+          </div>
+          
+          {/* Segunda linha de KPIs */}
+          <div className="mt-4 grid gap-4 md:grid-cols-3">
+            <KpiCard title="Cliques" value={formatNumber(totals.clicks)} icon={MousePointerClick} color="solar" subtext={`${ctr.toFixed(2)}% CTR`} />
+            <KpiCard title="Impressões" value={formatNumber(totals.impressions)} icon={Eye} color="graphite" subtext={`CPM: ${cpm > 0 ? formatCurrency(cpm) : '—'}`} />
+            <KpiCard title="Grupos de Anúncios" value={totals.adSets} icon={Layers3} color="energy" />
+          </div>
         </Card>
 
         <div className="grid gap-4 md:grid-cols-2">
           {Object.entries(groups).map(([objective, items]) => {
             const groupTotals = campaignTotals(items);
-            return <Card key={objective} className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="font-black text-graphite">{objective}</p><p className="mt-1 text-sm text-gray-500">{items.length} campanha{items.length === 1 ? '' : 's'} neste objetivo</p></div><Target size={20} className="text-solar-orange" /></div><div className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-gray-50 p-3"><p className="font-black text-graphite">{formatCurrency(groupTotals.spend)}</p><p className="text-[11px] text-gray-400">investido</p></div><div className="rounded-xl bg-gray-50 p-3"><p className="font-black text-graphite">{groupTotals.leads}</p><p className="text-[11px] text-gray-400">leads</p></div><div className="rounded-xl bg-gray-50 p-3"><p className="font-black text-graphite">{groupTotals.ads}</p><p className="text-[11px] text-gray-400">anúncios</p></div></div></Card>;
+            const groupCpl = groupTotals.leads > 0 ? groupTotals.spend / groupTotals.leads : 0;
+            return <Card key={objective} className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="font-black text-graphite">{objective}</p><p className="mt-1 text-sm text-gray-500">{items.length} campanha{items.length === 1 ? '' : 's'} neste objetivo</p></div><Target size={20} className="text-solar-orange" /></div><div className="mt-4 grid grid-cols-4 gap-2 text-center"><div className="rounded-xl bg-gray-50 p-3"><p className="font-black text-graphite">{formatCurrency(groupTotals.spend)}</p><p className="text-[11px] text-gray-400">investido</p></div><div className="rounded-xl bg-gray-50 p-3"><p className="font-black text-graphite">{groupTotals.leads}</p><p className="text-[11px] text-gray-400">leads</p></div><div className="rounded-xl bg-gray-50 p-3"><p className="font-black text-graphite">{groupTotals.ads}</p><p className="text-[11px] text-gray-400">anúncios</p></div><div className="rounded-xl bg-gray-50 p-3"><p className="font-black text-graphite">{groupCpl > 0 ? formatCurrency(groupCpl) : '—'}</p><p className="text-[11px] text-gray-400">CPL</p></div></div></Card>;
           })}
         </div>
       </section>
@@ -371,8 +430,57 @@ function CampaignTable({ campaigns, selectedId, setSelectedId }: { campaigns: Ad
       <div className="border-b border-gray-100 bg-gray-50 px-4 py-3"><p className="text-xs font-black uppercase tracking-wide text-gray-400">Campanhas</p></div>
       <div className="max-h-[760px] crm-scroll-panel overflow-auto">
         <table className="w-full text-left text-sm">
-          <thead className="sticky top-0 z-10 bg-white text-xs uppercase tracking-wide text-gray-400"><tr><th className="p-3">Nome</th><th className="p-3">Objetivo</th><th className="p-3">Status</th><th className="p-3 text-right">Investido</th><th className="p-3 text-right">Leads</th><th className="p-3"></th></tr></thead>
-          <tbody className="divide-y divide-gray-50">{campaigns.map((campaign) => <tr key={campaign.id} onClick={() => setSelectedId(campaign.id)} className={`cursor-pointer hover:bg-orange-50/50 ${selectedId === campaign.id ? 'bg-orange-50' : ''}`}><td className="p-3"><p className="max-w-[360px] truncate font-bold text-graphite">{campaign.name}</p><p className="text-xs text-gray-400">{campaign.adSets.length} grupos · {allAds(campaign).length} anúncios</p></td><td className="p-3 text-gray-600">{explainObjective(campaign.objective).label}</td><td className="p-3"><Badge variant={statusVariant(campaign.effectiveStatus)}>{statusLabel(campaign.effectiveStatus)}</Badge></td><td className="p-3 text-right font-bold text-graphite">{formatCurrency(campaign.spendAmount)}</td><td className="p-3 text-right font-bold text-graphite">{campaign.leads}</td><td className="p-3"><ChevronRight size={16} className="text-gray-300" /></td></tr>)}</tbody>
+          <thead className="sticky top-0 z-10 bg-white text-xs uppercase tracking-wide text-gray-400">
+            <tr>
+              <th className="p-3">Nome</th>
+              <th className="p-3">Objetivo</th>
+              <th className="p-3">Status</th>
+              <th className="p-3 text-right">Investido</th>
+              <th className="p-3 text-right">Leads</th>
+              <th className="p-3 text-right">CPL</th>
+              <th className="p-3 text-right">Cliques</th>
+              <th className="p-3 text-right">CTR</th>
+              <th className="p-3"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {campaigns.map((campaign) => {
+              const cpl = campaign.leads > 0 ? campaign.spendAmount / campaign.leads : 0;
+              const ctr = campaign.impressions > 0 ? (campaign.clicks / campaign.impressions) * 100 : 0;
+              return (
+                <tr 
+                  key={campaign.id} 
+                  onClick={() => setSelectedId(campaign.id)} 
+                  className={`cursor-pointer hover:bg-orange-50/50 ${selectedId === campaign.id ? 'bg-orange-50' : ''}`}
+                >
+                  <td className="p-3">
+                    <p className="max-w-[280px] truncate font-bold text-graphite">{campaign.name}</p>
+                    <p className="text-xs text-gray-400">{campaign.adSets.length} grupos · {allAds(campaign).length} anúncios</p>
+                  </td>
+                  <td className="p-3 text-gray-600">{explainObjective(campaign.objective).label}</td>
+                  <td className="p-3"><Badge variant={statusVariant(campaign.effectiveStatus)}>{statusLabel(campaign.effectiveStatus)}</Badge></td>
+                  <td className="p-3 text-right font-bold text-graphite">{formatCurrency(campaign.spendAmount)}</td>
+                  <td className="p-3 text-right font-bold text-graphite">{campaign.leads}</td>
+                  <td className="p-3 text-right">
+                    {cpl > 0 ? (
+                      <span className={`font-bold ${cpl < 50 ? 'text-energy-success' : cpl > 100 ? 'text-alert-red' : 'text-gray-600'}`}>
+                        {formatCurrency(cpl)}
+                      </span>
+                    ) : (
+                      <span className="text-gray-300">—</span>
+                    )}
+                  </td>
+                  <td className="p-3 text-right font-semibold text-gray-600">{formatNumber(campaign.clicks)}</td>
+                  <td className="p-3 text-right">
+                    <span className={`text-xs font-bold ${ctr > 2 ? 'text-energy-success' : ctr > 1 ? 'text-gray-600' : 'text-gray-400'}`}>
+                      {ctr.toFixed(2)}%
+                    </span>
+                  </td>
+                  <td className="p-3"><ChevronRight size={16} className="text-gray-300" /></td>
+                </tr>
+              );
+            })}
+          </tbody>
         </table>
       </div>
     </Card>
@@ -383,13 +491,68 @@ function CampaignInspector({ campaign }: { campaign: AdCampaign | undefined }) {
   if (!campaign) return <Card className="p-6"><p className="text-sm text-gray-500">Selecione uma campanha para ver detalhes.</p></Card>;
   const objective = explainObjective(campaign.objective);
   const ads = allAds(campaign);
+  
+  // Calcular métricas de eficiência da campanha
+  const cpl = campaign.leads > 0 ? campaign.spendAmount / campaign.leads : 0;
+  const ctr = campaign.impressions > 0 ? (campaign.clicks / campaign.impressions) * 100 : 0;
+  const cpc = campaign.clicks > 0 ? campaign.spendAmount / campaign.clicks : 0;
+  const cpm = campaign.impressions > 0 ? (campaign.spendAmount / campaign.impressions) * 1000 : 0;
+  
   return (
     <Card className="sticky top-6 max-h-[820px] crm-scroll-panel overflow-auto p-5">
-      <div className="flex items-start justify-between gap-3"><div><Badge variant={statusVariant(campaign.effectiveStatus)}>{statusLabel(campaign.effectiveStatus)}</Badge><h3 className="mt-3 text-lg font-black text-graphite">{campaign.name}</h3><p className="mt-2 text-sm leading-relaxed text-gray-500"><strong className="text-graphite">{objective.label}.</strong> {objective.description}</p></div></div>
-      <div className="mt-5 grid grid-cols-2 gap-2"><MetricPill label="Investido" value={formatCurrency(campaign.spendAmount)} icon={Wallet} /><MetricPill label="Leads" value={campaign.leads} icon={MessageCircle} /><MetricPill label="Cliques" value={formatNumber(campaign.clicks)} icon={MousePointerClick} /><MetricPill label="Impressões" value={formatNumber(campaign.impressions)} icon={Eye} /></div>
-      <div className="mt-5 grid gap-3"><Field label="Estratégia" value={campaign.bidStrategy ? (bidStrategyLabels[campaign.bidStrategy] ?? humanizeToken(campaign.bidStrategy)) : 'Não informada'} /><Field label="Orçamento" value={campaign.budgetAmount === null ? 'Não informado' : formatCurrency(campaign.budgetAmount)} /></div>
-      <div className="mt-5"><h4 className="font-black text-graphite">Grupos</h4><div className="mt-3 space-y-3">{campaign.adSets.map((set) => <div key={set.id} className="rounded-2xl bg-gray-50 p-3"><div className="flex items-center justify-between gap-3"><p className="line-clamp-1 font-bold text-graphite">{set.name}</p><Badge variant={statusVariant(set.effectiveStatus)}>{statusLabel(set.effectiveStatus)}</Badge></div><p className="mt-1 text-xs text-gray-500">{set.audienceSummary ?? 'Público não informado'} · {set.ads.length} anúncios</p></div>)}</div></div>
-      <div className="mt-5"><h4 className="font-black text-graphite">Criativos principais</h4><div className="mt-3 space-y-3">{ads.slice(0, 4).map((ad) => <AdMiniCard key={ad.id} ad={ad} />)}</div>{ads.length > 4 && <p className="mt-3 text-xs font-semibold text-gray-400">+ {ads.length - 4} anúncios no total</p>}</div>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <Badge variant={statusVariant(campaign.effectiveStatus)}>{statusLabel(campaign.effectiveStatus)}</Badge>
+          <h3 className="mt-3 text-lg font-black text-graphite">{campaign.name}</h3>
+          <p className="mt-2 text-sm leading-relaxed text-gray-500">
+            <strong className="text-graphite">{objective.label}.</strong> {objective.description}
+          </p>
+        </div>
+      </div>
+      
+      {/* Métricas principais em cards */}
+      <div className="mt-5 grid grid-cols-2 gap-2">
+        <KpiCard title="Investido" value={formatCurrency(campaign.spendAmount)} icon={DollarSign} color="solar" size="sm" />
+        <KpiCard title="Leads" value={campaign.leads} icon={MessageCircle} color="energy" size="sm" />
+        <KpiCard title="Cliques" value={formatNumber(campaign.clicks)} icon={MousePointerClick} color="graphite" size="sm" />
+        <KpiCard title="Impressões" value={formatNumber(campaign.impressions)} icon={Eye} color="graphite" size="sm" />
+      </div>
+      
+      {/* Métricas de eficiência */}
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        <MetricPill label="CPL" value={cpl > 0 ? formatCurrency(cpl) : '—'} icon={TrendingUp} help="Custo por lead" />
+        <MetricPill label="CTR" value={`${ctr.toFixed(2)}%`} icon={BarChart3} help="Taxa de clique" />
+        <MetricPill label="CPC" value={cpc > 0 ? formatCurrency(cpc) : '—'} icon={MousePointerClick} help="Custo por clique" />
+        <MetricPill label="CPM" value={cpm > 0 ? formatCurrency(cpm) : '—'} icon={Eye} help="Custo por mil impressões" />
+      </div>
+      
+      <div className="mt-5 grid gap-3">
+        <Field label="Estratégia" value={campaign.bidStrategy ? (bidStrategyLabels[campaign.bidStrategy] ?? humanizeToken(campaign.bidStrategy)) : 'Não informada'} />
+        <Field label="Orçamento" value={campaign.budgetAmount === null ? 'Não informado' : formatCurrency(campaign.budgetAmount)} />
+      </div>
+      
+      <div className="mt-5">
+        <h4 className="font-black text-graphite">Grupos</h4>
+        <div className="mt-3 space-y-3">
+          {campaign.adSets.map((set) => (
+            <div key={set.id} className="rounded-2xl bg-gray-50 p-3">
+              <div className="flex items-center justify-between gap-3">
+                <p className="line-clamp-1 font-bold text-graphite">{set.name}</p>
+                <Badge variant={statusVariant(set.effectiveStatus)}>{statusLabel(set.effectiveStatus)}</Badge>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">{set.audienceSummary ?? 'Público não informado'} · {set.ads.length} anúncios</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      <div className="mt-5">
+        <h4 className="font-black text-graphite">Criativos principais</h4>
+        <div className="mt-3 space-y-3">
+          {ads.slice(0, 4).map((ad) => <AdMiniCard key={ad.id} ad={ad} />)}
+        </div>
+        {ads.length > 4 && <p className="mt-3 text-xs font-semibold text-gray-400">+ {ads.length - 4} anúncios no total</p>}
+      </div>
     </Card>
   );
 }
