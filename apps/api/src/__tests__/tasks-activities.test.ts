@@ -166,6 +166,8 @@ function makeNotificationsRepository(seed: Notification[] = []): NotificationsRe
           lead_without_next_action: 0,
           proposal_no_response: 0,
           opportunity_stale: 0,
+          lead_stale: 0,
+          seller_inactive: 0,
         },
         totalCreated: 0,
       };

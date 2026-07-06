@@ -238,6 +238,13 @@ function makeLeadsRepository(initialLeads: Lead[] = [makeLead()], options: FakeO
     async countStageHistory(tenantId, leadId) {
       return history.filter((row) => row.tenantId === tenantId && row.leadId === leadId).length;
     },
+    async updateLeadOwner(tenantId, leadId, sdrOwnerId) {
+      const lead = leads.find((item) => item.id === leadId && item.tenantId === tenantId);
+      if (!lead) return null;
+      lead.sdrOwnerId = sdrOwnerId;
+      return { ...lead, contact: { ...lead.contact } };
+    },
+    async createAuditLog() {},
   };
 }
 

@@ -3,10 +3,8 @@ import { canAccessStage, getStageScopeForUser, hasPermission, isKnownPipelineSta
 import { isAdminUser, type PublicUser } from '../auth/userRepository.ts';
 import type { UserRepository } from '../auth/userRepository.ts';
 import type { AuditContext } from '../users/repository.ts';
-import type { UserRepository } from '../auth/userRepository.ts';
 import type { LeadsRepository } from './repository.ts';
-import { LeadsOperationError } from './repository.ts';
-import type { UserRepository } from '../auth/userRepository.ts';
+import { LeadsNotFoundError, LeadsOperationError } from './repository.ts';
 import type { BulkSetLeadTagsInput, CreateLeadInput, LeadIdsInput, LeadListFilters, SetLeadTagsInput, StageChangeInput, UpdateLeadInput } from './validation.ts';
 
 export type RequestAuditMetadata = {

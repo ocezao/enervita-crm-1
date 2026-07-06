@@ -79,6 +79,8 @@ test('POST /api/notifications/run-rules runs commercial notification rules for a
       lead_without_next_action: 2,
       proposal_no_response: 3,
       opportunity_stale: 4,
+      lead_stale: 0,
+      seller_inactive: 0,
     },
     totalCreated: 10,
   };
@@ -97,7 +99,7 @@ test('POST /api/notifications/run-rules runs commercial notification rules for a
 test('POST /api/notifications/run-rules rejects non-admin users', async (t) => {
   const actor = makeAuthUser({ roles: ['sdr'], permissions: ['notification.view'] });
   const notificationsRepository = makeNotificationsRepository({
-    created: { task_overdue: 0, lead_without_next_action: 0, proposal_no_response: 0, opportunity_stale: 0 },
+    created: { task_overdue: 0, lead_without_next_action: 0, proposal_no_response: 0, opportunity_stale: 0, lead_stale: 0, seller_inactive: 0 },
     totalCreated: 0,
   });
   const app = createApp({ userRepository: makeUserRepository(actor), notificationsRepository, sessionSecret: SESSION_SECRET });

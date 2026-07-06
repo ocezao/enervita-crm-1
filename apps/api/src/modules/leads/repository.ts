@@ -688,7 +688,7 @@ async function resolveUserByService(client: PoolClient, tenantId: string, servic
   return null;
 }
 
-async function resolveSdrOwnerId(client: PoolClient, tenantId: string, requestedOwnerId?: string | null, leadData?: { priority?: string; metadata?: Record<string, unknown> }): Promise<string | null> {
+async function resolveSdrOwnerId(client: PoolClient, tenantId: string, requestedOwnerId?: string | null, leadData?: { priority?: string; metadata?: Record<string, unknown>; leadId?: string }): Promise<string | null> {
   if (requestedOwnerId) return requestedOwnerId;
 
   // Buscar regra ativa com menor prioridade
@@ -1203,7 +1203,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
       try {
         await client.query('begin');
         const contactId = await insertContact(client, context.tenantId, input.contact);
-        const sdrOwnerId = await resolveSdrOwnerId(client, context.tenantId, input.sdrOwnerId, { priority: input.priority ?? undefined, metadata: input.metadata ?? undefined, leadId: leadId });
+        const sdrOwnerId = await resolveSdrOwnerId(client, context.tenantId, input.sdrOwnerId, { priority: input.priority ?? undefined, metadata: input.metadata ?? undefined, leadId: undefined });
         const pipeline = await resolvePipelineStage(client, context.tenantId, input.pipelineKey, input.pipelineStageKey, input.stage);
         const leadResult = await client.query(
           `insert into leads (tenant_id, contact_id, stage, pipeline_key, pipeline_stage_key, qualification_status, lead_source, utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbp, fbc, fbclid, gclid, estimated_ticket, sdr_owner_id, priority, notes, metadata)
@@ -1224,7 +1224,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         await queueMetaStageEvent(client, context, lead, 'created', null);
         await client.query('commit');
         // FASE 4: Calcular score após criar lead (async, não bloqueia)
-        this.calculateQualificationScore(context.tenantId, leadId, pipeline.pipelineKey).catch(() => {});
+        this.calculateQualificationScore?.(context.tenantId, leadId, pipeline.pipelineKey).catch(() => {});
         return lead;
       } catch (error) {
         await client.query('rollback');
@@ -1338,7 +1338,7 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         await queueMetaStageEvent(client, context, after, 'stage_changed', before.stage);
         await client.query('commit');
         // FASE 4: Recalcular score após mudança de estágio
-        this.calculateQualificationScore(context.tenantId, leadId, pipeline.pipelineKey).catch(() => {});
+        this.calculateQualificationScore?.(context.tenantId, leadId, pipeline.pipelineKey).catch(() => {});
         return after;
       } catch (error) {
         await client.query('rollback');
