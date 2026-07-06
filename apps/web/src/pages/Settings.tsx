@@ -88,7 +88,7 @@ export default function Settings() {
               key={tab.id}
               onClick={() => openTab(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                activeTab === tab.id ? 'bg-solar-orange/10 text-solar-orange shadow-sm' : 'text-gray-500 hover:bg-gray-50'
+                activeTab === tab.id ? 'bg-solar-orange/10 text-solar-orange shadow-sm' : 'text-graphite-soft hover:bg-warm-sand/50'
               }`}
             >
               <tab.icon size={18} />
@@ -105,7 +105,7 @@ export default function Settings() {
           {activeTab === 'appearance' && <AppearanceSettingsPanel />}
           {activeTab === 'integrations' && <IntegrationsSettings />}
           {activeTab !== 'general' && activeTab !== 'users' && activeTab !== 'lead-routing' && activeTab !== 'pipeline' && activeTab !== 'appearance' && activeTab !== 'integrations' && (
-            <Card className="p-12 text-center text-gray-400">Esta seção de configurações será implementada na versão final.</Card>
+            <Card className="p-12 text-center text-graphite-soft">Esta seção de configurações será implementada na versão final.</Card>
           )}
         </main>
       </div>
@@ -280,7 +280,7 @@ function LeadRoutingSettings() {
   ];
 
   if (loading) {
-    return <Card className="p-8 text-sm font-semibold text-gray-500">Carregando atribuicao de leads...</Card>;
+    return <Card className="p-8 text-sm font-semibold text-graphite-soft">Carregando atribuicao de leads...</Card>;
   }
 
   if (!config) {
@@ -301,25 +301,25 @@ function LeadRoutingSettings() {
                 <Badge variant="solar">Distribuicao comercial</Badge>
               </div>
               <h3 className="text-2xl font-black text-graphite">Atribuir Leads</h3>
-              <p className="text-sm text-gray-500 leading-relaxed mt-1 max-w-3xl">
+              <p className="text-sm text-graphite-soft leading-relaxed mt-1 max-w-3xl">
                 Defina quem recebe leads por servico da Enervita. Ative regras de distribuicao para personalizar como os leads sao atribuidos aos vendedores.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 min-w-[280px]">
               <div className="rounded-2xl bg-white/80 border border-white p-4">
-                <p className="text-xs text-gray-500">No aleatorio</p>
+                <p className="text-xs text-graphite-soft">No aleatorio</p>
                 <p className="text-2xl font-black text-graphite">{summary.random}</p>
               </div>
               <div className="rounded-2xl bg-white/80 border border-white p-4">
-                <p className="text-xs text-gray-500">Por servico</p>
+                <p className="text-xs text-graphite-soft">Por servico</p>
                 <p className="text-2xl font-black text-graphite">{summary.serviceUsers}</p>
               </div>
               <div className="rounded-2xl bg-white/80 border border-white p-4">
-                <p className="text-xs text-gray-500">Nao recebem</p>
+                <p className="text-xs text-graphite-soft">Nao recebem</p>
                 <p className="text-2xl font-black text-graphite">{summary.none}</p>
               </div>
               <div className="rounded-2xl bg-white/80 border border-white p-4">
-                <p className="text-xs text-gray-500">Reatribuicao</p>
+                <p className="text-xs text-graphite-soft">Reatribuicao</p>
                 <p className="text-2xl font-black text-graphite">{autoReassign?.enabled ? 'Ativa' : 'Inativa'}</p>
               </div>
             </div>
@@ -332,7 +332,7 @@ function LeadRoutingSettings() {
         <SectionTitle icon={Shuffle} title="Regras de Distribuicao" description="Escolha como os leads sao atribuidos aos vendedores. Ative uma ou mais regras para personalizar a distribuicao." />
         <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {rulesLoading ? (
-            <p className="text-sm text-gray-500">Carregando regras...</p>
+            <p className="text-sm text-graphite-soft">Carregando regras...</p>
           ) : (
             rules.map((rule) => (
               <div
@@ -340,7 +340,7 @@ function LeadRoutingSettings() {
                 className={`rounded-2xl border p-4 transition-all ${
                   rule.isActive
                     ? 'border-solar-orange/30 bg-solar-orange/5'
-                    : 'border-gray-200 bg-white hover:border-gray-300'
+                    : 'border-warm-sand/70 bg-white hover:border-warm-sand/70'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3 mb-3">
@@ -354,12 +354,12 @@ function LeadRoutingSettings() {
                       {rule.key === 'manual' && <Hand size={16} className="text-solar-orange" />}
                       <h4 className="font-bold text-sm text-graphite">{rule.name}</h4>
                     </div>
-                    <p className="text-xs text-gray-500 leading-relaxed">{rule.description}</p>
+                    <p className="text-xs text-graphite-soft leading-relaxed">{rule.description}</p>
                   </div>
                   <button
                     onClick={() => toggleRule(rule.key, !rule.isActive)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      rule.isActive ? 'bg-solar-orange' : 'bg-gray-200'
+                      rule.isActive ? 'bg-solar-orange' : 'bg-warm-sand/70'
                     }`}
                   >
                     <span
@@ -370,9 +370,9 @@ function LeadRoutingSettings() {
                   </button>
                 </div>
                 {rule.isActive && (
-                  <div className="mt-3 pt-3 border-t border-gray-100">
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">Configuracao</p>
-                    <p className="text-xs text-gray-500 mt-1">
+                  <div className="mt-3 pt-3 border-t border-warm-sand/50">
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-graphite-soft">Configuracao</p>
+                    <p className="text-xs text-graphite-soft mt-1">
                       {rule.key === 'round_robin' && 'Distribuicao circular ativa'}
                       {rule.key === 'random' && 'Distribuicao aleatoria ativa'}
                       {rule.key === 'by_service' && 'Configure servicos na secao abaixo'}
@@ -389,10 +389,10 @@ function LeadRoutingSettings() {
         
         {/* Random and Auto-reassign toggles */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className={`rounded-2xl border p-4 flex items-center justify-between gap-4 ${config.randomEnabled ? 'border-energy-green/30 bg-energy-green/10' : 'border-gray-200 bg-gray-50'}`}>
+          <label className={`rounded-2xl border p-4 flex items-center justify-between gap-4 ${config.randomEnabled ? 'border-energy-green/30 bg-energy-green/10' : 'border-warm-sand/70 bg-warm-sand/50'}`}>
             <span className="min-w-0">
               <strong className="block text-sm text-graphite">Aleatorio</strong>
-              <small className="text-xs text-gray-500 leading-relaxed">Liga o ciclo entre contas selecionadas como Aleatorio.</small>
+              <small className="text-xs text-graphite-soft leading-relaxed">Liga o ciclo entre contas selecionadas como Aleatorio.</small>
             </span>
             <input
               type="checkbox"
@@ -401,10 +401,10 @@ function LeadRoutingSettings() {
               onChange={(event) => setRandomEnabled(event.target.checked)}
             />
           </label>
-          <label className={`rounded-2xl border p-4 flex items-center justify-between gap-4 ${autoReassign?.enabled ? 'border-solar-orange/30 bg-solar-orange/10' : 'border-gray-200 bg-gray-50'}`}>
+          <label className={`rounded-2xl border p-4 flex items-center justify-between gap-4 ${autoReassign?.enabled ? 'border-solar-orange/30 bg-solar-orange/10' : 'border-warm-sand/70 bg-warm-sand/50'}`}>
             <span className="min-w-0">
               <strong className="block text-sm text-graphite">Reatribuicao Automatica</strong>
-              <small className="text-xs text-gray-500 leading-relaxed">Reatribui leads parados ha 7 dias para outro vendedor.</small>
+              <small className="text-xs text-graphite-soft leading-relaxed">Reatribui leads parados ha 7 dias para outro vendedor.</small>
             </span>
             <input
               type="checkbox"
@@ -423,12 +423,12 @@ function LeadRoutingSettings() {
           <SectionTitle icon={Tag} title="Atribuicao por Servico" description="Cada servico pode ter um vendedor especifico. Se nao configurado, o lead vai para round-robin." />
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeServices.map(service => (
-              <div key={service.key} className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
+              <div key={service.key} className="rounded-2xl border border-warm-sand/50 bg-warm-sand/50/60 p-4">
                 <p className="font-bold text-sm text-graphite">{service.label}</p>
                 <select
                   value={serviceAssignments[service.key] ?? ''}
                   onChange={(e) => handleServiceAssignment(service.key, e.target.value)}
-                  className="mt-2 w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white"
+                  className="mt-2 w-full border border-warm-sand/70 rounded-xl px-3 py-2 text-sm bg-white"
                 >
                   <option value="">Nenhum (round-robin)</option>
                   {config.users.filter(u => u.status === 'active').map(user => (
@@ -446,20 +446,20 @@ function LeadRoutingSettings() {
         <SectionTitle icon={Layers} title="Pipelines e responsaveis" description="Defina quais contas podem visualizar e receber leads em cada pipeline operacional." />
         <div className="mt-5 grid grid-cols-1 xl:grid-cols-3 gap-4">
           {config.pipelines.map((pipeline) => (
-            <div key={pipeline.key} className="rounded-2xl border border-gray-100 bg-gray-50/60 p-4">
+            <div key={pipeline.key} className="rounded-2xl border border-warm-sand/50 bg-warm-sand/50/60 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-black text-graphite">{pipeline.label}</p>
-                  <p className="text-xs text-gray-500 mt-1">{pipeline.userIds.length} responsavel(is)</p>
+                  <p className="text-xs text-graphite-soft mt-1">{pipeline.userIds.length} responsavel(is)</p>
                 </div>
                 <Badge variant={pipeline.key === 'energia_assinatura' ? 'solar' : pipeline.key === 'usina_solar' ? 'success' : 'default'}>{pipeline.key === 'geral' ? 'Fallback' : 'Servico'}</Badge>
               </div>
               <div className="mt-4 space-y-2">
                 {config.users.filter((user) => user.status === 'active').map((user) => (
-                  <label key={`${pipeline.key}-${user.id}`} className="flex items-center justify-between gap-3 rounded-xl bg-white border border-gray-100 px-3 py-2">
+                  <label key={`${pipeline.key}-${user.id}`} className="flex items-center justify-between gap-3 rounded-xl bg-white border border-warm-sand/50 px-3 py-2">
                     <span className="min-w-0">
                       <strong className="block truncate text-xs text-graphite">{user.name}</strong>
-                      <small className="block truncate text-[10px] text-gray-400">{user.email}</small>
+                      <small className="block truncate text-[10px] text-graphite-soft">{user.email}</small>
                     </span>
                     <input
                       type="checkbox"
@@ -497,13 +497,13 @@ function LeadRoutingSettings() {
                   <Badge variant={user.status === 'active' ? 'success' : 'error'}>{user.status === 'active' ? 'Ativo' : 'Inativo'}</Badge>
                   {user.roles.slice(0, 3).map((role) => <Badge key={role} variant="default">{role}</Badge>)}
                 </div>
-                <p className="text-xs text-gray-500 mt-1 break-all">{user.email}</p>
+                <p className="text-xs text-graphite-soft mt-1 break-all">{user.email}</p>
               </div>
               <select
                 value={user.ruleKey}
                 disabled={user.status !== 'active'}
                 onChange={(event) => setUserRule(user.id, event.target.value)}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white disabled:bg-gray-100 disabled:text-gray-400"
+                className="w-full border border-warm-sand/70 rounded-xl px-4 py-2.5 text-sm bg-white disabled:bg-warm-sand/50 disabled:text-graphite-soft"
               >
                 {ruleOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
               </select>
@@ -549,7 +549,7 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
           <div className="max-w-3xl min-w-0">
             <div className="flex items-center gap-3 mb-3"><div className="p-2.5 rounded-2xl bg-solar-orange text-white shadow-lg shadow-solar-orange/20"><Settings2 size={22} /></div><Badge variant="solar">Controle total do administrador</Badge></div>
             <h3 className="text-2xl md:text-3xl font-black text-graphite tracking-tight">Central de Administração</h3>
-            <p className="text-sm md:text-base text-gray-600 mt-2 leading-relaxed">Defina padrões comerciais, regras de governança, alertas e atalhos seguros para controlar o CRM da Enervita sem expor páginas ou funções para quem não tem permissão.</p>
+            <p className="text-sm md:text-base text-graphite mt-2 leading-relaxed">Defina padrões comerciais, regras de governança, alertas e atalhos seguros para controlar o CRM da Enervita sem expor páginas ou funções para quem não tem permissão.</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 min-w-0 w-full lg:w-auto lg:min-w-[280px]">
             <AdminMetric label="Leads ativos" value="CRM" tone="solar" />
@@ -565,22 +565,22 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
           <Card className="p-6">
             <SectionTitle icon={Settings2} title="Empresa e operação" description="Dados-base que orientam relatórios, atendimento e padrões do CRM." />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
-              <Field label="Nome da empresa"><input readOnly className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50" value="Enervita Energia Solar" /></Field>
-              <Field label="E-mail de suporte"><input readOnly className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50" value="contato@enervita.com.br" /></Field>
-              <Field label="Fuso horário"><input readOnly className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50" value="Brasília (GMT-3)" /></Field>
-              <Field label="Moeda e idioma"><input readOnly className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50" value="pt-BR / BRL" /></Field>
-              <Field label="Horário comercial padrão" hint="Usado como referência para SLA e alertas."><input readOnly className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50" value="Segunda a sexta, 08:00 às 18:00" /></Field>
-              <Field label="Equipe responsável padrão" hint="Novos leads sem dono entram para triagem comercial."><input readOnly className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-gray-50" value="Comercial / SDR Enervita" /></Field>
+              <Field label="Nome da empresa"><input readOnly className="w-full border border-warm-sand/70 rounded-xl px-4 py-2.5 text-sm bg-warm-sand/50" value="Enervita Energia Solar" /></Field>
+              <Field label="E-mail de suporte"><input readOnly className="w-full border border-warm-sand/70 rounded-xl px-4 py-2.5 text-sm bg-warm-sand/50" value="contato@enervita.com.br" /></Field>
+              <Field label="Fuso horário"><input readOnly className="w-full border border-warm-sand/70 rounded-xl px-4 py-2.5 text-sm bg-warm-sand/50" value="Brasília (GMT-3)" /></Field>
+              <Field label="Moeda e idioma"><input readOnly className="w-full border border-warm-sand/70 rounded-xl px-4 py-2.5 text-sm bg-warm-sand/50" value="pt-BR / BRL" /></Field>
+              <Field label="Horário comercial padrão" hint="Usado como referência para SLA e alertas."><input readOnly className="w-full border border-warm-sand/70 rounded-xl px-4 py-2.5 text-sm bg-warm-sand/50" value="Segunda a sexta, 08:00 às 18:00" /></Field>
+              <Field label="Equipe responsável padrão" hint="Novos leads sem dono entram para triagem comercial."><input readOnly className="w-full border border-warm-sand/70 rounded-xl px-4 py-2.5 text-sm bg-warm-sand/50" value="Comercial / SDR Enervita" /></Field>
             </div>
           </Card>
 
           <Card className="p-6">
             <SectionTitle icon={SlidersHorizontal} title="Preferências operacionais" description="Configurações funcionais salvas neste CRM para orientar a operação do gestor." />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
-              <Field label="SLA do primeiro contato" hint="Usado como referência visual para alertas e rotina comercial."><select value={generalPrefs.slaHours ?? '4'} onChange={event => updateGeneralPref('slaHours', event.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white"><option value="1">Até 1 hora</option><option value="4">Até 4 horas</option><option value="24">Até 24 horas</option></select></Field>
-              <Field label="Responsável padrão" hint="Texto de referência para novos cadastros sem dono definido."><input value={generalPrefs.defaultOwner ?? 'Comercial / SDR Enervita'} onChange={event => updateGeneralPref('defaultOwner', event.target.value)} className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white" /></Field>
-              <label className="rounded-2xl border border-gray-100 p-4 bg-gray-50/60 flex items-center justify-between gap-3"><span><strong className="block text-sm text-graphite">Exigir motivo de perda</strong><small className="text-xs text-gray-500">Regra administrativa para manter aprendizado comercial.</small></span><input type="checkbox" checked={generalPrefs.requireLostReason ?? true} onChange={event => updateGeneralPref('requireLostReason', event.target.checked)} /></label>
-              <label className="rounded-2xl border border-gray-100 p-4 bg-gray-50/60 flex items-center justify-between gap-3"><span><strong className="block text-sm text-graphite">Resumo diário do gestor</strong><small className="text-xs text-gray-500">Deixa a preferência pronta para automação aprovada.</small></span><input type="checkbox" checked={generalPrefs.dailySummary ?? false} onChange={event => updateGeneralPref('dailySummary', event.target.checked)} /></label>
+              <Field label="SLA do primeiro contato" hint="Usado como referência visual para alertas e rotina comercial."><select value={generalPrefs.slaHours ?? '4'} onChange={event => updateGeneralPref('slaHours', event.target.value)} className="w-full border border-warm-sand/70 rounded-xl px-4 py-2.5 text-sm bg-white"><option value="1">Até 1 hora</option><option value="4">Até 4 horas</option><option value="24">Até 24 horas</option></select></Field>
+              <Field label="Responsável padrão" hint="Texto de referência para novos cadastros sem dono definido."><input value={generalPrefs.defaultOwner ?? 'Comercial / SDR Enervita'} onChange={event => updateGeneralPref('defaultOwner', event.target.value)} className="w-full border border-warm-sand/70 rounded-xl px-4 py-2.5 text-sm bg-white" /></Field>
+              <label className="rounded-2xl border border-warm-sand/50 p-4 bg-warm-sand/50/60 flex items-center justify-between gap-3"><span><strong className="block text-sm text-graphite">Exigir motivo de perda</strong><small className="text-xs text-graphite-soft">Regra administrativa para manter aprendizado comercial.</small></span><input type="checkbox" checked={generalPrefs.requireLostReason ?? true} onChange={event => updateGeneralPref('requireLostReason', event.target.checked)} /></label>
+              <label className="rounded-2xl border border-warm-sand/50 p-4 bg-warm-sand/50/60 flex items-center justify-between gap-3"><span><strong className="block text-sm text-graphite">Resumo diário do gestor</strong><small className="text-xs text-graphite-soft">Deixa a preferência pronta para automação aprovada.</small></span><input type="checkbox" checked={generalPrefs.dailySummary ?? false} onChange={event => updateGeneralPref('dailySummary', event.target.checked)} /></label>
             </div>
             <div className="mt-5 flex items-center gap-3"><Button variant="primary" size="sm" className="gap-2" onClick={saveGeneralPrefs}><Save size={15} /> Salvar Geral</Button>{savedGeneral && <Badge variant="success">Preferências salvas</Badge>}</div>
           </Card>
@@ -608,7 +608,7 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
         <aside className="xl:sticky xl:top-6 space-y-4">
           <Card className="p-5">
             <h4 className="text-sm font-black text-graphite mb-2">Atalhos do administrador</h4>
-            <p className="text-xs text-gray-500 leading-relaxed mb-4">Só aparece para quem tem acesso à área de Configurações. Cada submenu continua respeitando a permissão própria.</p>
+            <p className="text-xs text-graphite-soft leading-relaxed mb-4">Só aparece para quem tem acesso à área de Configurações. Cada submenu continua respeitando a permissão própria.</p>
             <div className="space-y-2">
               <AdminShortcut icon={User} title="Usuários e permissões" description="Liberar páginas, funções e etapas por funcionário." onClick={() => onOpenTab('users')} />
               <AdminShortcut icon={Layers} title="Etapas do funil" description="Revisar SLA, dono, entrada e saída por etapa." onClick={() => onOpenTab('pipeline')} />
@@ -618,8 +618,8 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
           </Card>
 
           <Card className="p-5 border-energy-green/20 bg-energy-green/5">
-            <div className="flex items-center gap-3 mb-3"><div className="p-2 rounded-xl bg-energy-green text-white"><ShieldCheck size={17} /></div><div><h4 className="text-sm font-black text-graphite">Regra de acesso aplicada</h4><p className="text-xs text-gray-500">Nada deve aparecer sem permissão.</p></div></div>
-            <ul className="space-y-2 text-xs text-gray-600 leading-relaxed">
+            <div className="flex items-center gap-3 mb-3"><div className="p-2 rounded-xl bg-energy-green text-white"><ShieldCheck size={17} /></div><div><h4 className="text-sm font-black text-graphite">Regra de acesso aplicada</h4><p className="text-xs text-graphite-soft">Nada deve aparecer sem permissão.</p></div></div>
+            <ul className="space-y-2 text-xs text-graphite leading-relaxed">
               <li>• Menu lateral filtra páginas liberadas.</li>
               <li>• Submenus filtram funções administrativas.</li>
               <li>• Ações sensíveis continuam bloqueadas no servidor.</li>
@@ -636,9 +636,9 @@ function AdminMetric({ label, value, tone }: { label: string; value: string | nu
   const toneClass = tone === 'danger' ? 'text-red-600 bg-red-50' : tone === 'success' ? 'text-energy-green bg-energy-green/10' : tone === 'green' ? 'text-energy-green bg-mint-light/60' : 'text-solar-orange bg-solar-orange/10';
   return <div className={`min-w-0 rounded-2xl p-3 ${toneClass}`}><p className="break-words text-[10px] font-black uppercase tracking-wide opacity-80">{label}</p><p className="break-words text-2xl font-black mt-1">{value}</p></div>;
 }
-function PolicyCard({ icon: Icon, title, text }: { icon: AnyIcon; title: string; text: string }) { return <div className="rounded-2xl border border-gray-100 p-4 bg-white"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-solar-orange/10 text-solar-orange"><Icon size={17} /></div><div><p className="font-bold text-sm text-graphite">{title}</p><p className="text-xs text-gray-500 leading-relaxed mt-1">{text}</p></div></div></div>; }
-function AlertRule({ title, status, detail, danger = false }: { title: string; status: string; detail: string; danger?: boolean }) { return <div className={`rounded-2xl border p-4 ${danger ? 'border-red-100 bg-red-50/60' : 'border-gray-100 bg-gray-50/50'}`}><Badge variant={danger ? 'error' : 'success'}>{status}</Badge><p className="font-bold text-sm text-graphite mt-3">{title}</p><p className="text-xs text-gray-500 leading-relaxed mt-1">{detail}</p></div>; }
-function AdminShortcut({ icon: Icon, title, description, onClick }: { icon: AnyIcon; title: string; description: string; onClick: () => void }) { return <button aria-label="Abrir atalho administrativo" onClick={onClick} className="w-full text-left rounded-2xl border border-gray-100 p-3 hover:border-solar-orange/30 hover:bg-solar-orange/5 transition-all"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-gray-100 text-graphite"><Icon size={16} /></div><div><p className="text-sm font-bold text-graphite">{title}</p><p className="text-xs text-gray-500 leading-relaxed mt-0.5">{description}</p></div></div></button>; }
+function PolicyCard({ icon: Icon, title, text }: { icon: AnyIcon; title: string; text: string }) { return <div className="rounded-2xl border border-warm-sand/50 p-4 bg-white"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-solar-orange/10 text-solar-orange"><Icon size={17} /></div><div><p className="font-bold text-sm text-graphite">{title}</p><p className="text-xs text-graphite-soft leading-relaxed mt-1">{text}</p></div></div></div>; }
+function AlertRule({ title, status, detail, danger = false }: { title: string; status: string; detail: string; danger?: boolean }) { return <div className={`rounded-2xl border p-4 ${danger ? 'border-red-100 bg-red-50/60' : 'border-warm-sand/50 bg-warm-sand/50/50'}`}><Badge variant={danger ? 'error' : 'success'}>{status}</Badge><p className="font-bold text-sm text-graphite mt-3">{title}</p><p className="text-xs text-graphite-soft leading-relaxed mt-1">{detail}</p></div>; }
+function AdminShortcut({ icon: Icon, title, description, onClick }: { icon: AnyIcon; title: string; description: string; onClick: () => void }) { return <button aria-label="Abrir atalho administrativo" onClick={onClick} className="w-full text-left rounded-2xl border border-warm-sand/50 p-3 hover:border-solar-orange/30 hover:bg-solar-orange/5 transition-all"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-warm-sand/50 text-graphite"><Icon size={16} /></div><div><p className="text-sm font-bold text-graphite">{title}</p><p className="text-xs text-graphite-soft leading-relaxed mt-0.5">{description}</p></div></div></button>; }
 
 const presetCards: Array<{ id: AppearancePresetId; name: string; description: string; icon: AnyIcon; badge: string }> = [
   { id: 'enervita', name: 'Enervita Comercial', description: 'Visual oficial: claro, solar, familiar para operação diária.', icon: SunMedium, badge: 'Padrão' },
@@ -690,7 +690,7 @@ function AppearanceSettingsPanel() {
           <div className="max-w-3xl min-w-0">
             <div className="flex items-center gap-3 mb-3"><div className="p-2.5 rounded-2xl bg-solar-orange text-white shadow-lg shadow-solar-orange/20"><Palette size={22} /></div><Badge variant="solar">Personalização visual</Badge></div>
             <h3 className="text-2xl md:text-3xl font-black text-graphite tracking-tight">Aparência do CRM</h3>
-            <p className="text-sm md:text-base text-gray-600 mt-2 leading-relaxed">Ajuste o visual do Cockpit em camadas: presets rápidos, cores, layout, leitura e recursos avançados sem deixar nada escapar do container.</p>
+            <p className="text-sm md:text-base text-graphite mt-2 leading-relaxed">Ajuste o visual do Cockpit em camadas: presets rápidos, cores, layout, leitura e recursos avançados sem deixar nada escapar do container.</p>
           </div>
           <div className="flex flex-wrap gap-3">
             <Button variant="outline" onClick={handleReset} className="gap-2 bg-white/70"><RotateCcw size={16} /> Restaurar padrão</Button>
@@ -709,12 +709,12 @@ function AppearanceSettingsPanel() {
                 const presetValues = appearancePresets[preset.id];
                 const active = settings.preset === preset.id;
                 return (
-                  <button key={preset.id} onClick={() => selectPreset(preset.id)} className={`text-left rounded-2xl border p-4 transition-all ${active ? 'border-solar-orange bg-solar-orange/5 shadow-sm' : 'border-gray-100 hover:border-solar-orange/30 hover:bg-gray-50'}`}>
+                  <button key={preset.id} onClick={() => selectPreset(preset.id)} className={`text-left rounded-2xl border p-4 transition-all ${active ? 'border-solar-orange bg-solar-orange/5 shadow-sm' : 'border-warm-sand/50 hover:border-solar-orange/30 hover:bg-warm-sand/50'}`}>
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3"><div className={`p-2.5 rounded-xl ${active ? 'bg-solar-orange text-white' : 'bg-gray-100 text-gray-500'}`}><Icon size={18} /></div><div><p className="font-bold text-graphite">{preset.name}</p><Badge variant={active ? 'solar' : 'default'}>{preset.badge}</Badge></div></div>
+                      <div className="flex items-center gap-3"><div className={`p-2.5 rounded-xl ${active ? 'bg-solar-orange text-white' : 'bg-warm-sand/50 text-graphite-soft'}`}><Icon size={18} /></div><div><p className="font-bold text-graphite">{preset.name}</p><Badge variant={active ? 'solar' : 'default'}>{preset.badge}</Badge></div></div>
                       <div className="flex -space-x-1 pt-1">{[presetValues.primaryColor, presetValues.secondaryColor, presetValues.graphiteColor].map(color => <span key={color} className="h-5 w-5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: color }} />)}</div>
                     </div>
-                    <p className="text-xs text-gray-500 leading-relaxed mt-3">{preset.description}</p>
+                    <p className="text-xs text-graphite-soft leading-relaxed mt-3">{preset.description}</p>
                   </button>
                 );
               })}
@@ -724,7 +724,7 @@ function AppearanceSettingsPanel() {
           <Card className="p-6">
             <SectionTitle icon={SlidersHorizontal} title="2. Personalização básica" description="Controles simples que qualquer gestor entende sem mexer em código." />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
-              <Field label="Nome exibido no CRM" hint="Aparece em relatórios e cabeçalhos do sistema."><input className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" value={settings.companyName} onChange={event => update('companyName', event.target.value)} /></Field>
+              <Field label="Nome exibido no CRM" hint="Aparece em relatórios e cabeçalhos do sistema."><input className="w-full border border-warm-sand/70 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" value={settings.companyName} onChange={event => update('companyName', event.target.value)} /></Field>
               <Field label="Estilo dos cantos" hint="Altera a sensação visual dos cards e modais."><SegmentedControl value={settings.corners} options={[{ value: 'soft', label: 'Suave' }, { value: 'rounded', label: 'Redondo' }, { value: 'sharp', label: 'Reto' }]} onChange={value => update('corners', value as AppearanceSettings['corners'])} /></Field>
               <ColorField label="Cor principal" value={settings.primaryColor} onChange={value => update('primaryColor', value)} />
               <ColorField label="Cor secundária" value={settings.secondaryColor} onChange={value => update('secondaryColor', value)} />
@@ -753,27 +753,27 @@ function AppearanceSettingsPanel() {
               <AdvancedToggle icon={TableProperties} title="Tabelas compactas" description="Mostra mais leads, propostas e eventos sem rolagem excessiva." checked={settings.compactTables} onChange={value => update('compactTables', value)} />
               <AdvancedToggle icon={BellRing} title="Prioridade para atrasos" description="Destaca leads parados, tarefas vencidas e propostas sem retorno." checked={settings.highlightOverdue} onChange={value => update('highlightOverdue', value)} />
               <AdvancedToggle icon={LayoutDashboard} title="Modo executivo" description="Reduz detalhes técnicos e privilegia KPIs, funil e próximos passos." checked={settings.executiveMode} onChange={value => update('executiveMode', value)} />
-              <div className="rounded-2xl border border-dashed border-gray-200 p-4 bg-gray-50/70"><div className="flex items-center gap-3 mb-3"><div className="p-2 rounded-xl bg-white text-gray-500 border border-gray-100"><Lock size={17} /></div><div><p className="font-bold text-sm text-graphite">Governança futura</p><p className="text-xs text-gray-500">Avançado com aprovação do administrador.</p></div></div><ul className="space-y-2 text-xs text-gray-500"><li className="flex gap-2"><ImageIcon size={14} /> Upload de logo por unidade</li><li className="flex gap-2"><Type size={14} /> Biblioteca de fontes da marca</li><li className="flex gap-2"><Palette size={14} /> Temas por perfil de usuário</li></ul></div>
+              <div className="rounded-2xl border border-dashed border-warm-sand/70 p-4 bg-warm-sand/50/70"><div className="flex items-center gap-3 mb-3"><div className="p-2 rounded-xl bg-white text-graphite-soft border border-warm-sand/50"><Lock size={17} /></div><div><p className="font-bold text-sm text-graphite">Governança futura</p><p className="text-xs text-graphite-soft">Avançado com aprovação do administrador.</p></div></div><ul className="space-y-2 text-xs text-graphite-soft"><li className="flex gap-2"><ImageIcon size={14} /> Upload de logo por unidade</li><li className="flex gap-2"><Type size={14} /> Biblioteca de fontes da marca</li><li className="flex gap-2"><Palette size={14} /> Temas por perfil de usuário</li></ul></div>
             </div>
           </Card>
         </div>
-        <aside className="xl:sticky xl:top-6 space-y-4"><AppearancePreview settings={settings} completion={completion} /><Card className="p-5"><h4 className="text-sm font-black text-graphite mb-3">Leitura operacional</h4><div className="space-y-3 text-xs text-gray-600"><Insight label="Básico" text="Cores, nome, cantos e identidade visual." /><Insight label="Intermediário" text="Densidade, menu, dicas e conforto de navegação." /><Insight label="Avançado" text="Acessibilidade, modo executivo, prioridade de atrasos e regras por perfil." /></div></Card></aside>
+        <aside className="xl:sticky xl:top-6 space-y-4"><AppearancePreview settings={settings} completion={completion} /><Card className="p-5"><h4 className="text-sm font-black text-graphite mb-3">Leitura operacional</h4><div className="space-y-3 text-xs text-graphite"><Insight label="Básico" text="Cores, nome, cantos e identidade visual." /><Insight label="Intermediário" text="Densidade, menu, dicas e conforto de navegação." /><Insight label="Avançado" text="Acessibilidade, modo executivo, prioridade de atrasos e regras por perfil." /></div></Card></aside>
       </div>
     </div>
   );
 }
 
-function SectionTitle({ icon: Icon, title, description }: { icon: AnyIcon; title: string; description: string }) { return <div className="flex items-start gap-3"><div className="p-2.5 rounded-2xl bg-gray-100 text-graphite"><Icon size={19} /></div><div><h3 className="text-lg font-black text-graphite">{title}</h3><p className="text-sm text-gray-500 mt-1">{description}</p></div></div>; }
-function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) { return <label className="space-y-2 block"><span className="text-sm font-bold text-gray-700">{label}</span>{children}{hint && <span className="block text-xs text-gray-400 leading-relaxed">{hint}</span>}</label>; }
+function SectionTitle({ icon: Icon, title, description }: { icon: AnyIcon; title: string; description: string }) { return <div className="flex items-start gap-3"><div className="p-2.5 rounded-2xl bg-warm-sand/50 text-graphite"><Icon size={19} /></div><div><h3 className="text-lg font-black text-graphite">{title}</h3><p className="text-sm text-graphite-soft mt-1">{description}</p></div></div>; }
+function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) { return <label className="space-y-2 block"><span className="text-sm font-bold text-graphite">{label}</span>{children}{hint && <span className="block text-xs text-graphite-soft leading-relaxed">{hint}</span>}</label>; }
 function isHexColor(value: string) { return /^#[0-9a-fA-F]{6}$/.test(value); }
 function safeHex(value: string) { return isHexColor(value) ? value : '#F58220'; }
-function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { return <Field label={label}><div className="flex items-center gap-3 border border-gray-200 rounded-xl p-2 bg-white max-w-full overflow-hidden"><input aria-label={label} type="color" value={safeHex(value)} onChange={event => onChange(event.target.value)} className="h-9 w-11 shrink-0 rounded-lg border-none bg-transparent cursor-pointer" /><input value={value.toUpperCase()} maxLength={7} onChange={event => onChange(event.target.value.startsWith('#') ? event.target.value : `#${event.target.value}`)} onBlur={() => { if (!isHexColor(value)) onChange('#F58220'); }} className="flex-1 min-w-0 text-sm font-mono text-gray-700 focus:outline-none" /></div></Field>; }
-function SegmentedControl({ value, options, onChange }: { value: string; options: Array<{ value: string; label: string }>; onChange: (value: string) => void }) { return <div className="flex flex-wrap rounded-xl bg-gray-100 p-1 gap-1 max-w-full">{options.map(option => <button key={option.value} onClick={() => onChange(option.value)} className={`flex-1 min-w-[72px] rounded-lg px-2.5 py-2 text-[11px] font-bold transition-all ${value === option.value ? 'bg-white text-solar-orange shadow-sm' : 'text-gray-500 hover:text-graphite'}`}>{option.label}</button>)}</div>; }
-function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) { return <button onClick={() => onChange(!checked)} className="w-full flex items-center justify-between gap-3 text-left"><span className="text-xs font-bold text-gray-600">{label}</span><span className={`relative h-6 w-11 rounded-full transition-all shrink-0 ${checked ? 'bg-solar-orange' : 'bg-gray-200'}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${checked ? 'left-6' : 'left-1'}`} /></span></button>; }
-function OptionCard({ icon: Icon, title, description, children }: { icon: AnyIcon; title: string; description: string; children: ReactNode }) { return <div className="rounded-2xl border border-gray-100 p-4 bg-gray-50/40 space-y-4"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-white text-solar-orange border border-gray-100"><Icon size={17} /></div><div><p className="font-bold text-sm text-graphite">{title}</p><p className="text-xs text-gray-500 leading-relaxed mt-1">{description}</p></div></div>{children}</div>; }
-function AdvancedToggle({ icon: Icon, title, description, checked, onChange }: { icon: AnyIcon; title: string; description: string; checked: boolean; onChange: (value: boolean) => void }) { return <div className={`rounded-2xl border p-4 transition-all ${checked ? 'border-solar-orange/30 bg-solar-orange/5' : 'border-gray-100 bg-white'}`}><div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><div className={`p-2 rounded-xl ${checked ? 'bg-solar-orange text-white' : 'bg-gray-100 text-gray-500'}`}><Icon size={17} /></div><div><p className="font-bold text-sm text-graphite">{title}</p><p className="text-xs text-gray-500 leading-relaxed mt-1">{description}</p></div></div><div className="w-12"><Toggle checked={checked} label="" onChange={onChange} /></div></div></div>; }
-function AppearancePreview({ settings, completion }: { settings: AppearanceSettings; completion: number }) { const radius = settings.corners === 'sharp' ? '10px' : settings.corners === 'rounded' ? '28px' : '18px'; const cardPadding = settings.density === 'compact' ? '12px' : settings.density === 'spacious' ? '22px' : '16px'; const previewCardClass = settings.cardStyle === 'glass' ? 'bg-white/65 backdrop-blur shadow-sm' : settings.cardStyle === 'flat' ? 'bg-white border border-gray-100' : 'bg-white shadow-sm'; return <Card className="p-5 bg-white"><div className="flex items-center justify-between mb-4"><div><h4 className="text-sm font-black text-graphite">Prévia visual</h4><p className="text-xs text-gray-500">Como a equipe perceberá o CRM.</p></div><Badge variant="success">{completion}% pronto</Badge></div><div className="rounded-[24px] border border-gray-100 p-3 shadow-inner" style={{ background: settings.backgroundColor }}><div className="grid grid-cols-[70px_1fr] gap-3 min-h-[300px]"><div className="rounded-[18px] p-3 text-white flex flex-col gap-2" style={{ background: settings.graphiteColor }}><div className="h-8 w-8 rounded-xl bg-white/15" />{['Dash', 'Leads', 'Funil', 'Config'].map((item, index) => <div key={item} className={`h-8 rounded-xl ${index === 3 ? 'bg-white/20' : 'bg-white/8'} flex items-center justify-center text-[9px] font-bold`}>{settings.navigation === 'icons' ? item.slice(0, 1) : item}</div>)}</div><div className="space-y-3"><div className="flex items-center justify-between rounded-2xl bg-white/80 p-3"><div><p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">{settings.companyName}</p><p className="text-sm font-black" style={{ color: settings.graphiteColor }}>Configurações</p></div><div className="h-9 w-9 rounded-full" style={{ background: settings.primaryColor }} /></div><div className="grid grid-cols-2 gap-2">{['Leads', 'Propostas'].map((item, index) => <div key={item} className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><p className="text-[10px] font-bold text-gray-400">{item}</p><p className="text-xl font-black" style={{ color: index === 0 ? settings.primaryColor : settings.secondaryColor }}>{index === 0 ? '148' : '32'}</p></div>)}</div><div className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><div className="flex items-center justify-between mb-3"><p className="text-xs font-black" style={{ color: settings.graphiteColor }}>Funil visual</p>{settings.fontScale !== 'normal' && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white mr-1" style={{ background: settings.primaryColor }}>{settings.fontScale === 'extra' ? 'TEXTO+' : 'TEXTO'}</span>}{settings.executiveMode && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white" style={{ background: settings.secondaryColor }}>EXEC</span>}</div><div className="space-y-2">{[78, 54, 28].map((width, index) => <div key={width} className="h-3 rounded-full bg-gray-100 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${width}%`, background: index === 2 && settings.highlightOverdue ? settings.primaryColor : settings.secondaryColor }} /></div>)}</div></div>{settings.showHints && <div className="rounded-2xl border border-dashed bg-white/70 p-3" style={{ borderColor: settings.primaryColor }}><p className="text-[10px] font-bold" style={{ color: settings.primaryColor }}>Dica ativa</p><p className="text-[10px] text-gray-500">Use filtros salvos para acompanhar campanhas críticas.</p></div>}</div></div></div></Card>; }
-function Insight({ label, text }: { label: string; text: string }) { return <div className="flex gap-3 rounded-xl bg-gray-50 p-3"><span className="min-w-20 text-[10px] font-black text-solar-orange uppercase tracking-wide">{label}</span><span className="leading-relaxed">{text}</span></div>; }
+function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { return <Field label={label}><div className="flex items-center gap-3 border border-warm-sand/70 rounded-xl p-2 bg-white max-w-full overflow-hidden"><input aria-label={label} type="color" value={safeHex(value)} onChange={event => onChange(event.target.value)} className="h-9 w-11 shrink-0 rounded-lg border-none bg-transparent cursor-pointer" /><input value={value.toUpperCase()} maxLength={7} onChange={event => onChange(event.target.value.startsWith('#') ? event.target.value : `#${event.target.value}`)} onBlur={() => { if (!isHexColor(value)) onChange('#F58220'); }} className="flex-1 min-w-0 text-sm font-mono text-graphite focus:outline-none" /></div></Field>; }
+function SegmentedControl({ value, options, onChange }: { value: string; options: Array<{ value: string; label: string }>; onChange: (value: string) => void }) { return <div className="flex flex-wrap rounded-xl bg-warm-sand/50 p-1 gap-1 max-w-full">{options.map(option => <button key={option.value} onClick={() => onChange(option.value)} className={`flex-1 min-w-[72px] rounded-lg px-2.5 py-2 text-[11px] font-bold transition-all ${value === option.value ? 'bg-white text-solar-orange shadow-sm' : 'text-graphite-soft hover:text-graphite'}`}>{option.label}</button>)}</div>; }
+function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) { return <button onClick={() => onChange(!checked)} className="w-full flex items-center justify-between gap-3 text-left"><span className="text-xs font-bold text-graphite">{label}</span><span className={`relative h-6 w-11 rounded-full transition-all shrink-0 ${checked ? 'bg-solar-orange' : 'bg-warm-sand/70'}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-all ${checked ? 'left-6' : 'left-1'}`} /></span></button>; }
+function OptionCard({ icon: Icon, title, description, children }: { icon: AnyIcon; title: string; description: string; children: ReactNode }) { return <div className="rounded-2xl border border-warm-sand/50 p-4 bg-warm-sand/50/40 space-y-4"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-white text-solar-orange border border-warm-sand/50"><Icon size={17} /></div><div><p className="font-bold text-sm text-graphite">{title}</p><p className="text-xs text-graphite-soft leading-relaxed mt-1">{description}</p></div></div>{children}</div>; }
+function AdvancedToggle({ icon: Icon, title, description, checked, onChange }: { icon: AnyIcon; title: string; description: string; checked: boolean; onChange: (value: boolean) => void }) { return <div className={`rounded-2xl border p-4 transition-all ${checked ? 'border-solar-orange/30 bg-solar-orange/5' : 'border-warm-sand/50 bg-white'}`}><div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><div className={`p-2 rounded-xl ${checked ? 'bg-solar-orange text-white' : 'bg-warm-sand/50 text-graphite-soft'}`}><Icon size={17} /></div><div><p className="font-bold text-sm text-graphite">{title}</p><p className="text-xs text-graphite-soft leading-relaxed mt-1">{description}</p></div></div><div className="w-12"><Toggle checked={checked} label="" onChange={onChange} /></div></div></div>; }
+function AppearancePreview({ settings, completion }: { settings: AppearanceSettings; completion: number }) { const radius = settings.corners === 'sharp' ? '10px' : settings.corners === 'rounded' ? '28px' : '18px'; const cardPadding = settings.density === 'compact' ? '12px' : settings.density === 'spacious' ? '22px' : '16px'; const previewCardClass = settings.cardStyle === 'glass' ? 'bg-white/65 backdrop-blur shadow-sm' : settings.cardStyle === 'flat' ? 'bg-white border border-warm-sand/50' : 'bg-white shadow-sm'; return <Card className="p-5 bg-white"><div className="flex items-center justify-between mb-4"><div><h4 className="text-sm font-black text-graphite">Prévia visual</h4><p className="text-xs text-graphite-soft">Como a equipe perceberá o CRM.</p></div><Badge variant="success">{completion}% pronto</Badge></div><div className="rounded-[24px] border border-warm-sand/50 p-3 shadow-inner" style={{ background: settings.backgroundColor }}><div className="grid grid-cols-[70px_1fr] gap-3 min-h-[300px]"><div className="rounded-[18px] p-3 text-white flex flex-col gap-2" style={{ background: settings.graphiteColor }}><div className="h-8 w-8 rounded-xl bg-white/15" />{['Dash', 'Leads', 'Funil', 'Config'].map((item, index) => <div key={item} className={`h-8 rounded-xl ${index === 3 ? 'bg-white/20' : 'bg-white/8'} flex items-center justify-center text-[9px] font-bold`}>{settings.navigation === 'icons' ? item.slice(0, 1) : item}</div>)}</div><div className="space-y-3"><div className="flex items-center justify-between rounded-2xl bg-white/80 p-3"><div><p className="text-[10px] font-bold text-graphite-soft uppercase tracking-wide">{settings.companyName}</p><p className="text-sm font-black" style={{ color: settings.graphiteColor }}>Configurações</p></div><div className="h-9 w-9 rounded-full" style={{ background: settings.primaryColor }} /></div><div className="grid grid-cols-2 gap-2">{['Leads', 'Propostas'].map((item, index) => <div key={item} className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><p className="text-[10px] font-bold text-graphite-soft">{item}</p><p className="text-xl font-black" style={{ color: index === 0 ? settings.primaryColor : settings.secondaryColor }}>{index === 0 ? '148' : '32'}</p></div>)}</div><div className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><div className="flex items-center justify-between mb-3"><p className="text-xs font-black" style={{ color: settings.graphiteColor }}>Funil visual</p>{settings.fontScale !== 'normal' && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white mr-1" style={{ background: settings.primaryColor }}>{settings.fontScale === 'extra' ? 'TEXTO+' : 'TEXTO'}</span>}{settings.executiveMode && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white" style={{ background: settings.secondaryColor }}>EXEC</span>}</div><div className="space-y-2">{[78, 54, 28].map((width, index) => <div key={width} className="h-3 rounded-full bg-warm-sand/50 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${width}%`, background: index === 2 && settings.highlightOverdue ? settings.primaryColor : settings.secondaryColor }} /></div>)}</div></div>{settings.showHints && <div className="rounded-2xl border border-dashed bg-white/70 p-3" style={{ borderColor: settings.primaryColor }}><p className="text-[10px] font-bold" style={{ color: settings.primaryColor }}>Dica ativa</p><p className="text-[10px] text-graphite-soft">Use filtros salvos para acompanhar campanhas críticas.</p></div>}</div></div></div></Card>; }
+function Insight({ label, text }: { label: string; text: string }) { return <div className="flex gap-3 rounded-xl bg-warm-sand/50 p-3"><span className="min-w-20 text-[10px] font-black text-solar-orange uppercase tracking-wide">{label}</span><span className="leading-relaxed">{text}</span></div>; }
 
 
 
@@ -847,14 +847,14 @@ function PipelineSettings() {
         <SectionTitle icon={Layers} title="Linha visual do funil" description="Clique em uma etapa para ver objetivo, entrada, saída, automações e riscos." />
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {stages.map((stage, index) => (
-            <button key={stage.key} onClick={() => setSelectedStage(stage.key)} className={`text-left rounded-3xl border p-4 transition-all ${selectedStage === stage.key ? 'border-solar-orange bg-solar-orange/5 shadow-sm scale-[1.01]' : 'border-gray-100 bg-white hover:border-solar-orange/30'}`}>
+            <button key={stage.key} onClick={() => setSelectedStage(stage.key)} className={`text-left rounded-3xl border p-4 transition-all ${selectedStage === stage.key ? 'border-solar-orange bg-solar-orange/5 shadow-sm scale-[1.01]' : 'border-warm-sand/50 bg-white hover:border-solar-orange/30'}`}>
               <div className="flex items-center justify-between gap-3">
                 <span className={`h-9 w-9 rounded-2xl ${stage.tone} text-white flex items-center justify-center text-xs font-black`}>{index + 1}</span>
                 <Badge variant={leadCountByStage[stage.key] > 0 ? 'success' : 'default'}>{leadCountByStage[stage.key] ?? 0} lead(s)</Badge>
               </div>
               <h4 className="font-black text-graphite mt-4 leading-tight">{stage.name}</h4>
-              <p className="text-xs text-gray-500 mt-2 leading-relaxed">{stage.promise}</p>
-              <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-[10px] uppercase font-black tracking-wide text-gray-400"><span>{stage.owner}</span><span>{stage.sla}</span></div>
+              <p className="text-xs text-graphite-soft mt-2 leading-relaxed">{stage.promise}</p>
+              <div className="mt-4 pt-3 border-t border-warm-sand/50 flex items-center justify-between text-[10px] uppercase font-black tracking-wide text-graphite-soft"><span>{stage.owner}</span><span>{stage.sla}</span></div>
             </button>
           ))}
         </div>
@@ -872,12 +872,12 @@ function PipelineSettings() {
             <FunnelInfoCard label="Próxima ação da equipe" text={selected.nextAction} />
             <FunnelInfoCard label="Risco se não controlar" text={selected.risk} danger />
           </div>
-          <div className="mt-6 rounded-3xl bg-gray-50 p-5">
-            <p className="text-xs uppercase tracking-wide font-black text-gray-400 mb-3">Como a automação entra nesta etapa</p>
+          <div className="mt-6 rounded-3xl bg-warm-sand/50 p-5">
+            <p className="text-xs uppercase tracking-wide font-black text-graphite-soft mb-3">Como a automação entra nesta etapa</p>
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 items-stretch">
-              <div className="rounded-2xl bg-white border border-gray-100 p-4"><p className="text-xs text-gray-400 font-bold mb-1">Evento / gatilho</p><p className="font-black text-graphite">{selected.automation}</p></div>
+              <div className="rounded-2xl bg-white border border-warm-sand/50 p-4"><p className="text-xs text-graphite-soft font-bold mb-1">Evento / gatilho</p><p className="font-black text-graphite">{selected.automation}</p></div>
               <div className="hidden lg:flex items-center justify-center"><ArrowRight className="text-solar-orange" /></div>
-              <div className="rounded-2xl bg-white border border-gray-100 p-4"><p className="text-xs text-gray-400 font-bold mb-1">Integração</p><p className="font-black text-graphite">{selected.webhook}</p></div>
+              <div className="rounded-2xl bg-white border border-warm-sand/50 p-4"><p className="text-xs text-graphite-soft font-bold mb-1">Integração</p><p className="font-black text-graphite">{selected.webhook}</p></div>
             </div>
           </div>
         </Card>
@@ -885,10 +885,10 @@ function PipelineSettings() {
         <Card className="p-6">
           <SectionTitle icon={User} title="Dono e controle" description="Quem responde pela etapa e o que acompanhar." />
           <div className="mt-5 space-y-3">
-            <div className="rounded-2xl bg-gray-50 p-4"><p className="text-xs text-gray-400 font-black uppercase">Responsável</p><p className="text-lg font-black text-graphite mt-1">{selected.owner}</p></div>
-            <div className="rounded-2xl bg-gray-50 p-4"><p className="text-xs text-gray-400 font-black uppercase">Leads nesta etapa</p><p className="text-lg font-black text-energy-green mt-1">{leadCountByStage[selected.key] ?? 0}</p></div>
-            <div className="rounded-2xl bg-gray-50 p-4"><p className="text-xs text-gray-400 font-black uppercase">Automações relacionadas</p><p className="text-sm font-bold text-graphite mt-1">{matchingAutomations.length ? matchingAutomations.map(a => a.name).join(', ') : 'Sem regra ativa específica'}</p></div>
-            <div className="rounded-2xl bg-gray-50 p-4"><p className="text-xs text-gray-400 font-black uppercase">Integrações relacionadas</p><p className="text-sm font-bold text-graphite mt-1">{matchingWebhooks.length ? matchingWebhooks.map(w => w.name).join(', ') : 'Sem integração direta'}</p></div>
+            <div className="rounded-2xl bg-warm-sand/50 p-4"><p className="text-xs text-graphite-soft font-black uppercase">Responsável</p><p className="text-lg font-black text-graphite mt-1">{selected.owner}</p></div>
+            <div className="rounded-2xl bg-warm-sand/50 p-4"><p className="text-xs text-graphite-soft font-black uppercase">Leads nesta etapa</p><p className="text-lg font-black text-energy-green mt-1">{leadCountByStage[selected.key] ?? 0}</p></div>
+            <div className="rounded-2xl bg-warm-sand/50 p-4"><p className="text-xs text-graphite-soft font-black uppercase">Automações relacionadas</p><p className="text-sm font-bold text-graphite mt-1">{matchingAutomations.length ? matchingAutomations.map(a => a.name).join(', ') : 'Sem regra ativa específica'}</p></div>
+            <div className="rounded-2xl bg-warm-sand/50 p-4"><p className="text-xs text-graphite-soft font-black uppercase">Integrações relacionadas</p><p className="text-sm font-bold text-graphite mt-1">{matchingWebhooks.length ? matchingWebhooks.map(w => w.name).join(', ') : 'Sem integração direta'}</p></div>
           </div>
         </Card>
       </div>
@@ -897,10 +897,10 @@ function PipelineSettings() {
         <Card className="p-6 xl:col-span-2">
           <SectionTitle icon={Workflow} title="Automações por etapa" description="Onde cada regra atua dentro do funil e qual parte ainda depende de operação humana." />
           <div className="mt-5 space-y-3">
-            {automationsLoading ? <p className="text-sm text-gray-500">Carregando automações...</p> : automations.map(automation => (
-              <div key={automation.id} className="rounded-2xl border border-gray-100 p-4">
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-3"><div><h4 className="font-black text-graphite">{automation.name}</h4><code className="text-[10px] text-gray-400">{automation.trigger}</code></div><Badge variant={(automation.active || automation.status === 'active') ? 'success' : 'info'}>{automation.active || automation.status === 'active' ? 'ativa' : 'planejada'}</Badge></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3"><div className="rounded-xl bg-gray-50 p-3"><p className="text-[10px] uppercase font-black text-gray-400">Condições</p><p className="text-xs text-gray-600 mt-1">{automation.conditions.join(' • ')}</p></div><div className="rounded-xl bg-gray-50 p-3"><p className="text-[10px] uppercase font-black text-gray-400">Ações</p><p className="text-xs text-gray-600 mt-1">{automation.actions.join(' • ')}</p></div></div>
+            {automationsLoading ? <p className="text-sm text-graphite-soft">Carregando automações...</p> : automations.map(automation => (
+              <div key={automation.id} className="rounded-2xl border border-warm-sand/50 p-4">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-3"><div><h4 className="font-black text-graphite">{automation.name}</h4><code className="text-[10px] text-graphite-soft">{automation.trigger}</code></div><Badge variant={(automation.active || automation.status === 'active') ? 'success' : 'info'}>{automation.active || automation.status === 'active' ? 'ativa' : 'planejada'}</Badge></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3"><div className="rounded-xl bg-warm-sand/50 p-3"><p className="text-[10px] uppercase font-black text-graphite-soft">Condições</p><p className="text-xs text-graphite mt-1">{automation.conditions.join(' • ')}</p></div><div className="rounded-xl bg-warm-sand/50 p-3"><p className="text-[10px] uppercase font-black text-graphite-soft">Ações</p><p className="text-xs text-graphite mt-1">{automation.actions.join(' • ')}</p></div></div>
               </div>
             ))}
           </div>
@@ -908,8 +908,8 @@ function PipelineSettings() {
         <Card className="p-6">
           <SectionTitle icon={BellRing} title="Eventos e webhooks" description="Pontos onde o funil conversa com automações, fila e registros." />
           <div className="mt-5 space-y-3">
-            {webhooksLoading ? <p className="text-sm text-gray-500">Carregando webhooks...</p> : webhooks.map(webhook => (
-              <div key={webhook.id} className="rounded-2xl bg-gray-50 p-4"><div className="flex items-start justify-between gap-2"><p className="font-black text-sm text-graphite">{webhook.name}</p><Badge variant={webhook.status === 'active' ? 'success' : 'warning'}>{webhook.status === 'active' ? 'ativo' : webhook.status}</Badge></div><div className="flex flex-wrap gap-1 mt-3">{webhook.eventTypes.map(event => <span key={event} className="text-[9px] bg-white border border-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-mono">{event}</span>)}</div><p className="text-xs text-gray-500 mt-3">Segredo: <b className={webhook.secretConfigured ? 'text-energy-green' : 'text-alert-red'}>{webhook.secretConfigured ? 'configurado' : 'pendente'}</b></p></div>
+            {webhooksLoading ? <p className="text-sm text-graphite-soft">Carregando webhooks...</p> : webhooks.map(webhook => (
+              <div key={webhook.id} className="rounded-2xl bg-warm-sand/50 p-4"><div className="flex items-start justify-between gap-2"><p className="font-black text-sm text-graphite">{webhook.name}</p><Badge variant={webhook.status === 'active' ? 'success' : 'warning'}>{webhook.status === 'active' ? 'ativo' : webhook.status}</Badge></div><div className="flex flex-wrap gap-1 mt-3">{webhook.eventTypes.map(event => <span key={event} className="text-[9px] bg-white border border-warm-sand/50 text-graphite-soft px-1.5 py-0.5 rounded font-mono">{event}</span>)}</div><p className="text-xs text-graphite-soft mt-3">Segredo: <b className={webhook.secretConfigured ? 'text-energy-green' : 'text-alert-red'}>{webhook.secretConfigured ? 'configurado' : 'pendente'}</b></p></div>
             ))}
           </div>
         </Card>
@@ -917,7 +917,7 @@ function PipelineSettings() {
 
       <Card className="p-6 border-energy-green/15 bg-energy-green/5">
         <SectionTitle icon={CheckCircle2} title="Leitura operacional" description="Como usar esta tela no dia a dia." />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5 text-sm text-gray-700">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-5 text-sm text-graphite">
           <div className="rounded-2xl bg-white/80 p-4"><b className="text-graphite">Gestor</b><p className="mt-2">Confere gargalos por etapa, SLA e se automações estão cobrindo os pontos críticos.</p></div>
           <div className="rounded-2xl bg-white/80 p-4"><b className="text-graphite">SDR/Consultor</b><p className="mt-2">Entende o próximo movimento esperado em cada etapa e evita deixar lead sem ação.</p></div>
           <div className="rounded-2xl bg-white/80 p-4"><b className="text-graphite">Técnico/Automação</b><p className="mt-2">Vê quais eventos e webhooks entram no funil antes de alterar automações ou regras internas.</p></div>
@@ -928,7 +928,7 @@ function PipelineSettings() {
 }
 
 function FunnelInfoCard({ label, text, danger = false }: { label: string; text: string; danger?: boolean }) {
-  return <div className={`rounded-2xl border p-4 ${danger ? 'border-alert-red/15 bg-alert-red/5' : 'border-gray-100 bg-white'}`}><p className={`text-[10px] uppercase tracking-wide font-black ${danger ? 'text-alert-red' : 'text-gray-400'}`}>{label}</p><p className="text-sm text-gray-700 leading-relaxed mt-2">{text}</p></div>;
+  return <div className={`rounded-2xl border p-4 ${danger ? 'border-alert-red/15 bg-alert-red/5' : 'border-warm-sand/50 bg-white'}`}><p className={`text-[10px] uppercase tracking-wide font-black ${danger ? 'text-alert-red' : 'text-graphite-soft'}`}>{label}</p><p className="text-sm text-graphite leading-relaxed mt-2">{text}</p></div>;
 }
 
 function IntegrationsSettings() {
@@ -1007,13 +1007,13 @@ function IntegrationsSettings() {
           <div className="max-w-3xl min-w-0">
             <div className="flex items-center gap-3 mb-3"><div className="p-2.5 rounded-2xl bg-energy-green text-white"><LinkIcon size={22} /></div><Badge variant="success">Configurações &gt; Integrações</Badge></div>
             <h3 className="text-2xl md:text-3xl font-black text-graphite tracking-tight">Integrações, entregas e chaves de acesso</h3>
-            <p className="text-sm md:text-base text-gray-600 mt-2 leading-relaxed">Centralize apenas o que faz sentido agora: entrada de leads, webhooks para automações, chaves de acesso por integração e uma base segura para futuros conectores de agentes.</p>
+            <p className="text-sm md:text-base text-graphite mt-2 leading-relaxed">Centralize apenas o que faz sentido agora: entrada de leads, webhooks para automações, chaves de acesso por integração e uma base segura para futuros conectores de agentes.</p>
           </div>
           <div className="grid grid-cols-2 gap-3 min-w-[260px]">
-            <div className="rounded-2xl bg-white/80 border border-gray-100 p-4"><p className="text-xs text-gray-500">Automações ativas</p><p className="text-2xl font-black text-energy-green">{activeAutomations}</p></div>
-            <div className="rounded-2xl bg-white/80 border border-gray-100 p-4"><p className="text-xs text-gray-500">Integrações ativas</p><p className="text-2xl font-black text-energy-green">{activeWebhooks}</p></div>
-            <div className="rounded-2xl bg-white/80 border border-gray-100 p-4"><p className="text-xs text-gray-500">Falhas / fila</p><p className="text-sm font-black text-graphite mt-2">{failedDeliveries} falha(s) • {queuedDeliveries} fila</p></div>
-            <div className="rounded-2xl bg-white/80 border border-gray-100 p-4"><p className="text-xs text-gray-500">Produção</p><p className="text-sm font-black text-alert-red mt-2">Parcial</p></div>
+            <div className="rounded-2xl bg-white/80 border border-warm-sand/50 p-4"><p className="text-xs text-graphite-soft">Automações ativas</p><p className="text-2xl font-black text-energy-green">{activeAutomations}</p></div>
+            <div className="rounded-2xl bg-white/80 border border-warm-sand/50 p-4"><p className="text-xs text-graphite-soft">Integrações ativas</p><p className="text-2xl font-black text-energy-green">{activeWebhooks}</p></div>
+            <div className="rounded-2xl bg-white/80 border border-warm-sand/50 p-4"><p className="text-xs text-graphite-soft">Falhas / fila</p><p className="text-sm font-black text-graphite mt-2">{failedDeliveries} falha(s) • {queuedDeliveries} fila</p></div>
+            <div className="rounded-2xl bg-white/80 border border-warm-sand/50 p-4"><p className="text-xs text-graphite-soft">Produção</p><p className="text-sm font-black text-alert-red mt-2">Parcial</p></div>
           </div>
         </div>
       </Card>
@@ -1023,9 +1023,9 @@ function IntegrationsSettings() {
           <SectionTitle icon={Database} title="Arquitetura de webhooks" description="Separar entrada de dados, saída por eventos e acesso externo reduz risco operacional." />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
             {integrationLayers.map(([title, description]) => (
-              <div key={title} className="rounded-2xl border border-gray-100 bg-gray-50/50 p-4">
+              <div key={title} className="rounded-2xl border border-warm-sand/50 bg-warm-sand/50/50 p-4">
                 <p className="font-black text-sm text-graphite">{title}</p>
-                <p className="text-xs text-gray-600 leading-relaxed mt-2">{description}</p>
+                <p className="text-xs text-graphite leading-relaxed mt-2">{description}</p>
               </div>
             ))}
           </div>
@@ -1047,7 +1047,7 @@ Content-Type: application/json
         <Card className="p-6 border-solar-orange/20 bg-solar-orange/5">
           <SectionTitle icon={ShieldCheck} title="Gerador de chaves de acesso" description="Próxima peça antes de liberar webhooks externas." />
           <div className="mt-5 space-y-3 text-sm">
-            {keyGeneratorRequirements.map(item => <div key={item} className="flex gap-2 text-gray-700"><CheckCircle2 size={16} className="text-energy-green shrink-0 mt-0.5" /> {item}</div>)}
+            {keyGeneratorRequirements.map(item => <div key={item} className="flex gap-2 text-graphite"><CheckCircle2 size={16} className="text-energy-green shrink-0 mt-0.5" /> {item}</div>)}
           </div>
           <Button variant="primary" className="w-full mt-6 opacity-60" disabled title="Definição em revisão">Definição em revisão</Button>
         </Card>
@@ -1060,23 +1060,23 @@ Content-Type: application/json
             {lastRun && <Badge variant={lastRun.status === 'success' ? 'success' : lastRun.status === 'failed' ? 'error' : 'warning'}>Último teste: {lastRun.status}</Badge>}
           </div>
           <div className="space-y-4">
-            {automationsLoading ? <div className="py-8 text-center text-gray-500">Carregando automações...</div> : automations.map(automation => {
+            {automationsLoading ? <div className="py-8 text-center text-graphite-soft">Carregando automações...</div> : automations.map(automation => {
               const queuedFromLastRun = lastRun?.automationId === automation.id ? Number(lastRun.outputPayload?.queuedWebhookDeliveries ?? 0) : null;
               return (
-                <div key={automation.id} className="rounded-2xl border border-gray-100 p-4 hover:border-energy-green/20 transition-all">
+                <div key={automation.id} className="rounded-2xl border border-warm-sand/50 p-4 hover:border-energy-green/20 transition-all">
                   <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h4 className="font-bold text-sm text-graphite">{automation.name}</h4>
-                      <code className="text-[10px] text-gray-400 break-all">gatilho: {automation.trigger}</code>
+                      <code className="text-[10px] text-graphite-soft break-all">gatilho: {automation.trigger}</code>
                     </div>
                     <Badge variant={(automation.active || automation.status === 'active') ? 'success' : automation.status === 'paused' ? 'warning' : 'info'}>{automation.active || automation.status === 'active' ? 'ativa' : automation.status === 'paused' ? 'pausada' : 'planejada'}</Badge>
                   </div>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
-                    <div className="rounded-xl bg-gray-50 p-3"><p className="text-[10px] uppercase font-black text-gray-400 mb-2">Condições</p><ul className="space-y-1">{automation.conditions.map(item => <li key={item} className="text-xs text-gray-600">• {item}</li>)}</ul></div>
-                    <div className="rounded-xl bg-gray-50 p-3"><p className="text-[10px] uppercase font-black text-gray-400 mb-2">Ações</p><ul className="space-y-1">{automation.actions.map(item => <li key={item} className="text-xs text-gray-600">• {item}</li>)}</ul></div>
+                    <div className="rounded-xl bg-warm-sand/50 p-3"><p className="text-[10px] uppercase font-black text-graphite-soft mb-2">Condições</p><ul className="space-y-1">{automation.conditions.map(item => <li key={item} className="text-xs text-graphite">• {item}</li>)}</ul></div>
+                    <div className="rounded-xl bg-warm-sand/50 p-3"><p className="text-[10px] uppercase font-black text-graphite-soft mb-2">Ações</p><ul className="space-y-1">{automation.actions.map(item => <li key={item} className="text-xs text-graphite">• {item}</li>)}</ul></div>
                   </div>
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 border-t border-gray-50">
-                    <div className="text-xs text-gray-500">Última execução: <b className="text-graphite">{automation.lastRunAt ? new Date(automation.lastRunAt).toLocaleString('pt-BR') : 'sem execução'}</b>{queuedFromLastRun !== null && <span> • {queuedFromLastRun} entrega(s) enfileirada(s)</span>}</div>
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 border-t border-warm-sand/30">
+                    <div className="text-xs text-graphite-soft">Última execução: <b className="text-graphite">{automation.lastRunAt ? new Date(automation.lastRunAt).toLocaleString('pt-BR') : 'sem execução'}</b>{queuedFromLastRun !== null && <span> • {queuedFromLastRun} entrega(s) enfileirada(s)</span>}</div>
                     <Button aria-label={`Validar automação ${automation.name}`} variant="outline" size="sm" className="gap-2" onClick={() => void handleRunAutomation(automation.id)} disabled={runningAutomationId === automation.id}><RotateCcw size={14} /> Validar</Button>
                   </div>
                 </div>
@@ -1088,7 +1088,7 @@ Content-Type: application/json
         <Card className="p-6">
           <SectionTitle icon={BellRing} title="Eventos monitorados" description="Vocabulário operacional que liga automações e webhooks." />
           <div className="mt-5 space-y-2">
-            {eventCatalog.map(([event, description]) => <div key={event} className="rounded-xl bg-gray-50 p-3"><code className="text-xs font-bold text-graphite">{event}</code><p className="text-xs text-gray-500 mt-1">{description}</p></div>)}
+            {eventCatalog.map(([event, description]) => <div key={event} className="rounded-xl bg-warm-sand/50 p-3"><code className="text-xs font-bold text-graphite">{event}</code><p className="text-xs text-graphite-soft mt-1">{description}</p></div>)}
           </div>
         </Card>
       </div>
@@ -1100,16 +1100,16 @@ Content-Type: application/json
             <Button variant="outline" size="sm" disabled title="Cadastro em revisão" className="opacity-60">Nova integração</Button>
           </div>
           <div className="space-y-4">
-            {loading ? <div className="py-8 text-center text-gray-500">Carregando webhooks...</div> : webhooks.map(webhook => (
-              <div key={webhook.id} className="p-4 rounded-2xl border border-gray-100 hover:border-solar-orange/20 transition-all">
+            {loading ? <div className="py-8 text-center text-graphite-soft">Carregando webhooks...</div> : webhooks.map(webhook => (
+              <div key={webhook.id} className="p-4 rounded-2xl border border-warm-sand/50 hover:border-solar-orange/20 transition-all">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
-                  <div className="min-w-0"><h4 className="font-bold text-sm text-graphite">{webhook.name}</h4><span className="text-[10px] text-gray-400">Destino seguro configurado</span></div>
+                  <div className="min-w-0"><h4 className="font-bold text-sm text-graphite">{webhook.name}</h4><span className="text-[10px] text-graphite-soft">Destino seguro configurado</span></div>
                   <Badge variant={webhook.status === 'active' ? 'success' : webhook.status === 'failing' ? 'error' : 'default'}>{webhook.status === 'active' ? 'ativo' : webhook.status === 'failing' ? 'falhando' : webhook.status}</Badge>
                 </div>
-                <div className="flex flex-wrap gap-1 mt-3">{webhook.eventTypes.map(event => <span key={event} className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-mono">{event}</span>)}</div>
-                <div className="mt-3 text-xs text-gray-500">Segredo configurado: <b className={webhook.secretConfigured ? 'text-energy-green' : 'text-alert-red'}>{webhook.secretConfigured ? 'sim' : 'não'}</b> • Validação atual: registra a entrega na fila antes do envio externo.</div>
-                <div className="flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 border-t border-gray-50">
-                  <div className="flex gap-5 text-xs"><span className="text-gray-500">Sucesso: <b className="text-energy-green">{webhook.successRate}%</b></span><span className="text-gray-500">Última entrega: <b className="text-graphite">{webhook.lastDeliveryAt ? new Date(webhook.lastDeliveryAt).toLocaleString('pt-BR') : '-'}</b></span></div>
+                <div className="flex flex-wrap gap-1 mt-3">{webhook.eventTypes.map(event => <span key={event} className="text-[9px] bg-warm-sand/50 text-graphite-soft px-1.5 py-0.5 rounded font-mono">{event}</span>)}</div>
+                <div className="mt-3 text-xs text-graphite-soft">Segredo configurado: <b className={webhook.secretConfigured ? 'text-energy-green' : 'text-alert-red'}>{webhook.secretConfigured ? 'sim' : 'não'}</b> • Validação atual: registra a entrega na fila antes do envio externo.</div>
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 border-t border-warm-sand/30">
+                  <div className="flex gap-5 text-xs"><span className="text-graphite-soft">Sucesso: <b className="text-energy-green">{webhook.successRate}%</b></span><span className="text-graphite-soft">Última entrega: <b className="text-graphite">{webhook.lastDeliveryAt ? new Date(webhook.lastDeliveryAt).toLocaleString('pt-BR') : '-'}</b></span></div>
                   <Button aria-label={`Validar integração ${webhook.name}`} variant="outline" size="sm" className="gap-2" onClick={() => void handleTest(webhook.id)} disabled={testingId === webhook.id}><RotateCcw size={14} /> Validar</Button>
                 </div>
               </div>
@@ -1120,10 +1120,10 @@ Content-Type: application/json
         <Card className="p-6">
           <SectionTitle icon={BellRing} title="Registros recentes" description="Últimas entregas da fila de webhooks." />
           <div className="mt-5 space-y-3">
-            {deliveries.length === 0 ? <p className="text-sm text-gray-500 py-6">Nenhuma entrega registrada ainda.</p> : deliveries.slice(0, 6).map(delivery => (
-              <div key={delivery.id} className="rounded-xl bg-gray-50 p-3 text-xs text-gray-600">
+            {deliveries.length === 0 ? <p className="text-sm text-graphite-soft py-6">Nenhuma entrega registrada ainda.</p> : deliveries.slice(0, 6).map(delivery => (
+              <div key={delivery.id} className="rounded-xl bg-warm-sand/50 p-3 text-xs text-graphite">
                 <div className="flex items-center justify-between gap-2"><span className="font-bold text-graphite">{delivery.eventType}</span><Badge variant={delivery.status === 'sent' ? 'success' : delivery.status === 'failed' ? 'error' : 'warning'}>{delivery.status}</Badge></div>
-                <p className="mt-1 text-gray-500">{delivery.webhookName ?? delivery.webhookId} • {delivery.attempts} tentativa(s)</p>
+                <p className="mt-1 text-graphite-soft">{delivery.webhookName ?? delivery.webhookId} • {delivery.attempts} tentativa(s)</p>
               </div>
             ))}
           </div>
@@ -1133,9 +1133,9 @@ Content-Type: application/json
       <Card className="p-6 border-alert-red/15 bg-alert-red/5">
         <SectionTitle icon={ShieldCheck} title="Checklist de prontidão para produção" description="Autoavaliação honesta da função antes de liberar operação real." />
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mt-5">
-          {productionChecklist.map(item => <div key={item.label} className="rounded-xl bg-white/80 border border-white p-3 flex items-start gap-2 text-sm"><CheckCircle2 size={16} className={`${item.done ? 'text-energy-green' : 'text-alert-red'} shrink-0 mt-0.5`} /><span className="text-gray-700">{item.label}</span></div>)}
+          {productionChecklist.map(item => <div key={item.label} className="rounded-xl bg-white/80 border border-white p-3 flex items-start gap-2 text-sm"><CheckCircle2 size={16} className={`${item.done ? 'text-energy-green' : 'text-alert-red'} shrink-0 mt-0.5`} /><span className="text-graphite">{item.label}</span></div>)}
         </div>
-        <div className="mt-5 rounded-2xl bg-white/80 border border-alert-red/10 p-4 text-sm text-gray-700 leading-relaxed">
+        <div className="mt-5 rounded-2xl bg-white/80 border border-alert-red/10 p-4 text-sm text-graphite leading-relaxed">
           Conclusão: a página já permite acompanhar e validar automações internas. Para produção plena com webhooks externas, ainda exige segredos das webhooks, política de tentativas, monitoramento operacional e gerador de chaves de acesso.
         </div>
       </Card>
@@ -1144,15 +1144,15 @@ Content-Type: application/json
         <SectionTitle icon={Sparkles} title="Conectores inteligentes / MCP" description="Futuro: agentes só entram depois de Chaves de acesso, escopos e auditoria funcionando." />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-5">
           {connectorCards.map(card => (
-            <div key={card.title} className="rounded-2xl border border-gray-100 p-5 bg-gray-50/50">
+            <div key={card.title} className="rounded-2xl border border-warm-sand/50 p-5 bg-warm-sand/50/50">
               <div className="flex items-start justify-between gap-3"><h4 className="font-black text-graphite">{card.title}</h4><Badge variant={card.status === 'Ativo' ? 'success' : card.status === 'Disponível' ? 'info' : 'warning'}>{card.status}</Badge></div>
-              <p className="text-sm text-gray-600 leading-relaxed mt-3">{card.text}</p>
-              <p className="text-[10px] text-gray-400 mt-4 uppercase font-black">Escopos</p>
+              <p className="text-sm text-graphite leading-relaxed mt-3">{card.text}</p>
+              <p className="text-[10px] text-graphite-soft mt-4 uppercase font-black">Escopos</p>
               <code className="text-xs text-graphite break-all">{card.scopes}</code>
             </div>
           ))}
         </div>
-        <div className="mt-5 rounded-2xl bg-solar-orange/5 border border-solar-orange/10 p-4 text-sm text-gray-600 leading-relaxed">
+        <div className="mt-5 rounded-2xl bg-solar-orange/5 border border-solar-orange/10 p-4 text-sm text-graphite leading-relaxed">
           Nesta etapa, MCP/agentes deve ficar como preparação arquitetural, não como promessa de recurso pronto. O caminho correto é liberar primeiro Chaves de acesso com escopos, depois criar tools específicas para leitura de leads, propostas, tarefas e registro de atividades.
         </div>
       </Card>

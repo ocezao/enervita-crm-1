@@ -52,8 +52,8 @@ function iconTone(tone: 'blue' | 'orange' | 'green' | 'red') {
   const tones = {
     blue: 'bg-blue-50 text-blue-600',
     orange: 'bg-solar-orange/10 text-solar-orange',
-    green: 'bg-green-50 text-green-600',
-    red: 'bg-red-50 text-red-600',
+    green: 'bg-energy-green/10 text-energy-green',
+    red: 'bg-alert-red/10 text-alert-red',
   };
   return tones[tone];
 }
@@ -76,9 +76,9 @@ function CommercialMetricCard({
       <div className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-gray-400">{title}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-graphite-soft">{title}</p>
             <p className="mt-2 text-2xl font-black text-graphite">{value}</p>
-            <p className="mt-1 text-xs text-gray-500">{subtitle}</p>
+            <p className="mt-1 text-xs text-graphite-soft">{subtitle}</p>
           </div>
           <div className={`rounded-2xl p-3 ${iconTone(tone)}`}>
             <Icon size={20} />
@@ -161,14 +161,14 @@ export default function Dashboard() {
               <div className="p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-gray-500">{label}</p>
+                    <p className="text-sm font-semibold text-graphite-soft">{label}</p>
                     <p className="mt-3 text-3xl font-black text-graphite">{formatNumber(value)}</p>
                   </div>
-                  <div className="rounded-2xl bg-gray-50 p-3 text-graphite">
+                  <div className="rounded-2xl bg-warm-sand/50 p-3 text-graphite">
                     <Icon size={22} />
                   </div>
                 </div>
-                <p className="mt-4 text-xs text-gray-500 leading-relaxed">{helper}</p>
+                <p className="mt-4 text-xs text-graphite-soft leading-relaxed">{helper}</p>
               </div>
             </div>
           </Card>
@@ -197,20 +197,20 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <Card className="xl:col-span-2">
-              <div className="border-b border-gray-100 px-6 py-4">
+              <div className="border-b border-warm-sand/50 px-6 py-4">
                 <h3 className="text-lg font-bold text-graphite">Atenção agora</h3>
               </div>
               <div className="p-6">
                 {commercial.attentionLeads.length === 0 ? (
-                  <p className="text-sm text-gray-500">Nenhum lead crítico no momento.</p>
+                  <p className="text-sm text-graphite-soft">Nenhum lead crítico no momento.</p>
                 ) : (
                   <div className="space-y-3">
                     {commercial.attentionLeads.map((lead) => (
-                      <a key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between rounded-xl border border-gray-100 bg-white p-4 transition hover:border-solar-orange/40">
+                      <a key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between rounded-xl border border-warm-sand/50 bg-white p-4 transition hover:border-solar-orange/40">
                         <div>
                           <p className="font-bold text-graphite">{lead.name}</p>
-                          <p className="text-xs text-gray-500">{stageLabel(lead.stage)} · {lead.reason}</p>
-                          <p className="text-xs text-gray-400 mt-1">Atualizado em {formatDate(lead.updatedAt)}</p>
+                          <p className="text-xs text-graphite-soft">{stageLabel(lead.stage)} · {lead.reason}</p>
+                          <p className="text-xs text-graphite-soft mt-1">Atualizado em {formatDate(lead.updatedAt)}</p>
                         </div>
                         <ArrowUpRight size={16} className="text-solar-orange" />
                       </a>
@@ -221,20 +221,20 @@ export default function Dashboard() {
             </Card>
 
             <Card>
-              <div className="border-b border-gray-100 px-6 py-4">
+              <div className="border-b border-warm-sand/50 px-6 py-4">
                 <h3 className="text-lg font-bold text-graphite">Funil por etapa</h3>
               </div>
               <div className="space-y-3 p-6">
                 {commercial.stageBreakdown.length === 0 ? (
-                  <p className="text-sm text-gray-500">Sem dados de funil.</p>
+                  <p className="text-sm text-graphite-soft">Sem dados de funil.</p>
                 ) : (
                   commercial.stageBreakdown.map((stage) => (
-                    <div key={stage.stage} className="rounded-xl bg-gray-50 p-3">
+                    <div key={stage.stage} className="rounded-xl bg-warm-sand/50 p-3">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-semibold text-graphite">{stageLabel(stage.stage)}</span>
-                        <span className="text-gray-500">{formatNumber(stage.count)}</span>
+                        <span className="text-graphite-soft">{formatNumber(stage.count)}</span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">{formatCurrency(stage.value)} em aberto</p>
+                      <p className="text-xs text-graphite-soft mt-1">{formatCurrency(stage.value)} em aberto</p>
                     </div>
                   ))
                 )}
@@ -246,16 +246,16 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <Card className="xl:col-span-2">
-          <div className="border-b border-gray-100 px-6 py-4">
+          <div className="border-b border-warm-sand/50 px-6 py-4">
             <h3 className="text-lg font-bold text-graphite">Leads por etapa</h3>
           </div>
           <div className="p-6">
             <div className="space-y-4">
               {metrics.leadsByStage.map((stage) => (
-                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-3">
+                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-warm-sand/50 px-4 py-3">
                   <div>
                     <p className="font-semibold text-graphite">{stageLabel(stage.stage)}</p>
-                    <p className="text-xs text-gray-500">Distribuição do pipeline</p>
+                    <p className="text-xs text-graphite-soft">Distribuição do pipeline</p>
                   </div>
                   <Badge variant="info">{stage.count} leads</Badge>
                 </div>
@@ -265,11 +265,11 @@ export default function Dashboard() {
         </Card>
 
         <Card>
-          <div className="border-b border-gray-100 px-6 py-4">
+          <div className="border-b border-warm-sand/50 px-6 py-4">
             <h3 className="text-lg font-bold text-graphite">Eventos recentes</h3>
           </div>
           <div className="space-y-4 p-6">
-            {metrics.recentEvents.length === 0 && <p className="text-sm text-gray-500">Nenhuma atividade recente registrada.</p>}
+            {metrics.recentEvents.length === 0 && <p className="text-sm text-graphite-soft">Nenhuma atividade recente registrada.</p>}
             {metrics.recentEvents.map((event) => (
               <div key={event.id} className="flex gap-3">
                 <div className="mt-1 rounded-full bg-solar-orange/10 p-2 text-solar-orange">
@@ -277,7 +277,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-graphite">{event.outcome}</p>
-                  <p className="text-xs text-gray-500">{formatDate(event.occurredAt)}</p>
+                  <p className="text-xs text-graphite-soft">{formatDate(event.occurredAt)}</p>
                 </div>
               </div>
             ))}
@@ -287,13 +287,13 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <div className="border-b border-gray-100 px-6 py-4">
+          <div className="border-b border-warm-sand/50 px-6 py-4">
             <h3 className="text-lg font-bold text-graphite">Origem dos leads</h3>
           </div>
           <div className="space-y-4 p-6">
             {metrics.leadsBySource.map((source) => (
               <div key={source.source} className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-600">{source.source}</span>
+                <span className="text-sm font-medium text-graphite">{source.source}</span>
                 <span className="font-bold text-graphite">{source.count}</span>
               </div>
             ))}
@@ -301,14 +301,14 @@ export default function Dashboard() {
         </Card>
 
         <Card>
-          <div className="border-b border-gray-100 px-6 py-4">
+          <div className="border-b border-warm-sand/50 px-6 py-4">
             <h3 className="text-lg font-bold text-graphite">Conversões enviadas</h3>
           </div>
           <div className="space-y-4 p-6">
-            {metrics.conversionsByPlatform.length === 0 && <p className="text-sm text-gray-500">Nenhum evento enviado ainda.</p>}
+            {metrics.conversionsByPlatform.length === 0 && <p className="text-sm text-graphite-soft">Nenhum evento enviado ainda.</p>}
             {metrics.conversionsByPlatform.map((item) => (
               <div key={item.platform} className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-600">{item.platform}</span>
+                <span className="text-sm font-medium text-graphite">{item.platform}</span>
                 <span className="font-bold text-graphite">{item.count}</span>
               </div>
             ))}

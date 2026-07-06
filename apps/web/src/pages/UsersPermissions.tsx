@@ -117,7 +117,7 @@ export default function UsersPermissions({ embedded = false }: UsersPermissionsP
             <div className="max-w-3xl">
               <Badge variant="solar">Controle de acessos</Badge>
               <h2 className="mt-3 text-2xl md:text-3xl font-black text-graphite tracking-tight">Usuários e acessos</h2>
-              <p className="mt-2 text-sm md:text-base text-gray-600 leading-relaxed">Liste todos os usuários, crie novos acessos, edite pessoas existentes e defina permissões por página, ação e etapa do funil comercial.</p>
+              <p className="mt-2 text-sm md:text-base text-graphite leading-relaxed">Liste todos os usuários, crie novos acessos, edite pessoas existentes e defina permissões por página, ação e etapa do funil comercial.</p>
             </div>
             <Button variant="outline" onClick={() => setSelected(null)} className="bg-white/80">Novo usuário</Button>
           </div>
@@ -127,7 +127,7 @@ export default function UsersPermissions({ embedded = false }: UsersPermissionsP
       {error && <div role="alert" className="rounded-xl border border-alert-red/20 bg-alert-red/5 px-4 py-3 text-sm text-alert-red">{error}</div>}
       {success && <div role="status" className="rounded-xl border border-energy-success/20 bg-mint-light/50 px-4 py-3 text-sm text-energy-success">{success}</div>}
 
-      {loading && <div className="rounded-xl bg-white p-6 text-sm text-gray-500 shadow-sm">Carregando usuários e permissões...</div>}
+      {loading && <div className="rounded-xl bg-white p-6 text-sm text-graphite-soft shadow-sm">Carregando usuários e permissões...</div>}
 
       {!loading && catalog && (
         <div className="grid gap-6 xl:grid-cols-[320px_1fr]">

@@ -24,7 +24,7 @@ export function PermissionCheckboxMatrix({ catalog, selected, onChange }: Props)
   return (
     <div className="space-y-4">
       {Object.entries(groups).map(([group, permissions]) => (
-        <section key={group} className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
+        <section key={group} className="rounded-xl border border-warm-sand/50 bg-warm-sand/50/60 p-4">
           <h3 className="mb-3 text-sm font-bold text-graphite">{group}</h3>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {permissions.map((permission) => (
@@ -37,7 +37,7 @@ export function PermissionCheckboxMatrix({ catalog, selected, onChange }: Props)
                 />
                 <span>
                   <span className="block font-medium text-graphite">{permission.label}</span>
-                  <span className="block text-[11px] text-gray-400">{permission.key}</span>
+                  <span className="block text-[11px] text-graphite-soft">{permission.key}</span>
                 </span>
               </label>
             ))}
