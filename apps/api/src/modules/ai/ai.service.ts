@@ -128,7 +128,7 @@ async function callLlm(config: AiConfig, messages: LlmMessage[], fetchImpl: type
 
 async function captureScreenshot(view: string, path: string | undefined, crmBaseUrl: string): Promise<string> {
   try {
-    const pw = await import("playwright").catch(() => null as any);
+    const pw: typeof import("playwright") | null = await import("playwright").catch(() => null);
     if (!pw || !pw.chromium) {
       return "Playwright n??o dispon??vel neste ambiente ainda. Configure o container do API com npx playwright install --with-deps chromium. Contexto visual n??o capturado para: " + view + ". Lembre: posso n??o compreender o contexto completo.";
     }
@@ -137,7 +137,9 @@ async function captureScreenshot(view: string, path: string | undefined, crmBase
     const page = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
     const target = (path || "/").startsWith("/") ? path : "/" + (path || "");
     const url = (crmBaseUrl || "http://enervita-prod-crm-web").replace(/\/$/, "") + target;
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 12000 }).catch(() => {});
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 12000 }).catch((err) => {
+      console.warn(`[AI Screenshot] Failed to load page ${url}:`, err);
+    });
     const title = await page.title().catch(() => "CRM");
     const html = await page.content().catch(() => "");
     const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 900);
