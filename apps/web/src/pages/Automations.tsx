@@ -80,10 +80,10 @@ export default function Automations() {
           <div className="min-w-0">
             <p className="text-xs uppercase tracking-[0.18em] text-amber-700 font-black">Follow-up operacional</p>
             <div className="mt-1 flex flex-wrap items-center gap-3">
-              <h2 className="text-lg font-black text-slate-950">Fila de follow-up</h2>
+              <h2 className="text-lg font-black text-graphite">Fila de follow-up</h2>
               <Badge variant="warning">{followUpCounts.total} visíveis</Badge>
             </div>
-            <p className="mt-1 text-xs font-semibold text-slate-600">Revisão manual dos próximos contatos. Não dispara WhatsApp/e-mail automaticamente.</p>
+            <p className="mt-1 text-xs font-semibold text-graphite">Revisão manual dos próximos contatos. Não dispara WhatsApp/e-mail automaticamente.</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {followUpStatusOptions.map((option) => (
@@ -99,7 +99,7 @@ export default function Automations() {
             <select
               value={followUpRuleKey ?? ''}
               onChange={(event) => setFollowUpRuleKey(event.target.value || undefined)}
-              className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-600 outline-none focus:border-amber-500"
+              className="h-9 rounded-xl border border-warm-sand/50 bg-white px-3 text-xs font-bold text-graphite outline-none focus:border-amber-500"
               aria-label="Filtrar fila por regra"
             >
               {followUpRuleOptions.map((option) => (
@@ -114,8 +114,8 @@ export default function Automations() {
 
         <div className="mt-4 flex flex-wrap gap-2">
           {Object.entries(followUpRuleLabels).map(([key, label]) => (
-            <span key={key} className="rounded-full border border-white/80 bg-white/80 px-3 py-1 text-[11px] font-black text-slate-500">
-              {label}: <strong className="text-slate-950">{followUpCounts.byRule[key] ?? 0}</strong>
+            <span key={key} className="rounded-full border border-white/80 bg-white/80 px-3 py-1 text-[11px] font-black text-graphite-soft">
+              {label}: <strong className="text-graphite">{followUpCounts.byRule[key] ?? 0}</strong>
             </span>
           ))}
         </div>
@@ -126,26 +126,26 @@ export default function Automations() {
           </div>
         ) : null}
         <div className="mt-4 space-y-2">
-          {followUpsLoading ? <p className="text-sm font-semibold text-slate-500">Carregando fila...</p> : null}
+          {followUpsLoading ? <p className="text-sm font-semibold text-graphite-soft">Carregando fila...</p> : null}
           {!followUpsLoading && followUps.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-white/70 px-4 py-3">
-              <p className="text-sm font-black text-slate-700">Nenhum follow-up encontrado para este filtro.</p>
-              <p className="mt-1 text-xs font-semibold text-slate-500">Gere a fila ou altere os filtros para revisar itens tratados, pulados ou falhos.</p>
+            <div className="rounded-xl border border-warm-sand/50 bg-white/70 px-4 py-3">
+              <p className="text-sm font-black text-graphite">Nenhum follow-up encontrado para este filtro.</p>
+              <p className="mt-1 text-xs font-semibold text-graphite-soft">Gere a fila ou altere os filtros para revisar itens tratados, pulados ou falhos.</p>
             </div>
           ) : null}
           {followUps.map((item) => {
             const audit = item.metadata?.followUpAudit as { actor?: { name?: string | null; email?: string | null }; at?: string; reason?: string | null; error?: string | null } | undefined;
             return (
-              <div key={item.id} className="rounded-xl border border-slate-200 bg-white/85 px-4 py-3 shadow-sm">
+              <div key={item.id} className="rounded-xl border border-warm-sand/50 bg-white/85 px-4 py-3 shadow-sm">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2 text-sm font-black text-slate-950">
+                    <div className="flex flex-wrap items-center gap-2 text-sm font-black text-graphite">
                       <Send size={15} className="text-amber-700" /> {item.reason}
                       <Badge variant={item.status === 'pending' ? 'warning' : item.status === 'sent' ? 'success' : 'default'}>{followUpStatusLabels[item.status]}</Badge>
                     </div>
-                    <p className="mt-1 text-xs font-semibold text-slate-500">Regra: {followUpRuleLabels[item.ruleKey] ?? item.ruleKey} · Canal: {item.channel} · Agendado: {formatDate(item.scheduledAt)}</p>
-                    <p className="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-600">Sugestão: {item.suggestedMessage}</p>
-                    {audit ? <p className="mt-1 text-[11px] font-bold text-slate-400">Última ação: {audit.actor?.name ?? audit.actor?.email ?? 'usuário'} em {audit.at ? formatDate(audit.at) : 'data não registrada'}</p> : null}
+                    <p className="mt-1 text-xs font-semibold text-graphite-soft">Regra: {followUpRuleLabels[item.ruleKey] ?? item.ruleKey} · Canal: {item.channel} · Agendado: {formatDate(item.scheduledAt)}</p>
+                    <p className="mt-2 rounded-lg bg-warm-sand/30 px-3 py-2 text-xs font-semibold text-graphite">Sugestão: {item.suggestedMessage}</p>
+                    {audit ? <p className="mt-1 text-[11px] font-bold text-graphite-soft">Última ação: {audit.actor?.name ?? audit.actor?.email ?? 'usuário'} em {audit.at ? formatDate(audit.at) : 'data não registrada'}</p> : null}
                     {item.lastError ? <p className="mt-1 text-xs font-bold text-alert-red">Último erro: {item.lastError}</p> : null}
                   </div>
                   {item.status === 'pending' ? (

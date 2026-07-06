@@ -18,7 +18,7 @@ export default {
         },
         graphite: {
           DEFAULT: '#17211B',
-          soft: '#2A332D',
+          soft: '#4A555F',
         },
         warm: {
           white: '#FAF7F0',
