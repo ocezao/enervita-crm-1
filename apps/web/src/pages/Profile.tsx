@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart3, CheckSquare, FileText, Kanban, KeyRound, LayoutDashboard, Loader2, Megaphone, Save, ShieldCheck, Sparkles, UploadCloud, UserCog, Users } from 'lucide-react';
+import { CheckSquare, FileText, Kanban, KeyRound, LayoutDashboard, Loader2, Megaphone, Save, ShieldCheck, Sparkles, UploadCloud, UserCog, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { authApi } from '../auth/authApi';
 import { userHasAnyPermission, userHasPermission } from '../auth/permissions';
@@ -23,7 +23,6 @@ const pageCards: AccessiblePage[] = [
   { label: 'Pipeline', path: '/pipeline', description: 'Etapas comerciais permitidas para você.', icon: Kanban, requiredAny: ['page.pipeline'] },
   { label: 'Tarefas', path: '/tasks', description: 'Follow-ups e pendências atribuídas.', icon: CheckSquare, requiredAny: ['page.tasks'] },
   { label: 'Propostas', path: '/proposals', description: 'Simulações e propostas comerciais.', icon: FileText, requiredAny: ['page.proposals', 'proposal.view'] },
-  { label: 'Analytics', path: '/analytics', description: 'Aquisição, rastreio comercial e funil.', icon: BarChart3, requiredAny: ['page.analytics', 'analytics.view', 'rastreio.visualizar'] },
   { label: 'Campanhas', path: '/ads', description: 'Mídia paga e criativos.', icon: Megaphone, requiredAny: ['page.ads', 'ads.view'] },
 ];
 
