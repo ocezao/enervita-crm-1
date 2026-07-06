@@ -37,6 +37,7 @@ import { registerAiRoutes } from './modules/ai/ai.routes.ts';
 import { createPgAiSqlRunner, type AiSqlRunner } from './modules/ai/ai.service.ts';
 import type { AiConfig } from './config/env.ts';
 import { registerPerformanceMonitoring } from './middleware/performance-monitor.js';
+import { setupAuditHooks } from './middleware/audit-logger.js';
 
 export type CreateAppOptions = {
   userRepository?: UserRepository;
@@ -88,6 +89,9 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
 
   // Registra middleware de monitoramento de performance
   registerPerformanceMonitoring(app);
+  
+  // Registra hooks de auditoria e logging estruturado
+  setupAuditHooks(app);
 
   void registerAuthRoutes(app, { userRepository, sessionSecret, secureCookies });
   void registerUsersRoutes(app, { userRepository, usersRepository, sessionSecret });
