@@ -841,14 +841,18 @@ async function createOpportunityForLead(client: PoolClient, context: AuditContex
 }
 
 const META_STAGE_EVENTS: Partial<Record<PipelineStageKey, string>> = {
-  novo_lead: 'Lead',
-  qualificacao: 'EnervitaPreQualifiedLead',
-  atendimento_iniciado: 'EnervitaOpportunity',
-  conta_recebida: 'EnervitaBillReceived',
-  diagnostico: 'EnervitaQualifiedLead',
-  proposta_enviada: 'ProposalSent',
-  contrato_enervita: 'WonLead',
-  perdido: 'LeadUnqualified',
+  // Pipeline Usina Solar - etapas com evento Meta CAPI
+  novo_lead: 'new',                          // 1. Novo Lead → evento "new"
+  elaboracao_proposta: 'Qualificação',       // 3. Elaboração de proposta → evento "Qualificação"
+  fechamento: 'fechamento',                  // 6. Fechamento → evento "fechamento"
+  perdido_desqualificado: 'perdido',         // 10. Pedido (Perdido/Desqualificado) → evento "perdido"
+  // Etapas sem evento Meta CAPI:
+  // 2. Atendimento iniciado → sem evento
+  // 4. Apresentação de proposta → sem evento
+  // 5. Negociação / Follow-up → sem evento
+  // 7. Vistoria / Estudo técnico → sem evento
+  // 8. Assinatura de Contrato → sem evento
+  // 9. Ganho/ Contrato assinado → sem evento
 };
 
 const META_STAGE_ORDER: Record<PipelineStageKey, number> = {
@@ -860,6 +864,14 @@ const META_STAGE_ORDER: Record<PipelineStageKey, number> = {
   proposta_enviada: 6,
   contrato_enervita: 7,
   perdido: 8,
+  elaboracao_proposta: 9,
+  apresentacao_proposta: 10,
+  negociacao_follow_up: 11,
+  fechamento: 12,
+  vistoria_estudo_tecnico: 13,
+  assinatura_contrato: 14,
+  ganho_contrato_assinado: 15,
+  perdido_desqualificado: 16,
 };
 
 function transitionDirection(action: 'created' | 'stage_changed' | 'tags_updated', stage: PipelineStageKey, fromStage?: PipelineStageKey | null): 'created' | 'forward' | 'backward' | 'lateral' | 'tags_updated' {
@@ -977,6 +989,8 @@ function buildMetaStageEventPayload(lead: Lead, context: AuditContext, action: '
     action,
     leadId: lead.id,
     stage: lead.stage,
+    pipelineKey: lead.pipelineKey,
+    pipelineStageKey: lead.pipelineStageKey,
     fromStage: fromStage ?? null,
     transitionDirection: transitionDirection(action, lead.stage, fromStage),
     source: lead.leadSource,
