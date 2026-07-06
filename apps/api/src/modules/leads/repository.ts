@@ -840,7 +840,7 @@ async function createOpportunityForLead(client: PoolClient, context: AuditContex
 }
 
 const META_STAGE_EVENTS: Partial<Record<PipelineStageKey, string>> = {
-  // Pipeline Usina Solar - etapas com evento Meta CAPI
+  // Pipeline Sistema Solar - etapas com evento Meta CAPI
   novo_lead: 'new',                          // 1. Novo Lead → evento "new"
   elaboracao_proposta: 'Qualificação',       // 3. Elaboração de proposta → evento "Qualificação"
   fechamento: 'fechamento',                  // 6. Fechamento → evento "fechamento"
