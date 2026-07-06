@@ -129,6 +129,15 @@ export const PIPELINE_STAGE_KEYS = [
   'proposta_enviada',
   'contrato_enervita',
   'perdido',
+  // Usina Solar stages
+  'elaboracao_proposta',
+  'apresentacao_proposta',
+  'negociacao_follow_up',
+  'fechamento',
+  'vistoria_estudo_tecnico',
+  'assinatura_contrato',
+  'ganho_contrato_assinado',
+  'perdido_desqualificado',
 ] as const;
 
 export type PipelineStageKey = (typeof PIPELINE_STAGE_KEYS)[number];
@@ -149,6 +158,15 @@ export const PIPELINE_STAGE_DEFINITIONS = [
   { key: 'proposta_enviada', label: 'Proposta enviada', order: 6 },
   { key: 'contrato_enervita', label: 'Contrato Enervita', order: 7 },
   { key: 'perdido', label: 'Perdido', order: 8 },
+  // Usina Solar stages
+  { key: 'elaboracao_proposta', label: 'Elaboração de proposta', order: 9 },
+  { key: 'apresentacao_proposta', label: 'Apresentação de proposta', order: 10 },
+  { key: 'negociacao_follow_up', label: 'Negociação / Follow-up', order: 11 },
+  { key: 'fechamento', label: 'Fechamento', order: 12 },
+  { key: 'vistoria_estudo_tecnico', label: 'Vistoria / Estudo técnico', order: 13 },
+  { key: 'assinatura_contrato', label: 'Assinatura de Contrato', order: 14 },
+  { key: 'ganho_contrato_assinado', label: 'Ganho/ Contrato assinado', order: 15 },
+  { key: 'perdido_desqualificado', label: 'Perdido / Desqualificado', order: 16 },
 ] as const satisfies readonly PipelineStageDefinition[];
 
 export const PIPELINE_STAGES_BY_KEY = Object.fromEntries(
