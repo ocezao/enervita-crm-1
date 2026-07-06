@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { getDatabasePool } from '../../db/pool.ts';
 import pg from 'pg';
 
 const { Pool } = pg;
@@ -359,7 +360,7 @@ function rowToQueuedMetaEvent(row: Record<string, unknown>): QueuedMetaTrackingE
 }
 
 export function createPgMetaDispatchRepository(databaseUrl: string, maxAttempts = 3): MetaDispatchRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
   const cappedMaxAttempts = Math.max(1, maxAttempts);
 
   return {

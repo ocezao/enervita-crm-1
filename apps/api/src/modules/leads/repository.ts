@@ -3,6 +3,7 @@ import pg, { type PoolClient } from 'pg';
 import type { PipelineStageKey } from '@enervita/shared';
 import type { AuditContext } from '../users/repository.ts';
 import type { ContactInput, CreateLeadInput, LeadListFilters, SetLeadTagsInput, UpdateLeadInput } from './validation.ts';
+import { getDatabasePool } from '../../db/pool.ts';
 
 const { Pool } = pg;
 
@@ -1054,8 +1055,9 @@ async function insertContact(client: PoolClient, tenantId: string, input: Contac
   return result.rows[0].id as string;
 }
 
-export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+export function createPgLeadsRepository(databaseUrl?: string): LeadsRepository {
+  // Usa o pool singleton se databaseUrl não for fornecido (padrão)
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
 
   return {
     async listLeads(tenantId, allowedStages, ownerUserId, filters) {
@@ -1617,7 +1619,11 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
       );
     },
     async close() {
-      await pool.end();
+      // Apenas fecha o pool se ele foi criado localmente (não é o singleton)
+      if (databaseUrl) {
+        await pool.end();
+      }
+      // Se estiver usando o pool singleton, não fechamos aqui pois ele é compartilhado
     },
   };
 }

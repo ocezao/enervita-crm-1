@@ -1,6 +1,7 @@
 import { PERMISSION_DEFINITIONS, PERMISSION_KEYS, PIPELINE_STAGE_KEYS } from '@enervita/shared';
 import pg, { type PoolClient } from 'pg';
 import type { CreateUserInput, UpdateUserInput } from './validation.ts';
+import { getDatabasePool } from '../../db/pool.ts';
 
 const { Pool } = pg;
 const BCRYPT_ROUNDS = 12;
@@ -272,8 +273,9 @@ async function ensureCanDelete(client: PoolClient, context: AuditContext, target
   }
 }
 
-export function createPgUsersRepository(databaseUrl: string): UsersRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+export function createPgUsersRepository(databaseUrl?: string): UsersRepository {
+  // Usa o pool singleton se databaseUrl não for fornecido (padrão)
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
 
   return {
     async listUsers(tenantId) {
@@ -438,7 +440,11 @@ export function createPgUsersRepository(databaseUrl: string): UsersRepository {
       }
     },
     async close() {
-      await pool.end();
+      // Apenas fecha o pool se ele foi criado localmente (não é o singleton)
+      if (databaseUrl) {
+        await pool.end();
+      }
+      // Se estiver usando o pool singleton, não fechamos aqui pois ele é compartilhado
     },
   };
 }

@@ -1,4 +1,5 @@
 import pg, { type PoolClient } from 'pg';
+import { getDatabasePool } from '../../db/pool.ts';
 import type { AuditContext } from '../users/repository.ts';
 
 const { Pool } = pg;
@@ -420,7 +421,7 @@ export function createStaticIntegrationsRepository(): IntegrationsRepository {
 }
 
 export function createPgIntegrationsRepository(databaseUrl: string, n8nDatabaseUrl?: string): IntegrationsRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
   const n8nPool = n8nDatabaseUrl ? new Pool({ connectionString: n8nDatabaseUrl }) : null;
 
   return {

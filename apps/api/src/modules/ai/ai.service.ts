@@ -1,4 +1,5 @@
 import pg from "pg";
+import { getDatabasePool } from '../../db/pool.ts';
 import type { PipelineStageKey } from "@enervita/shared";
 import type { AiConfig } from "../../config/env.ts";
 import type { PublicUser } from "../auth/userRepository.ts";
@@ -212,7 +213,7 @@ export async function answerAiChat(
 }
 
 export function createPgAiSqlRunner(databaseUrl: string): AiSqlRunner {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
   return {
     async query(sql, params) { const r = await pool.query(sql, params); return { rows: r.rows }; },
     async close() { await pool.end(); }

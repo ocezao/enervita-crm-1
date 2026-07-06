@@ -1,4 +1,5 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { getDatabasePool } from '../../db/pool.ts';
 import { requirePermission } from '../../middleware/requireAuth.ts';
 import { isAdminUser, type PublicUser, type UserRepository } from '../auth/userRepository.ts';
 import pg from 'pg';
@@ -20,7 +21,7 @@ function authenticatedUser(request: FastifyRequest): PublicUser {
 }
 
 export async function registerAutoReassignRoutes(app: FastifyInstance, options: AutoReassignRouteOptions): Promise<void> {
-  const pool = new Pool({ connectionString: options.databaseUrl });
+  const pool = options.databaseUrl ? new Pool({ connectionString: options.databaseUrl }) : getDatabasePool();
 
   const preHandler = requirePermission('settings.manage', {
     userRepository: options.userRepository,

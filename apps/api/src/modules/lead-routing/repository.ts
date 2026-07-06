@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { getDatabasePool } from '../../db/pool.ts';
 
 const { Pool } = pg;
 
@@ -183,8 +184,8 @@ async function readConfig(client: pg.PoolClient, tenantId: string): Promise<Lead
   };
 }
 
-export function createPgLeadRoutingRepository(databaseUrl: string): LeadRoutingRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+export function createPgLeadRoutingRepository(databaseUrl?: string): LeadRoutingRepository {
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
 
   return {
     async getConfig(tenantId) {
