@@ -22,12 +22,33 @@ import { getAuthenticatedUser } from '../../middleware/requireAuth.ts';
 import { hasPermission } from '../permissions/permission.service.ts';
 import type { PublicUser, UserRepository } from '../auth/userRepository.ts';
 import { calcularDimensionamento } from './dimensioning.engine.js';
-import { type DimensioningRepository } from './dimensioning.repository.js';
+import { type DimensioningRepository, type ModeloPlaca, type ModeloInversor } from './dimensioning.repository.js';
 
 interface SolarDimensioningRouteOptions {
   userRepository: UserRepository;
   dimensioningRepository: DimensioningRepository;
   sessionSecret: string;
+}
+
+interface DimensionarRequestBody {
+  cidade: string;
+  uf: string;
+  consumo_medio_mensal_kwh: number;
+  modelo_placa_id: string;
+  tipo_telhado?: string | null;
+  perda_decimal?: number;
+  sobra_decimal?: number;
+  margem_inversor_decimal?: number;
+  dias_mes?: number;
+  lead_id?: string | null;
+  proposal_id?: string | null;
+  modelo_inversor_id?: string | null;
+}
+
+interface CalcularCustosRequestBody {
+  dimensionamento_id?: string | null;
+  quantidade_modulos?: number;
+  distancia_km?: number;
 }
 
 export async function registerSolarDimensioningRoutes(app: FastifyInstance, options: SolarDimensioningRouteOptions) {
@@ -125,7 +146,7 @@ export async function registerSolarDimensioningRoutes(app: FastifyInstance, opti
 
   app.post('/api/solar/dimensionar', { preHandler: createPreHandler }, async (request, reply) => {
     const user = requestUser(request);
-    const body = request.body as any;
+    const body = request.body as DimensionarRequestBody;
 
     // Validate required fields
     if (!body?.cidade || !body?.uf) {
@@ -268,7 +289,7 @@ export async function registerSolarDimensioningRoutes(app: FastifyInstance, opti
 
   app.post('/api/solar/calcular-custos', { preHandler: createPreHandler }, async (request, reply) => {
     const user = requestUser(request);
-    const body = request.body as any;
+    const body = request.body as CalcularCustosRequestBody;
 
     if (!body?.dimensionamento_id && !body?.quantidade_modulos) {
       return reply.status(400).send({ error: 'Informe dimensionamento_id ou quantidade_modulos.' });
