@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { getDatabasePool } from '../../db/pool.ts';
 import type { MetaAdsEnv } from '../../config/env.ts';
 
 const { Pool } = pg;
@@ -328,7 +329,7 @@ export function createStaticAdsRepository(): AdsRepository {
 }
 
 export function createPgAdsRepository(databaseUrl: string, metaConfig?: MetaAdsEnv): AdsRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
   const metaSyncInFlight = new Map<string, Promise<AdsSyncResult>>();
 
   const canSyncMeta = () => Boolean(metaConfig?.accessToken && metaConfig.adAccountId && metaConfig.pixelId);

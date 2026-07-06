@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { getDatabasePool } from '../../db/pool.ts';
 
 const { Pool } = pg;
 
@@ -23,8 +24,9 @@ export type PipelinesRepository = {
   close?(): Promise<void>;
 };
 
-export function createPgPipelinesRepository(databaseUrl: string): PipelinesRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+export function createPgPipelinesRepository(databaseUrl?: string): PipelinesRepository {
+  // Usa o pool singleton se databaseUrl não for fornecido (padrão)
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
 
   return {
     async listPipelines(tenantId, userId, isAdmin) {
@@ -77,7 +79,11 @@ export function createPgPipelinesRepository(databaseUrl: string): PipelinesRepos
       }));
     },
     async close() {
-      await pool.end();
+      // Apenas fecha o pool se ele foi criado localmente (não é o singleton)
+      if (databaseUrl) {
+        await pool.end();
+      }
+      // Se estiver usando o pool singleton, não fechamos aqui pois ele é compartilhado
     },
   };
 }

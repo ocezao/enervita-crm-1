@@ -1,4 +1,5 @@
 /**
+import { getDatabasePool } from '../../db/pool.ts';
  * Solar Dimensioning Repository.
  *
  * Handles all database operations for:
@@ -168,7 +169,7 @@ export interface LinhaCustoProposta {
 export type DimensioningRepository = ReturnType<typeof createDimensioningRepository>;
 
 export function createDimensioningRepository(databaseUrl: string) {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
   return {
     // ── Irradiation ───────────────────────────
 

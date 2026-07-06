@@ -1,4 +1,5 @@
 import pg from "pg";
+import { getDatabasePool } from '../../db/pool.ts';
 import type { PipelineStageKey } from "@enervita/shared";
 import type { AiConfig } from "../../config/env.ts";
 import type { PublicUser } from "../auth/userRepository.ts";
@@ -128,7 +129,7 @@ async function callLlm(config: AiConfig, messages: LlmMessage[], fetchImpl: type
 
 async function captureScreenshot(view: string, path: string | undefined, crmBaseUrl: string): Promise<string> {
   try {
-    const pw: typeof import("playwright") | null = await import("playwright").catch(() => null);
+    const pw = await import("playwright").catch(() => null as any);
     if (!pw || !pw.chromium) {
       return "Playwright n??o dispon??vel neste ambiente ainda. Configure o container do API com npx playwright install --with-deps chromium. Contexto visual n??o capturado para: " + view + ". Lembre: posso n??o compreender o contexto completo.";
     }
@@ -137,9 +138,7 @@ async function captureScreenshot(view: string, path: string | undefined, crmBase
     const page = await (await browser.newContext({ viewport: { width: 1280, height: 900 } })).newPage();
     const target = (path || "/").startsWith("/") ? path : "/" + (path || "");
     const url = (crmBaseUrl || "http://enervita-prod-crm-web").replace(/\/$/, "") + target;
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 12000 }).catch((err) => {
-      console.warn(`[AI Screenshot] Failed to load page ${url}:`, err);
-    });
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 12000 }).catch(() => {});
     const title = await page.title().catch(() => "CRM");
     const html = await page.content().catch(() => "");
     const text = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").slice(0, 900);
@@ -214,7 +213,7 @@ export async function answerAiChat(
 }
 
 export function createPgAiSqlRunner(databaseUrl: string): AiSqlRunner {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
   return {
     async query(sql, params) { const r = await pool.query(sql, params); return { rows: r.rows }; },
     async close() { await pool.end(); }

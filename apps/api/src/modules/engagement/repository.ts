@@ -1,4 +1,5 @@
 import pg, { type PoolClient } from 'pg';
+import { getDatabasePool } from '../../db/pool.ts';
 import type { PipelineStageKey } from '@enervita/shared';
 import type { AuditContext } from '../users/repository.ts';
 import type { NotificationsRepository } from '../notifications/repository.ts';
@@ -162,7 +163,7 @@ async function writeAudit(client: PoolClient, context: AuditContext, entityType:
 }
 
 export function createPgEngagementRepository(databaseUrl: string, notificationsRepository?: NotificationsRepository): EngagementRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
 
   return {
     async listTasks(tenantId, allowedStages, ownerUserId) {

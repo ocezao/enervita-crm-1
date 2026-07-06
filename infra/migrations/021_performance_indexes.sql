@@ -1,219 +1,217 @@
--- Migration: 021_performance_indexes.sql
--- Purpose: Adicionar índices estratégicos para melhorar performance das queries principais
--- Created: Performance Improvement Plan - Fase 1
+-- Migration 021: Performance Indexes for Query Optimization
+-- Addresses N+1 queries and improves leadSelect performance
+-- Safe to run multiple times (idempotent)
 
--- ============================================================
--- ÍNDICES PARA TABELA LEADS
--- ============================================================
+-- ============================================================================
+-- INDEXES FOR LEAD SELECT OPTIMIZATION
+-- ============================================================================
 
--- Índice composto para listagem de leads com filtros combinados
--- Otimiza: GET /api/leads?stage=X&owner=Y (caso mais comum)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS leads_tenant_stage_owner_updated_idx 
-ON leads(tenant_id, stage, sdr_owner_id, updated_at DESC);
+-- Composite index for leads list filtering by tenant, stage, and owner
+-- Optimizes: WHERE l.tenant_id = $1 AND l.stage = ANY($2) AND l.sdr_owner_id = $3
+create index if not exists leads_tenant_stage_owner_idx 
+  on leads(tenant_id, stage, sdr_owner_id) 
+  where sdr_owner_id is not null;
 
--- Índice para filtro por pipeline (multi-pipeline support)
--- Otimiza: Listagens filtradas por pipeline_key
-CREATE INDEX CONCURRENTLY IF NOT EXISTS leads_tenant_pipeline_updated_idx 
-ON leads(tenant_id, pipeline_key, updated_at DESC);
+-- Composite index for leads by tenant and next_action_at (priority queue queries)
+-- Optimizes: ORDER BY next_action_at DESC with tenant filtering
+create index if not exists leads_tenant_next_action_idx 
+  on leads(tenant_id, next_action_at desc) 
+  where next_action_at is not null;
 
--- Índice para busca por proprietário + próxima ação (dashboard/tasks)
--- Otimiza: Dashboard de leads por vencer, tasks do vendedor
-CREATE INDEX CONCURRENTLY IF NOT EXISTS leads_owner_next_action_idx 
-ON leads(sdr_owner_id, next_action_at) 
-WHERE next_action_at IS NOT NULL;
+-- Composite index for leads by tenant and created_at (list queries)
+-- Optimizes: WHERE tenant_id = $1 ORDER BY created_at DESC
+create index if not exists leads_tenant_created_composite_idx 
+  on leads(tenant_id, created_at desc);
 
--- Índice para leads criados recentemente (relatórios)
--- Otimiza: Relatórios de leads criados por período
-CREATE INDEX CONCURRENTLY IF NOT EXISTS leads_tenant_created_desc_idx 
-ON leads(tenant_id, created_at DESC);
+-- Index for contact lookups in lead queries
+-- Optimizes: JOIN contacts c ON c.tenant_id = l.tenant_id AND c.id = l.contact_id
+create index if not exists contacts_tenant_id_idx 
+  on contacts(tenant_id, id);
 
--- ============================================================
--- ÍNDICES PARA TABELA CONTACTS
--- ============================================================
+-- ============================================================================
+-- INDEXES FOR OPPORTUNITY JOINS
+-- ============================================================================
 
--- Índice já existente para email (lower), mantendo consistência
--- CREATE INDEX IF NOT EXISTS contacts_tenant_email_idx ON contacts(tenant_id, lower(email));
+-- Composite index for lead_opportunities by tenant and lead_id
+-- Optimizes: LEFT JOIN lead_opportunities lo ON lo.tenant_id = l.tenant_id AND lo.lead_id = l.id
+create index if not exists lead_opportunities_tenant_lead_idx 
+  on lead_opportunities(tenant_id, lead_id);
 
--- Índice para busca por telefone
--- Otimiza: Busca de leads por telefone (duplicação, merge)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS contacts_tenant_phone_idx 
-ON contacts(tenant_id, phone) 
-WHERE phone IS NOT NULL;
+-- ============================================================================
+-- INDEXES FOR TAG AGGREGATION (LATERAL JOIN)
+-- ============================================================================
 
--- ============================================================
--- ÍNDICES PARA TABELA LEAD_TAGS (JOINs)
--- ============================================================
+-- Composite index for lead_tag_assignments - critical for lateral join performance
+-- Optimizes: WHERE lta.tenant_id = l.tenant_id AND lta.lead_id = l.id
+create index if not exists lead_tag_assignments_tenant_lead_idx 
+  on lead_tag_assignments(tenant_id, lead_id);
 
--- Índice para join em lead_tag_assignments
--- Otimiza: Query que busca tags de múltiplos leads (batch loading)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS lead_tag_assignments_lead_idx 
-ON lead_tag_assignments(tenant_id, lead_id, tag_id);
+-- Index for tag lookups in tag aggregation
+create index if not exists lead_tags_tenant_id_idx 
+  on lead_tags(tenant_id, id);
 
--- Índice para filtro por tag slug (listagem por tag)
--- Otimiza: GET /api/leads?tags[]=X
-CREATE INDEX CONCURRENTLY IF NOT EXISTS lead_tags_tenant_slug_idx 
-ON lead_tags(tenant_id, slug);
+-- ============================================================================
+-- INDEXES FOR ATTRIBUTION JOINS (LATERAL JOIN)
+-- ============================================================================
 
--- ============================================================
--- ÍNDICES PARA TABELA AUDIT_LOGS
--- ============================================================
+-- Composite index for lead_attributions - optimizes lateral join
+-- Optimizes: WHERE la.tenant_id = l.tenant_id AND la.lead_id = l.id
+create index if not exists lead_attributions_tenant_lead_idx 
+  on lead_attributions(tenant_id, lead_id);
 
--- Índice composto para histórico do lead
--- Otimiza: GET /api/leads/:id/history
-CREATE INDEX CONCURRENTLY IF NOT EXISTS audit_logs_tenant_entity_created_idx 
-ON audit_logs(tenant_id, entity_type, entity_id, created_at DESC);
+-- ============================================================================
+-- INDEXES FOR PIPELINE STAGE JOINS
+-- ============================================================================
 
--- Índice para auditoria por usuário actor
--- Otimiza: Relatórios de atividade por usuário
-CREATE INDEX CONCURRENTLY IF NOT EXISTS audit_logs_actor_created_idx 
-ON audit_logs(tenant_id, actor_user_id, created_at DESC) 
-WHERE actor_user_id IS NOT NULL;
+-- Composite index for pipeline stages join
+-- Optimizes: JOIN lead_pipeline_stages ON tenant_id, pipeline_key, key
+create index if not exists lead_pipeline_stages_tenant_pipeline_key_idx 
+  on lead_pipeline_stages(tenant_id, pipeline_key, key);
 
--- ============================================================
--- ÍNDICES PARA TABELA LEAD_OPPORTUNITIES
--- ============================================================
+-- ============================================================================
+-- INDEXES FOR USER/OWNER LOOKUPS
+-- ============================================================================
 
--- Índice para join com leads
--- Otimiza: Query principal de leads que inclui opportunity data
-CREATE INDEX CONCURRENTLY IF NOT EXISTS lead_opportunities_lead_idx 
-ON lead_opportunities(tenant_id, lead_id, status);
+-- Composite index for users by tenant and id (owner lookups)
+-- Optimizes: JOIN users owner_user ON owner_user.tenant_id = l.tenant_id AND owner_user.id = l.sdr_owner_id
+create index if not exists users_tenant_id_idx 
+  on users(tenant_id, id);
 
--- Índice para oportunidades por estágio
--- Otimiza: Dashboard de funnel, conversão
-CREATE INDEX CONCURRENTLY IF NOT EXISTS lead_opportunities_tenant_status_idx 
-ON lead_opportunities(tenant_id, status, converted_at) 
-WHERE status IN ('won', 'lost');
+-- ============================================================================
+-- INDEXES FOR PROPOSALS MODULE
+-- ============================================================================
 
--- ============================================================
--- ÍNDICES PARA TABELA LEAD_ATTRIBUTIONS
--- ============================================================
+-- Composite index for proposals by tenant, lead, and status
+-- Optimizes: proposal listing and status filtering
+create index if not exists proposals_tenant_lead_status_idx 
+  on proposals(tenant_id, lead_id, status);
 
--- Índice para lookup por lead_id (já usado na query detectLeadService)
--- Otimiza: Subquery lateral no leadSelect
-CREATE INDEX CONCURRENTLY IF NOT EXISTS lead_attributions_lead_created_idx 
-ON lead_attributions(lead_id, created_at DESC);
+-- Index for proposal valid_until queries (expiration tracking)
+create index if not exists proposals_valid_until_idx 
+  on proposals(valid_until) 
+  where status IN ('draft', 'sent');
 
--- Índice para atribuição por campanha/formulário
--- Otimiza: Relatórios de origem de leads
-CREATE INDEX CONCURRENTLY IF NOT EXISTS lead_attributions_tenant_source_idx 
-ON lead_attributions(tenant_id, source_system, source_channel);
+-- ============================================================================
+-- INDEXES FOR FOLLOW-UP QUEUE
+-- ============================================================================
 
--- ============================================================
--- ÍNDICES PARA TABELA LEAD_STAGE_HISTORY
--- ============================================================
+-- Composite index for follow-up queue by tenant, status, and scheduled_at
+-- Optimizes: queue processing queries
+create index if not exists follow_up_queue_tenant_status_scheduled_idx 
+  on follow_up_queue(tenant_id, status, scheduled_at) 
+  where status = 'pending';
 
--- Índice para histórico de transições por lead
--- Otimiza: Análise de tempo em cada estágio
-CREATE INDEX CONCURRENTLY IF NOT EXISTS lead_stage_history_lead_created_idx 
-ON lead_stage_history(tenant_id, lead_id, created_at DESC);
+-- ============================================================================
+-- INDEXES FOR ACTIVITIES (HISTORY/TIMELINE)
+-- ============================================================================
 
--- Índice para contagem de transições por tenant/pipeline
--- Otimiza: Métricas de velocidade do pipeline
-CREATE INDEX CONCURRENTLY IF NOT EXISTS lead_stage_history_tenant_pipeline_idx 
-ON lead_stage_history(tenant_id, pipeline_key, to_stage, created_at);
+-- Composite index for activities by tenant, lead, and occurred_at
+-- Optimizes: timeline/history queries
+create index if not exists activities_tenant_lead_occurred_idx 
+  on activities(tenant_id, lead_id, occurred_at desc);
 
--- ============================================================
--- ÍNDICES PARA TABELA USERS
--- ============================================================
+-- Index for activity type filtering
+create index if not exists activities_tenant_type_idx 
+  on activities(tenant_id, activity_type, occurred_at desc);
 
--- Índice para busca de usuários ativos por tenant (lead routing)
--- Otimiza: resolveSdrOwnerId - query de usuários elegíveis
-CREATE INDEX CONCURRENTLY IF NOT EXISTS users_tenant_status_idx 
-ON users(tenant_id, status) 
-WHERE status = 'active';
+-- ============================================================================
+-- INDEXES FOR NOTIFICATIONS
+-- ============================================================================
 
--- ============================================================
--- ÍNDICES PARA TABELA USER_ROLES
--- ============================================================
+-- Composite index for notifications by tenant, user, and status
+-- Optimizes: notification listing queries
+create index if not exists notifications_tenant_user_status_idx 
+  on notifications(tenant_id, user_id, status, created_at desc);
 
--- Índice composto para verificação de permissões
--- Otimiza: getUserRole, verificações de admin
-CREATE INDEX CONCURRENTLY IF NOT EXISTS user_roles_user_tenant_idx 
-ON user_roles(tenant_id, user_id, role_id);
+-- Index for unread notifications count
+create index if not exists notifications_unread_idx 
+  on notifications(tenant_id, user_id, created_at desc) 
+  where status = 'unread';
 
--- ============================================================
--- ÍNDICES PARA TABELA ROLES
--- ============================================================
+-- ============================================================================
+-- INDEXES FOR ANALYTICS/REPORTING
+-- ============================================================================
 
--- Índice para busca de roles por nome (tenant + name)
--- Otimiza: Verificações de permissão por role name
-CREATE INDEX CONCURRENTLY IF NOT EXISTS roles_tenant_name_idx 
-ON roles(tenant_id, lower(name));
+-- Composite index for lead stage history (analytics queries)
+create index if not exists lead_stage_history_tenant_stage_changed_idx 
+  on lead_stage_history(tenant_id, from_stage, to_stage, changed_at desc);
 
--- ============================================================
--- ÍNDICES PARA TABELA TRACKING_EVENTS
--- ============================================================
+-- Index for conversion tracking
+create index if not exists lead_opportunities_tenant_converted_idx 
+  on lead_opportunities(tenant_id, status, converted_at desc) 
+  where status = 'won';
 
--- Índice para processamento de eventos pendentes
--- Otimiza: Scripts de dispatch (meta-capi, webhooks)
-CREATE INDEX CONCURRENTLY IF NOT EXISTS tracking_events_status_retry_idx 
-ON tracking_events(status, next_retry_at) 
-WHERE status = 'queued' AND next_retry_at IS NOT NULL;
+-- ============================================================================
+-- COVERING INDEXES FOR FREQUENT QUERIES
+-- ============================================================================
 
--- Índice para eventos por lead
--- Otimiza: Histórico de eventos enviados por lead
-CREATE INDEX CONCURRENTLY IF NOT EXISTS tracking_events_lead_created_idx 
-ON tracking_events(tenant_id, lead_id, created_at DESC);
+-- Covering index for lead list views (includes commonly selected columns)
+-- Reduces need to access heap table for basic list views
+create index if not exists leads_tenant_stage_covering_idx 
+  on leads(tenant_id, stage, created_at desc) 
+  include (contact_id, sdr_owner_id, priority, next_action_at)
+  where stage NOT IN ('perdido');
 
--- ============================================================
--- ÍNDICES PARA TABELA PIPELINE_RULES_CONFIG
--- ============================================================
+-- ============================================================================
+-- PARTIAL INDEXES FOR COMMON FILTERS
+-- ============================================================================
 
--- Índice para carregamento de regras por tenant/pipeline
--- Otimiza: loadPipelineRules em changeStage
-CREATE INDEX CONCURRENTLY IF NOT EXISTS pipeline_rules_tenant_pipeline_idx 
-ON pipeline_rules_config(tenant_id, pipeline_key);
+-- Partial index for high-priority leads
+create index if not exists leads_high_priority_idx 
+  on leads(tenant_id, next_action_at) 
+  where priority IN ('alta', 'urgente') AND stage NOT IN ('perdido', 'contrato_enervita');
 
--- ============================================================
--- ÍNDICES PARA TABELA LEAD_ROUTING (novo recurso)
--- ============================================================
+-- Partial index for leads needing action (next_action_at in near future)
+create index if not exists leads_action_needed_idx 
+  on leads(tenant_id, next_action_at) 
+  where next_action_at <= now() + interval '7 days' 
+    AND next_action_at IS NOT NULL 
+    AND stage NOT IN ('perdido', 'contrato_enervita');
 
--- Índice para regras ativas por tenant
--- Otimiza: resolveSdrOwnerId - busca regra ativa
-CREATE INDEX CONCURRENTLY IF NOT EXISTS lead_routing_rules_tenant_active_idx 
-ON lead_routing_rules(tenant_id, is_active) 
-WHERE is_active = true;
+-- Partial index for lost leads analysis
+create index if not exists leads_lost_reason_idx 
+  on leads(tenant_id, lost_reason) 
+  where lost_reason IS NOT NULL;
 
--- Índice para assignments por regra
--- Otimiza: resolveUserByService - busca usuário por serviço
-CREATE INDEX CONCURRENTLY IF NOT EXISTS lead_routing_assignments_rule_idx 
-ON lead_routing_rule_assignments(tenant_id, rule_key, config);
+-- ============================================================================
+-- INDEXES FOR INTEGRATIONS MODULE
+-- ============================================================================
 
--- ============================================================
--- MANUTENÇÃO DE ÍNDICES (comentado, para referência futura)
--- ============================================================
+-- Index for ad platform accounts by tenant and platform
+create index if not exists ad_platform_accounts_tenant_platform_idx 
+  on ad_platform_accounts(tenant_id, platform);
 
--- Comandos úteis para manutenção:
+-- Index for ad campaigns by account and status
+create index if not exists ad_campaigns_account_status_idx 
+  on ad_campaigns(account_id, status, updated_at desc);
 
--- Analisar uso de índices após deploy:
--- SELECT schemaname, tablename, indexname, idx_scan, idx_tup_read, idx_tup_fetch
--- FROM pg_stat_user_indexes
--- ORDER BY idx_scan ASC;
+-- ============================================================================
+-- INDEXES FOR SOLAR DIMENSIONING
+-- ============================================================================
 
--- Identificar índices não utilizados:
--- SELECT indexrelid::regclass as index_name
--- FROM pg_stat_user_indexes
--- WHERE idx_scan = 0
--- AND indexrelid::regclass NOT LIKE '%_pkey';
+-- Index for dimensionamentos by tenant and status
+create index if not exists dimensionamentos_tenant_status_idx 
+  on dimensionamentos(tenant_id, status, created_at desc);
 
--- Rebuild índice fragmentado:
--- REINDEX INDEX CONCURRENTLY leads_tenant_stage_owner_updated_idx;
+-- ============================================================================
+-- DOCUMENTATION: Update schema_migrations
+-- ============================================================================
 
--- Atualizar estatísticas do planner:
+insert into schema_migrations (version, description)
+values ('021_performance_indexes', 'Performance indexes for query optimization and N+1 reduction')
+on conflict (version) do nothing;
+
+-- ============================================================================
+-- ANALYZE TABLES AFTER INDEX CREATION
+-- ============================================================================
+
+-- Note: In production, consider running ANALYZE during low-traffic periods
 -- ANALYZE leads;
 -- ANALYZE contacts;
+-- ANALYZE lead_opportunities;
 -- ANALYZE lead_tag_assignments;
-
--- ============================================================
--- VALIDAÇÃO PÓS-DEPLOY
--- ============================================================
-
--- Após aplicar esta migration, execute:
--- EXPLAIN ANALYZE <query lenta>
--- Para verificar se os índices estão sendo usados (Index Scan vs Seq Scan)
-
--- Queries para testar:
--- 1. Listagem de leads com filtro de stage + owner
--- 2. Histórico de um lead específico
--- 3. Busca de leads por tags
--- 4. Join leads + opportunities + attributions
+-- ANALYZE lead_attributions;
+-- ANALYZE proposals;
+-- ANALYZE follow_up_queue;
+-- ANALYZE activities;
+-- ANALYZE notifications;

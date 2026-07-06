@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { getDatabasePool } from '../../db/pool.ts';
 import type { PipelineStageKey } from '@enervita/shared';
 import type { Activity } from '../engagement/repository.ts';
 
@@ -265,8 +266,8 @@ async function getCommercialMetrics(pool: pg.Pool, tenantId: string, allowedStag
   };
 }
 
-export function createPgDashboardRepository(databaseUrl: string): DashboardRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+export function createPgDashboardRepository(databaseUrl?: string): DashboardRepository {
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
 
   return {
     async getMetrics(tenantId, allowedStages, filters = {}) {

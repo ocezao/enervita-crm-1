@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { getDatabasePool } from '../../db/pool.ts';
 import type { WebhookDelivery } from './repository.ts';
 
 const { Pool } = pg;
@@ -165,7 +166,7 @@ function rowToQueuedDelivery(row: Record<string, unknown>): QueuedWebhookDeliver
 }
 
 export function createPgWebhookDispatchRepository(databaseUrl: string): WebhookDispatchRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
 
   return {
     async claimQueuedDeliveries(limit) {

@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { getDatabasePool } from '../../db/pool.ts';
 import type { PipelineStageKey } from '@enervita/shared';
 
 const { Pool } = pg;
@@ -78,8 +79,8 @@ function emptyOverview(range: AnalyticsRange, filters: AnalyticsFilters, note = 
 
 export function createStaticAnalyticsRepository(): AnalyticsRepository { return { async getOverview(_tenantId, _allowedStages, filters = {}) { return emptyOverview(rangeFromFilters(filters), filters); } }; }
 
-export function createPgAnalyticsRepository(databaseUrl: string): AnalyticsRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+export function createPgAnalyticsRepository(databaseUrl?: string): AnalyticsRepository {
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
   return {
     async getOverview(tenantId, allowedStages, filters = {}) {
       const range = rangeFromFilters(filters);

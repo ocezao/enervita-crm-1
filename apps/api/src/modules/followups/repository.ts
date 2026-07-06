@@ -1,4 +1,5 @@
 import pg from "pg";
+import { getDatabasePool } from '../../db/pool.ts';
 import type { PipelineStageKey } from "@enervita/shared";
 
 const { Pool } = pg;
@@ -439,7 +440,7 @@ async function collectCandidates(
 export function createPgFollowUpsRepository(
   databaseUrl: string,
 ): FollowUpsRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
 
   return {
     async createPending(input) {

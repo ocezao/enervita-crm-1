@@ -1,4 +1,5 @@
 import { PERMISSION_KEYS, PIPELINE_STAGE_KEYS } from '@enervita/shared';
+import { getDatabasePool } from '../../db/pool.ts';
 import pg from 'pg';
 import { saveAvatarToLocalUploads, type AvatarFileInput } from './avatarUpload.ts';
 
@@ -55,7 +56,7 @@ export function toPublicUser(user: AuthUser): PublicUser {
 }
 
 export function createPgUserRepository(databaseUrl: string): UserRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
 
   async function findActiveUser(whereClause: string, value: string): Promise<AuthUser | null> {
     const result = await pool.query(

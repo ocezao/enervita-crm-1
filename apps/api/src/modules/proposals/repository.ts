@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { getDatabasePool } from '../../db/pool.ts';
 import type { PipelineStageKey } from '@enervita/shared';
 import type { AuditContext } from '../users/repository.ts';
 import type { ProposalInput, UpdateProposalInput } from './validation.ts';
@@ -252,8 +253,8 @@ async function writeAudit(client: pg.PoolClient, context: AuditContext, entityTy
   );
 }
 
-export function createPgProposalsRepository(databaseUrl: string): ProposalsRepository {
-  const pool = new Pool({ connectionString: databaseUrl });
+export function createPgProposalsRepository(databaseUrl?: string): ProposalsRepository {
+  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
   return {
     async listProposals(tenantId, ownerUserId) {
       const result = await pool.query(`${proposalSelect} where p.tenant_id = $1${ownerClause(ownerUserId, 2)} order by p.created_at desc`, [tenantId, ...ownerParams(ownerUserId)]);
