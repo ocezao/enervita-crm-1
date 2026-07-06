@@ -36,6 +36,7 @@ import { createPgInsightsRepository, createStaticInsightsRepository, type Insigh
 import { registerAiRoutes } from './modules/ai/ai.routes.ts';
 import { createPgAiSqlRunner, type AiSqlRunner } from './modules/ai/ai.service.ts';
 import type { AiConfig } from './config/env.ts';
+import { registerPerformanceMonitoring } from './middleware/performance-monitor.js';
 
 export type CreateAppOptions = {
   userRepository?: UserRepository;
@@ -84,6 +85,9 @@ export function createApp(options: CreateAppOptions = {}): FastifyInstance {
   const secureCookies = options.secureCookies ?? env.nodeEnv === 'production';
 
   app.get('/health', async () => ({ ok: true }));
+
+  // Registra middleware de monitoramento de performance
+  registerPerformanceMonitoring(app);
 
   void registerAuthRoutes(app, { userRepository, sessionSecret, secureCookies });
   void registerUsersRoutes(app, { userRepository, usersRepository, sessionSecret });

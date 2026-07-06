@@ -1,1 +1,9 @@
-(docs/PERFORMANCE_OPTIMIZATION.md, infra/migrations/021_performance_indexes.sql, scripts/performance/README.md, scripts/performance/query-monitor.sql)
+# Examples
+PHASE3_COMPLETION_REPORT.md
+apps/api/docs/PERFORMANCE_MONITORING.md
+
+# Source files that should not be ignored
+!PHASE3_COMPLETION_REPORT.md
+!apps/api/docs/PERFORMANCE_MONITORING.md
+!apps/api/src/middleware/performance-monitor.ts
+!apps/api/src/app.ts
