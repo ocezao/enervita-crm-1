@@ -840,12 +840,18 @@ async function createOpportunityForLead(client: PoolClient, context: AuditContex
 }
 
 const META_STAGE_EVENTS: Partial<Record<PipelineStageKey, string>> = {
-  novo_lead: 'new',
-  qualificacao: 'Qualificação',
-  elaboracao_proposta: 'Qualificação',
-  fechamento: 'fechamento',
-  perdido: 'perdido',
-  perdido_desqualificado: 'perdido',
+  // Pipeline Usina Solar - etapas com evento Meta CAPI
+  novo_lead: 'new',                          // 1. Novo Lead → evento "new"
+  elaboracao_proposta: 'Qualificação',       // 3. Elaboração de proposta → evento "Qualificação"
+  fechamento: 'fechamento',                  // 6. Fechamento → evento "fechamento"
+  perdido_desqualificado: 'perdido',         // 10. Pedido (Perdido/Desqualificado) → evento "perdido"
+  // Etapas sem evento Meta CAPI:
+  // 2. Atendimento iniciado → sem evento
+  // 4. Apresentação de proposta → sem evento
+  // 5. Negociação / Follow-up → sem evento
+  // 7. Vistoria / Estudo técnico → sem evento
+  // 8. Assinatura de Contrato → sem evento
+  // 9. Ganho/ Contrato assinado → sem evento
 };
 
 const META_STAGE_ORDER: Record<PipelineStageKey, number> = {
