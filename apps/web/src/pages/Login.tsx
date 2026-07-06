@@ -42,7 +42,7 @@ export default function Login() {
 
   return (
     <main className="min-h-screen bg-warm-white flex flex-col items-center justify-center gap-4 px-6">
-      <section className="w-full max-w-md bg-white rounded-3xl border border-gray-100 shadow-xl p-8">
+      <section className="w-full max-w-md bg-warm-white rounded-3xl border border-warm-sand/50 shadow-xl p-8">
         <div className="flex items-center gap-3 mb-8">
           <div className="bg-solar-orange p-2 rounded-xl">
             <Sun className="text-white" size={28} fill="currentColor" />
@@ -53,7 +53,7 @@ export default function Login() {
           </div>
         </div>
 
-        <p className="text-sm text-gray-500 mb-6">
+        <p className="text-sm text-graphite-soft mb-6">
           Acesse o CRM operacional com sua conta autorizada. A sessão é mantida em cookie seguro HttpOnly pela API.
         </p>
 
@@ -67,7 +67,7 @@ export default function Login() {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50"
+              className="w-full rounded-xl border border-warm-sand/70 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50"
               placeholder="seuemail@enervita.com.br"
             />
           </div>
@@ -81,7 +81,7 @@ export default function Login() {
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50"
+              className="w-full rounded-xl border border-warm-sand/70 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50"
               placeholder="Digite sua senha"
             />
           </div>

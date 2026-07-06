@@ -86,13 +86,13 @@ export default function Webhooks() {
 
             <div className="space-y-4">
               {loading ? (
-                <div className="py-8 text-center text-gray-500">Carregando...</div>
+                <div className="py-8 text-center text-graphite-soft">Carregando...</div>
               ) : webhooks.map((webhook) => (
-                <div key={webhook.id} className="p-4 rounded-xl border border-gray-100 hover:border-solar-orange/20 transition-all group">
+                <div key={webhook.id} className="p-4 rounded-xl border border-warm-sand/50 hover:border-solar-orange/20 transition-all group">
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h4 className="font-bold text-sm text-graphite">{webhook.name}</h4>
-                      <span className="text-[10px] text-gray-400">Destino seguro configurado</span>
+                      <span className="text-[10px] text-graphite-soft">Destino seguro configurado</span>
                     </div>
                     <Badge variant={webhookBadgeVariant(webhook.status)}>
                       {webhookStatusLabel(webhook.status)}
@@ -101,20 +101,20 @@ export default function Webhooks() {
 
                   <div className="flex flex-wrap gap-1 mb-4">
                     {webhook.eventTypes.map(e => (
-                      <span key={e} className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-mono">
+                      <span key={e} className="text-[9px] bg-warm-sand/50 text-graphite-soft px-1.5 py-0.5 rounded font-mono">
                         {e}
                       </span>
                     ))}
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-gray-50">
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-warm-sand/30">
                     <div className="flex gap-4">
                       <div className="text-center">
-                        <p className="text-[9px] text-gray-400 uppercase font-bold">Taxa de sucesso</p>
+                        <p className="text-[9px] text-graphite-soft uppercase font-bold">Taxa de sucesso</p>
                         <p className="text-sm font-bold text-energy-success">{webhook.successRate}%</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-[9px] text-gray-400 uppercase font-bold">Última entrega</p>
+                        <p className="text-[9px] text-graphite-soft uppercase font-bold">Última entrega</p>
                         <p className="text-sm font-bold text-graphite">{webhook.lastDeliveryAt ? formatDate(webhook.lastDeliveryAt) : '-'}</p>
                       </div>
                     </div>
@@ -143,12 +143,12 @@ export default function Webhooks() {
                 <div key={delivery.id} className="rounded-lg border border-white/10 bg-white/5 p-3 text-[11px] text-mint-light">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="text-energy-green">{delivery.eventType}</span>
-                    <span className="text-gray-400">→ {delivery.webhookName ?? delivery.webhookId}</span>
+                    <span className="text-graphite-soft">→ {delivery.webhookName ?? delivery.webhookId}</span>
                     <Badge variant={deliveryBadgeVariant(delivery.status)}>{deliveryStatusLabel(delivery.status)}</Badge>
                   </div>
-                  <p className="mt-1 text-gray-300">{deliverySummary(delivery)}</p>
+                  <p className="mt-1 text-warm-sand">{deliverySummary(delivery)}</p>
                   {safeResponsePreview(delivery.responseBody) && (
-                    <p className="mt-1 text-gray-400">resposta: {safeResponsePreview(delivery.responseBody)}</p>
+                    <p className="mt-1 text-graphite-soft">resposta: {safeResponsePreview(delivery.responseBody)}</p>
                   )}
                 </div>
               ))}
@@ -164,21 +164,21 @@ export default function Webhooks() {
               Integrações comerciais
             </h3>
             <div className="space-y-3">
-              <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+              <div className="p-3 bg-white rounded-lg shadow-sm border border-warm-sand/50">
                 <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">Leitura de leads</p>
-                <p className="text-xs text-gray-500">Consulta segura das oportunidades autorizadas</p>
+                <p className="text-xs text-graphite-soft">Consulta segura das oportunidades autorizadas</p>
               </div>
-              <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+              <div className="p-3 bg-white rounded-lg shadow-sm border border-warm-sand/50">
                 <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">Entrada de leads</p>
-                <p className="text-xs text-gray-500">Receber oportunidades vindas do site e campanhas</p>
+                <p className="text-xs text-graphite-soft">Receber oportunidades vindas do site e campanhas</p>
               </div>
-              <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+              <div className="p-3 bg-white rounded-lg shadow-sm border border-warm-sand/50">
                 <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">Atualização comercial</p>
-                <p className="text-xs text-gray-500">Atualizar dados ou etapa com permissão</p>
+                <p className="text-xs text-graphite-soft">Atualizar dados ou etapa com permissão</p>
               </div>
-              <div className="p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+              <div className="p-3 bg-white rounded-lg shadow-sm border border-warm-sand/50">
                 <p className="text-[10px] font-bold text-energy-green mb-1 uppercase">Eventos comerciais</p>
-                <p className="text-xs text-gray-500">Fila segura para sinais de campanha e conversão</p>
+                <p className="text-xs text-graphite-soft">Fila segura para sinais de campanha e conversão</p>
               </div>
             </div>
             <Link to="/settings?tab=integrations"><Button variant="outline" className="w-full mt-6 text-xs">Acessar Documentação</Button></Link>
@@ -191,15 +191,15 @@ export default function Webhooks() {
             </div>
             <div className="space-y-3">
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Entrada segura</span>
+                <span className="text-graphite-soft">Entrada segura</span>
                 <span className="text-energy-success font-bold">99.9%</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Fila de integrações</span>
+                <span className="text-graphite-soft">Fila de integrações</span>
                 <span className="text-energy-success font-bold">Ativa</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-gray-500">Rastreio comercial</span>
+                <span className="text-graphite-soft">Rastreio comercial</span>
                 <span className="text-energy-success font-bold">Controlada</span>
               </div>
             </div>

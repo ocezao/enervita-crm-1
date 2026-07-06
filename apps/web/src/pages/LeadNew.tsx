@@ -72,10 +72,10 @@ export default function LeadNew() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-6">
+      <div className="rounded-xl border border-slate-200 bg-warm-white p-6">
         <div className="mb-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-graphite">Novo lead</h1>
-          <Link to="/leads" className="text-sm text-gray-600 underline">Voltar</Link>
+          <Link to="/leads" className="text-sm text-graphite underline">Voltar</Link>
         </div>
 
         <form onSubmit={onSubmit} className="grid gap-3">
