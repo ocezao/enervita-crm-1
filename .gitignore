@@ -1,12 +1,145 @@
 ```
-# Environment
-.env.local
-.env.*
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
 
 # Logs and temp files
 *.log
 *.tmp
 
+# Environment variables
+.env
+.env.local
+.env.*
+
 # Editors
 .vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.sqlite
+*.sqlite3
+.DS_Store
+Thumbs.db
+
+# Node.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+node_modules/
+dist/
+logs
+*.log
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.nyc_output
+coverage
+.nyc_output/
+coverage/
+lib-cov
+*.seed
+*.pid
+*.gid
+*.csv
+*.tgz
+*.tar.gz
+*.tar
+*.zip
+.DS_Store
+Thumbs.db
+npm-shrinkwrap.json
+*.min.js
+*.min.css
+.eslintcache
+.next
+out
+build
+dist
+node_modules
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.next/
+out/
+build/
+dist/
+public/dist/
+public/build/
+.next/**
+!**/.gitkeep
+!**/_next/static/**/pages/**
+!**/_next/static/chunks/**
+!**/_next/static/css/**
+!**/_next/static/media/**
+!**/_next/static/development/dll/**
+!**/_next/static/image/**
+!**/_next/static/images/**
+!**/_next/static/fonts/**
+!**/_next/static/font/**
+!**/_next/static/misc/**
+!**/_next/static/other/**
+!**/_next/static/pages/**
+!**/_next/static/chunks/**
+!**/_next/static/css/**
+!**/_next/static/media/**
+!**/_next/static/image/**
+!**/_next/static/images/**
+!**/_next/static/fonts/**
+!**/_next/static/font/**
+!**/_next/static/misc/**
+!**/_next/static/other/**
+
+# TypeScript
+*.tsbuildinfo
+.next/
+out/
+
+# Compiled JavaScript
+*.js.map
+*.mjs.map
+*.cjs.map
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 ```
