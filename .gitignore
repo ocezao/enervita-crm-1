@@ -1,9 +1,11 @@
-# Examples
-PHASE3_COMPLETION_REPORT.md
-apps/api/docs/PERFORMANCE_MONITORING.md
+```
+# Dependencies
+node_modules/
 
-# Source files that should not be ignored
-!PHASE3_COMPLETION_REPORT.md
-!apps/api/docs/PERFORMANCE_MONITORING.md
-!apps/api/src/middleware/performance-monitor.ts
-!apps/api/src/app.ts
+# Environment
+.env.local
+.env
+
+# Logs and temp files
+*.log
+```
