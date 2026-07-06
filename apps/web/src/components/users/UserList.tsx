@@ -11,13 +11,13 @@ type Props = {
 
 export function UserList({ users, selectedId, onSelect, onNew }: Props) {
   return (
-    <Card className="p-4">
+    <Card className="p-4 crm-user-list">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h2 className="text-lg font-bold text-graphite">Usuários</h2>
-          <p className="text-xs text-gray-500">{users.length} cadastrados</p>
+          <h2 className="text-lg font-black text-graphite tracking-tight">Usuários</h2>
+          <p className="text-xs text-gray-500 mt-0.5">{users.length} cadastrados</p>
         </div>
-        <Button size="sm" onClick={onNew}>Novo</Button>
+        <Button size="sm" variant="primary" onClick={onNew}>Novo</Button>
       </div>
       <div className="space-y-2" data-testid="users-list">
         {users.map((user) => (
@@ -25,7 +25,11 @@ export function UserList({ users, selectedId, onSelect, onNew }: Props) {
             key={user.id}
             type="button"
             onClick={() => onSelect(user)}
-            className={`w-full rounded-xl border p-3 text-left transition ${selectedId === user.id ? 'border-solar-orange bg-solar-orange/5' : 'border-gray-100 hover:bg-gray-50'}`}
+            className={`w-full rounded-xl border p-3 text-left transition-all duration-200 ${
+              selectedId === user.id 
+                ? 'border-solar-orange bg-solar-orange/5 shadow-sm' 
+                : 'border-gray-100 hover:bg-gray-50 hover:border-solar-orange/20'
+            }`}
           >
             <div className="flex items-center justify-between gap-2">
               <span className="font-semibold text-graphite">{user.name}</span>
