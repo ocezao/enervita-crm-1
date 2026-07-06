@@ -54,7 +54,7 @@ export const Badge = ({ className, children, variant = 'default' }: { className?
     success: 'bg-mint-light text-energy-success',
     warning: 'bg-alert-amber/15 text-alert-amber',
     error: 'bg-alert-red/15 text-alert-red',
-    info: 'bg-blue-50 text-blue-600',
+    info: 'bg-graphite/10 text-graphite border border-graphite/20',
     solar: 'bg-solar-orange/15 text-solar-orange',
   };
 

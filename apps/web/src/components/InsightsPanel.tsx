@@ -38,9 +38,9 @@ const TYPE_ICONS: Record<InsightType, string> = {
 };
 
 const PRIORITY_COLORS: Record<InsightPriority, string> = {
-  high: 'border-red-500 bg-red-50',
-  medium: 'border-yellow-500 bg-yellow-50',
-  low: 'border-blue-500 bg-blue-50',
+  high: 'border-alert-red/30 bg-alert-red/10',
+  medium: 'border-alert-amber/30 bg-alert-amber/10',
+  low: 'border-graphite/30 bg-graphite/10',
 };
 
 const TREND_ICONS: Record<string, string> = {
@@ -77,10 +77,10 @@ export function InsightsPanel() {
     return (
       <div className="p-6 bg-white rounded-lg shadow">
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4" />
+          <div className="h-4 bg-warm-sand/50 rounded w-1/4 mb-4" />
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 bg-gray-100 rounded" />
+              <div key={i} className="h-20 bg-warm-sand/30 rounded" />
             ))}
           </div>
         </div>
@@ -90,9 +90,9 @@ export function InsightsPanel() {
 
   if (error) {
     return (
-      <div className="p-6 bg-white rounded-lg shadow">
-        <div className="text-red-600">{error}</div>
-        <button onClick={loadInsights} className="mt-2 text-sm text-blue-600 hover:underline">
+      <div className="p-6 bg-white rounded-lg shadow border border-warm-sand/50">
+        <div className="text-alert-red">{error}</div>
+        <button onClick={loadInsights} className="mt-2 text-sm text-solar-orange hover:underline font-semibold">
           Tentar novamente
         </button>
       </div>
@@ -106,11 +106,11 @@ export function InsightsPanel() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Insights Inteligentes</h2>
+        <h2 className="text-2xl font-bold text-graphite">Insights Inteligentes</h2>
         <select
           value={days}
           onChange={(event) => setDays(Number(event.target.value))}
-          className="border rounded-lg px-3 py-2 text-sm"
+          className="border border-warm-sand/70 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-solar-orange/50"
         >
           <option value={7}>Últimos 7 dias</option>
           <option value={30}>Últimos 30 dias</option>
@@ -120,30 +120,30 @@ export function InsightsPanel() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Total de Leads</p>
-          <p className="text-2xl font-bold">{insights.summary.totalLeads}</p>
+        <div className="bg-white p-4 rounded-lg shadow border border-warm-sand/50">
+          <p className="text-sm text-graphite-soft">Total de Leads</p>
+          <p className="text-2xl font-bold text-graphite">{insights.summary.totalLeads}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Taxa de Conversão</p>
-          <p className="text-2xl font-bold">{insights.summary.conversionRate}%</p>
+        <div className="bg-white p-4 rounded-lg shadow border border-warm-sand/50">
+          <p className="text-sm text-graphite-soft">Taxa de Conversão</p>
+          <p className="text-2xl font-bold text-graphite">{insights.summary.conversionRate}%</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Tempo Médio (dias)</p>
-          <p className="text-2xl font-bold">{insights.summary.avgTimeToConvert}</p>
+        <div className="bg-white p-4 rounded-lg shadow border border-warm-sand/50">
+          <p className="text-sm text-graphite-soft">Tempo Médio (dias)</p>
+          <p className="text-2xl font-bold text-graphite">{insights.summary.avgTimeToConvert}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Top Source</p>
-          <p className="text-lg font-bold truncate">{insights.summary.topSource}</p>
+        <div className="bg-white p-4 rounded-lg shadow border border-warm-sand/50">
+          <p className="text-sm text-graphite-soft">Top Source</p>
+          <p className="text-lg font-bold truncate text-graphite">{insights.summary.topSource}</p>
         </div>
       </div>
 
-      <p className="text-xs text-gray-500">{insights.summary.bottleneck}</p>
-      <p className="text-xs text-gray-500">Gerado em: {new Date(insights.generatedAt).toLocaleString('pt-BR')}</p>
+      <p className="text-xs text-graphite-soft">{insights.summary.bottleneck}</p>
+      <p className="text-xs text-graphite-soft">Gerado em: {new Date(insights.generatedAt).toLocaleString('pt-BR')}</p>
 
       <div className="space-y-4">
         {insights.insights.length === 0 ? (
-          <div className="p-6 bg-white rounded-lg shadow text-center text-gray-500">
+          <div className="p-6 bg-white rounded-lg shadow text-center text-graphite-soft border border-warm-sand/50">
             Nenhum insight disponível para este período.
           </div>
         ) : (
@@ -152,14 +152,14 @@ export function InsightsPanel() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span>{TYPE_ICONS[item.type]}</span>
-                  <strong>{item.title}</strong>
+                  <strong className="text-graphite">{item.title}</strong>
                 </div>
                 {item.trend ? <span>{TREND_ICONS[item.trend]}</span> : null}
               </div>
-              <p className="text-sm text-gray-600 mt-2">{item.description}</p>
-              {item.metric ? <p className="text-xs mt-2">{item.metric}</p> : null}
-              {item.comparison ? <p className="text-xs text-gray-500">{item.comparison}</p> : null}
-              {item.action ? <p className="text-xs text-blue-700 mt-2"><strong>Recomendação:</strong> {item.action}</p> : null}
+              <p className="text-sm text-graphite mt-2">{item.description}</p>
+              {item.metric ? <p className="text-xs mt-2 text-graphite-soft">{item.metric}</p> : null}
+              {item.comparison ? <p className="text-xs text-graphite-soft">{item.comparison}</p> : null}
+              {item.action ? <p className="text-xs text-solar-orange mt-2"><strong>Recomendação:</strong> {item.action}</p> : null}
             </div>
           ))
         )}
