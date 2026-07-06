@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, Bot, Command, FileText, Kanban, LayoutDashboard, LogOut, Megaphone, Plus, Search, Settings, Sparkles, UserRound, Users, CheckSquare, Zap } from 'lucide-react';
+import { Bell, Bot, Command, FileText, Kanban, LayoutDashboard, LogOut, Megaphone, Plus, Search, Settings, Sparkles, UserRound, Users, CheckSquare, Zap, BarChart3 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/useAuth';
@@ -26,6 +26,7 @@ const pageSuggestions: SearchSuggestion[] = [
   { id: 'tasks', type: 'page', label: 'Tarefas', description: 'Follow-ups e atividades atribuídas', path: '/tasks', keywords: 'tarefas follow up pendencias agenda atribuida responsavel vencimento', icon: CheckSquare, requiredAny: ['page.tasks'] },
   { id: 'proposals', type: 'page', label: 'Propostas', description: 'Propostas comerciais e simulações', path: '/proposals', keywords: 'propostas orçamento contrato economia simulação', icon: FileText, requiredAny: ['page.proposals', 'proposal.view'] },
   { id: 'automations', type: 'page', label: 'Automações', description: 'Fluxos e rotinas operacionais', path: '/automations', keywords: 'automacao automações n8n workflows fluxos gatilhos', icon: Zap, requiredAny: ['page.automations', 'automation.manage'] },
+  { id: 'analytics', type: 'page', label: 'Analytics', description: 'Métricas, tracking e aquisição', path: '/analytics', keywords: 'analytics metricas trafego eventos tracking capi pixel origem campanha', icon: BarChart3, requiredAny: ['page.analytics', 'analytics.view', 'tracking.view'] },
   { id: 'ads', type: 'page', label: 'Campanhas', description: 'Meta/Google Ads e mídia paga', path: '/ads', keywords: 'ads campanhas anúncios anuncios meta google trafego pago criativos', icon: Megaphone, requiredAny: ['page.ads', 'ads.view'] },
   { id: 'ai', type: 'page', label: 'Assistente IA', description: 'Perguntas sobre dados do CRM', path: '/ai', keywords: 'ia assistente inteligencia artificial chat pergunta dados', icon: Bot, requiredAny: ['page.ai_assistant'] },
   { id: 'settings', type: 'page', label: 'Configurações', description: 'Ajustes, usuários e permissões', path: '/settings', keywords: 'configuracoes ajustes usuários usuarios permissões permissoes aparência', icon: Settings, requiredAny: ['page.settings', 'settings.manage', 'user.manage'] },
@@ -194,7 +195,7 @@ export const Topbar = () => {
             className="w-full bg-white border border-warm-sand/70 rounded-xl py-2 pl-10 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50 transition-all"
             aria-label="Busca global"
           />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded border border-warm-sand/70 bg-warm-sand/30 text-[10px] text-graphite-soft">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded border border-warm-sand/70 bg-warm-sand/50 text-[10px] text-graphite-soft">
             <Command size={10} /> K
           </div>
 
@@ -213,7 +214,7 @@ export const Topbar = () => {
                       onClick={() => goToSuggestion(suggestion)}
                       className="w-full flex items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-solar-orange/5 focus:bg-solar-orange/5 focus:outline-none transition-colors"
                     >
-                      <div className="mt-0.5 h-8 w-8 rounded-xl bg-warm-sand/30 flex items-center justify-center text-solar-orange shrink-0"><Icon size={16} /></div>
+                      <div className="mt-0.5 h-8 w-8 rounded-xl bg-warm-sand/50 flex items-center justify-center text-solar-orange shrink-0"><Icon size={16} /></div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-black text-graphite truncate">{suggestion.label}</p>
@@ -250,9 +251,9 @@ export const Topbar = () => {
                 {notifications.length === 0 ? (
                   <p className="p-4 text-sm text-graphite-soft">Nenhuma notificação por enquanto.</p>
                 ) : notifications.map((notification) => (
-                  <button key={notification.id} type="button" onClick={() => handleNotificationClick(notification)} className="block w-full border-b border-warm-sand/30 p-4 text-left hover:bg-warm-sand/30">
+                  <button key={notification.id} type="button" onClick={() => handleNotificationClick(notification)} className="block w-full border-b border-warm-sand/30 p-4 text-left hover:bg-warm-sand/50">
                     <div className="flex items-start gap-3">
-                      <span className={`mt-1 h-2 w-2 rounded-full ${notification.readAt ? 'bg-warm-sand/50' : 'bg-solar-orange'}`} />
+                      <span className={`mt-1 h-2 w-2 rounded-full ${notification.readAt ? 'bg-warm-sand/70' : 'bg-solar-orange'}`} />
                       <div className="min-w-0">
                         <p className="text-sm font-black text-graphite">{notification.title}</p>
                         {notification.body && <p className="mt-1 line-clamp-2 text-xs text-graphite-soft">{notification.body}</p>}

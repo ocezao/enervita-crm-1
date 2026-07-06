@@ -77,10 +77,10 @@ export function InsightsPanel() {
     return (
       <div className="p-6 bg-white rounded-lg shadow">
         <div className="animate-pulse">
-          <div className="h-4 bg-gray-200 rounded w-1/4 mb-4" />
+          <div className="h-4 bg-warm-sand/70 rounded w-1/4 mb-4" />
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 bg-gray-100 rounded" />
+              <div key={i} className="h-20 bg-warm-sand/50 rounded" />
             ))}
           </div>
         </div>
@@ -106,7 +106,7 @@ export function InsightsPanel() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Insights Inteligentes</h2>
+        <h2 className="text-2xl font-bold text-graphite">Insights Inteligentes</h2>
         <select
           value={days}
           onChange={(event) => setDays(Number(event.target.value))}
@@ -121,29 +121,29 @@ export function InsightsPanel() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Total de Leads</p>
+          <p className="text-sm text-graphite-soft">Total de Leads</p>
           <p className="text-2xl font-bold">{insights.summary.totalLeads}</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Taxa de Conversão</p>
+          <p className="text-sm text-graphite-soft">Taxa de Conversão</p>
           <p className="text-2xl font-bold">{insights.summary.conversionRate}%</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Tempo Médio (dias)</p>
+          <p className="text-sm text-graphite-soft">Tempo Médio (dias)</p>
           <p className="text-2xl font-bold">{insights.summary.avgTimeToConvert}</p>
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-gray-500">Top Source</p>
+          <p className="text-sm text-graphite-soft">Top Source</p>
           <p className="text-lg font-bold truncate">{insights.summary.topSource}</p>
         </div>
       </div>
 
-      <p className="text-xs text-gray-500">{insights.summary.bottleneck}</p>
-      <p className="text-xs text-gray-500">Gerado em: {new Date(insights.generatedAt).toLocaleString('pt-BR')}</p>
+      <p className="text-xs text-graphite-soft">{insights.summary.bottleneck}</p>
+      <p className="text-xs text-graphite-soft">Gerado em: {new Date(insights.generatedAt).toLocaleString('pt-BR')}</p>
 
       <div className="space-y-4">
         {insights.insights.length === 0 ? (
-          <div className="p-6 bg-white rounded-lg shadow text-center text-gray-500">
+          <div className="p-6 bg-white rounded-lg shadow text-center text-graphite-soft">
             Nenhum insight disponível para este período.
           </div>
         ) : (
@@ -156,9 +156,9 @@ export function InsightsPanel() {
                 </div>
                 {item.trend ? <span>{TREND_ICONS[item.trend]}</span> : null}
               </div>
-              <p className="text-sm text-gray-600 mt-2">{item.description}</p>
+              <p className="text-sm text-graphite mt-2">{item.description}</p>
               {item.metric ? <p className="text-xs mt-2">{item.metric}</p> : null}
-              {item.comparison ? <p className="text-xs text-gray-500">{item.comparison}</p> : null}
+              {item.comparison ? <p className="text-xs text-graphite-soft">{item.comparison}</p> : null}
               {item.action ? <p className="text-xs text-blue-700 mt-2"><strong>Recomendação:</strong> {item.action}</p> : null}
             </div>
           ))

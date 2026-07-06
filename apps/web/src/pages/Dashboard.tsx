@@ -52,8 +52,8 @@ function iconTone(tone: 'blue' | 'orange' | 'green' | 'red') {
   const tones = {
     blue: 'bg-blue-50 text-blue-600',
     orange: 'bg-solar-orange/10 text-solar-orange',
-    green: 'bg-green-50 text-green-600',
-    red: 'bg-red-50 text-red-600',
+    green: 'bg-energy-green/10 text-energy-green',
+    red: 'bg-alert-red/10 text-alert-red',
   };
   return tones[tone];
 }
@@ -164,7 +164,7 @@ export default function Dashboard() {
                     <p className="text-sm font-semibold text-graphite-soft">{label}</p>
                     <p className="mt-3 text-3xl font-black text-graphite">{formatNumber(value)}</p>
                   </div>
-                  <div className="rounded-2xl bg-warm-sand/30 p-3 text-graphite">
+                  <div className="rounded-2xl bg-warm-sand/50 p-3 text-graphite">
                     <Icon size={22} />
                   </div>
                 </div>
@@ -229,7 +229,7 @@ export default function Dashboard() {
                   <p className="text-sm text-graphite-soft">Sem dados de funil.</p>
                 ) : (
                   commercial.stageBreakdown.map((stage) => (
-                    <div key={stage.stage} className="rounded-xl bg-warm-sand/30 p-3">
+                    <div key={stage.stage} className="rounded-xl bg-warm-sand/50 p-3">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-semibold text-graphite">{stageLabel(stage.stage)}</span>
                         <span className="text-graphite-soft">{formatNumber(stage.count)}</span>
@@ -252,7 +252,7 @@ export default function Dashboard() {
           <div className="p-6">
             <div className="space-y-4">
               {metrics.leadsByStage.map((stage) => (
-                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-warm-sand/30 px-4 py-3">
+                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-warm-sand/50 px-4 py-3">
                   <div>
                     <p className="font-semibold text-graphite">{stageLabel(stage.stage)}</p>
                     <p className="text-xs text-graphite-soft">Distribuição do pipeline</p>

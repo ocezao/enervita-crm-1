@@ -271,35 +271,35 @@ export default function Leads() {
             <UserPlus size={15} /> Criar lead
           </Button>
         </Card>
-        <Card className="p-5 bg-solar-orange/10 border-solar-orange/20"><Users className="text-solar-orange" size={20} /><p className="mt-3 text-xs font-bold text-solar-orange uppercase tracking-wider">Total de Leads</p><h4 className="text-3xl font-black text-graphite mt-1">{leads.length}</h4></Card>
-        <Card className="p-5 bg-energy-green/10 border-energy-green/20"><Flame className="text-energy-green" size={20} /><p className="mt-3 text-xs font-bold text-energy-green uppercase tracking-wider">Qualificados</p><h4 className="text-3xl font-black text-graphite mt-1">{qualified}</h4></Card>
-        <Card className="p-5 bg-warm-sand/50 border-warm-sand/70"><Clock className="text-graphite-soft" size={20} /><p className="mt-3 text-xs font-bold text-graphite-soft uppercase tracking-wider">Aguardando Contato</p><h4 className="text-3xl font-black text-graphite mt-1">{waiting}</h4></Card>
-        <Card className="p-5 bg-alert-red/10 border-alert-red/20"><Flame className="text-alert-red" size={20} /><p className="mt-3 text-xs font-bold text-alert-red uppercase tracking-wider">Prioridade alta</p><h4 className="text-3xl font-black text-graphite mt-1">{hot}</h4></Card>
+        <Card className="p-5 bg-solar-orange/5 border-solar-orange/10"><Users className="text-solar-orange" size={20} /><p className="mt-3 text-xs font-bold text-solar-orange uppercase tracking-wider">Total de Leads</p><h4 className="text-3xl font-black text-graphite mt-1">{leads.length}</h4></Card>
+        <Card className="p-5 bg-energy-green/5 border-energy-green/10"><Flame className="text-energy-green" size={20} /><p className="mt-3 text-xs font-bold text-energy-green uppercase tracking-wider">Qualificados</p><h4 className="text-3xl font-black text-graphite mt-1">{qualified}</h4></Card>
+        <Card className="p-5 bg-graphite/5 border-graphite/10"><Clock className="text-graphite" size={20} /><p className="mt-3 text-xs font-bold text-graphite-soft uppercase tracking-wider">Aguardando Contato</p><h4 className="text-3xl font-black text-graphite mt-1">{waiting}</h4></Card>
+        <Card className="p-5 bg-alert-red/5 border-alert-red/10"><Flame className="text-alert-red" size={20} /><p className="mt-3 text-xs font-bold text-alert-red uppercase tracking-wider">Prioridade alta</p><h4 className="text-3xl font-black text-graphite mt-1">{hot}</h4></Card>
       </div>
 
       <Card className="overflow-hidden">
-        <div className="p-4 border-b border-warm-sand/50 bg-warm-sand/30 space-y-4">
+        <div className="p-4 border-b border-warm-sand/50 bg-warm-sand/50/50 space-y-4">
           <div className="flex flex-col lg:flex-row gap-3 lg:items-center justify-between">
             <div className="relative w-full lg:max-w-lg">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite-soft" size={16} />
               <label className="sr-only" htmlFor="leads-search">Buscar leads</label>
-              <input id="leads-search" aria-label="Buscar leads por nome, empresa, e-mail ou origem" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nome, empresa, e-mail ou origem..." className="w-full bg-white border border-warm-sand/70 rounded-lg py-2.5 pl-10 pr-4 text-sm text-graphite placeholder:text-graphite-soft focus:outline-none focus:ring-2 focus:ring-solar-orange/30 transition-all duration-200" />
+              <input id="leads-search" aria-label="Buscar leads por nome, empresa, e-mail ou origem" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por nome, empresa, e-mail ou origem..." className="w-full bg-white border border-warm-sand/70 rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
             </div>
             <div className="flex flex-wrap gap-2">{stageFilters.map((item) => <Button key={item.id} variant={stage === item.id ? 'primary' : 'outline'} size="sm" onClick={() => setStage(item.id)}>{item.label}</Button>)}</div>
           </div>
-          <div className="rounded-lg border border-warm-sand/50 bg-white p-3">
+          <div className="rounded-2xl border border-warm-sand/50 bg-white p-3">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <label className="flex flex-1 items-center gap-2 text-sm text-graphite-soft"><Filter size={14} /> Tags internas
-                <input aria-label="Filtrar por tag" value={tagQuery} onChange={(event) => setTagQuery(event.target.value)} placeholder="Ex.: vip, urgente, follow-up" className="min-w-0 flex-1 rounded-lg border border-warm-sand/70 px-3 py-2 text-sm text-graphite placeholder:text-graphite-soft focus:outline-none focus:ring-2 focus:ring-solar-orange/30 transition-all duration-200" />
-                <select aria-label="Modo do filtro de tags" value={tagMode} onChange={(event) => setTagMode(event.target.value as 'any' | 'all')} className="rounded-lg border border-warm-sand/70 bg-white px-3 py-2 text-xs font-bold text-graphite focus:outline-none focus:ring-2 focus:ring-solar-orange/30"><option value="any">qualquer tag</option><option value="all">todas as tags</option></select>
+                <input aria-label="Filtrar por tag" value={tagQuery} onChange={(event) => setTagQuery(event.target.value)} placeholder="Ex.: vip, urgente, follow-up" className="min-w-0 flex-1 rounded-xl border border-warm-sand/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                <select aria-label="Modo do filtro de tags" value={tagMode} onChange={(event) => setTagMode(event.target.value as 'any' | 'all')} className="rounded-xl border border-warm-sand/70 bg-white px-3 py-2 text-xs font-bold text-graphite"><option value="any">qualquer tag</option><option value="all">todas as tags</option></select>
               </label>
               <div className="flex flex-wrap gap-2">
-                {tagCatalog.length === 0 ? <span className="text-xs text-graphite-soft">Nenhuma tag cadastrada ainda</span> : tagCatalog.slice(0, 12).map((tag) => <button key={tag} type="button" onClick={() => setTagQuery(tag)} className="rounded-full bg-solar-orange/15 px-3 py-1.5 text-xs font-bold text-solar-orange hover:bg-solar-orange/25 transition-colors">#{tag}</button>)}
+                {tagCatalog.length === 0 ? <span className="text-xs text-graphite-soft">Nenhuma tag cadastrada ainda</span> : tagCatalog.slice(0, 12).map((tag) => <button key={tag} type="button" onClick={() => setTagQuery(tag)} className="rounded-full bg-solar-orange/10 px-3 py-1 text-xs font-bold text-solar-orange hover:bg-solar-orange/20">#{tag}</button>)}
               </div>
             </div>
           </div>
           {(selectedCount > 0 || bulkMessage) && (
-            <div className="rounded-lg border border-solar-orange/20 bg-solar-orange/10 p-3">
+            <div className="rounded-2xl border border-solar-orange/20 bg-solar-orange/5 p-3">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                 <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-graphite">
                   <span>{selectedCount} lead(s) selecionado(s)</span>
@@ -309,17 +309,17 @@ export default function Leads() {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <div className="relative min-w-[240px] flex-1">
                     <Tags className="absolute left-3 top-1/2 -translate-y-1/2 text-solar-orange" size={15} />
-                    <input aria-label="Tags para aplicar em massa" value={bulkTags} onChange={(event) => setBulkTags(event.target.value)} placeholder="Tags em massa: vip, follow-up" className="w-full rounded-lg border border-solar-orange/20 bg-white py-2.5 pl-9 pr-3 text-sm text-graphite placeholder:text-graphite-soft focus:outline-none focus:ring-2 focus:ring-solar-orange/30 transition-all duration-200" />
+                    <input aria-label="Tags para aplicar em massa" value={bulkTags} onChange={(event) => setBulkTags(event.target.value)} placeholder="Tags em massa: vip, follow-up" className="w-full rounded-xl border border-solar-orange/20 bg-white py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
                   </div>
                   <Button variant="primary" size="sm" className="gap-2" disabled={bulkBusy || selectedCount === 0 || !bulkTags.trim()} onClick={applyBulkTags}><Tags size={15} /> Aplicar tags</Button>
-                  {canEditLead ? <Button variant="outline" size="sm" className="gap-2 border-alert-red/30 text-alert-red hover:bg-alert-red/10" disabled={bulkBusy || selectedCount === 0} onClick={deleteSelected}><Trash2 size={15} /> Excluir selecionados</Button> : null}
+                  {canEditLead ? <Button variant="outline" size="sm" className="gap-2 border-alert-red/30 text-alert-red hover:bg-alert-red/5" disabled={bulkBusy || selectedCount === 0} onClick={deleteSelected}><Trash2 size={15} /> Excluir selecionados</Button> : null}
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        <div className="md:hidden divide-y divide-warm-sand/50 crm-scroll-panel min-h-[520px] h-[calc(150vh-220px)] overflow-y-auto">
+        <div className="md:hidden divide-y divide-gray-100 crm-scroll-panel min-h-[520px] h-[calc(150vh-220px)] overflow-y-auto">
           {loading ? <div className="px-6 py-10 text-center text-graphite-soft">Carregando leads...</div> : filteredLeads.length === 0 ? <div className="px-6 py-12 text-center text-graphite-soft">Nenhum lead encontrado com os filtros atuais.</div> : filteredLeads.map((lead) => (
             <article key={lead.id} className="p-4 space-y-3" onClick={() => navigate(`/leads/${lead.id}`)}>
               <div className="flex items-start justify-between gap-3">
@@ -342,7 +342,7 @@ export default function Leads() {
         <div className="hidden md:block crm-scroll-panel min-h-[520px] h-[calc(150vh-220px)] overflow-auto">
           <table className="w-full min-w-[980px] text-left">
             <thead className="sticky top-0 z-10 bg-white"><tr className="text-xs font-bold text-graphite-soft uppercase tracking-wider border-b border-warm-sand/50"><th className="px-4 py-4 w-12"><input aria-label="Selecionar todos os leads visíveis" type="checkbox" checked={allVisibleSelected} onChange={toggleAllVisible} className="h-4 w-4 rounded border-warm-sand/70 text-solar-orange focus:ring-solar-orange" /></th><th className="px-6 py-4">Lead</th><th className="px-6 py-4">Status / Etapa</th><th className="px-6 py-4">Responsável</th><th className="px-6 py-4">Prioridade</th><th className="px-6 py-4">Valor Conta</th><th className="px-6 py-4">Origem</th><th className="px-6 py-4">Tags</th><th className="px-6 py-4 text-right">Ações</th></tr></thead>
-            <tbody className="divide-y divide-warm-sand/30">
+            <tbody className="divide-y divide-gray-50">
               {loading ? <tr><td colSpan={9} className="px-6 py-10 text-center text-graphite-soft">Carregando leads...</td></tr> : filteredLeads.length === 0 ? <tr><td colSpan={9} className="px-6 py-12 text-center text-graphite-soft">Nenhum lead encontrado com os filtros atuais.</td></tr> : filteredLeads.map((lead) => (
                 <tr
                   key={lead.id}
@@ -356,18 +356,18 @@ export default function Leads() {
                       navigate(`/leads/${lead.id}`);
                     }
                   }}
-                  className={`hover:bg-warm-sand/30 transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-solar-orange/30 ${selectedSet.has(lead.id) ? 'bg-solar-orange/10' : ''}`}
+                  className={`hover:bg-warm-sand/50/50 transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-solar-orange/30 ${selectedSet.has(lead.id) ? 'bg-solar-orange/5' : ''}`}
                 >
                   <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
                     <input aria-label={`Selecionar ${lead.contact?.name || 'lead sem nome'}`} type="checkbox" checked={selectedSet.has(lead.id)} onChange={() => toggleSelected(lead.id)} className="h-4 w-4 rounded border-warm-sand/70 text-solar-orange focus:ring-solar-orange" />
                   </td>
-                  <td className="px-6 py-4 max-w-[300px]"><div className="flex items-center gap-3 min-w-0"><div className="w-11 h-11 rounded-xl bg-solar-orange/15 flex items-center justify-center text-solar-orange font-black text-sm shrink-0">{initials(lead.contact?.name)}</div><div className="min-w-0"><p className="text-sm font-black text-graphite group-hover:text-solar-orange transition-colors truncate">{lead.contact?.name || 'Lead sem nome'}</p><p className="text-xs text-graphite-soft truncate">{lead.contact?.company || lead.contact?.email || 'Sem empresa'}</p></div></div></td>
+                  <td className="px-6 py-4 max-w-[300px]"><div className="flex items-center gap-3 min-w-0"><div className="w-11 h-11 rounded-2xl bg-solar-orange/10 flex items-center justify-center text-solar-orange font-black text-sm shrink-0">{initials(lead.contact?.name)}</div><div className="min-w-0"><p className="text-sm font-black text-graphite group-hover:text-solar-orange transition-colors truncate">{lead.contact?.name || 'Lead sem nome'}</p><p className="text-xs text-graphite-soft truncate">{lead.contact?.company || lead.contact?.email || 'Sem empresa'}</p></div></div></td>
                   <td className="px-6 py-4"><div className="flex flex-col gap-1 items-start"><StageBadge stage={lead.stage} /><span className="text-[10px] font-bold uppercase tracking-wide text-graphite-soft ml-1">Estágio</span><span className="text-[10px] text-graphite-soft font-medium ml-1 truncate max-w-[160px]">{lead.qualificationStatus}</span></div></td>
                   <td className="px-6 py-4"><div className="flex flex-col gap-1"><span className="text-sm font-bold text-graphite truncate max-w-[170px]">{lead.sdrOwner || 'Sem responsável'}</span><span className="text-[10px] text-graphite-soft">Próx. ação {lead.nextActionAt ? new Date(lead.nextActionAt).toLocaleDateString('pt-BR') : 'não definida'}</span></div></td>
                   <td className="px-6 py-4"><PriorityBadge priority={lead.priority} /></td>
                   <td className="px-6 py-4"><p className="text-sm font-black text-graphite">{formatCurrency(lead.energyBillValue)}</p><p className="text-[10px] text-graphite-soft">Econ. {formatCurrency(lead.projectedSavings)}</p></td>
                   <td className="px-6 py-4 max-w-[180px]"><Badge variant="default" className="bg-warm-sand/50 text-graphite-soft lowercase normal-case max-w-full truncate inline-block">{lead.leadSource}</Badge></td>
-                  <td className="px-6 py-4 max-w-[220px]"><div className="flex flex-wrap gap-1">{(lead.tags ?? []).length === 0 ? <span className="text-xs text-graphite-soft">Sem tags</span> : lead.tags.map((tag) => <Badge key={tag.slug} variant="default" className="bg-solar-orange/15 text-solar-orange lowercase normal-case">#{tag.slug}</Badge>)}</div></td>
+                  <td className="px-6 py-4 max-w-[220px]"><div className="flex flex-wrap gap-1">{(lead.tags ?? []).length === 0 ? <span className="text-xs text-graphite-soft">Sem tags</span> : lead.tags.map((tag) => <Badge key={tag.slug} variant="default" className="bg-solar-orange/10 text-solar-orange lowercase normal-case">#{tag.slug}</Badge>)}</div></td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity" onClick={(event) => event.stopPropagation()}>
                       <Link to={`/leads/${lead.id}`}><Button aria-label="Abrir lead" variant="ghost" size="icon" className="h-8 w-8 rounded-lg"><Eye size={16} className="text-graphite-soft" /></Button></Link>
@@ -381,7 +381,7 @@ export default function Leads() {
             </tbody>
           </table>
         </div>
-        <div className="p-4 border-t border-warm-sand/50 bg-warm-sand/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><p className="text-xs text-graphite-soft">Mostrando {filteredLeads.length} de {leads.length} leads{activeTags.length ? ` filtrados por ${activeTags.join(', ')} (${tagMode === 'all' ? 'todas' : 'qualquer'})` : ''}</p><p className="text-xs text-graphite-soft">{audienceReadyCount} lead(s) têm e-mail ou telefone para público Meta/Google.</p></div>
+        <div className="p-4 border-t border-warm-sand/50 bg-warm-sand/50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><p className="text-xs text-graphite-soft">Mostrando {filteredLeads.length} de {leads.length} leads{activeTags.length ? ` filtrados por ${activeTags.join(', ')} (${tagMode === 'all' ? 'todas' : 'qualquer'})` : ''}</p><p className="text-xs text-graphite-soft">{audienceReadyCount} lead(s) têm e-mail ou telefone para público Meta/Google.</p></div>
       </Card>
 
       {showCreateLead ? (

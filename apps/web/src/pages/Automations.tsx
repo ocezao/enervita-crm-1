@@ -254,11 +254,11 @@ export default function Automations() {
                 </div>
 
                 <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-2xl bg-warm-sand/30 p-3 min-w-0">
+                  <div className="rounded-2xl bg-warm-sand/50 p-3 min-w-0">
                     <p className="text-[10px] uppercase tracking-widest font-bold text-graphite-soft">Gatilhos</p>
                     <p className="mt-1 font-semibold text-graphite break-words">{workflow.triggerSummary}</p>
                   </div>
-                  <div className="rounded-2xl bg-warm-sand/30 p-3 min-w-0">
+                  <div className="rounded-2xl bg-warm-sand/50 p-3 min-w-0">
                     <p className="text-[10px] uppercase tracking-widest font-bold text-graphite-soft">Atualizado</p>
                     <p className="mt-1 font-semibold text-graphite">{workflow.updatedAt ? formatDate(workflow.updatedAt) : 'Sem data'}</p>
                   </div>
@@ -272,7 +272,7 @@ export default function Automations() {
                   <div className="mt-4 rounded-2xl border border-warm-sand/50 bg-white p-3">
                     <p className="text-[10px] uppercase tracking-widest font-bold text-graphite-soft mb-2 flex items-center gap-1"><Link2 size={12} /> Entradas</p>
                     <div className="space-y-1">
-                      {workflow.webhookPaths.map((path, index) => <span key={path} className="block text-[11px] text-graphite bg-warm-sand/30 rounded-lg px-2 py-1">Entrada {index + 1} configurada</span>)}
+                      {workflow.webhookPaths.map((path, index) => <span key={path} className="block text-[11px] text-graphite bg-warm-sand/50 rounded-lg px-2 py-1">Entrada {index + 1} configurada</span>)}
                     </div>
                   </div>
                 )}
@@ -313,7 +313,7 @@ export default function Automations() {
                     <Badge variant={rule.active ? 'success' : 'default'} className="mt-2 text-[10px]">{statusLabel(rule.status, rule.active)}</Badge>
                   </div>
                 </div>
-                <RotateCcw size={18} className="text-warm-sand shrink-0" />
+                <RotateCcw size={18} className="text-graphite-soft shrink-0" />
               </div>
 
               <div className="space-y-4 mb-6">

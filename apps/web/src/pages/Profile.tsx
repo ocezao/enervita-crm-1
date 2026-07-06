@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckSquare, FileText, Kanban, KeyRound, LayoutDashboard, Loader2, Megaphone, Save, ShieldCheck, Sparkles, UploadCloud, UserCog, Users } from 'lucide-react';
+import { BarChart3, CheckSquare, FileText, Kanban, KeyRound, LayoutDashboard, Loader2, Megaphone, Save, ShieldCheck, Sparkles, UploadCloud, UserCog, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { authApi } from '../auth/authApi';
 import { userHasAnyPermission, userHasPermission } from '../auth/permissions';
@@ -23,6 +23,7 @@ const pageCards: AccessiblePage[] = [
   { label: 'Pipeline', path: '/pipeline', description: 'Etapas comerciais permitidas para você.', icon: Kanban, requiredAny: ['page.pipeline'] },
   { label: 'Tarefas', path: '/tasks', description: 'Follow-ups e pendências atribuídas.', icon: CheckSquare, requiredAny: ['page.tasks'] },
   { label: 'Propostas', path: '/proposals', description: 'Simulações e propostas comerciais.', icon: FileText, requiredAny: ['page.proposals', 'proposal.view'] },
+  { label: 'Analytics', path: '/analytics', description: 'Aquisição, rastreio comercial e funil.', icon: BarChart3, requiredAny: ['page.analytics', 'analytics.view', 'rastreio.visualizar'] },
   { label: 'Campanhas', path: '/ads', description: 'Mídia paga e criativos.', icon: Megaphone, requiredAny: ['page.ads', 'ads.view'] },
 ];
 
@@ -186,7 +187,7 @@ export default function Profile() {
             <div data-testid="profile-access-summary" className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {accessiblePages.map((page) => {
                 const Icon = page.icon;
-                return <Link key={page.path} to={page.path} className="group rounded-2xl border border-warm-sand/50 bg-warm-sand/30/70 p-4 transition hover:border-solar-orange/40 hover:bg-solar-orange/5"><div className="flex items-start gap-3"><div className="rounded-xl bg-white p-2 text-solar-orange shadow-sm"><Icon size={18} /></div><div><p className="font-black text-graphite group-hover:text-solar-orange">{page.label}</p><p className="mt-1 text-xs text-graphite-soft">{page.description}</p></div></div></Link>;
+                return <Link key={page.path} to={page.path} className="group rounded-2xl border border-warm-sand/50 bg-warm-sand/50/70 p-4 transition hover:border-solar-orange/40 hover:bg-solar-orange/5"><div className="flex items-start gap-3"><div className="rounded-xl bg-white p-2 text-solar-orange shadow-sm"><Icon size={18} /></div><div><p className="font-black text-graphite group-hover:text-solar-orange">{page.label}</p><p className="mt-1 text-xs text-graphite-soft">{page.description}</p></div></div></Link>;
               })}
             </div>
           </Card>

@@ -14,7 +14,7 @@ export function StagePermissionCheckboxes({ stages, selected, onChange }: Props)
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {[...stages].sort((a, b) => a.order - b.order).map((stage) => (
-        <label key={stage.key} className="flex items-center gap-2 rounded-lg border border-warm-sand/50 bg-warm-white p-3 text-sm shadow-sm">
+        <label key={stage.key} className="flex items-center gap-2 rounded-lg border border-warm-sand/50 bg-white p-3 text-sm shadow-sm">
           <input
             type="checkbox"
             className="h-4 w-4 accent-solar-orange"

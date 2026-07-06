@@ -146,7 +146,7 @@ export default function Webhooks() {
                     <span className="text-graphite-soft">→ {delivery.webhookName ?? delivery.webhookId}</span>
                     <Badge variant={deliveryBadgeVariant(delivery.status)}>{deliveryStatusLabel(delivery.status)}</Badge>
                   </div>
-                  <p className="mt-1 text-warm-sand">{deliverySummary(delivery)}</p>
+                  <p className="mt-1 text-graphite-soft">{deliverySummary(delivery)}</p>
                   {safeResponsePreview(delivery.responseBody) && (
                     <p className="mt-1 text-graphite-soft">resposta: {safeResponsePreview(delivery.responseBody)}</p>
                   )}

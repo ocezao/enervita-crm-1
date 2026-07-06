@@ -99,7 +99,7 @@ export default function Proposals() {
           </div>
           <div className="divide-y divide-gray-100">
             {usableTemplates.map((template) => (
-              <article key={template.id} className="p-5 hover:bg-warm-sand/30/70 transition-colors">
+              <article key={template.id} className="p-5 hover:bg-warm-sand/50/70 transition-colors">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="flex items-center gap-2 truncate font-black text-graphite"><Copy size={16} className="shrink-0 text-solar-orange" />{template.title}</p>
@@ -152,7 +152,7 @@ export default function Proposals() {
           </div>
           <div className="hidden md:block crm-scroll-panel overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-warm-sand/30 text-graphite-soft uppercase text-xs font-bold">
+              <thead className="bg-warm-sand/50 text-graphite-soft uppercase text-xs font-bold">
                 <tr>
                   <th className="px-6 py-4">Proposta</th>
                   <th className="px-6 py-4">Lead</th>
@@ -166,7 +166,7 @@ export default function Proposals() {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {leadProposals.map((proposal) => (
-                  <tr key={proposal.id} className="hover:bg-warm-sand/30/60">
+                  <tr key={proposal.id} className="hover:bg-warm-sand/50/60">
                     <td className="px-6 py-4 font-bold text-graphite"><div className="flex items-center gap-2"><FileText size={16} className="text-solar-orange" />{proposal.title}</div></td>
                     <td className="px-6 py-4 text-graphite">{proposal.leadName ?? proposal.leadId}</td>
                     <td className="px-6 py-4 text-graphite"><ProposalMoney value={proposal.monthlyBillValue} /></td>

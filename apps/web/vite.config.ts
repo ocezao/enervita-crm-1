@@ -1,10 +1,10 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
 function allowedHostsFromEnv() {
   const base = [
     'crm.enervita.com.br',
+    'crm.cesarmachado.com',
     'web',
     'enervita-custom-crm-web',
     'enervita-prod-crm-web',

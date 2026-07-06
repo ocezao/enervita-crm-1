@@ -46,7 +46,7 @@ export function DateRangeFilter({ value, onChange, className = '' }: DateRangeFi
     <div className={`grid grid-cols-1 md:grid-cols-3 gap-3 ${className}`}>
       <label className="min-w-0 space-y-1">
         <span className="text-xs font-bold uppercase tracking-wider text-graphite-soft">Período</span>
-        <select className="w-full min-w-0 rounded-xl border border-warm-sand/70 px-3 py-2 text-sm bg-warm-white" value={value.period} onChange={(event) => onChange(rangeForPeriod(event.target.value as PeriodValue))}>
+        <select className="w-full min-w-0 rounded-xl border border-warm-sand/70 px-3 py-2 text-sm bg-white" value={value.period} onChange={(event) => onChange(rangeForPeriod(event.target.value as PeriodValue))}>
           <option value="7">Últimos 7 dias</option>
           <option value="30">Últimos 30 dias</option>
           <option value="90">Últimos 90 dias</option>
@@ -59,11 +59,11 @@ export function DateRangeFilter({ value, onChange, className = '' }: DateRangeFi
       </label>
       <label className="min-w-0 space-y-1">
         <span className="text-xs font-bold uppercase tracking-wider text-graphite-soft">Início</span>
-        <input type="date" className="w-full min-w-0 rounded-xl border border-warm-sand/70 px-3 py-2 text-sm bg-warm-white" value={value.startDate} onChange={(event) => onChange({ ...value, period: 'custom', startDate: event.target.value })} />
+        <input type="date" className="w-full min-w-0 rounded-xl border border-warm-sand/70 px-3 py-2 text-sm bg-white" value={value.startDate} onChange={(event) => onChange({ ...value, period: 'custom', startDate: event.target.value })} />
       </label>
       <label className="min-w-0 space-y-1">
         <span className="text-xs font-bold uppercase tracking-wider text-graphite-soft">Fim</span>
-        <input type="date" className="w-full min-w-0 rounded-xl border border-warm-sand/70 px-3 py-2 text-sm bg-warm-white" value={value.endDate} onChange={(event) => onChange({ ...value, period: 'custom', endDate: event.target.value })} />
+        <input type="date" className="w-full min-w-0 rounded-xl border border-warm-sand/70 px-3 py-2 text-sm bg-white" value={value.endDate} onChange={(event) => onChange({ ...value, period: 'custom', endDate: event.target.value })} />
         <span className="block text-[10px] text-graphite-soft">{label}</span>
       </label>
     </div>

@@ -23,44 +23,44 @@ export function KpiCard({
     return (
       <Card className="animate-pulse">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div className="h-4 bg-muted rounded w-24" />
-          <div className="h-8 w-8 bg-muted rounded" />
+          <div className="h-4 bg-warm-sand/50 rounded w-24" />
+          <div className="h-8 w-8 bg-warm-sand/50 rounded" />
         </CardHeader>
         <CardContent>
-          <div className="h-8 bg-muted rounded w-32 mb-2" />
-          <div className="h-3 bg-muted rounded w-40" />
+          <div className="h-8 bg-warm-sand/50 rounded w-32 mb-2" />
+          <div className="h-3 bg-warm-sand/50 rounded w-40" />
         </CardContent>
       </Card>
     );
   }
 
   const getTrendIcon = () => {
-    if (!trend && trend !== 0) return <Minus className="h-4 w-4 text-muted-foreground" />;
-    if (trend > 0) return <TrendingUp className="h-4 w-4 text-emerald-500" />;
-    if (trend < 0) return <TrendingDown className="h-4 w-4 text-red-500" />;
-    return <Minus className="h-4 w-4 text-muted-foreground" />;
+    if (!trend && trend !== 0) return <Minus className="h-4 w-4 text-graphite-soft" />;
+    if (trend > 0) return <TrendingUp className="h-4 w-4 text-energy-green" />;
+    if (trend < 0) return <TrendingDown className="h-4 w-4 text-alert-red" />;
+    return <Minus className="h-4 w-4 text-graphite-soft" />;
   };
 
   const getTrendColor = () => {
-    if (!trend && trend !== 0) return 'text-muted-foreground';
-    return trend > 0 ? 'text-emerald-500' : 'text-red-500';
+    if (!trend && trend !== 0) return 'text-graphite-soft';
+    return trend > 0 ? 'text-energy-green' : 'text-alert-red';
   };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
-        {icon && <div className="text-muted-foreground">{icon}</div>}
+        <h3 className="text-sm font-medium text-graphite-soft">{title}</h3>
+        {icon && <div className="text-graphite-soft">{icon}</div>}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-2xl font-bold text-graphite">{value}</div>
         {trend !== undefined && (
           <div className="flex items-center text-xs mt-1">
             {getTrendIcon()}
             <span className={`ml-1 font-medium ${getTrendColor()}`}>
               {trend > 0 ? '+' : ''}{trend.toFixed(1)}%
             </span>
-            <span className="text-muted-foreground ml-1">{trendLabel}</span>
+            <span className="text-graphite-soft ml-1">{trendLabel}</span>
           </div>
         )}
       </CardContent>

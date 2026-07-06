@@ -5,6 +5,7 @@ import {
   CheckSquare,
   Zap,
   Settings,
+  BarChart3,
   Megaphone,
   FileText,
   Bot,
@@ -22,6 +23,7 @@ const navItems = [
   { icon: CheckSquare, label: 'Tarefas', path: '/tasks', requiredAny: ['page.tasks'] },
   { icon: FileText, label: 'Propostas', path: '/proposals', requiredAny: ['page.proposals', 'proposal.view'] },
   { icon: Zap, label: 'Automações', path: '/automations', requiredAny: ['page.automations', 'automation.manage'] },
+  { icon: BarChart3, label: 'Analytics', path: '/analytics', requiredAny: ['page.analytics', 'analytics.view', 'tracking.view'] },
   { icon: Megaphone, label: 'Campanhas', path: '/ads', requiredAny: ['page.ads', 'ads.view'] },
   { icon: Bot, label: 'Assistente IA', path: '/ai', requiredAny: ['page.ai_assistant'] },
   { icon: UserCircle, label: 'Minha página', path: '/profile' },
@@ -52,7 +54,7 @@ export const Sidebar = () => {
               'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group',
               isActive
                 ? 'bg-solar-orange/10 text-solar-orange'
-                : 'text-graphite-soft hover:bg-warm-sand/30 hover:text-graphite'
+                : 'text-graphite-soft hover:bg-warm-sand/50 hover:text-graphite'
             )}
           >
             <item.icon size={20} className={cn('transition-colors shrink-0', 'group-hover:text-solar-orange')} />

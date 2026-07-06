@@ -315,7 +315,7 @@ function renderProposalFilePreview(file: ProposalFileAttachment) {
   if (isTextualDocument(mimeType)) {
     const previewText = decodeBase64ToText(file.dataBase64 || '');
     return previewText
-      ? <pre className="max-h-64 overflow-auto rounded-xl border border-warm-sand/70 bg-warm-sand/30 p-3 text-xs whitespace-pre-wrap">{previewText}</pre>
+      ? <pre className="max-h-64 overflow-auto rounded-xl border border-warm-sand/70 bg-warm-sand/50 p-3 text-xs whitespace-pre-wrap">{previewText}</pre>
       : <p className="text-xs text-graphite-soft">Previa textual indisponivel para este arquivo.</p>;
   }
 
@@ -340,7 +340,7 @@ function renderProposalFilePreview(file: ProposalFileAttachment) {
       <object
         data={dataUrl}
         type={mimeType}
-        className="h-64 w-full rounded-xl border border-warm-sand/70 bg-warm-sand/30"
+        className="h-64 w-full rounded-xl border border-warm-sand/70 bg-warm-sand/50"
         aria-label={`preview ${file.name}`}
       >
         <p className="p-3 text-xs text-graphite-soft">Previa do documento indisponivel. Baixe para abrir.</p>
@@ -1330,8 +1330,8 @@ async function handleDeleteLead() {
             )}
 
             <div className="mt-8 grid grid-cols-2 gap-2">
-              {phoneHref ? <a href={phoneHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-warm-sand/50 px-4 py-2 text-sm font-bold text-graphite hover:bg-warm-sand/50"><Phone size={16} /> Ligar</a> : <Button variant="secondary" className="gap-2 w-full opacity-50" disabled><Phone size={16} /> Sem telefone</Button>}
-              {whatsappHref ? <button type="button" onClick={handleWhatsappClick} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-warm-sand/70 px-4 py-2 text-sm font-bold text-graphite hover:bg-warm-sand/30"><MessageSquare size={16} /> WhatsApp</button> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
+              {phoneHref ? <a href={phoneHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-warm-sand/50 px-4 py-2 text-sm font-bold text-graphite hover:bg-warm-sand/70"><Phone size={16} /> Ligar</a> : <Button variant="secondary" className="gap-2 w-full opacity-50" disabled><Phone size={16} /> Sem telefone</Button>}
+              {whatsappHref ? <button type="button" onClick={handleWhatsappClick} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-warm-sand/70 px-4 py-2 text-sm font-bold text-graphite hover:bg-warm-sand/50"><MessageSquare size={16} /> WhatsApp</button> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
             </div>
             <div className="mt-4 rounded-2xl border border-solar-orange/15 bg-solar-orange/5 p-4">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-solar-orange">Próxima ação</p>
@@ -1424,7 +1424,7 @@ async function handleDeleteLead() {
                         {/* Lista de usuarios */}
                         <div className="overflow-y-auto flex-1 p-1">
                           <button
-                            className="w-full text-left px-3 py-2 text-sm text-graphite-soft hover:bg-warm-sand/30 rounded-lg transition-colors"
+                            className="w-full text-left px-3 py-2 text-sm text-graphite-soft hover:bg-warm-sand/50 rounded-lg transition-colors"
                             onClick={() => setConfirmChange({ userId: null, userName: 'Sem responsavel' })}
                           >
                             Sem responsavel
@@ -1440,7 +1440,7 @@ async function handleDeleteLead() {
                                 className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
                                   lead.sdrOwnerId === u.id
                                     ? 'bg-solar-orange/10 text-solar-orange font-semibold'
-                                    : 'text-graphite hover:bg-warm-sand/30'
+                                    : 'text-graphite hover:bg-warm-sand/50'
                                 }`}
                                 onClick={() => setConfirmChange({ userId: u.id, userName: u.name })}
                               >
@@ -1502,7 +1502,7 @@ async function handleDeleteLead() {
             <h3 className="font-bold text-graphite mb-4">Informações de cadastro</h3>
             <div className="space-y-3">
               {cadastro.map((item) => (
-                <div key={item.label} className="rounded-xl bg-warm-sand/30 p-3">
+                <div key={item.label} className="rounded-xl bg-warm-sand/50 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-graphite-soft">{item.label}</p>
                   <p className="mt-1 break-words text-sm font-semibold text-graphite">{item.value}</p>
                 </div>
@@ -1581,7 +1581,7 @@ async function handleDeleteLead() {
                       value={activityNote}
                       onChange={(event) => setActivityNote(event.target.value)}
                       disabled={!canCreateActivity}
-                      className="w-full bg-warm-sand/30 border border-warm-sand/70 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 min-h-[100px] disabled:opacity-60"
+                      className="w-full bg-warm-sand/50 border border-warm-sand/70 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 min-h-[100px] disabled:opacity-60"
                     />
                     <div className="flex justify-end mt-2">
                       {canCreateActivity && <Button variant="primary" size="sm" onClick={handleCreateActivity}>Registrar Atividade</Button>}
@@ -1595,7 +1595,7 @@ async function handleDeleteLead() {
                       <div className="absolute left-0 w-10 h-10 rounded-full bg-white border-2 border-warm-sand/50 flex items-center justify-center text-graphite-soft shadow-sm">
                         {activity.activityType === 'call' ? <Phone size={16} /> : <FileText size={16} />}
                       </div>
-                      <div className="flex-1 bg-warm-sand/30 rounded-2xl p-4 border border-warm-sand/50">
+                      <div className="flex-1 bg-warm-sand/50 rounded-2xl p-4 border border-warm-sand/50">
                         <div className="flex justify-between items-start mb-2">
                           <p className="text-sm font-bold text-graphite">
                             {activity.activityType === 'call' ? 'Contato Telefônico' : 'Nota'}
@@ -1622,7 +1622,7 @@ async function handleDeleteLead() {
             {activeTab === 'tasks' && (
               <div className="p-6 space-y-6">
                 {canCreateTask && (
-                  <div className="rounded-2xl border border-warm-sand/50 bg-warm-sand/30 p-4 space-y-4">
+                  <div className="rounded-2xl border border-warm-sand/50 bg-warm-sand/50 p-4 space-y-4">
                     <h4 className="font-bold text-graphite">Nova tarefa para este lead</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <label className="text-xs font-bold text-graphite-soft uppercase">Título da tarefa
@@ -1641,7 +1641,7 @@ async function handleDeleteLead() {
                   </div>
                 )}
                 {tasks.length === 0 ? (
-                  <div className="p-12 text-center"><CheckCircle2 size={48} className="mx-auto text-warm-sand mb-4" /><h4 className="font-bold text-graphite">Nenhuma tarefa pendente</h4><p className="text-sm text-graphite-soft mt-2">Tudo em dia com este lead.</p></div>
+                  <div className="p-12 text-center"><CheckCircle2 size={48} className="mx-auto text-graphite-soft mb-4" /><h4 className="font-bold text-graphite">Nenhuma tarefa pendente</h4><p className="text-sm text-graphite-soft mt-2">Tudo em dia com este lead.</p></div>
                 ) : (
                   <div className="space-y-3">{tasks.map((task) => (<div key={task.id} className="rounded-xl border border-warm-sand/50 bg-white p-4 flex items-start justify-between gap-4"><div><p className="font-bold text-graphite">{task.title}</p><p className="text-xs text-graphite-soft">Status: {task.status} · Prioridade: {task.priority} · Vence em {formatDate(task.dueDate)}</p></div>{canCompleteTask && task.status !== 'concluido' && <Button variant="outline" size="sm" onClick={() => completeTask(task.id)}>Concluir tarefa</Button>}</div>))}</div>
                 )}
@@ -1659,7 +1659,7 @@ async function handleDeleteLead() {
                     <h5 className="font-bold text-graphite">Atribuição e origem</h5>
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       {trackingDetails.map((item) => (
-                        <div key={item.label} className="rounded-xl bg-warm-sand/30 p-4">
+                        <div key={item.label} className="rounded-xl bg-warm-sand/50 p-4">
                           <span className="text-xs font-bold uppercase tracking-wide text-graphite-soft">{item.label}</span>
                           <p className="mt-1 break-words font-semibold text-graphite">{item.value}</p>
                         </div>
@@ -1667,7 +1667,7 @@ async function handleDeleteLead() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-warm-sand/70 bg-warm-sand/30 p-5 text-sm text-graphite-soft">Este lead ainda não tem origem, campanha, conjunto, anúncio ou página registrados.</div>
+                  <div className="rounded-2xl border border-dashed border-warm-sand/70 bg-warm-sand/50 p-5 text-sm text-graphite-soft">Este lead ainda não tem origem, campanha, conjunto, anúncio ou página registrados.</div>
                 )}
                 <div className="rounded-2xl border border-warm-sand/50 bg-white p-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1675,11 +1675,11 @@ async function handleDeleteLead() {
                     <Badge variant="default">{trackingEvents.length} evento(s)</Badge>
                   </div>
                   {trackingEvents.length === 0 ? (
-                    <div className="mt-4 rounded-xl border border-dashed border-warm-sand/70 bg-warm-sand/30 p-4 text-sm text-graphite-soft">Nenhum evento de tracking encontrado para este lead.</div>
+                    <div className="mt-4 rounded-xl border border-dashed border-warm-sand/70 bg-warm-sand/50 p-4 text-sm text-graphite-soft">Nenhum evento de tracking encontrado para este lead.</div>
                   ) : (
                     <div className="mt-4 space-y-3">
                       {trackingEvents.map((event) => (
-                        <article key={event.id} className="rounded-xl border border-warm-sand/50 bg-warm-sand/30 p-4">
+                        <article key={event.id} className="rounded-xl border border-warm-sand/50 bg-warm-sand/50 p-4">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
                               <p className="text-sm font-bold text-graphite">{event.eventName}</p>
@@ -1705,7 +1705,7 @@ async function handleDeleteLead() {
                 </div>
                 {history.length === 0 ? (
                   <div className="p-12 text-center">
-                    <History size={48} className="mx-auto text-warm-sand mb-4" />
+                    <History size={48} className="mx-auto text-graphite-soft mb-4" />
                     <h4 className="font-bold text-graphite">Nenhum histórico registrado</h4>
                     <p className="text-sm text-graphite-soft mt-2">As alterações deste lead aparecerão aqui quando forem registradas.</p>
                   </div>
@@ -1719,12 +1719,12 @@ async function handleDeleteLead() {
                             <h5 className="mt-1 font-bold text-graphite">{entry.summary}</h5>
                             <p className="mt-1 text-xs text-graphite-soft">{entry.actor.name} · {entry.actor.email}</p>
                           </div>
-                          <span className="rounded-full bg-warm-sand/30 px-3 py-1 text-xs font-semibold text-graphite-soft">{formatDate(entry.occurredAt)}</span>
+                          <span className="rounded-full bg-warm-sand/50 px-3 py-1 text-xs font-semibold text-graphite-soft">{formatDate(entry.occurredAt)}</span>
                         </div>
                         {entry.changes.length > 0 ? (
                           <div className="mt-4 space-y-2">
                             {entry.changes.map((change) => (
-                              <div key={`${entry.id}-${change.field}`} className="rounded-xl bg-warm-sand/30 p-3 text-sm">
+                              <div key={`${entry.id}-${change.field}`} className="rounded-xl bg-warm-sand/50 p-3 text-sm">
                                 <p className="text-xs font-bold uppercase tracking-wide text-graphite-soft">{change.label}</p>
                                 <p className="mt-1 text-graphite"><span className="font-semibold text-graphite">{historyValue(change.before)}</span>{' '}{String.fromCharCode(8594)}{' '}<span className="font-semibold text-graphite">{historyValue(change.after)}</span></p>
                               </div>
@@ -1751,7 +1751,7 @@ async function handleDeleteLead() {
                 {documentMessage && <div className="rounded-2xl border border-green-100 bg-green-50 p-3 text-sm font-semibold text-green-700">{documentMessage}</div>}
                 {documentError && <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">{documentError}</div>}
 
-                <label className={`block rounded-2xl border border-dashed p-6 text-center transition ${canEditLead ? 'cursor-pointer border-solar-orange/40 bg-solar-orange/5 hover:bg-solar-orange/10' : 'border-warm-sand/70 bg-warm-sand/30 opacity-70'}`}>
+                <label className={`block rounded-2xl border border-dashed p-6 text-center transition ${canEditLead ? 'cursor-pointer border-solar-orange/40 bg-solar-orange/5 hover:bg-solar-orange/10' : 'border-warm-sand/70 bg-warm-sand/50 opacity-70'}`}>
                   <Upload size={28} className="mx-auto mb-3 text-solar-orange" />
                   <span className="block text-sm font-bold text-graphite">{documentsUploading ? 'Enviando arquivos...' : 'Enviar documentos'}</span>
                   <span className="mt-1 block text-xs text-graphite-soft">PDF, imagens, planilhas, textos, videos e arquivos ate 20 MB.</span>
@@ -1768,8 +1768,8 @@ async function handleDeleteLead() {
                 </label>
 
                 {documents.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-warm-sand/70 bg-warm-sand/30 p-10 text-center">
-                    <FileText size={42} className="mx-auto mb-3 text-warm-sand" />
+                  <div className="rounded-2xl border border-dashed border-warm-sand/70 bg-warm-sand/50 p-10 text-center">
+                    <FileText size={42} className="mx-auto mb-3 text-graphite-soft" />
                     <h5 className="font-bold text-graphite">Nenhum documento anexado</h5>
                     <p className="mt-1 text-sm text-graphite-soft">Os arquivos enviados para este lead aparecem aqui.</p>
                   </div>
@@ -1778,7 +1778,7 @@ async function handleDeleteLead() {
                     {documents.map((document) => (
                       <article key={document.id} className="rounded-2xl border border-warm-sand/50 bg-white p-4 shadow-sm">
                         <div className="flex items-start gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-warm-sand/30 text-solar-orange">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-warm-sand/50 text-solar-orange">
                             <FileText size={20} />
                           </div>
                           <div className="min-w-0 flex-1">
@@ -1788,7 +1788,7 @@ async function handleDeleteLead() {
                         </div>
                         <div className="mt-4 flex flex-wrap gap-2">
                           <Button variant="outline" size="sm" className="gap-2" onClick={() => setPreviewDocument(document)}><Eye size={15} /> Preview</Button>
-                          <a href={document.downloadUrl || document.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-warm-sand/70 px-3 py-2 text-sm font-semibold text-graphite hover:bg-warm-sand/30"><Download size={15} /> Baixar</a>
+                          <a href={document.downloadUrl || document.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-warm-sand/70 px-3 py-2 text-sm font-semibold text-graphite hover:bg-warm-sand/50"><Download size={15} /> Baixar</a>
                           {canEditLead && <Button variant="ghost" size="sm" className="gap-2 text-red-600" onClick={() => void handleDeleteDocument(document)}><Trash2 size={15} /> Excluir</Button>}
                         </div>
                       </article>
@@ -1805,18 +1805,18 @@ async function handleDeleteLead() {
                           <p className="text-xs text-graphite-soft">{previewDocument.mimeType || 'application/octet-stream'} | {fileSizeLabel(previewDocument.fileSize ?? 0)}</p>
                         </div>
                         <div className="flex shrink-0 gap-2">
-                          <a href={previewDocument.downloadUrl || previewDocument.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-xl border border-warm-sand/70 px-3 text-sm font-semibold text-graphite hover:bg-warm-sand/30"><Download size={15} /> Baixar</a>
+                          <a href={previewDocument.downloadUrl || previewDocument.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-xl border border-warm-sand/70 px-3 text-sm font-semibold text-graphite hover:bg-warm-sand/50"><Download size={15} /> Baixar</a>
                           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setPreviewDocument(null)}><X size={16} /></Button>
                         </div>
                       </div>
-                      <div className="min-h-[360px] overflow-auto bg-warm-sand/30 p-4">
+                      <div className="min-h-[360px] overflow-auto bg-warm-sand/50 p-4">
                         {documentPreviewType(previewDocument) === 'image' && <img src={previewDocument.previewUrl || previewDocument.fileUrl || ''} alt={previewDocument.fileName} className="mx-auto max-h-[72vh] max-w-full rounded-xl bg-white object-contain" />}
                         {documentPreviewType(previewDocument) === 'pdf' && <iframe src={previewDocument.previewUrl || previewDocument.fileUrl || ''} title={previewDocument.fileName} className="h-[72vh] w-full rounded-xl border border-warm-sand/70 bg-white" />}
                         {documentPreviewType(previewDocument) === 'video' && <video src={previewDocument.previewUrl || previewDocument.fileUrl || ''} controls className="mx-auto max-h-[72vh] max-w-full rounded-xl bg-black" />}
                         {documentPreviewType(previewDocument) === 'text' && <iframe src={previewDocument.previewUrl || previewDocument.fileUrl || ''} title={previewDocument.fileName} className="h-[72vh] w-full rounded-xl border border-warm-sand/70 bg-white" />}
                         {documentPreviewType(previewDocument) === 'download' && (
                           <div className="flex min-h-[360px] flex-col items-center justify-center rounded-xl border border-dashed border-warm-sand/70 bg-white p-8 text-center">
-                            <FileText size={48} className="mb-4 text-warm-sand" />
+                            <FileText size={48} className="mb-4 text-graphite-soft" />
                             <h5 className="font-bold text-graphite">Preview indisponível para este tipo de arquivo</h5>
                             <p className="mt-2 max-w-md text-sm text-graphite-soft">Use o botao de download para abrir o arquivo no aplicativo adequado.</p>
                             <a href={previewDocument.downloadUrl || previewDocument.fileUrl || '#'} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-solar-orange px-4 py-2 text-sm font-bold text-white"><ExternalLink size={16} /> Abrir / baixar</a>
@@ -1855,7 +1855,7 @@ async function handleDeleteLead() {
                   </div>
 
                   <div className="mt-5 space-y-5">
-                    <section className="rounded-2xl border border-warm-sand/50 bg-warm-sand/30/70 p-4">
+                    <section className="rounded-2xl border border-warm-sand/50 bg-warm-sand/50/70 p-4">
                       <label className="block text-xs font-bold uppercase text-graphite-soft">Cidade de irradiação</label>
                       <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_120px]">
                         <input aria-label="Buscar cidade de irradiação" value={solarCidadeQuery} onChange={(event) => { setSolarCidadeQuery(event.target.value); setSolarCidade(null); }} className="h-11 min-w-0 rounded-xl border border-warm-sand/70 bg-white px-3 text-sm outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: Franca/SP" />
@@ -1909,11 +1909,11 @@ async function handleDeleteLead() {
 
                     {solarDimensionamento && (
                       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                        <div className="min-h-20 rounded-xl bg-warm-sand/30 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Módulos</p><p className="mt-1 text-lg font-black text-graphite">{solarDimensionamento.quantidade_sugerida ?? '-'}</p></div>
-                        <div className="min-h-20 rounded-xl bg-warm-sand/30 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Potência</p><p className="mt-1 text-lg font-black text-graphite">{solarNumberText(solarDimensionamento.potencia_total_sugerida_kwp)} kWp</p></div>
-                        <div className="min-h-20 rounded-xl bg-warm-sand/30 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Inversor</p><p className="mt-1 truncate text-sm font-black text-graphite">{solarDimensionamento.modelo_inversor_nome ?? 'A validar'}</p></div>
-                        <div className="min-h-20 rounded-xl bg-warm-sand/30 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Irradiação</p><p className="mt-1 text-lg font-black text-graphite">{solarNumberText(solarDimensionamento.irradiacao_kwh_m2_dia)}</p></div>
-                        <div className="min-h-20 rounded-xl bg-warm-sand/30 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Custo base</p><p className="mt-1 text-lg font-black text-energy-success">{formatCurrency(solarCustos?.total_geral ?? solarCustos?.total_final ?? 0)}</p></div>
+                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Módulos</p><p className="mt-1 text-lg font-black text-graphite">{solarDimensionamento.quantidade_sugerida ?? '-'}</p></div>
+                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Potência</p><p className="mt-1 text-lg font-black text-graphite">{solarNumberText(solarDimensionamento.potencia_total_sugerida_kwp)} kWp</p></div>
+                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Inversor</p><p className="mt-1 truncate text-sm font-black text-graphite">{solarDimensionamento.modelo_inversor_nome ?? 'A validar'}</p></div>
+                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Irradiação</p><p className="mt-1 text-lg font-black text-graphite">{solarNumberText(solarDimensionamento.irradiacao_kwh_m2_dia)}</p></div>
+                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Custo base</p><p className="mt-1 text-lg font-black text-energy-success">{formatCurrency(solarCustos?.total_geral ?? solarCustos?.total_final ?? 0)}</p></div>
                       </section>
                     )}
                   </div>
@@ -1930,7 +1930,7 @@ async function handleDeleteLead() {
                     ) : (
                       <div className="space-y-2 max-h-[300px] overflow-y-auto">
                         {templates.map((template) => (
-                          <button key={template.id} type="button" onClick={() => handleSelectTemplate(template)} className="w-full text-left rounded-xl border border-warm-sand/50 bg-warm-sand/30 p-3 hover:border-solar-orange/40 hover:bg-solar-orange/5 transition-colors">
+                          <button key={template.id} type="button" onClick={() => handleSelectTemplate(template)} className="w-full text-left rounded-xl border border-warm-sand/50 bg-warm-sand/50 p-3 hover:border-solar-orange/40 hover:bg-solar-orange/5 transition-colors">
                             <div className="flex items-center justify-between">
                               <div>
                                 <p className="font-bold text-graphite text-sm">{template.templateName || template.title}</p>
@@ -1946,7 +1946,7 @@ async function handleDeleteLead() {
                   </div>
                 )}
 
-                <div className="rounded-2xl border border-warm-sand/50 bg-warm-sand/30 p-4 space-y-4">
+                <div className="rounded-2xl border border-warm-sand/50 bg-warm-sand/50 p-4 space-y-4">
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant="outline" className="gap-2" onClick={handleLoadTemplates} disabled={loadingTemplates}>
                       <Copy size={14} /> {loadingTemplates ? 'Carregando...' : 'Carregar Modelo'}
@@ -2034,7 +2034,7 @@ async function handleDeleteLead() {
                             <div><span className="block font-bold uppercase text-graphite-soft">Cidade</span>{proposal.solarSummary.cidade}/{proposal.solarSummary.uf}</div>
                           </div>
                         )}
-                        {proposal.contentText && <p className="mt-3 line-clamp-3 whitespace-pre-wrap rounded-xl bg-warm-sand/30 p-3 text-sm text-graphite">{proposal.contentText}</p>}
+                        {proposal.contentText && <p className="mt-3 line-clamp-3 whitespace-pre-wrap rounded-xl bg-warm-sand/50 p-3 text-sm text-graphite">{proposal.contentText}</p>}
                         {getProposalAttachment(proposal) && (
                           <div className="mt-3 space-y-2">
                             <p className="text-xs font-bold text-graphite-soft">Arquivo: {proposal.importedFileName}</p>
@@ -2068,8 +2068,8 @@ async function handleDeleteLead() {
               <button type="button" className="rounded-full p-1 text-graphite-soft hover:bg-warm-sand/50 hover:text-graphite" onClick={() => setWhatsappConfirmOpen(false)} aria-label="Fechar confirmação"><X size={18} /></button>
             </div>
             {whatsappStatus && <p className="mb-3 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-700">{whatsappStatus}</p>}
-            <label className="mb-5 flex items-center gap-3 rounded-2xl bg-warm-sand/30 p-3 text-sm font-semibold text-graphite">
-              <input type="checkbox" checked={whatsappDoNotAskAgain} onChange={(event) => setWhatsappDoNotAskAgain(event.target.checked)} className="h-4 w-4 rounded border-warm-sand/50 text-solar-orange focus:ring-solar-orange" />
+            <label className="mb-5 flex items-center gap-3 rounded-2xl bg-warm-sand/50 p-3 text-sm font-semibold text-graphite">
+              <input type="checkbox" checked={whatsappDoNotAskAgain} onChange={(event) => setWhatsappDoNotAskAgain(event.target.checked)} className="h-4 w-4 rounded border-warm-sand/70 text-solar-orange focus:ring-solar-orange" />
               Não mostrar novamente neste navegador
             </label>
             <div className="flex justify-end gap-3">

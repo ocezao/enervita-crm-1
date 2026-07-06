@@ -2,17 +2,14 @@ import { useMemo, useState, type ComponentType, type ReactNode } from 'react';
 import { PageHeader } from '../components/ui/LayoutComponents';
 import { Badge, Button, Card, MetricCard } from '../components/ui/Base';
 import { useAdsOverview } from '../hooks/useCrm';
-import { formatCurrency, cn } from '../lib/utils';
+import { formatCurrency } from '../lib/utils';
 import type { AdCampaign, AdCreative, AdsAccount } from '../lib/api/types';
 import {
   AlertTriangle,
-  ArrowDown,
-  ArrowUp,
   BarChart3,
   CheckCircle2,
   ChevronRight,
   Database,
-  DollarSign,
   ExternalLink,
   Eye,
   Filter,
@@ -27,7 +24,6 @@ import {
   SlidersHorizontal,
   Sparkles,
   Target,
-  TrendingUp,
   Users,
   Wallet,
   X,
@@ -268,47 +264,12 @@ function MetricPill({ label, value, icon: Icon, help }: { label: string; value: 
   );
 }
 
-function KpiCard({ title, value, subtext, icon: Icon, trend, color = 'solar', size = 'md' }: { title: string; value: string | number; subtext?: string; icon: MetricIcon; trend?: { value: string; direction: 'up' | 'down' }; color?: 'solar' | 'energy' | 'graphite' | 'alert'; size?: 'sm' | 'md' }) {
-  const colors = {
-    solar: 'bg-solar-orange/10 text-solar-orange',
-    energy: 'bg-energy-green/10 text-energy-green',
-    graphite: 'bg-warm-sand/50 text-graphite',
-    alert: 'bg-alert-red/10 text-alert-red',
-  };
-  
-  const sizes = {
-    sm: 'p-2',
-    md: 'p-2.5',
-  };
-  
-  return (
-    <Card className="p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className={cn('rounded-xl', sizes[size], colors[color])}>
-          <Icon size={size === 'sm' ? 16 : 20} />
-        </div>
-        {trend && (
-          <div className={`flex items-center gap-1 text-xs font-bold ${trend.direction === 'up' ? 'text-energy-success' : 'text-alert-red'}`}>
-            {trend.direction === 'up' ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-            {trend.value}
-          </div>
-        )}
-      </div>
-      <div className="mt-2">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-graphite-soft">{title}</p>
-        <p className={`mt-0.5 font-black text-graphite ${size === 'sm' ? 'text-lg' : 'text-2xl'}`}>{value}</p>
-        {subtext && <p className="mt-0.5 text-[10px] text-graphite-soft">{subtext}</p>}
-      </div>
-    </Card>
-  );
-}
-
 function EmptyState({ title, text }: { title: string; text: string }) {
-  return <Card className="p-8 text-center"><BarChart3 className="mx-auto mb-3 text-warm-sand" size={34} /><h3 className="font-black text-graphite">{title}</h3><p className="mt-1 text-sm text-graphite-soft">{text}</p></Card>;
+  return <Card className="p-8 text-center"><BarChart3 className="mx-auto mb-3 text-graphite-soft" size={34} /><h3 className="font-black text-graphite">{title}</h3><p className="mt-1 text-sm text-graphite-soft">{text}</p></Card>;
 }
 
 function Field({ label, value }: { label: string; value: ReactNode }) {
-  return <div className="rounded-xl bg-warm-sand/30 p-3"><p className="text-[11px] font-bold uppercase tracking-wide text-graphite-soft">{label}</p><div className="mt-1 text-sm font-semibold text-graphite">{value}</div></div>;
+  return <div className="rounded-xl bg-warm-sand/50 p-3"><p className="text-[11px] font-bold uppercase tracking-wide text-graphite-soft">{label}</p><div className="mt-1 text-sm font-semibold text-graphite">{value}</div></div>;
 }
 
 function ModeSwitch({ mode, setMode }: { mode: WorkspaceMode; setMode: (mode: WorkspaceMode) => void }) {
@@ -319,7 +280,7 @@ function ModeSwitch({ mode, setMode }: { mode: WorkspaceMode; setMode: (mode: Wo
           const Icon = modeCopy[item].icon;
           const active = item === mode;
           return (
-            <button key={item} type="button" onClick={() => setMode(item)} className={`rounded-2xl p-4 text-left transition ${active ? 'bg-graphite text-white shadow-sm' : 'bg-white text-graphite hover:bg-warm-sand/30'}`}>
+            <button key={item} type="button" onClick={() => setMode(item)} className={`rounded-2xl p-4 text-left transition ${active ? 'bg-graphite text-white shadow-sm' : 'bg-white text-graphite hover:bg-warm-sand/50'}`}>
               <div className="flex items-center gap-2"><Icon size={18} className={active ? 'text-solar-orange' : 'text-graphite-soft'} /><p className="font-black">{modeCopy[item].title}</p></div>
               <p className={`mt-2 text-sm leading-relaxed ${active ? 'text-white/70' : 'text-graphite-soft'}`}>{modeCopy[item].subtitle}</p>
             </button>
@@ -358,7 +319,7 @@ function FilterBar({ filters, setFilters, objectives, shown, total }: { filters:
 function AdMiniCard({ ad }: { ad: AdCreative }) {
   return (
     <div className="flex gap-3 rounded-2xl border border-warm-sand/50 bg-white p-3">
-      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-warm-sand/50">{ad.thumbnailUrl ? <img src={ad.thumbnailUrl} alt={creativeHeadline(ad)} className="h-full w-full object-cover" /> : <ImageIcon size={22} className="text-warm-sand" />}</div>
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-warm-sand/50">{ad.thumbnailUrl ? <img src={ad.thumbnailUrl} alt={creativeHeadline(ad)} className="h-full w-full object-cover" /> : <ImageIcon size={22} className="text-graphite-soft" />}</div>
       <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><Badge variant={statusVariant(ad.effectiveStatus)}>{statusLabel(ad.effectiveStatus)}</Badge><span className="text-xs font-bold text-graphite-soft">{formatCurrency(ad.spendAmount)}</span></div><p className="mt-1 line-clamp-1 text-sm font-black text-graphite">{creativeHeadline(ad)}</p><p className="mt-1 line-clamp-2 text-xs text-graphite-soft">{creativeBody(ad)}</p></div>
     </div>
   );
@@ -374,11 +335,6 @@ function ClientSummaryView({ campaigns }: { campaigns: AdCampaign[] }) {
     acc[key] = [...(acc[key] ?? []), campaign];
     return acc;
   }, {});
-  
-  // Calcular métricas de eficiência
-  const cpl = totals.leads > 0 ? totals.spend / totals.leads : 0;
-  const ctr = totals.impressions > 0 ? (totals.clicks / totals.impressions) * 100 : 0;
-  const cpm = totals.impressions > 0 ? (totals.spend / totals.impressions) * 1000 : 0;
 
   return (
     <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -387,28 +343,13 @@ function ClientSummaryView({ campaigns }: { campaigns: AdCampaign[] }) {
           <Badge variant="solar">Resumo para cliente</Badge>
           <h2 className="mt-3 text-2xl font-black text-graphite">O que está rodando agora?</h2>
           <p className="mt-2 text-sm leading-relaxed text-graphite">Esta visão parece menos com planilha e mais com relatório: foca em campanhas, objetivos, verba e sinais de atenção.</p>
-          
-          {/* Dashboard Executivo com KPIs principais */}
-          <div className="mt-5 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <KpiCard title="Campanhas Ativas" value={active.length} icon={Megaphone} color="graphite" subtext={`${campaigns.length} no total`} />
-            <KpiCard title="Investimento Total" value={formatCurrency(totals.spend)} icon={DollarSign} color="solar" trend={{ value: '+12%', direction: 'up' }} />
-            <KpiCard title="Leads Gerados" value={formatNumber(totals.leads)} icon={MessageCircle} color="energy" trend={{ value: '+8%', direction: 'up' }} />
-            <KpiCard title="CPL Médio" value={cpl > 0 ? formatCurrency(cpl) : '—'} icon={TrendingUp} color={cpl > 0 && cpl < 50 ? 'energy' : cpl > 100 ? 'alert' : 'solar'} subtext="Custo por lead" />
-          </div>
-          
-          {/* Segunda linha de KPIs */}
-          <div className="mt-4 grid gap-4 md:grid-cols-3">
-            <KpiCard title="Cliques" value={formatNumber(totals.clicks)} icon={MousePointerClick} color="solar" subtext={`${ctr.toFixed(2)}% CTR`} />
-            <KpiCard title="Impressões" value={formatNumber(totals.impressions)} icon={Eye} color="graphite" subtext={`CPM: ${cpm > 0 ? formatCurrency(cpm) : '—'}`} />
-            <KpiCard title="Grupos de Anúncios" value={totals.adSets} icon={Layers3} color="energy" />
-          </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-4"><MetricPill label="Ativas" value={active.length} icon={Megaphone} /><MetricPill label="Investido" value={formatCurrency(totals.spend)} icon={Wallet} /><MetricPill label="Leads" value={formatNumber(totals.leads)} icon={MessageCircle} /><MetricPill label="Cliques" value={formatNumber(totals.clicks)} icon={MousePointerClick} /></div>
         </Card>
 
         <div className="grid gap-4 md:grid-cols-2">
           {Object.entries(groups).map(([objective, items]) => {
             const groupTotals = campaignTotals(items);
-            const groupCpl = groupTotals.leads > 0 ? groupTotals.spend / groupTotals.leads : 0;
-            return <Card key={objective} className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="font-black text-graphite">{objective}</p><p className="mt-1 text-sm text-graphite-soft">{items.length} campanha{items.length === 1 ? '' : 's'} neste objetivo</p></div><Target size={20} className="text-solar-orange" /></div><div className="mt-4 grid grid-cols-4 gap-2 text-center"><div className="rounded-xl bg-warm-sand/30 p-3"><p className="font-black text-graphite">{formatCurrency(groupTotals.spend)}</p><p className="text-[11px] text-graphite-soft">investido</p></div><div className="rounded-xl bg-warm-sand/30 p-3"><p className="font-black text-graphite">{groupTotals.leads}</p><p className="text-[11px] text-graphite-soft">leads</p></div><div className="rounded-xl bg-warm-sand/30 p-3"><p className="font-black text-graphite">{groupTotals.ads}</p><p className="text-[11px] text-graphite-soft">anúncios</p></div><div className="rounded-xl bg-warm-sand/30 p-3"><p className="font-black text-graphite">{groupCpl > 0 ? formatCurrency(groupCpl) : '—'}</p><p className="text-[11px] text-graphite-soft">CPL</p></div></div></Card>;
+            return <Card key={objective} className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="font-black text-graphite">{objective}</p><p className="mt-1 text-sm text-graphite-soft">{items.length} campanha{items.length === 1 ? '' : 's'} neste objetivo</p></div><Target size={20} className="text-solar-orange" /></div><div className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-warm-sand/50 p-3"><p className="font-black text-graphite">{formatCurrency(groupTotals.spend)}</p><p className="text-[11px] text-graphite-soft">investido</p></div><div className="rounded-xl bg-warm-sand/50 p-3"><p className="font-black text-graphite">{groupTotals.leads}</p><p className="text-[11px] text-graphite-soft">leads</p></div><div className="rounded-xl bg-warm-sand/50 p-3"><p className="font-black text-graphite">{groupTotals.ads}</p><p className="text-[11px] text-graphite-soft">anúncios</p></div></div></Card>;
           })}
         </div>
       </section>
@@ -427,60 +368,11 @@ function ClientSummaryView({ campaigns }: { campaigns: AdCampaign[] }) {
 function CampaignTable({ campaigns, selectedId, setSelectedId }: { campaigns: AdCampaign[]; selectedId: string | null; setSelectedId: (id: string) => void }) {
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-warm-sand/50 bg-warm-sand/30 px-4 py-3"><p className="text-xs font-black uppercase tracking-wide text-graphite-soft">Campanhas</p></div>
+      <div className="border-b border-warm-sand/50 bg-warm-sand/50 px-4 py-3"><p className="text-xs font-black uppercase tracking-wide text-graphite-soft">Campanhas</p></div>
       <div className="max-h-[760px] crm-scroll-panel overflow-auto">
         <table className="w-full text-left text-sm">
-          <thead className="sticky top-0 z-10 bg-white text-xs uppercase tracking-wide text-graphite-soft">
-            <tr>
-              <th className="p-3">Nome</th>
-              <th className="p-3">Objetivo</th>
-              <th className="p-3">Status</th>
-              <th className="p-3 text-right">Investido</th>
-              <th className="p-3 text-right">Leads</th>
-              <th className="p-3 text-right">CPL</th>
-              <th className="p-3 text-right">Cliques</th>
-              <th className="p-3 text-right">CTR</th>
-              <th className="p-3"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-warm-sand/50">
-            {campaigns.map((campaign) => {
-              const cpl = campaign.leads > 0 ? campaign.spendAmount / campaign.leads : 0;
-              const ctr = campaign.impressions > 0 ? (campaign.clicks / campaign.impressions) * 100 : 0;
-              return (
-                <tr 
-                  key={campaign.id} 
-                  onClick={() => setSelectedId(campaign.id)} 
-                  className={`cursor-pointer hover:bg-orange-50/50 ${selectedId === campaign.id ? 'bg-orange-50' : ''}`}
-                >
-                  <td className="p-3">
-                    <p className="max-w-[280px] truncate font-bold text-graphite">{campaign.name}</p>
-                    <p className="text-xs text-graphite-soft">{campaign.adSets.length} grupos · {allAds(campaign).length} anúncios</p>
-                  </td>
-                  <td className="p-3 text-graphite">{explainObjective(campaign.objective).label}</td>
-                  <td className="p-3"><Badge variant={statusVariant(campaign.effectiveStatus)}>{statusLabel(campaign.effectiveStatus)}</Badge></td>
-                  <td className="p-3 text-right font-bold text-graphite">{formatCurrency(campaign.spendAmount)}</td>
-                  <td className="p-3 text-right font-bold text-graphite">{campaign.leads}</td>
-                  <td className="p-3 text-right">
-                    {cpl > 0 ? (
-                      <span className={`font-bold ${cpl < 50 ? 'text-energy-success' : cpl > 100 ? 'text-alert-red' : 'text-graphite'}`}>
-                        {formatCurrency(cpl)}
-                      </span>
-                    ) : (
-                      <span className="text-warm-sand">—</span>
-                    )}
-                  </td>
-                  <td className="p-3 text-right font-semibold text-graphite">{formatNumber(campaign.clicks)}</td>
-                  <td className="p-3 text-right">
-                    <span className={`text-xs font-bold ${ctr > 2 ? 'text-energy-success' : ctr > 1 ? 'text-graphite' : 'text-graphite-soft'}`}>
-                      {ctr.toFixed(2)}%
-                    </span>
-                  </td>
-                  <td className="p-3"><ChevronRight size={16} className="text-warm-sand" /></td>
-                </tr>
-              );
-            })}
-          </tbody>
+          <thead className="sticky top-0 z-10 bg-white text-xs uppercase tracking-wide text-graphite-soft"><tr><th className="p-3">Nome</th><th className="p-3">Objetivo</th><th className="p-3">Status</th><th className="p-3 text-right">Investido</th><th className="p-3 text-right">Leads</th><th className="p-3"></th></tr></thead>
+          <tbody className="divide-y divide-gray-50">{campaigns.map((campaign) => <tr key={campaign.id} onClick={() => setSelectedId(campaign.id)} className={`cursor-pointer hover:bg-orange-50/50 ${selectedId === campaign.id ? 'bg-orange-50' : ''}`}><td className="p-3"><p className="max-w-[360px] truncate font-bold text-graphite">{campaign.name}</p><p className="text-xs text-graphite-soft">{campaign.adSets.length} grupos · {allAds(campaign).length} anúncios</p></td><td className="p-3 text-graphite">{explainObjective(campaign.objective).label}</td><td className="p-3"><Badge variant={statusVariant(campaign.effectiveStatus)}>{statusLabel(campaign.effectiveStatus)}</Badge></td><td className="p-3 text-right font-bold text-graphite">{formatCurrency(campaign.spendAmount)}</td><td className="p-3 text-right font-bold text-graphite">{campaign.leads}</td><td className="p-3"><ChevronRight size={16} className="text-graphite-soft" /></td></tr>)}</tbody>
         </table>
       </div>
     </Card>
@@ -491,68 +383,13 @@ function CampaignInspector({ campaign }: { campaign: AdCampaign | undefined }) {
   if (!campaign) return <Card className="p-6"><p className="text-sm text-graphite-soft">Selecione uma campanha para ver detalhes.</p></Card>;
   const objective = explainObjective(campaign.objective);
   const ads = allAds(campaign);
-  
-  // Calcular métricas de eficiência da campanha
-  const cpl = campaign.leads > 0 ? campaign.spendAmount / campaign.leads : 0;
-  const ctr = campaign.impressions > 0 ? (campaign.clicks / campaign.impressions) * 100 : 0;
-  const cpc = campaign.clicks > 0 ? campaign.spendAmount / campaign.clicks : 0;
-  const cpm = campaign.impressions > 0 ? (campaign.spendAmount / campaign.impressions) * 1000 : 0;
-  
   return (
     <Card className="sticky top-6 max-h-[820px] crm-scroll-panel overflow-auto p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <Badge variant={statusVariant(campaign.effectiveStatus)}>{statusLabel(campaign.effectiveStatus)}</Badge>
-          <h3 className="mt-3 text-lg font-black text-graphite">{campaign.name}</h3>
-          <p className="mt-2 text-sm leading-relaxed text-graphite-soft">
-            <strong className="text-graphite">{objective.label}.</strong> {objective.description}
-          </p>
-        </div>
-      </div>
-      
-      {/* Métricas principais em cards */}
-      <div className="mt-5 grid grid-cols-2 gap-2">
-        <KpiCard title="Investido" value={formatCurrency(campaign.spendAmount)} icon={DollarSign} color="solar" size="sm" />
-        <KpiCard title="Leads" value={campaign.leads} icon={MessageCircle} color="energy" size="sm" />
-        <KpiCard title="Cliques" value={formatNumber(campaign.clicks)} icon={MousePointerClick} color="graphite" size="sm" />
-        <KpiCard title="Impressões" value={formatNumber(campaign.impressions)} icon={Eye} color="graphite" size="sm" />
-      </div>
-      
-      {/* Métricas de eficiência */}
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <MetricPill label="CPL" value={cpl > 0 ? formatCurrency(cpl) : '—'} icon={TrendingUp} help="Custo por lead" />
-        <MetricPill label="CTR" value={`${ctr.toFixed(2)}%`} icon={BarChart3} help="Taxa de clique" />
-        <MetricPill label="CPC" value={cpc > 0 ? formatCurrency(cpc) : '—'} icon={MousePointerClick} help="Custo por clique" />
-        <MetricPill label="CPM" value={cpm > 0 ? formatCurrency(cpm) : '—'} icon={Eye} help="Custo por mil impressões" />
-      </div>
-      
-      <div className="mt-5 grid gap-3">
-        <Field label="Estratégia" value={campaign.bidStrategy ? (bidStrategyLabels[campaign.bidStrategy] ?? humanizeToken(campaign.bidStrategy)) : 'Não informada'} />
-        <Field label="Orçamento" value={campaign.budgetAmount === null ? 'Não informado' : formatCurrency(campaign.budgetAmount)} />
-      </div>
-      
-      <div className="mt-5">
-        <h4 className="font-black text-graphite">Grupos</h4>
-        <div className="mt-3 space-y-3">
-          {campaign.adSets.map((set) => (
-            <div key={set.id} className="rounded-2xl bg-warm-sand/30 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <p className="line-clamp-1 font-bold text-graphite">{set.name}</p>
-                <Badge variant={statusVariant(set.effectiveStatus)}>{statusLabel(set.effectiveStatus)}</Badge>
-              </div>
-              <p className="mt-1 text-xs text-graphite-soft">{set.audienceSummary ?? 'Público não informado'} · {set.ads.length} anúncios</p>
-            </div>
-          ))}
-        </div>
-      </div>
-      
-      <div className="mt-5">
-        <h4 className="font-black text-graphite">Criativos principais</h4>
-        <div className="mt-3 space-y-3">
-          {ads.slice(0, 4).map((ad) => <AdMiniCard key={ad.id} ad={ad} />)}
-        </div>
-        {ads.length > 4 && <p className="mt-3 text-xs font-semibold text-graphite-soft">+ {ads.length - 4} anúncios no total</p>}
-      </div>
+      <div className="flex items-start justify-between gap-3"><div><Badge variant={statusVariant(campaign.effectiveStatus)}>{statusLabel(campaign.effectiveStatus)}</Badge><h3 className="mt-3 text-lg font-black text-graphite">{campaign.name}</h3><p className="mt-2 text-sm leading-relaxed text-graphite-soft"><strong className="text-graphite">{objective.label}.</strong> {objective.description}</p></div></div>
+      <div className="mt-5 grid grid-cols-2 gap-2"><MetricPill label="Investido" value={formatCurrency(campaign.spendAmount)} icon={Wallet} /><MetricPill label="Leads" value={campaign.leads} icon={MessageCircle} /><MetricPill label="Cliques" value={formatNumber(campaign.clicks)} icon={MousePointerClick} /><MetricPill label="Impressões" value={formatNumber(campaign.impressions)} icon={Eye} /></div>
+      <div className="mt-5 grid gap-3"><Field label="Estratégia" value={campaign.bidStrategy ? (bidStrategyLabels[campaign.bidStrategy] ?? humanizeToken(campaign.bidStrategy)) : 'Não informada'} /><Field label="Orçamento" value={campaign.budgetAmount === null ? 'Não informado' : formatCurrency(campaign.budgetAmount)} /></div>
+      <div className="mt-5"><h4 className="font-black text-graphite">Grupos</h4><div className="mt-3 space-y-3">{campaign.adSets.map((set) => <div key={set.id} className="rounded-2xl bg-warm-sand/50 p-3"><div className="flex items-center justify-between gap-3"><p className="line-clamp-1 font-bold text-graphite">{set.name}</p><Badge variant={statusVariant(set.effectiveStatus)}>{statusLabel(set.effectiveStatus)}</Badge></div><p className="mt-1 text-xs text-graphite-soft">{set.audienceSummary ?? 'Público não informado'} · {set.ads.length} anúncios</p></div>)}</div></div>
+      <div className="mt-5"><h4 className="font-black text-graphite">Criativos principais</h4><div className="mt-3 space-y-3">{ads.slice(0, 4).map((ad) => <AdMiniCard key={ad.id} ad={ad} />)}</div>{ads.length > 4 && <p className="mt-3 text-xs font-semibold text-graphite-soft">+ {ads.length - 4} anúncios no total</p>}</div>
     </Card>
   );
 }
@@ -561,7 +398,7 @@ function ManagerWorkspace({ campaigns, selectedId, setSelectedId, filters, setFi
   const selected = campaigns.find((campaign) => campaign.id === selectedId) ?? campaigns[0];
   return (
     <div className="grid gap-5 xl:grid-cols-[230px_minmax(0,1fr)_360px]">
-      <aside className="space-y-4"><Card className="p-4"><p className="text-xs font-black uppercase tracking-wide text-graphite-soft">Visões rápidas</p><div className="mt-3 space-y-2">{visibleStatusFilters.map((status) => <button key={status} type="button" onClick={() => setFilters({ ...filters, status })} className={`w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition ${filters.status === status ? 'bg-graphite text-white' : 'bg-warm-sand/30 text-graphite hover:bg-warm-sand/50'}`}>{statusFilterLabels[status]}</button>)}</div></Card><Card className="p-4"><p className="text-xs font-black uppercase tracking-wide text-graphite-soft">Como usar</p><p className="mt-2 text-sm leading-relaxed text-graphite-soft">Use os filtros laterais, selecione uma campanha e acompanhe os detalhes no painel à direita.</p></Card></aside>
+      <aside className="space-y-4"><Card className="p-4"><p className="text-xs font-black uppercase tracking-wide text-graphite-soft">Visões rápidas</p><div className="mt-3 space-y-2">{visibleStatusFilters.map((status) => <button key={status} type="button" onClick={() => setFilters({ ...filters, status })} className={`w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition ${filters.status === status ? 'bg-graphite text-white' : 'bg-warm-sand/50 text-graphite hover:bg-warm-sand/50'}`}>{statusFilterLabels[status]}</button>)}</div></Card><Card className="p-4"><p className="text-xs font-black uppercase tracking-wide text-graphite-soft">Como usar</p><p className="mt-2 text-sm leading-relaxed text-graphite-soft">Use os filtros laterais, selecione uma campanha e acompanhe os detalhes no painel à direita.</p></Card></aside>
       <CampaignTable campaigns={campaigns} selectedId={selected?.id ?? null} setSelectedId={setSelectedId} />
       <CampaignInspector campaign={selected} />
     </div>
@@ -573,11 +410,11 @@ function TechTable({ campaigns, tab, setTab }: { campaigns: AdCampaign[]; tab: E
   const ads = adSets.flatMap(({ campaign, set }) => set.ads.map((ad) => ({ campaign, set, ad })));
   return (
     <Card className="overflow-hidden">
-      <div className="flex flex-wrap items-center gap-2 border-b border-warm-sand/50 bg-warm-sand/30 p-3">{(['campaigns', 'adsets', 'ads'] as EntityTab[]).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-xl px-3 py-2 text-xs font-black ${tab === item ? 'bg-graphite text-white' : 'bg-white text-graphite-soft'}`}>{item === 'campaigns' ? 'Campanhas' : item === 'adsets' ? 'Grupos' : 'Anúncios'}</button>)}</div>
+      <div className="flex flex-wrap items-center gap-2 border-b border-warm-sand/50 bg-warm-sand/50 p-3">{(['campaigns', 'adsets', 'ads'] as EntityTab[]).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-xl px-3 py-2 text-xs font-black ${tab === item ? 'bg-graphite text-white' : 'bg-white text-graphite-soft'}`}>{item === 'campaigns' ? 'Campanhas' : item === 'adsets' ? 'Grupos' : 'Anúncios'}</button>)}</div>
       <div className="crm-scroll-panel overflow-auto">
-        {tab === 'campaigns' && <table className="w-full whitespace-nowrap text-left text-xs"><thead className="bg-white text-graphite-soft"><tr><th className="p-3">ID</th><th className="p-3">Nome</th><th className="p-3">Status bruto</th><th className="p-3">Objetivo bruto</th><th className="p-3 text-right">Spend</th><th className="p-3 text-right">Leads</th></tr></thead><tbody className="divide-y divide-warm-sand/50">{campaigns.map((campaign) => <tr key={campaign.id}><td className="p-3 font-mono text-graphite-soft">{campaign.externalCampaignId ?? '—'}</td><td className="p-3 font-bold text-graphite">{campaign.name}</td><td className="p-3">{campaign.effectiveStatus}</td><td className="p-3">{campaign.objective ?? '—'}</td><td className="p-3 text-right">{campaign.spendAmount}</td><td className="p-3 text-right">{campaign.leads}</td></tr>)}</tbody></table>}
-        {tab === 'adsets' && <table className="w-full whitespace-nowrap text-left text-xs"><thead className="bg-white text-graphite-soft"><tr><th className="p-3">ID grupo</th><th className="p-3">Grupo</th><th className="p-3">Campanha</th><th className="p-3">Status</th><th className="p-3">Otimização</th><th className="p-3">Cobrança</th></tr></thead><tbody className="divide-y divide-warm-sand/50">{adSets.map(({ campaign, set }) => <tr key={set.id}><td className="p-3 font-mono text-graphite-soft">{set.externalAdSetId ?? '—'}</td><td className="p-3 font-bold text-graphite">{set.name}</td><td className="p-3">{campaign.name}</td><td className="p-3">{set.effectiveStatus}</td><td className="p-3">{set.optimizationGoal ?? '—'}</td><td className="p-3">{set.billingEvent ?? '—'}</td></tr>)}</tbody></table>}
-        {tab === 'ads' && <table className="w-full whitespace-nowrap text-left text-xs"><thead className="bg-white text-graphite-soft"><tr><th className="p-3">ID anúncio</th><th className="p-3">Anúncio</th><th className="p-3">Grupo</th><th className="p-3">Status</th><th className="p-3 text-right">Spend</th><th className="p-3 text-right">Leads</th><th className="p-3">Destino</th></tr></thead><tbody className="divide-y divide-warm-sand/50">{ads.map(({ set, ad }) => <tr key={ad.id}><td className="p-3 font-mono text-graphite-soft">{ad.externalAdId ?? '—'}</td><td className="p-3 font-bold text-graphite">{ad.name}</td><td className="p-3">{set.name}</td><td className="p-3">{ad.effectiveStatus}</td><td className="p-3 text-right">{ad.spendAmount}</td><td className="p-3 text-right">{ad.leads}</td><td className="p-3">{ad.destinationUrl ? <a href={ad.destinationUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-solar-orange"><ExternalLink size={12} /> abrir</a> : '—'}</td></tr>)}</tbody></table>}
+        {tab === 'campaigns' && <table className="w-full whitespace-nowrap text-left text-xs"><thead className="bg-white text-graphite-soft"><tr><th className="p-3">ID</th><th className="p-3">Nome</th><th className="p-3">Status bruto</th><th className="p-3">Objetivo bruto</th><th className="p-3 text-right">Spend</th><th className="p-3 text-right">Leads</th></tr></thead><tbody className="divide-y divide-gray-50">{campaigns.map((campaign) => <tr key={campaign.id}><td className="p-3 font-mono text-graphite-soft">{campaign.externalCampaignId ?? '—'}</td><td className="p-3 font-bold text-graphite">{campaign.name}</td><td className="p-3">{campaign.effectiveStatus}</td><td className="p-3">{campaign.objective ?? '—'}</td><td className="p-3 text-right">{campaign.spendAmount}</td><td className="p-3 text-right">{campaign.leads}</td></tr>)}</tbody></table>}
+        {tab === 'adsets' && <table className="w-full whitespace-nowrap text-left text-xs"><thead className="bg-white text-graphite-soft"><tr><th className="p-3">ID grupo</th><th className="p-3">Grupo</th><th className="p-3">Campanha</th><th className="p-3">Status</th><th className="p-3">Otimização</th><th className="p-3">Cobrança</th></tr></thead><tbody className="divide-y divide-gray-50">{adSets.map(({ campaign, set }) => <tr key={set.id}><td className="p-3 font-mono text-graphite-soft">{set.externalAdSetId ?? '—'}</td><td className="p-3 font-bold text-graphite">{set.name}</td><td className="p-3">{campaign.name}</td><td className="p-3">{set.effectiveStatus}</td><td className="p-3">{set.optimizationGoal ?? '—'}</td><td className="p-3">{set.billingEvent ?? '—'}</td></tr>)}</tbody></table>}
+        {tab === 'ads' && <table className="w-full whitespace-nowrap text-left text-xs"><thead className="bg-white text-graphite-soft"><tr><th className="p-3">ID anúncio</th><th className="p-3">Anúncio</th><th className="p-3">Grupo</th><th className="p-3">Status</th><th className="p-3 text-right">Spend</th><th className="p-3 text-right">Leads</th><th className="p-3">Destino</th></tr></thead><tbody className="divide-y divide-gray-50">{ads.map(({ set, ad }) => <tr key={ad.id}><td className="p-3 font-mono text-graphite-soft">{ad.externalAdId ?? '—'}</td><td className="p-3 font-bold text-graphite">{ad.name}</td><td className="p-3">{set.name}</td><td className="p-3">{ad.effectiveStatus}</td><td className="p-3 text-right">{ad.spendAmount}</td><td className="p-3 text-right">{ad.leads}</td><td className="p-3">{ad.destinationUrl ? <a href={ad.destinationUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-solar-orange"><ExternalLink size={12} /> abrir</a> : '—'}</td></tr>)}</tbody></table>}
       </div>
     </Card>
   );
@@ -630,7 +467,7 @@ export default function Ads() {
 
       {filteredCampaigns.length === 0 ? <EmptyState title="Nenhuma campanha ativa elegível" text="O CRM só exibe campanhas em que campanha, conjunto e anúncio estão ativos ao mesmo tempo. Se qualquer nível estiver desativado, ele fica oculto." /> : mode === 'cliente' ? <ClientSummaryView campaigns={filteredCampaigns} /> : mode === 'gestor' ? <ManagerWorkspace campaigns={filteredCampaigns} selectedId={selectedCampaignId} setSelectedId={setSelectedCampaignId} filters={filters} setFilters={setFilters} /> : <TechTable campaigns={filteredCampaigns} tab={techTab} setTab={setTechTab} />}
 
-      {mode === 'tecnico' && audiences.length > 0 && <Card className="p-5"><h3 className="font-black text-graphite">Públicos Meta retornados</h3><div className="mt-4 grid gap-3 md:grid-cols-3">{audiences.slice(0, 12).map((audience) => <div key={String(audience.id)} className="rounded-2xl bg-warm-sand/30 p-3"><p className="font-bold text-graphite">{text(audience.name) ?? 'Público sem nome'}</p><p className="text-xs text-graphite-soft">{humanizeToken(text(audience.subtype) ?? 'custom')} · {String(audience.approximate_count ?? '—')} pessoas</p></div>)}</div></Card>}
+      {mode === 'tecnico' && audiences.length > 0 && <Card className="p-5"><h3 className="font-black text-graphite">Públicos Meta retornados</h3><div className="mt-4 grid gap-3 md:grid-cols-3">{audiences.slice(0, 12).map((audience) => <div key={String(audience.id)} className="rounded-2xl bg-warm-sand/50 p-3"><p className="font-bold text-graphite">{text(audience.name) ?? 'Público sem nome'}</p><p className="text-xs text-graphite-soft">{humanizeToken(text(audience.subtype) ?? 'custom')} · {String(audience.approximate_count ?? '—')} pessoas</p></div>)}</div></Card>}
     </div>
   );
 }

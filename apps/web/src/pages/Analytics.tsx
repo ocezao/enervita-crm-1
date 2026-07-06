@@ -253,7 +253,7 @@ export default function Analytics() {
             ))}
           </div>
           <div className="mt-6 space-y-2">
-            {overview.notes.map((note) => <p key={note} className="text-xs text-graphite-soft bg-warm-sand/30 rounded-xl px-3 py-2">{note}</p>)}
+            {overview.notes.map((note) => <p key={note} className="text-xs text-graphite-soft bg-warm-sand/50 rounded-xl px-3 py-2">{note}</p>)}
           </div>
         </Card>
 
@@ -291,9 +291,9 @@ export default function Analytics() {
         <div className="hidden md:block crm-scroll-panel overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead><tr className="border-b border-warm-sand/50 text-graphite-soft"><th className="pb-3">Campanha</th><th className="pb-3">Origem</th><th className="pb-3">Leads</th><th className="pb-3">Rastreados</th><th className="pb-3">Propostas</th><th className="pb-3">Contratos</th><th className="pb-3">Pipeline</th></tr></thead>
-            <tbody className="divide-y divide-warm-sand/50">
+            <tbody className="divide-y divide-gray-50">
               {overview.campaigns.map((campaign) => (
-                <tr key={`${campaign.source}-${campaign.campaign}`} className="hover:bg-warm-sand/30/60"><td className="py-3 font-bold text-graphite">{campaign.campaign}</td><td className="py-3 text-graphite-soft">{campaign.source}</td><td className="py-3 text-graphite-soft">{campaign.leads}</td><td className="py-3 text-energy-green font-bold">{campaign.trackedLeads}</td><td className="py-3 text-graphite-soft">{campaign.proposals}</td><td className="py-3 text-graphite-soft">{campaign.won}</td><td className="py-3 text-graphite-soft">{formatCurrency(campaign.estimatedTicket)}</td></tr>
+                <tr key={`${campaign.source}-${campaign.campaign}`} className="hover:bg-warm-sand/50/60"><td className="py-3 font-bold text-graphite">{campaign.campaign}</td><td className="py-3 text-graphite-soft">{campaign.source}</td><td className="py-3 text-graphite-soft">{campaign.leads}</td><td className="py-3 text-energy-green font-bold">{campaign.trackedLeads}</td><td className="py-3 text-graphite-soft">{campaign.proposals}</td><td className="py-3 text-graphite-soft">{campaign.won}</td><td className="py-3 text-graphite-soft">{formatCurrency(campaign.estimatedTicket)}</td></tr>
               ))}
             </tbody>
           </table>

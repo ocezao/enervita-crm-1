@@ -56,7 +56,7 @@ function TaskCard({ task, canCompleteTask, onComplete }: { task: Task; canComple
             {task.leadId ? (
               <Link to={`/leads/${task.leadId}`} className="font-semibold text-solar-orange hover:underline max-w-full truncate">{task.leadName || 'Abrir lead'}</Link>
             ) : <span>Sem lead vinculado</span>}
-            <span className="text-warm-sand">•</span>
+            <span className="text-graphite-soft">•</span>
             <span className="inline-flex items-center gap-1"><Calendar size={12} /> {formatDate(task.dueDate)}</span>
           </div>
         </div>
@@ -219,7 +219,7 @@ export default function Tasks() {
           <div className="relative min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite-soft pointer-events-none" size={16} />
             <label className="sr-only" htmlFor="tasks-search">Buscar tarefas</label>
-            <input id="tasks-search" aria-label="Buscar tarefas por título, lead, responsável ou prioridade" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por tarefa, lead, responsável ou prioridade..." className="w-full bg-warm-sand/30 border border-warm-sand/50 rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+            <input id="tasks-search" aria-label="Buscar tarefas por título, lead, responsável ou prioridade" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por tarefa, lead, responsável ou prioridade..." className="w-full bg-warm-sand/50 border border-warm-sand/50 rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
           </div>
           <div className="flex flex-wrap gap-2 xl:justify-end">
             {(Object.keys(filterLabels) as TaskFilter[]).map((filter) => (
@@ -247,7 +247,7 @@ export default function Tasks() {
           {kanban.map((column) => {
             const Icon = column.icon;
             return (
-              <Card key={column.id} className="p-4 bg-warm-sand/30/60 overflow-visible">
+              <Card key={column.id} className="p-4 bg-warm-sand/50/60 overflow-visible">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-black text-graphite flex items-center gap-2"><Icon size={18} className="text-solar-orange" /> {column.title}</h3>
                   <Badge variant="default">{column.tasks.length}</Badge>
@@ -258,7 +258,7 @@ export default function Tasks() {
           })}
         </div>
       ) : (
-        <Card className="divide-y divide-warm-sand/50 overflow-hidden">
+        <Card className="divide-y divide-gray-50 overflow-hidden">
           {filteredTasks.map((task) => <TaskCard key={task.id} task={task} canCompleteTask={canCompleteTask} onComplete={handleComplete} />)}
         </Card>
       )}

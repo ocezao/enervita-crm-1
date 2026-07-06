@@ -120,50 +120,50 @@ export function UserForm({ catalog, user, saving, onSubmit, onResetPassword, onD
   }
 
   return (
-    <Card className="p-5 crm-user-form">
+    <Card className="p-5">
       <div className="mb-5">
-        <h2 className="text-lg font-black text-graphite tracking-tight">{editing ? 'Editar usuário' : 'Novo usuário'}</h2>
-        <p className="text-xs text-graphite-soft mt-1 leading-relaxed">Defina dados, permissões e etapas permitidas. Senhas existentes nunca são exibidas.</p>
+        <h2 className="text-lg font-bold text-graphite">{editing ? 'Editar usuário' : 'Novo usuário'}</h2>
+        <p className="text-xs text-graphite-soft">Defina dados, permissões e etapas permitidas. Senhas existentes nunca são exibidas.</p>
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="text-sm font-bold text-graphite crm-form-label">Nome
-            <input required value={state.name} onChange={(event) => setState({ ...state, name: event.target.value })} className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50 transition-all duration-200 bg-white" />
+          <label className="text-sm font-medium text-graphite">Nome
+            <input required value={state.name} onChange={(event) => setState({ ...state, name: event.target.value })} className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
           </label>
-          <label className="text-sm font-bold text-graphite crm-form-label">E-mail
-            <input required type="email" value={state.email} onChange={(event) => setState({ ...state, email: event.target.value })} className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50 transition-all duration-200 bg-white" />
+          <label className="text-sm font-medium text-graphite">E-mail
+            <input required type="email" value={state.email} onChange={(event) => setState({ ...state, email: event.target.value })} className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
           </label>
           {!editing && (
-            <label className="text-sm font-bold text-graphite crm-form-label">Senha temporária
-              <input required type="password" value={state.temporaryPassword} onChange={(event) => setState({ ...state, temporaryPassword: event.target.value })} className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50 transition-all duration-200 bg-white" />
+            <label className="text-sm font-medium text-graphite">Senha temporária
+              <input required type="password" value={state.temporaryPassword} onChange={(event) => setState({ ...state, temporaryPassword: event.target.value })} className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
             </label>
           )}
-          <label className="text-sm font-bold text-graphite crm-form-label">Status
-            <select value={state.status} onChange={(event) => setState({ ...state, status: event.target.value as 'active' | 'inactive' })} className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50 transition-all duration-200 bg-white">
+          <label className="text-sm font-medium text-graphite">Status
+            <select value={state.status} onChange={(event) => setState({ ...state, status: event.target.value as 'active' | 'inactive' })} className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30">
               <option value="active">Ativo</option>
               <option value="inactive">Inativo</option>
             </select>
           </label>
-          <label className="text-sm font-bold text-graphite crm-form-label">Cargo
-            <input value={state.jobTitle} onChange={(event) => setState({ ...state, jobTitle: event.target.value })} className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50 transition-all duration-200 bg-white" />
+          <label className="text-sm font-medium text-graphite">Cargo
+            <input value={state.jobTitle} onChange={(event) => setState({ ...state, jobTitle: event.target.value })} className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
           </label>
-          <label className="text-sm font-bold text-graphite crm-form-label">Função
-            <select data-testid="user-role-select" value={state.selectedRole} onChange={(event) => handleRoleChange(event.target.value)} className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50 transition-all duration-200 bg-white">
+          <label className="text-sm font-medium text-graphite">Função
+            <select data-testid="user-role-select" value={state.selectedRole} onChange={(event) => handleRoleChange(event.target.value)} className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30">
               <option value="">Selecione um perfil</option>
               {ROLE_DEFINITIONS.map((profile) => <option key={profile.key} value={profile.key}>{profile.label}</option>)}
             </select>
           </label>
-          <label className="text-sm font-bold text-graphite crm-form-label">Departamento
-            <input value={state.department} onChange={(event) => setState({ ...state, department: event.target.value })} placeholder="Ex: Comercial, Operações..." className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50 transition-all duration-200 bg-white" />
+          <label className="text-sm font-medium text-graphite">Departamento
+            <input value={state.department} onChange={(event) => setState({ ...state, department: event.target.value })} placeholder="Ex: Comercial, Operações..." className="mt-1 w-full rounded-xl border border-warm-sand/70 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
           </label>
         </div>
 
         {selectedProfile && (
-          <div className="rounded-xl border border-solar-orange/20 bg-gradient-to-br from-solar-orange/5 to-white p-4 shadow-sm">
+          <div className="rounded-xl border border-solar-orange/20 bg-solar-orange/5 p-3">
             <p className="text-sm font-bold text-graphite">{selectedProfile.label}</p>
-            <p className="text-xs text-graphite-soft mt-1 leading-relaxed">{selectedProfile.description}</p>
-            <p className="text-xs text-solar-orange mt-3 font-semibold">{selectedProfile.defaultPermissions.length} permissões • {selectedProfile.defaultStages.length} etapas</p>
+            <p className="text-xs text-graphite-soft mt-1">{selectedProfile.description}</p>
+            <p className="text-xs text-solar-orange mt-2">{selectedProfile.defaultPermissions.length} permissões • {selectedProfile.defaultStages.length} etapas</p>
           </div>
         )}
 
