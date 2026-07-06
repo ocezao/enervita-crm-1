@@ -1,5 +1,4 @@
 import pg, { type PoolClient } from 'pg';
-import { getDatabasePool } from '../../db/pool.ts';
 import type { PipelineStageKey } from '@enervita/shared';
 import type { AuditContext } from '../users/repository.ts';
 import type { NotificationsRepository } from '../notifications/repository.ts';
@@ -52,6 +51,7 @@ export type EngagementRepository = {
   completeTask(context: AuditContext, taskId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<Task | null>;
   listActivities(tenantId: string, leadId: string, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<Activity[]>;
   createActivity(context: AuditContext, input: ActivityInput, allowedStages: PipelineStageKey[] | null, ownerUserId: string | null): Promise<Activity | null>;
+  createAutomaticTask(context: AuditContext, leadId: string, stage: PipelineStageKey, pipelineKey: string, ownerId: string | null): Promise<Task | null>;
   close?(): Promise<void>;
 };
 
@@ -163,9 +163,10 @@ async function writeAudit(client: PoolClient, context: AuditContext, entityType:
 }
 
 export function createPgEngagementRepository(databaseUrl: string, notificationsRepository?: NotificationsRepository): EngagementRepository {
-  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
+  const pool = new Pool({ connectionString: databaseUrl });
+  let repository: EngagementRepository;
 
-  return {
+  repository = {
     async listTasks(tenantId, allowedStages, ownerUserId) {
       const result = await pool.query(
         `${taskSelect}
@@ -299,8 +300,70 @@ export function createPgEngagementRepository(databaseUrl: string, notificationsR
         client.release();
       }
     },
+
+    async createAutomaticTask(context, leadId, stage, pipelineKey, ownerId) {
+      // Se não houver owner, não criar tarefa
+      if (!ownerId) return null;
+
+      // Configuração de tarefas automáticas por pipeline e etapa
+      const taskConfigs: Record<string, Record<string, { title: string; dueHours: number; priority: PriorityLevel }>> = {
+        // Pipeline Usina Solar
+        usina_solar_nova: {
+          novo_lead_usina: { title: 'Entrar em contato com o lead', dueHours: 24, priority: 'alta' },
+          atendimento_iniciado_usina: { title: 'Agendar reunião de apresentação', dueHours: 48, priority: 'alta' },
+          reuniao_usina: { title: 'Enviar proposta comercial', dueHours: 72, priority: 'media' },
+          aguardando_assinatura_usina: { title: 'Acompanhar assinatura do contrato', dueHours: 168, priority: 'media' }, // 7 dias
+          ganho_contrato_assinado_usina: { title: 'Iniciar processo de implantação', dueHours: 48, priority: 'alta' },
+        },
+        // Pipeline Energia por Assinatura
+        energia_por_assinatura: {
+          novo_lead_energia: { title: 'Entrar em contato com o lead', dueHours: 24, priority: 'alta' },
+          novo_contato: { title: 'Solicitar conta de luz', dueHours: 48, priority: 'alta' },
+          conta_luz: { title: 'Elaborar proposta', dueHours: 72, priority: 'media' },
+          elaboracao_proposta_energia: { title: 'Apresentar proposta ao cliente', dueHours: 48, priority: 'alta' },
+          apresentacao_proposta_energia: { title: 'Aguardar análise de documentos', dueHours: 168, priority: 'baixa' }, // 7 dias
+          analise_documentos: { title: 'Elaborar contrato e adesão', dueHours: 48, priority: 'alta' },
+          elaboracao_contrato_adesao: { title: 'Enviar contrato para assinatura', dueHours: 24, priority: 'alta' },
+          aguardando_assinatura: { title: 'Acompanhar assinatura', dueHours: 168, priority: 'media' }, // 7 dias
+          ganho_contrato_assinado_energia: { title: 'Iniciar processo de implantação', dueHours: 48, priority: 'alta' },
+        },
+        // Pipeline Geral
+        geral: {
+          novo_lead: { title: 'Entrar em contato', dueHours: 24, priority: 'alta' },
+          qualificacao: { title: 'Qualificar o lead', dueHours: 48, priority: 'alta' },
+          atendimento_iniciado: { title: 'Acompanhar atendimento', dueHours: 72, priority: 'media' },
+          proposta_enviada: { title: 'Follow-up da proposta', dueHours: 120, priority: 'media' }, // 5 dias
+          ganho_contrato_assinado: { title: 'Iniciar implantação', dueHours: 48, priority: 'alta' },
+        },
+      };
+
+      const pipelineTasks = taskConfigs[pipelineKey];
+      if (!pipelineTasks) return null;
+
+      const taskConfig = pipelineTasks[stage];
+      if (!taskConfig) return null;
+
+      // Calcular data de vencimento
+      const dueDate = new Date();
+      dueDate.setHours(dueDate.getHours() + taskConfig.dueHours);
+
+      const input: TaskInput = {
+        leadId,
+        title: taskConfig.title,
+        description: `Tarefa automática criada pela mudança de etapa para "${stage}"`,
+        priority: taskConfig.priority,
+        ownerId,
+        dueDate: dueDate.toISOString(),
+        notes: null,
+      };
+
+      // Chamar createTask diretamente do repositório
+      return repository.createTask(context, input);
+    },
     async close() {
       await pool.end();
     },
   };
+
+  return repository;
 }

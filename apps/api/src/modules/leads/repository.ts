@@ -3,7 +3,7 @@ import pg, { type PoolClient } from 'pg';
 import type { PipelineStageKey } from '@enervita/shared';
 import type { AuditContext } from '../users/repository.ts';
 import type { ContactInput, CreateLeadInput, LeadListFilters, SetLeadTagsInput, UpdateLeadInput } from './validation.ts';
-import { getDatabasePool } from '../../db/pool.ts';
+import type { EngagementRepository } from '../engagement/repository.ts';
 
 const { Pool } = pg;
 
@@ -841,7 +841,7 @@ async function createOpportunityForLead(client: PoolClient, context: AuditContex
 }
 
 const META_STAGE_EVENTS: Partial<Record<PipelineStageKey, string>> = {
-  // Pipeline Usina Solar - etapas com evento Meta CAPI
+  // Pipeline Sistema Solar - etapas com evento Meta CAPI
   novo_lead: 'new',                          // 1. Novo Lead → evento "new"
   elaboracao_proposta: 'Qualificação',       // 3. Elaboração de proposta → evento "Qualificação"
   fechamento: 'fechamento',                  // 6. Fechamento → evento "fechamento"
@@ -853,6 +853,28 @@ const META_STAGE_EVENTS: Partial<Record<PipelineStageKey, string>> = {
   // 7. Vistoria / Estudo técnico → sem evento
   // 8. Assinatura de Contrato → sem evento
   // 9. Ganho/ Contrato assinado → sem evento
+  
+  // Pipeline Energia por Assinatura - etapas com evento Meta CAPI
+  novo_lead_energia: 'new',                       // 1. Novo Lead → evento "new"
+  elaboracao_proposta_energia: 'Qualificação',    // 4. Elaboração de proposta → evento "Qualificação"
+  elaboracao_contrato_adesao: 'fechamento',       // 7. Elaboração de contrato e adesão → evento "fechamento"
+  perdido_energia: 'perdido',                     // 10. Perdido → evento "perdido"
+  // Etapas sem evento Meta CAPI:
+  // 2. Novo contato → sem evento
+  // 3. Conta de luz → sem evento
+  // 5. Apresentação de proposta → sem evento
+  // 6. Análise de documentos → sem evento
+  // 8. Aguardando Assinatura do contrato → sem evento
+  // 9. Ganho/Contrato assinado → sem evento
+
+  // Nova Pipeline Usina Solar (6 etapas) - eventos Meta CAPI
+  novo_lead_usina: 'new',                         // 1. Novo Lead → evento "new"
+  reuniao_usina: 'Qualificado',                   // 3. Reunião → evento "Qualificado"
+  ganho_contrato_assinado_usina: 'FECHADO',       // 5. Ganho/Contrato assinado → evento "FECHADO"
+  perdido_usina: 'PERDIDO',                       // 6. Perdido → evento "PERDIDO"
+  // Etapas sem evento Meta CAPI:
+  // 2. Atendimento iniciado → sem evento
+  // 4. Aguardando Assinatura do contrato → sem evento
 };
 
 const META_STAGE_ORDER: Record<PipelineStageKey, number> = {
@@ -872,6 +894,24 @@ const META_STAGE_ORDER: Record<PipelineStageKey, number> = {
   assinatura_contrato: 14,
   ganho_contrato_assinado: 15,
   perdido_desqualificado: 16,
+  // Energia por Assinatura stages
+  novo_lead_energia: 17,
+  novo_contato: 18,
+  conta_luz: 19,
+  elaboracao_proposta_energia: 20,
+  apresentacao_proposta_energia: 21,
+  analise_documentos: 22,
+  elaboracao_contrato_adesao: 23,
+  aguardando_assinatura: 24,
+  ganho_contrato_assinado_energia: 25,
+  perdido_energia: 26,
+  // Nova Usina Solar stages
+  novo_lead_usina: 27,
+  atendimento_iniciado_usina: 28,
+  reuniao_usina: 29,
+  aguardando_assinatura_usina: 30,
+  ganho_contrato_assinado_usina: 31,
+  perdido_usina: 32,
 };
 
 function transitionDirection(action: 'created' | 'stage_changed' | 'tags_updated', stage: PipelineStageKey, fromStage?: PipelineStageKey | null): 'created' | 'forward' | 'backward' | 'lateral' | 'tags_updated' {
@@ -1069,9 +1109,8 @@ async function insertContact(client: PoolClient, tenantId: string, input: Contac
   return result.rows[0].id as string;
 }
 
-export function createPgLeadsRepository(databaseUrl?: string): LeadsRepository {
-  // Usa o pool singleton se databaseUrl não for fornecido (padrão)
-  const pool = databaseUrl ? new Pool({ connectionString: databaseUrl }) : getDatabasePool();
+export function createPgLeadsRepository(databaseUrl: string, engagementRepository?: EngagementRepository): LeadsRepository {
+  const pool = new Pool({ connectionString: databaseUrl });
 
   return {
     async listLeads(tenantId, allowedStages, ownerUserId, filters) {
@@ -1345,6 +1384,14 @@ export function createPgLeadsRepository(databaseUrl?: string): LeadsRepository {
 
         let after = await selectOne(client, context.tenantId, leadId, null, null);
         if (!after) throw new LeadsNotFoundError('Lead not found after stage change');
+        
+        // Validar lost_reason obrigatório para etapas de perda
+        const isLostStage = ['perdido', 'perdido_desqualificado', 'perdido_energia', 'perdido_usina'].includes(pipeline.legacyStage);
+        if (isLostStage && !lostReason) {
+          await client.query('rollback');
+          throw new LeadsOperationError('É obrigatório informar o motivo da perda ao mover um lead para a etapa Perdido.');
+        }
+        
         if (createOpportunity) {
           await createOpportunityForLead(client, context, after);
           after = await selectOne(client, context.tenantId, leadId, null, null);
@@ -1352,6 +1399,12 @@ export function createPgLeadsRepository(databaseUrl?: string): LeadsRepository {
         }
         await writeAudit(client, context, leadId, createOpportunity ? 'lead.converted_to_opportunity' : 'lead.stage_changed', before, after);
         await queueMetaStageEvent(client, context, after, 'stage_changed', before.stage);
+        
+        // Criar tarefa automática se houver engagementRepository
+        if (engagementRepository && after.sdrOwnerId) {
+          await engagementRepository.createAutomaticTask(context, leadId, pipeline.pipelineStageKey || pipeline.legacyStage, pipeline.pipelineKey, after.sdrOwnerId);
+        }
+        
         await client.query('commit');
         // FASE 4: Recalcular score após mudança de estágio
         this.calculateQualificationScore?.(context.tenantId, leadId, pipeline.pipelineKey).catch(() => {});
@@ -1633,11 +1686,7 @@ export function createPgLeadsRepository(databaseUrl?: string): LeadsRepository {
       );
     },
     async close() {
-      // Apenas fecha o pool se ele foi criado localmente (não é o singleton)
-      if (databaseUrl) {
-        await pool.end();
-      }
-      // Se estiver usando o pool singleton, não fechamos aqui pois ele é compartilhado
+      await pool.end();
     },
   };
 }
