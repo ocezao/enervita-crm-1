@@ -34,8 +34,8 @@ export const Sidebar = () => {
   const initials = user?.name?.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'US';
 
   return (
-    <aside data-crm-sidebar className="w-64 h-screen border-r border-gray-100 bg-white flex flex-col fixed left-0 top-0 z-20">
-      <div className="px-6 py-5 flex items-center justify-center border-b border-gray-50">
+    <aside data-crm-sidebar className="w-64 h-screen border-r border-warm-sand/50 bg-white flex flex-col fixed left-0 top-0 z-20">
+      <div className="px-6 py-5 flex items-center justify-center border-b border-warm-sand/30">
         <img
           src="/brand/logo-enervita.webp"
           alt="Enervita"
@@ -52,7 +52,7 @@ export const Sidebar = () => {
               'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group',
               isActive
                 ? 'bg-solar-orange/10 text-solar-orange'
-                : 'text-gray-500 hover:bg-gray-50 hover:text-graphite'
+                : 'text-graphite-soft hover:bg-warm-sand/30 hover:text-graphite'
             )}
           >
             <item.icon size={20} className={cn('transition-colors shrink-0', 'group-hover:text-solar-orange')} />
@@ -61,14 +61,14 @@ export const Sidebar = () => {
         ))}
       </nav>
 
-      <div data-crm-sidebar-user className="p-4 border-t border-gray-50">
+      <div data-crm-sidebar-user className="p-4 border-t border-warm-sand/30">
         <div className="bg-mint-light/50 p-4 rounded-2xl flex items-center gap-3">
           <div className="w-10 h-10 overflow-hidden rounded-full bg-energy-green flex items-center justify-center text-white font-bold text-sm">
             {user?.avatarUrl ? <img src={user.avatarUrl} alt="Foto do perfil no menu" className="h-full w-full object-cover" /> : initials}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-graphite truncate">{user?.name ?? 'Usuário'}</p>
-            <p className="text-xs text-gray-500 truncate">{user?.email ?? 'Sessão ativa'}</p>
+            <p className="text-xs text-graphite-soft truncate">{user?.email ?? 'Sessão ativa'}</p>
           </div>
         </div>
       </div>

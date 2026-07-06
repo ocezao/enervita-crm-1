@@ -142,9 +142,9 @@ export default function Profile() {
           <Card className="p-6">
             <div className="mb-5 flex items-center gap-2"><Sparkles className="text-solar-orange" size={20} /><h3 className="text-lg font-black text-graphite">Personalização</h3></div>
             <form className="space-y-4" onSubmit={handleProfileSubmit}>
-              <label className="block space-y-1 text-sm font-bold text-graphite">Nome de exibição<input aria-label="Nome de exibição" value={profileForm.name} onChange={(event) => setProfileForm({ ...profileForm, name: event.target.value })} className="w-full rounded-xl border border-gray-200 px-3 py-2 font-medium outline-none focus:border-solar-orange" /></label>
-              <label className="block space-y-1 text-sm font-bold text-graphite">Email<input aria-label="Email" type="email" value={profileForm.email} onChange={(event) => setProfileForm({ ...profileForm, email: event.target.value })} className="w-full rounded-xl border border-gray-200 px-3 py-2 font-medium outline-none focus:border-solar-orange" /></label>
-              <label className="block space-y-1 text-sm font-bold text-graphite">URL da foto<input aria-label="URL da foto" value={profileForm.avatarUrl} onChange={(event) => setProfileForm({ ...profileForm, avatarUrl: event.target.value })} placeholder="https://... ou /uploads/avatars/..." className="w-full rounded-xl border border-gray-200 px-3 py-2 font-medium outline-none focus:border-solar-orange" /></label>
+              <label className="block space-y-1 text-sm font-bold text-graphite">Nome de exibição<input aria-label="Nome de exibição" value={profileForm.name} onChange={(event) => setProfileForm({ ...profileForm, name: event.target.value })} className="w-full rounded-xl border border-warm-sand/70 px-3 py-2 font-medium outline-none focus:border-solar-orange" /></label>
+              <label className="block space-y-1 text-sm font-bold text-graphite">Email<input aria-label="Email" type="email" value={profileForm.email} onChange={(event) => setProfileForm({ ...profileForm, email: event.target.value })} className="w-full rounded-xl border border-warm-sand/70 px-3 py-2 font-medium outline-none focus:border-solar-orange" /></label>
+              <label className="block space-y-1 text-sm font-bold text-graphite">URL da foto<input aria-label="URL da foto" value={profileForm.avatarUrl} onChange={(event) => setProfileForm({ ...profileForm, avatarUrl: event.target.value })} placeholder="https://... ou /uploads/avatars/..." className="w-full rounded-xl border border-warm-sand/70 px-3 py-2 font-medium outline-none focus:border-solar-orange" /></label>
               <label className={`flex items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-3 text-sm font-black transition ${uploadingAvatar ? 'cursor-wait border-solar-orange/70 bg-solar-orange/10 text-solar-orange shadow-sm' : 'cursor-pointer border-solar-orange/40 bg-solar-orange/5 text-solar-orange hover:bg-solar-orange/10'}`}>
                 {uploadingAvatar ? <Loader2 className="animate-spin" size={17} /> : <UploadCloud size={17} />}{uploadingAvatar ? 'Enviando foto...' : 'Enviar foto local'}
                 <input aria-label="Enviar foto local" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={handleAvatarUpload} disabled={uploadingAvatar} className="sr-only" />
@@ -155,7 +155,7 @@ export default function Profile() {
                   <span>Enviando foto e atualizando seu perfil. Aguarde alguns segundos...</span>
                 </div>
               )}
-              <p className="text-xs font-medium text-gray-500">Você pode colar uma URL ou enviar uma imagem local do computador/celular.</p>
+              <p className="text-xs font-medium text-graphite-soft">Você pode colar uma URL ou enviar uma imagem local do computador/celular.</p>
               <Button disabled={savingProfile} className="w-full gap-2"><Save size={17} />{savingProfile ? 'Salvando...' : 'Salvar personalização'}</Button>
             </form>
           </Card>
@@ -163,8 +163,8 @@ export default function Profile() {
           <Card className="p-6">
             <div className="mb-5 flex items-center gap-2"><KeyRound className="text-energy-green" size={20} /><h3 className="text-lg font-black text-graphite">Senha</h3></div>
             <form className="space-y-4" onSubmit={handlePasswordSubmit}>
-              <label className="block space-y-1 text-sm font-bold text-graphite">Senha atual<input aria-label="Senha atual" type="password" value={passwordForm.currentPassword} onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })} className="w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-energy-green" /></label>
-              <label className="block space-y-1 text-sm font-bold text-graphite">Nova senha<input aria-label="Nova senha" type="password" value={passwordForm.newPassword} onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })} className="w-full rounded-xl border border-gray-200 px-3 py-2 outline-none focus:border-energy-green" /></label>
+              <label className="block space-y-1 text-sm font-bold text-graphite">Senha atual<input aria-label="Senha atual" type="password" value={passwordForm.currentPassword} onChange={(event) => setPasswordForm({ ...passwordForm, currentPassword: event.target.value })} className="w-full rounded-xl border border-warm-sand/70 px-3 py-2 outline-none focus:border-energy-green" /></label>
+              <label className="block space-y-1 text-sm font-bold text-graphite">Nova senha<input aria-label="Nova senha" type="password" value={passwordForm.newPassword} onChange={(event) => setPasswordForm({ ...passwordForm, newPassword: event.target.value })} className="w-full rounded-xl border border-warm-sand/70 px-3 py-2 outline-none focus:border-energy-green" /></label>
               <Button variant="secondary" disabled={savingPassword} className="w-full gap-2"><ShieldCheck size={17} />{savingPassword ? 'Alterando...' : 'Alterar senha'}</Button>
             </form>
           </Card>
@@ -182,11 +182,11 @@ export default function Profile() {
           </div>
 
           <Card className="p-6">
-            <div className="mb-5 flex items-center justify-between gap-4"><div><h3 className="text-lg font-black text-graphite">Resumo do seu acesso</h3><p className="mt-1 text-sm text-gray-500">Os cards abaixo mostram as áreas liberadas para o seu perfil e etapas de atendimento.</p></div><Badge variant={canManageUsers ? 'success' : 'solar'}>{canManageUsers ? 'Admin' : 'Operação'}</Badge></div>
+            <div className="mb-5 flex items-center justify-between gap-4"><div><h3 className="text-lg font-black text-graphite">Resumo do seu acesso</h3><p className="mt-1 text-sm text-graphite-soft">Os cards abaixo mostram as áreas liberadas para o seu perfil e etapas de atendimento.</p></div><Badge variant={canManageUsers ? 'success' : 'solar'}>{canManageUsers ? 'Admin' : 'Operação'}</Badge></div>
             <div data-testid="profile-access-summary" className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {accessiblePages.map((page) => {
                 const Icon = page.icon;
-                return <Link key={page.path} to={page.path} className="group rounded-2xl border border-gray-100 bg-gray-50/70 p-4 transition hover:border-solar-orange/40 hover:bg-solar-orange/5"><div className="flex items-start gap-3"><div className="rounded-xl bg-white p-2 text-solar-orange shadow-sm"><Icon size={18} /></div><div><p className="font-black text-graphite group-hover:text-solar-orange">{page.label}</p><p className="mt-1 text-xs text-gray-500">{page.description}</p></div></div></Link>;
+                return <Link key={page.path} to={page.path} className="group rounded-2xl border border-warm-sand/50 bg-warm-sand/30/70 p-4 transition hover:border-solar-orange/40 hover:bg-solar-orange/5"><div className="flex items-start gap-3"><div className="rounded-xl bg-white p-2 text-solar-orange shadow-sm"><Icon size={18} /></div><div><p className="font-black text-graphite group-hover:text-solar-orange">{page.label}</p><p className="mt-1 text-xs text-graphite-soft">{page.description}</p></div></div></Link>;
               })}
             </div>
           </Card>
