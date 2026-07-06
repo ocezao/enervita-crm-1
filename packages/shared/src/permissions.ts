@@ -138,6 +138,17 @@ export const PIPELINE_STAGE_KEYS = [
   'assinatura_contrato',
   'ganho_contrato_assinado',
   'perdido_desqualificado',
+  // Energia por Assinatura stages
+  'novo_lead_energia',
+  'novo_contato',
+  'conta_luz',
+  'elaboracao_proposta_energia',
+  'apresentacao_proposta_energia',
+  'analise_documentos',
+  'elaboracao_contrato_adesao',
+  'aguardando_assinatura',
+  'ganho_contrato_assinado_energia',
+  'perdido_energia',
 ] as const;
 
 export type PipelineStageKey = (typeof PIPELINE_STAGE_KEYS)[number];
@@ -167,6 +178,17 @@ export const PIPELINE_STAGE_DEFINITIONS = [
   { key: 'assinatura_contrato', label: 'Assinatura de Contrato', order: 14 },
   { key: 'ganho_contrato_assinado', label: 'Ganho/ Contrato assinado', order: 15 },
   { key: 'perdido_desqualificado', label: 'Perdido / Desqualificado', order: 16 },
+  // Energia por Assinatura stages
+  { key: 'novo_lead_energia', label: 'Novo Lead', order: 17 },
+  { key: 'novo_contato', label: 'Novo contato', order: 18 },
+  { key: 'conta_luz', label: 'Conta de luz', order: 19 },
+  { key: 'elaboracao_proposta_energia', label: 'Elaboração de proposta', order: 20 },
+  { key: 'apresentacao_proposta_energia', label: 'Apresentação de proposta', order: 21 },
+  { key: 'analise_documentos', label: 'Análise de documentos', order: 22 },
+  { key: 'elaboracao_contrato_adesao', label: 'Elaboração de contrato e adesão', order: 23 },
+  { key: 'aguardando_assinatura', label: 'Aguardando Assinatura do contrato', order: 24 },
+  { key: 'ganho_contrato_assinado_energia', label: 'Ganho/Contrato assinado', order: 25 },
+  { key: 'perdido_energia', label: 'Perdido', order: 26 },
 ] as const satisfies readonly PipelineStageDefinition[];
 
 export const PIPELINE_STAGES_BY_KEY = Object.fromEntries(

@@ -852,6 +852,19 @@ const META_STAGE_EVENTS: Partial<Record<PipelineStageKey, string>> = {
   // 7. Vistoria / Estudo técnico → sem evento
   // 8. Assinatura de Contrato → sem evento
   // 9. Ganho/ Contrato assinado → sem evento
+  
+  // Pipeline Energia por Assinatura - etapas com evento Meta CAPI
+  novo_lead_energia: 'new',                       // 1. Novo Lead → evento "new"
+  elaboracao_proposta_energia: 'Qualificação',    // 4. Elaboração de proposta → evento "Qualificação"
+  elaboracao_contrato_adesao: 'fechamento',       // 7. Elaboração de contrato e adesão → evento "fechamento"
+  perdido_energia: 'perdido',                     // 10. Perdido → evento "perdido"
+  // Etapas sem evento Meta CAPI:
+  // 2. Novo contato → sem evento
+  // 3. Conta de luz → sem evento
+  // 5. Apresentação de proposta → sem evento
+  // 6. Análise de documentos → sem evento
+  // 8. Aguardando Assinatura do contrato → sem evento
+  // 9. Ganho/Contrato assinado → sem evento
 };
 
 const META_STAGE_ORDER: Record<PipelineStageKey, number> = {
@@ -871,6 +884,17 @@ const META_STAGE_ORDER: Record<PipelineStageKey, number> = {
   assinatura_contrato: 14,
   ganho_contrato_assinado: 15,
   perdido_desqualificado: 16,
+  // Energia por Assinatura stages
+  novo_lead_energia: 17,
+  novo_contato: 18,
+  conta_luz: 19,
+  elaboracao_proposta_energia: 20,
+  apresentacao_proposta_energia: 21,
+  analise_documentos: 22,
+  elaboracao_contrato_adesao: 23,
+  aguardando_assinatura: 24,
+  ganho_contrato_assinado_energia: 25,
+  perdido_energia: 26,
 };
 
 function transitionDirection(action: 'created' | 'stage_changed' | 'tags_updated', stage: PipelineStageKey, fromStage?: PipelineStageKey | null): 'created' | 'forward' | 'backward' | 'lateral' | 'tags_updated' {
