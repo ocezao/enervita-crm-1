@@ -129,7 +129,7 @@ export const PIPELINE_STAGE_KEYS = [
   'proposta_enviada',
   'contrato_enervita',
   'perdido',
-  // Usina Solar stages
+  // Usina Solar stages (antiga - 10 etapas)
   'elaboracao_proposta',
   'apresentacao_proposta',
   'negociacao_follow_up',
@@ -149,6 +149,13 @@ export const PIPELINE_STAGE_KEYS = [
   'aguardando_assinatura',
   'ganho_contrato_assinado_energia',
   'perdido_energia',
+  // Nova Usina Solar (6 etapas)
+  'novo_lead_usina',
+  'atendimento_iniciado_usina',
+  'reuniao_usina',
+  'aguardando_assinatura_usina',
+  'ganho_contrato_assinado_usina',
+  'perdido_usina',
 ] as const;
 
 export type PipelineStageKey = (typeof PIPELINE_STAGE_KEYS)[number];
@@ -169,7 +176,7 @@ export const PIPELINE_STAGE_DEFINITIONS = [
   { key: 'proposta_enviada', label: 'Proposta enviada', order: 6 },
   { key: 'contrato_enervita', label: 'Contrato Enervita', order: 7 },
   { key: 'perdido', label: 'Perdido', order: 8 },
-  // Usina Solar stages
+  // Usina Solar stages (antiga - 10 etapas)
   { key: 'elaboracao_proposta', label: 'Elaboração de proposta', order: 9 },
   { key: 'apresentacao_proposta', label: 'Apresentação de proposta', order: 10 },
   { key: 'negociacao_follow_up', label: 'Negociação / Follow-up', order: 11 },
@@ -189,6 +196,13 @@ export const PIPELINE_STAGE_DEFINITIONS = [
   { key: 'aguardando_assinatura', label: 'Aguardando Assinatura do contrato', order: 24 },
   { key: 'ganho_contrato_assinado_energia', label: 'Ganho/Contrato assinado', order: 25 },
   { key: 'perdido_energia', label: 'Perdido', order: 26 },
+  // Nova Usina Solar (6 etapas)
+  { key: 'novo_lead_usina', label: 'Novo Lead', order: 27 },
+  { key: 'atendimento_iniciado_usina', label: 'Atendimento iniciado', order: 28 },
+  { key: 'reuniao_usina', label: 'Reunião', order: 29 },
+  { key: 'aguardando_assinatura_usina', label: 'Aguardando Assinatura do contrato', order: 30 },
+  { key: 'ganho_contrato_assinado_usina', label: 'Ganho/Contrato assinado', order: 31 },
+  { key: 'perdido_usina', label: 'Perdido', order: 32 },
 ] as const satisfies readonly PipelineStageDefinition[];
 
 export const PIPELINE_STAGES_BY_KEY = Object.fromEntries(

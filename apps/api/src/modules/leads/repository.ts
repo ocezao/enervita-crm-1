@@ -3,6 +3,7 @@ import pg, { type PoolClient } from 'pg';
 import type { PipelineStageKey } from '@enervita/shared';
 import type { AuditContext } from '../users/repository.ts';
 import type { ContactInput, CreateLeadInput, LeadListFilters, SetLeadTagsInput, UpdateLeadInput } from './validation.ts';
+import type { EngagementRepository } from '../engagement/repository.ts';
 
 const { Pool } = pg;
 
@@ -865,6 +866,15 @@ const META_STAGE_EVENTS: Partial<Record<PipelineStageKey, string>> = {
   // 6. Análise de documentos → sem evento
   // 8. Aguardando Assinatura do contrato → sem evento
   // 9. Ganho/Contrato assinado → sem evento
+
+  // Nova Pipeline Usina Solar (6 etapas) - eventos Meta CAPI
+  novo_lead_usina: 'new',                         // 1. Novo Lead → evento "new"
+  reuniao_usina: 'Qualificado',                   // 3. Reunião → evento "Qualificado"
+  ganho_contrato_assinado_usina: 'FECHADO',       // 5. Ganho/Contrato assinado → evento "FECHADO"
+  perdido_usina: 'PERDIDO',                       // 6. Perdido → evento "PERDIDO"
+  // Etapas sem evento Meta CAPI:
+  // 2. Atendimento iniciado → sem evento
+  // 4. Aguardando Assinatura do contrato → sem evento
 };
 
 const META_STAGE_ORDER: Record<PipelineStageKey, number> = {
@@ -895,6 +905,13 @@ const META_STAGE_ORDER: Record<PipelineStageKey, number> = {
   aguardando_assinatura: 24,
   ganho_contrato_assinado_energia: 25,
   perdido_energia: 26,
+  // Nova Usina Solar stages
+  novo_lead_usina: 27,
+  atendimento_iniciado_usina: 28,
+  reuniao_usina: 29,
+  aguardando_assinatura_usina: 30,
+  ganho_contrato_assinado_usina: 31,
+  perdido_usina: 32,
 };
 
 function transitionDirection(action: 'created' | 'stage_changed' | 'tags_updated', stage: PipelineStageKey, fromStage?: PipelineStageKey | null): 'created' | 'forward' | 'backward' | 'lateral' | 'tags_updated' {
@@ -1092,7 +1109,7 @@ async function insertContact(client: PoolClient, tenantId: string, input: Contac
   return result.rows[0].id as string;
 }
 
-export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
+export function createPgLeadsRepository(databaseUrl: string, engagementRepository?: EngagementRepository): LeadsRepository {
   const pool = new Pool({ connectionString: databaseUrl });
 
   return {
@@ -1367,6 +1384,14 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
 
         let after = await selectOne(client, context.tenantId, leadId, null, null);
         if (!after) throw new LeadsNotFoundError('Lead not found after stage change');
+        
+        // Validar lost_reason obrigatório para etapas de perda
+        const isLostStage = ['perdido', 'perdido_desqualificado', 'perdido_energia', 'perdido_usina'].includes(pipeline.legacyStage);
+        if (isLostStage && !lostReason) {
+          await client.query('rollback');
+          throw new LeadsOperationError('É obrigatório informar o motivo da perda ao mover um lead para a etapa Perdido.');
+        }
+        
         if (createOpportunity) {
           await createOpportunityForLead(client, context, after);
           after = await selectOne(client, context.tenantId, leadId, null, null);
@@ -1374,6 +1399,12 @@ export function createPgLeadsRepository(databaseUrl: string): LeadsRepository {
         }
         await writeAudit(client, context, leadId, createOpportunity ? 'lead.converted_to_opportunity' : 'lead.stage_changed', before, after);
         await queueMetaStageEvent(client, context, after, 'stage_changed', before.stage);
+        
+        // Criar tarefa automática se houver engagementRepository
+        if (engagementRepository && after.sdrOwnerId) {
+          await engagementRepository.createAutomaticTask(context, leadId, pipeline.pipelineStageKey || pipeline.legacyStage, pipeline.pipelineKey, after.sdrOwnerId);
+        }
+        
         await client.query('commit');
         // FASE 4: Recalcular score após mudança de estágio
         this.calculateQualificationScore?.(context.tenantId, leadId, pipeline.pipelineKey).catch(() => {});
