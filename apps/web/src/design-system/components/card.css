@@ -1,0 +1,28 @@
+/**
+ * Components: Card
+ * 
+ * Estilos para cards (glass-card, stat-card).
+ */
+
+/* Glass Card */
+.glass-card {
+  background-color: var(--color-background-surface-1);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-xl);
+  backdrop-filter: blur(14px);
+}
+
+/* Stat Card */
+.stat-card {
+  background-color: var(--color-background-surface-2);
+  border: 1px solid var(--color-border-hair);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+/* Card Base */
+.card-base {
+  background-color: var(--color-background-surface-1);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+}

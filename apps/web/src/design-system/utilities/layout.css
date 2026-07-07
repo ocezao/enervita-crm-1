@@ -1,0 +1,27 @@
+/**
+ * Utilities: Layout
+ * 
+ * Utilitários de layout e posicionamento.
+ */
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

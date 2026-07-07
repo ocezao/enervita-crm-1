@@ -1,0 +1,21 @@
+/**
+ * Design Tokens: Breakpoints
+ * 
+ * Define os breakpoints para responsividade.
+ * Padrões do Tailwind CSS v4 documentados como tokens.
+ * 
+ * Uso: @media (min-width: var(--breakpoint-md)) { ... }
+ */
+
+:root {
+  /* Breakpoints padrão Tailwind CSS v4 */
+  --breakpoint-sm: 640px;   /* Small devices */
+  --breakpoint-md: 768px;   /* Medium devices (tablets) */
+  --breakpoint-lg: 1024px;  /* Large devices (desktops) */
+  --breakpoint-xl: 1280px;  /* Extra large devices */
+  --breakpoint-2xl: 1536px; /* 2X Extra large devices */
+  
+  /* Breakpoints customizados do CRM (se necessário) */
+  --breakpoint-crm-sidebar: 900px;  /* Ponto de quebra do sidebar */
+  --breakpoint-crm-compact: 1200px; /* Layout compacto */
+}

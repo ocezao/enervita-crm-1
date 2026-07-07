@@ -1,16 +1,9 @@
 /**
  * Utilities Entry Point
  * 
- * Orquestra o carregamento de utilitários customizados.
- * 
- * Utilitários são classes helper que não são cobertas pelo Tailwind default.
+ * Importa todos os utilitários customizados.
  */
 
-/* Glass effects */
-/* @import "./glass.css"; */
-
-/* Glow effects */
-/* @import "./glow.css"; */
-
-/* Animations */
-/* @import "./animations.css"; */
+@import "./effects.css";
+@import "./layout.css";
+@import "./scrollbars.css";

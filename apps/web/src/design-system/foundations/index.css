@@ -1,11 +1,9 @@
 /**
  * Foundations Entry Point
  * 
- * Orquestra o carregamento de fundações do Design System.
+ * Importa configurações de tema e reset.
  */
 
-/* Theme configuration - registra tokens no Tailwind */
-@import "./theme.css";
-
-/* Base styles - reset e normas globais */
 @import "./base.css";
+@import "./theme.css";
+@import "./themes.css";

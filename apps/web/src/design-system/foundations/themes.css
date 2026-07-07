@@ -1,0 +1,50 @@
+/**
+ * Foundations: Themes
+ * 
+ * Variantes de tema e configurações de aparência do CRM.
+ * Estas regras são específicas da aplicação e não do Design System core.
+ */
+
+/* CRM Appearance Settings */
+html[data-crm-motion="reduced"] *,
+html[data-crm-motion="reduced"] *::before,
+html[data-crm-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+html[data-crm-corners="sharp"] .rounded-xl,
+html[data-crm-corners="sharp"] .rounded-2xl {
+  border-radius: 0.625rem !important;
+}
+
+html[data-crm-corners="rounded"] .rounded-xl,
+html[data-crm-corners="rounded"] .rounded-2xl {
+  border-radius: 1.5rem !important;
+}
+
+html[data-crm-card-style="flat"] .bg-white.rounded-xl,
+html[data-crm-card-style="flat"] .bg-white.rounded-2xl {
+  box-shadow: none !important;
+  border-color: var(--color-border-strong) !important;
+}
+
+html[data-crm-card-style="glass"] .bg-white.rounded-xl,
+html[data-crm-card-style="glass"] .bg-white.rounded-2xl {
+  background-color: var(--color-background-surface-1) !important;
+  backdrop-filter: blur(14px);
+  border-color: var(--color-border-soft) !important;
+}
