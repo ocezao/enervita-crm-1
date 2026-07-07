@@ -15,8 +15,8 @@ export function ProtectedRoute({ children, requiredPermission, requiredAnyPermis
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-warm-white flex items-center justify-center text-graphite">
-        <div className="rounded-2xl bg-white border border-warm-sand/50 shadow-sm px-6 py-4">
+      <div className="min-h-screen bg-bg-void flex items-center justify-center text-text-primary">
+        <div className="rounded-2xl bg-bg-surface-1 border border-border-soft shadow-sm px-6 py-4">
           <p className="text-sm font-medium">Validando sessão...</p>
         </div>
       </div>
@@ -31,10 +31,10 @@ export function ProtectedRoute({ children, requiredPermission, requiredAnyPermis
   if (!hasRequiredPermission || !hasRequiredAnyPermission) {
     return (
       <div className="p-8">
-        <div className="rounded-2xl border border-alert-red/20 bg-white p-6 shadow-sm">
+        <div className="rounded-2xl border border-alert-red/20 bg-bg-surface-1 p-6 shadow-sm">
           <p className="text-sm font-bold uppercase tracking-wide text-alert-red">403</p>
-          <h1 className="mt-2 text-2xl font-bold text-graphite">Sem permissão</h1>
-          <p className="mt-2 text-sm text-graphite-soft">Você não tem permissão para acessar esta área.</p>
+          <h1 className="mt-2 text-2xl font-bold text-text-primary">Sem permissão</h1>
+          <p className="mt-2 text-sm text-text-secondary">Você não tem permissão para acessar esta área.</p>
         </div>
       </div>
     );

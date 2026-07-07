@@ -41,25 +41,25 @@ export default function Login() {
   }
 
   return (
-    <main className="min-h-screen bg-warm-white flex flex-col items-center justify-center gap-4 px-6">
-      <section className="w-full max-w-md bg-white rounded-3xl border border-warm-sand/50 shadow-xl p-8">
+    <main className="min-h-screen bg-bg-void flex flex-col items-center justify-center gap-4 px-6">
+      <section className="w-full max-w-md bg-bg-surface-1 rounded-3xl border border-border-soft shadow-xl p-8">
         <div className="flex items-center gap-3 mb-8">
-          <div className="bg-solar-orange p-2 rounded-xl">
+          <div className="bg-orange-500 p-2 rounded-xl">
             <Sun className="text-white" size={28} fill="currentColor" />
           </div>
           <div>
-            <p className="text-[11px] uppercase tracking-[0.24em] text-solar-orange font-bold">Enervita Energia</p>
-            <h1 className="text-2xl font-display font-bold text-graphite">Entrar no Cockpit Enervita</h1>
+            <p className="text-[11px] uppercase tracking-[0.24em] text-orange-400 font-bold">Enervita Energia</p>
+            <h1 className="text-2xl font-display font-bold text-text-primary">Entrar no Cockpit Enervita</h1>
           </div>
         </div>
 
-        <p className="text-sm text-graphite-soft mb-6">
+        <p className="text-sm text-text-secondary mb-6">
           Acesse o CRM operacional com sua conta autorizada. A sessão é mantida em cookie seguro HttpOnly pela API.
         </p>
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-semibold text-graphite">E-mail</label>
+            <label htmlFor="email" className="text-sm font-semibold text-text-primary">E-mail</label>
             <input
               id="email"
               type="email"
@@ -67,13 +67,13 @@ export default function Login() {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-xl border border-warm-sand/70 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50"
+              className="w-full rounded-xl border border-border-strong px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50"
               placeholder="seuemail@enervita.com.br"
             />
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-semibold text-graphite">Senha</label>
+            <label htmlFor="password" className="text-sm font-semibold text-text-primary">Senha</label>
             <input
               id="password"
               type="password"
@@ -81,12 +81,12 @@ export default function Login() {
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-warm-sand/70 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50"
+              className="w-full rounded-xl border border-border-strong px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50"
               placeholder="Digite sua senha"
             />
           </div>
 
-          {error && <p role="alert" className="rounded-xl bg-alert-red/10 text-alert-red px-4 py-3 text-sm">{error}</p>}
+          {error && <p role="alert" className="rounded-xl bg-red-500/10 text-alert-red px-4 py-3 text-sm">{error}</p>}
 
           <Button type="submit" className="w-full rounded-xl py-3" disabled={submitting || loading}>
             {submitting ? 'Entrando...' : 'Entrar'}

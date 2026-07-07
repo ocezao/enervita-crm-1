@@ -12,12 +12,12 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
     const variants = {
-      primary: 'crm-button-primary bg-solar-orange text-white shadow-md shadow-solar-orange/20 hover:bg-solar-orange/90 hover:shadow-lg hover:shadow-solar-orange/25',
-      secondary: 'crm-button-secondary bg-white border border-warm-sand/70 text-graphite hover:bg-warm-sand/30',
-      outline: 'crm-button-outline border border-warm-sand/70 bg-transparent text-graphite hover:border-solar-orange/70 hover:bg-solar-orange/5 hover:text-solar-orange hover:shadow-sm',
-      ghost: 'crm-button-ghost text-graphite hover:bg-warm-sand/30 hover:text-solar-orange',
-      danger: 'crm-button-danger bg-alert-red text-white shadow-md shadow-alert-red/20 hover:bg-alert-red/90 hover:shadow-lg hover:shadow-alert-red/25',
-      success: 'crm-button-success bg-energy-green text-white shadow-md shadow-energy-green/20 hover:bg-energy-green/90 hover:shadow-lg hover:shadow-energy-green/25',
+      primary: 'crm-button-primary bg-orange-500 text-white shadow-md shadow-solar-orange/20 hover:bg-orange-500/90 hover:shadow-lg hover:shadow-solar-orange/25',
+      secondary: 'crm-button-secondary bg-bg-surface-1 border border-border-strong text-text-primary hover:bg-warm-sand/30',
+      outline: 'crm-button-outline border border-border-strong bg-transparent text-text-primary hover:border-solar-orange/70 hover:bg-orange-500/5 hover:text-orange-400 hover:shadow-sm',
+      ghost: 'crm-button-ghost text-text-primary hover:bg-warm-sand/30 hover:text-orange-400',
+      danger: 'crm-button-danger bg-red-500 text-white shadow-md shadow-alert-red/20 hover:bg-red-500/90 hover:shadow-lg hover:shadow-alert-red/25',
+      success: 'crm-button-success bg-mint-500 text-white shadow-md shadow-energy-green/20 hover:bg-mint-500/90 hover:shadow-lg hover:shadow-energy-green/25',
     };
 
     const sizes = {
@@ -43,19 +43,19 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 export const Card = ({ className, children }: { className?: string; children: React.ReactNode }) => (
-  <div className={cn('bg-white rounded-xl border border-warm-sand/50 shadow-sm overflow-hidden', className)}>
+  <div className={cn('bg-bg-surface-1 rounded-xl border border-border-soft shadow-sm overflow-hidden', className)}>
     {children}
   </div>
 );
 
 export const Badge = ({ className, children, variant = 'default' }: { className?: string; children: React.ReactNode; variant?: BadgeVariant }) => {
   const variants = {
-    default: 'bg-warm-sand/50 text-graphite-soft',
-    success: 'bg-energy-green/10 text-energy-green',
-    warning: 'bg-alert-amber/10 text-alert-amber',
-    error: 'bg-alert-red/10 text-alert-red',
+    default: 'bg-warm-sand/50 text-text-secondary',
+    success: 'bg-mint-500/10 text-mint-400',
+    warning: 'bg-amber-500/10 text-alert-amber',
+    error: 'bg-red-500/10 text-alert-red',
     info: 'bg-blue-50 text-blue-600',
-    solar: 'bg-solar-orange/10 text-solar-orange',
+    solar: 'bg-orange-500/10 text-orange-400',
   };
 
   return (
@@ -67,9 +67,9 @@ export const Badge = ({ className, children, variant = 'default' }: { className?
 
 export const MetricCard = ({ title, value, icon: Icon, trend, color = 'solar' }: { title: string; value: string | number; icon: IconComponent; trend?: string; color?: 'solar' | 'energy' | 'graphite' }) => {
   const colors = {
-    solar: 'text-solar-orange bg-solar-orange/10',
-    energy: 'text-energy-green bg-energy-green/10',
-    graphite: 'text-graphite bg-warm-sand/50',
+    solar: 'text-orange-400 bg-orange-500/10',
+    energy: 'text-mint-400 bg-mint-500/10',
+    graphite: 'text-text-primary bg-warm-sand/50',
   };
 
   return (
@@ -85,8 +85,8 @@ export const MetricCard = ({ title, value, icon: Icon, trend, color = 'solar' }:
         )}
       </div>
       <div>
-        <p className="text-sm text-graphite-soft font-medium">{title}</p>
-        <h3 className="text-2xl font-bold mt-1 text-graphite">{value}</h3>
+        <p className="text-sm text-text-secondary font-medium">{title}</p>
+        <h3 className="text-2xl font-bold mt-1 text-text-primary">{value}</h3>
       </div>
     </Card>
   );
