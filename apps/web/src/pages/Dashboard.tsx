@@ -139,24 +139,24 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-[2rem] bg-graphite p-8 text-white shadow-soft">
+      <div className="relative overflow-hidden rounded-[2rem] bg-bg-surface-3 p-8 text-white shadow-glow-orange">
         <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-orange-500/30 blur-3xl" />
-        <div className="absolute bottom-0 left-20 h-24 w-24 rounded-full bg-solar-yellow/20 blur-2xl" />
+        <div className="absolute bottom-0 left-20 h-24 w-24 rounded-full bg-orange-400/20 blur-2xl" />
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-8 items-center">
           <div>
-            <div className="flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-solar-yellow font-bold">
+            <div className="flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-orange-400 font-bold">
               <Sparkles size={16} /> Cockpit Enervita
             </div>
             <h1 className="mt-4 text-4xl font-black max-w-2xl">Operação comercial sob controle, do lead ao contrato ganho.</h1>
-            <p className="mt-3 text-white/70 max-w-xl">Acompanhe captação, follow-up, oportunidades, propostas e gargalos comerciais em um só lugar.</p>
+            <p className="mt-3 text-text-secondary max-w-xl">Acompanhe captação, follow-up, oportunidades, propostas e gargalos comerciais em um só lugar.</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl bg-bg-surface-1/10 border border-white/10 p-4">
-              <p className="text-xs text-white/50 uppercase font-bold">Leads sem ação</p>
+            <div className="rounded-2xl bg-bg-surface-2/50 border border-border-soft p-4">
+              <p className="text-xs text-text-muted uppercase font-bold">Leads sem ação</p>
               <p className="text-3xl font-black mt-1">{metrics.leadsWithoutFollowup}</p>
             </div>
-            <div className="rounded-2xl bg-bg-surface-1/10 border border-white/10 p-4">
-              <p className="text-xs text-white/50 uppercase font-bold">Tarefas vencidas</p>
+            <div className="rounded-2xl bg-bg-surface-2/50 border border-border-soft p-4">
+              <p className="text-xs text-text-muted uppercase font-bold">Tarefas vencidas</p>
               <p className="text-3xl font-black mt-1">{metrics.overdueTasks}</p>
             </div>
           </div>
@@ -174,7 +174,7 @@ export default function Dashboard() {
                     <p className="text-sm font-semibold text-text-secondary">{label}</p>
                     <p className="mt-3 text-3xl font-black text-text-primary">{formatNumber(value)}</p>
                   </div>
-                  <div className="rounded-2xl bg-warm-sand/50 p-3 text-text-primary">
+                  <div className="rounded-2xl bg-bg-surface-2 p-3 text-text-primary">
                     <Icon size={22} />
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export default function Dashboard() {
           <div className="p-6">
             <div className="space-y-4">
               {metrics.leadsByStage.map((stage) => (
-                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-warm-sand/50 px-4 py-3">
+                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-bg-surface-2 px-4 py-3">
                   <div>
                     <p className="font-semibold text-text-primary">{stageLabel(stage.stage)}</p>
                     <p className="text-xs text-text-secondary">Distribuição do pipeline</p>

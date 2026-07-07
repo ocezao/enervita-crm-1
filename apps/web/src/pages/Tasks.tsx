@@ -177,7 +177,7 @@ export default function Tasks() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.75fr] gap-6">
-        <Card className="p-6 bg-gradient-to-br from-white to-solar-orange/5 border-solar-orange/10">
+        <Card className="p-6 bg-gradient-to-br from-bg-surface-2 to-orange-500/5 border-orange-500/10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div className="min-w-0">
               <p className="text-xs uppercase tracking-[0.28em] font-black text-orange-400">Fila inteligente</p>

@@ -290,7 +290,7 @@ function LeadRoutingSettings() {
   return (
     <div className="space-y-6">
       {/* Hero Card */}
-      <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
+      <Card className="relative overflow-hidden border-orange-500/10 bg-gradient-to-br from-bg-surface-2 via-bg-surface-2 to-orange-500/5">
         <div className="absolute -right-24 -top-28 h-64 w-64 rounded-full bg-orange-500/10 blur-3xl" />
         <div className="absolute bottom-0 right-28 h-36 w-36 rounded-full bg-mint-500/10 blur-2xl" />
         <div className="relative p-6 md:p-8">
@@ -542,7 +542,7 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
 
   return (
     <div className="space-y-6">
-      <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
+      <Card className="relative overflow-hidden border-orange-500/10 bg-gradient-to-br from-bg-surface-2 via-bg-surface-2 to-orange-500/5">
         <div className="absolute -right-24 -top-28 h-64 w-64 rounded-full bg-orange-500/10 blur-3xl" />
         <div className="absolute bottom-0 right-28 h-36 w-36 rounded-full bg-mint-500/10 blur-2xl" />
         <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -683,7 +683,7 @@ function AppearanceSettingsPanel() {
 
   return (
     <div className="space-y-6">
-      <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
+      <Card className="relative overflow-hidden border-orange-500/10 bg-gradient-to-br from-bg-surface-2 via-bg-surface-2 to-orange-500/5">
         <div className="absolute -right-20 -top-24 h-56 w-56 rounded-full bg-orange-500/10 blur-3xl" />
         <div className="absolute right-24 bottom-0 h-32 w-32 rounded-full bg-mint-500/10 blur-2xl" />
         <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -1001,7 +1001,7 @@ function IntegrationsSettings() {
 
   return (
     <div className="space-y-6">
-      <Card className="relative overflow-hidden border-energy-green/10 bg-gradient-to-br from-white via-white to-mint-light/50">
+      <Card className="relative overflow-hidden border-mint-500/10 bg-gradient-to-br from-bg-surface-2 via-bg-surface-2 to-mint-500/5">
         <div className="absolute -right-20 -top-24 h-56 w-56 rounded-full bg-mint-500/10 blur-3xl" />
         <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="max-w-3xl min-w-0">

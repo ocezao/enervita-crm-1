@@ -87,7 +87,7 @@ export default function Proposals() {
 
       <div className="grid grid-cols-1 xl:grid-cols-[0.9fr_1.6fr] gap-6 items-start">
         <Card className="overflow-hidden">
-          <div className="border-b border-border-soft bg-gradient-to-r from-solar-orange/10 via-white to-energy-green/10 p-5">
+          <div className="border-b border-border-soft bg-gradient-to-r from-orange-500/10 via-bg-surface-2 to-mint-500/10 p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs font-black uppercase tracking-wider text-orange-400">Biblioteca</p>
