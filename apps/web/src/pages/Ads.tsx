@@ -297,7 +297,7 @@ function FilterBar({ filters, setFilters, objectives, shown, total }: { filters:
       <div className="grid gap-3 xl:grid-cols-[1.4fr_0.9fr_0.9fr_0.9fr_auto] xl:items-end">
         <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-text-secondary">
           Busca global
-          <div className="flex items-center gap-2 rounded-xl border border-border-strong bg-bg-surface-1 px-3 py-2 focus-within:border-solar-orange">
+          <div className="flex items-center gap-2 rounded-xl border border-border-strong bg-bg-surface-1 px-3 py-2 focus-within:border-orange-500">
             <Search size={16} className="text-text-secondary" />
             <input value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value })} placeholder="campanha, público, criativo, texto, ID..." className="w-full bg-transparent text-sm font-semibold normal-case tracking-normal text-text-primary outline-none" />
             {filters.search && <button type="button" onClick={() => setFilters({ ...filters, search: '' })}><X size={14} /></button>}

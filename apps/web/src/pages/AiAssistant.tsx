@@ -85,7 +85,7 @@ export default function AiAssistant() {
               onChange={(event) => setMessage(event.target.value)}
               onKeyDown={(event) => { if (event.key === 'Enter') void send(); }}
               placeholder="Pergunte sobre leads, tarefas, campanhas ou funil..."
-              className="flex-1 rounded-2xl border border-border-strong px-4 py-3 text-sm outline-none focus:border-solar-orange"
+              className="flex-1 rounded-2xl border border-border-strong px-4 py-3 text-sm outline-none focus:border-orange-500"
             />
             <button
               onClick={() => void send()}

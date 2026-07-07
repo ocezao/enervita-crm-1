@@ -263,7 +263,7 @@ export default function Leads() {
       />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
-        <Card className="p-5 border-solar-orange/20 bg-bg-surface-1">
+        <Card className="p-5 border-orange-500/20 bg-bg-surface-1">
           <UserPlus className="text-orange-400" size={20} />
           <p className="mt-3 text-xs font-bold text-orange-400 uppercase tracking-wider">Novo lead</p>
           <h4 className="text-lg font-black text-text-primary mt-1">Cadastro manual</h4>
@@ -271,7 +271,7 @@ export default function Leads() {
             <UserPlus size={15} /> Criar lead
           </Button>
         </Card>
-        <Card className="p-5 bg-orange-500/5 border-solar-orange/10"><Users className="text-orange-400" size={20} /><p className="mt-3 text-xs font-bold text-orange-400 uppercase tracking-wider">Total de Leads</p><h4 className="text-3xl font-black text-text-primary mt-1">{leads.length}</h4></Card>
+        <Card className="p-5 bg-orange-500/5 border-orange-500/10"><Users className="text-orange-400" size={20} /><p className="mt-3 text-xs font-bold text-orange-400 uppercase tracking-wider">Total de Leads</p><h4 className="text-3xl font-black text-text-primary mt-1">{leads.length}</h4></Card>
         <Card className="p-5 bg-mint-500/5 border-energy-green/10"><Flame className="text-mint-400" size={20} /><p className="mt-3 text-xs font-bold text-mint-400 uppercase tracking-wider">Qualificados</p><h4 className="text-3xl font-black text-text-primary mt-1">{qualified}</h4></Card>
         <Card className="p-5 bg-bg-surface-2/5 border-border-soft/10"><Clock className="text-text-primary" size={20} /><p className="mt-3 text-xs font-bold text-text-secondary uppercase tracking-wider">Aguardando Contato</p><h4 className="text-3xl font-black text-text-primary mt-1">{waiting}</h4></Card>
         <Card className="p-5 bg-red-500/5 border-alert-red/10"><Flame className="text-alert-red" size={20} /><p className="mt-3 text-xs font-bold text-alert-red uppercase tracking-wider">Prioridade alta</p><h4 className="text-3xl font-black text-text-primary mt-1">{hot}</h4></Card>
@@ -299,7 +299,7 @@ export default function Leads() {
             </div>
           </div>
           {(selectedCount > 0 || bulkMessage) && (
-            <div className="rounded-2xl border border-solar-orange/20 bg-orange-500/5 p-3">
+            <div className="rounded-2xl border border-orange-500/20 bg-orange-500/5 p-3">
               <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
                 <div className="flex flex-wrap items-center gap-2 text-sm font-bold text-text-primary">
                   <span>{selectedCount} lead(s) selecionado(s)</span>
@@ -309,7 +309,7 @@ export default function Leads() {
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                   <div className="relative min-w-[240px] flex-1">
                     <Tags className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-400" size={15} />
-                    <input aria-label="Tags para aplicar em massa" value={bulkTags} onChange={(event) => setBulkTags(event.target.value)} placeholder="Tags em massa: vip, follow-up" className="w-full rounded-xl border border-solar-orange/20 bg-bg-surface-1 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+                    <input aria-label="Tags para aplicar em massa" value={bulkTags} onChange={(event) => setBulkTags(event.target.value)} placeholder="Tags em massa: vip, follow-up" className="w-full rounded-xl border border-orange-500/20 bg-bg-surface-1 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
                   </div>
                   <Button variant="primary" size="sm" className="gap-2" disabled={bulkBusy || selectedCount === 0 || !bulkTags.trim()} onClick={applyBulkTags}><Tags size={15} /> Aplicar tags</Button>
                   {canEditLead ? <Button variant="outline" size="sm" className="gap-2 border-alert-red/30 text-alert-red hover:bg-red-500/5" disabled={bulkBusy || selectedCount === 0} onClick={deleteSelected}><Trash2 size={15} /> Excluir selecionados</Button> : null}

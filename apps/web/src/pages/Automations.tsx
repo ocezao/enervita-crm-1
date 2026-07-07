@@ -191,7 +191,7 @@ export default function Automations() {
           </div>
         </Card>
 
-        <Card className="p-6 border-solar-orange/20 bg-orange-500/5">
+        <Card className="p-6 border-orange-500/20 bg-orange-500/5">
           <div className="flex items-start gap-3">
             <ShieldCheck className="text-orange-400 shrink-0" size={22} />
             <div>

@@ -1333,7 +1333,7 @@ async function handleDeleteLead() {
               {phoneHref ? <a href={phoneHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-bg-surface-2/50 px-4 py-2 text-sm font-bold text-text-primary hover:bg-bg-surface-2/70"><Phone size={16} /> Ligar</a> : <Button variant="secondary" className="gap-2 w-full opacity-50" disabled><Phone size={16} /> Sem telefone</Button>}
               {whatsappHref ? <button type="button" onClick={handleWhatsappClick} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm font-bold text-text-primary hover:bg-bg-surface-2/50"><MessageSquare size={16} /> WhatsApp</button> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
             </div>
-            <div className="mt-4 rounded-2xl border border-solar-orange/15 bg-orange-500/5 p-4">
+            <div className="mt-4 rounded-2xl border border-orange-500/15 bg-orange-500/5 p-4">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-400">Próxima ação</p>
               {nextOpenTask ? (
                 <div className="mt-2 space-y-1">
@@ -1346,7 +1346,7 @@ async function handleDeleteLead() {
             </div>
           </Card>
 
-            <div className="rounded-2xl border border-solar-orange/20 bg-orange-500/5 p-4 mb-4">
+            <div className="rounded-2xl border border-orange-500/20 bg-orange-500/5 p-4 mb-4">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-400">Oportunidade</p>
               {lead.opportunity ? (
                 <div className="mt-2 space-y-1">
@@ -1607,7 +1607,7 @@ async function handleDeleteLead() {
                     </div>
                   ))}
                   <div className="relative flex items-start gap-4 pl-12">
-                    <div className="absolute left-0 w-10 h-10 rounded-full bg-orange-500/10 border-2 border-solar-orange/20 flex items-center justify-center text-orange-400 shadow-sm">
+                    <div className="absolute left-0 w-10 h-10 rounded-full bg-orange-500/10 border-2 border-orange-500/20 flex items-center justify-center text-orange-400 shadow-sm">
                       <Plus size={16} />
                     </div>
                     <div className="flex-1 py-2">
@@ -1751,7 +1751,7 @@ async function handleDeleteLead() {
                 {documentMessage && <div className="rounded-2xl border border-green-100 bg-green-50 p-3 text-sm font-semibold text-green-700">{documentMessage}</div>}
                 {documentError && <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">{documentError}</div>}
 
-                <label className={`block rounded-2xl border border-dashed p-6 text-center transition ${canEditLead ? 'cursor-pointer border-solar-orange/40 bg-orange-500/5 hover:bg-orange-500/10' : 'border-border-strong bg-bg-surface-2/50 opacity-70'}`}>
+                <label className={`block rounded-2xl border border-dashed p-6 text-center transition ${canEditLead ? 'cursor-pointer border-orange-500/40 bg-orange-500/5 hover:bg-orange-500/10' : 'border-border-strong bg-bg-surface-2/50 opacity-70'}`}>
                   <Upload size={28} className="mx-auto mb-3 text-orange-400" />
                   <span className="block text-sm font-bold text-text-primary">{documentsUploading ? 'Enviando arquivos...' : 'Enviar documentos'}</span>
                   <span className="mt-1 block text-xs text-text-secondary">PDF, imagens, planilhas, textos, videos e arquivos ate 20 MB.</span>
@@ -1839,10 +1839,10 @@ async function handleDeleteLead() {
                   <Badge variant="solar">{sortedProposals.length} proposta(s)</Badge>
                 </div>
 
-                {proposalMessage && <div className="rounded-2xl border border-solar-orange/20 bg-orange-500/5 p-3 text-sm font-semibold text-orange-400">{proposalMessage}</div>}
+                {proposalMessage && <div className="rounded-2xl border border-orange-500/20 bg-orange-500/5 p-3 text-sm font-semibold text-orange-400">{proposalMessage}</div>}
                 {solarMessage && <div className="rounded-2xl border border-energy-green/20 bg-mint-500/5 p-3 text-sm font-semibold text-mint-400">{solarMessage}</div>}
 
-                <div className="rounded-2xl border border-solar-orange/20 bg-bg-surface-1 p-5 shadow-sm">
+                <div className="rounded-2xl border border-orange-500/20 bg-bg-surface-1 p-5 shadow-sm">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
@@ -1858,13 +1858,13 @@ async function handleDeleteLead() {
                     <section className="rounded-2xl border border-border-soft bg-bg-surface-2/50/70 p-4">
                       <label className="block text-xs font-bold uppercase text-text-secondary">Cidade de irradiação</label>
                       <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_120px]">
-                        <input aria-label="Buscar cidade de irradiação" value={solarCidadeQuery} onChange={(event) => { setSolarCidadeQuery(event.target.value); setSolarCidade(null); }} className="h-11 min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: Franca/SP" />
+                        <input aria-label="Buscar cidade de irradiação" value={solarCidadeQuery} onChange={(event) => { setSolarCidadeQuery(event.target.value); setSolarCidade(null); }} className="h-11 min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: Franca/SP" />
                         <Button type="button" size="sm" variant="outline" className="h-11 justify-center" onClick={handleSearchSolarCity} disabled={solarLoadingRefs}>Buscar</Button>
                       </div>
                       {solarCities.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-2">
                           {solarCities.slice(0, 8).map((city) => (
-                            <button key={city.id} type="button" onClick={() => { setSolarCidade(city); setSolarCidadeQuery(`${city.cidade}/${city.uf}`); }} className={`max-w-full rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${solarCidade?.id === city.id ? 'border-solar-orange bg-orange-500/10 text-orange-400' : 'border-border-strong bg-bg-surface-1 text-text-primary hover:border-solar-orange/40'}`}>
+                            <button key={city.id} type="button" onClick={() => { setSolarCidade(city); setSolarCidadeQuery(`${city.cidade}/${city.uf}`); }} className={`max-w-full rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${solarCidade?.id === city.id ? 'border-orange-500 bg-orange-500/10 text-orange-400' : 'border-border-strong bg-bg-surface-1 text-text-primary hover:border-orange-500/40'}`}>
                               <span className="inline-block max-w-[260px] truncate align-bottom">{city.cidade}/{city.uf}</span> · {solarNumberText(city.irradiacao_kwh_m2_dia)}
                             </button>
                           ))}
@@ -1875,16 +1875,16 @@ async function handleDeleteLead() {
                     <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr]">
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <label className="block text-xs font-bold uppercase text-text-secondary">Consumo kWh/mês
-                          <input aria-label="Consumo médio mensal para dimensionamento" value={solarConsumo} onChange={(event) => setSolarConsumo(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: 1800" />
+                          <input aria-label="Consumo médio mensal para dimensionamento" value={solarConsumo} onChange={(event) => setSolarConsumo(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: 1800" />
                         </label>
                         <label className="block text-xs font-bold uppercase text-text-secondary">Tipo de telhado
-                          <select aria-label="Tipo de telhado" value={solarTelhado} onChange={(event) => setSolarTelhado(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20">
+                          <select aria-label="Tipo de telhado" value={solarTelhado} onChange={(event) => setSolarTelhado(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20">
                             {solarTelhados.map((telhado) => <option key={telhado.id} value={telhado.nome}>{telhado.nome}</option>)}
                           </select>
                         </label>
                       </div>
                       <label className="block text-xs font-bold uppercase text-text-secondary">Placa padrão
-                        <select aria-label="Modelo de placa" value={solarPlacaId} onChange={(event) => setSolarPlacaId(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20">
+                        <select aria-label="Modelo de placa" value={solarPlacaId} onChange={(event) => setSolarPlacaId(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20">
                           {solarPlacas.map((placa) => <option key={placa.id} value={placa.id}>{placa.nome} · {placa.potencia_wp}Wp</option>)}
                         </select>
                       </label>
@@ -1892,13 +1892,13 @@ async function handleDeleteLead() {
 
                     <section className="grid grid-cols-1 gap-3 md:grid-cols-[repeat(3,minmax(0,1fr))_150px]">
                       <label className="block text-xs font-bold uppercase text-text-secondary">Perda %
-                        <input aria-label="Perda percentual do sistema" value={solarPerda} onChange={(event) => setSolarPerda(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
+                        <input aria-label="Perda percentual do sistema" value={solarPerda} onChange={(event) => setSolarPerda(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20" />
                       </label>
                       <label className="block text-xs font-bold uppercase text-text-secondary">Sobra %
-                        <input aria-label="Sobra percentual de energia" value={solarSobra} onChange={(event) => setSolarSobra(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
+                        <input aria-label="Sobra percentual de energia" value={solarSobra} onChange={(event) => setSolarSobra(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20" />
                       </label>
                       <label className="block text-xs font-bold uppercase text-text-secondary">Distância km
-                        <input aria-label="Distância em quilômetros" value={solarDistancia} onChange={(event) => setSolarDistancia(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
+                        <input aria-label="Distância em quilômetros" value={solarDistancia} onChange={(event) => setSolarDistancia(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20" />
                       </label>
                       <div className="flex items-end">
                         <Button type="button" size="sm" className="h-11 w-full justify-center gap-2" onClick={handleCalcularSolar} disabled={solarCalculating || solarLoadingRefs || solarPlacas.length === 0}>
@@ -1920,7 +1920,7 @@ async function handleDeleteLead() {
                 </div>
 
                 {showTemplateSelector && (
-                  <div className="rounded-2xl border border-solar-orange/30 bg-bg-surface-1 p-4 space-y-3">
+                  <div className="rounded-2xl border border-orange-500/30 bg-bg-surface-1 p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <h5 className="font-bold text-text-primary">Selecionar Modelo</h5>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowTemplateSelector(false)}><X size={16} /></Button>
@@ -1930,7 +1930,7 @@ async function handleDeleteLead() {
                     ) : (
                       <div className="space-y-2 max-h-[300px] overflow-y-auto">
                         {templates.map((template) => (
-                          <button key={template.id} type="button" onClick={() => handleSelectTemplate(template)} className="w-full text-left rounded-xl border border-border-soft bg-bg-surface-2/50 p-3 hover:border-solar-orange/40 hover:bg-orange-500/5 transition-colors">
+                          <button key={template.id} type="button" onClick={() => handleSelectTemplate(template)} className="w-full text-left rounded-xl border border-border-soft bg-bg-surface-2/50 p-3 hover:border-orange-500/40 hover:bg-orange-500/5 transition-colors">
                             <div className="flex items-center justify-between">
                               <div>
                                 <p className="font-bold text-text-primary text-sm">{template.templateName || template.title}</p>
@@ -1976,7 +1976,7 @@ async function handleDeleteLead() {
 
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant={proposalDraft.sourceType === 'editor' ? 'primary' : 'outline'} onClick={() => setProposalDraft((current) => ({ ...current, sourceType: 'editor', importedFile: undefined, removeImportedFile: false }))}><Copy size={14} className="mr-2" /> Criar no editor</Button>
-                    <label className="inline-flex cursor-pointer items-center rounded-xl border border-border-strong bg-bg-surface-1 px-3 py-2 text-sm font-bold text-text-primary hover:border-solar-orange/40">
+                    <label className="inline-flex cursor-pointer items-center rounded-xl border border-border-strong bg-bg-surface-1 px-3 py-2 text-sm font-bold text-text-primary hover:border-orange-500/40">
                       <Upload size={14} className="mr-2 text-orange-400" /> Importar arquivo
                       <input type="file" className="hidden" onChange={(event) => void handleProposalFile(event.target.files?.[0])} disabled={isProposalBusy} />
                     </label>

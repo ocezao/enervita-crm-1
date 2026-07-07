@@ -25,7 +25,7 @@ export function UserList({ users, selectedId, onSelect, onNew }: Props) {
             key={user.id}
             type="button"
             onClick={() => onSelect(user)}
-            className={`w-full rounded-xl border p-3 text-left transition ${selectedId === user.id ? 'border-solar-orange bg-orange-500/5' : 'border-border-soft hover:bg-bg-surface-2/50'}`}
+            className={`w-full rounded-xl border p-3 text-left transition ${selectedId === user.id ? 'border-orange-500 bg-orange-500/5' : 'border-border-soft hover:bg-bg-surface-2/50'}`}
           >
             <div className="flex items-center justify-between gap-2">
               <span className="font-semibold text-text-primary">{user.name}</span>

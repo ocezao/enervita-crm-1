@@ -206,7 +206,7 @@ export default function Dashboard() {
                 ) : (
                   <div className="space-y-3">
                     {commercial.attentionLeads.map((lead) => (
-                      <a key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between rounded-xl border border-border-soft bg-bg-surface-1 p-4 transition hover:border-solar-orange/40">
+                      <a key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between rounded-xl border border-border-soft bg-bg-surface-1 p-4 transition hover:border-orange-500/40">
                         <div>
                           <p className="font-bold text-text-primary">{lead.name}</p>
                           <p className="text-xs text-text-secondary">{stageLabel(lead.stage)} · {lead.reason}</p>

@@ -106,7 +106,7 @@ export default function Analytics() {
         </Card>
       )}
 
-      <Card className="overflow-hidden border-solar-orange/20 bg-gradient-to-r from-solar-orange/10 via-white to-energy-green/10 p-6">
+      <Card className="overflow-hidden border-orange-500/20 bg-gradient-to-r from-solar-orange/10 via-white to-energy-green/10 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
             <div className="rounded-2xl bg-bg-surface-1 p-3 text-orange-400 shadow-sm">

@@ -290,7 +290,7 @@ function LeadRoutingSettings() {
   return (
     <div className="space-y-6">
       {/* Hero Card */}
-      <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
+      <Card className="relative overflow-hidden border-orange-500/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
         <div className="absolute -right-24 -top-28 h-64 w-64 rounded-full bg-orange-500/10 blur-3xl" />
         <div className="absolute bottom-0 right-28 h-36 w-36 rounded-full bg-mint-500/10 blur-2xl" />
         <div className="relative p-6 md:p-8">
@@ -339,7 +339,7 @@ function LeadRoutingSettings() {
                 key={rule.key}
                 className={`rounded-2xl border p-4 transition-all ${
                   rule.isActive
-                    ? 'border-solar-orange/30 bg-orange-500/5'
+                    ? 'border-orange-500/30 bg-orange-500/5'
                     : 'border-border-strong bg-bg-surface-1 hover:border-border-strong'
                 }`}
               >
@@ -401,7 +401,7 @@ function LeadRoutingSettings() {
               onChange={(event) => setRandomEnabled(event.target.checked)}
             />
           </label>
-          <label className={`rounded-2xl border p-4 flex items-center justify-between gap-4 ${autoReassign?.enabled ? 'border-solar-orange/30 bg-orange-500/10' : 'border-border-strong bg-bg-surface-2/50'}`}>
+          <label className={`rounded-2xl border p-4 flex items-center justify-between gap-4 ${autoReassign?.enabled ? 'border-orange-500/30 bg-orange-500/10' : 'border-border-strong bg-bg-surface-2/50'}`}>
             <span className="min-w-0">
               <strong className="block text-sm text-text-primary">Reatribuicao Automatica</strong>
               <small className="text-xs text-text-secondary leading-relaxed">Reatribui leads parados ha 7 dias para outro vendedor.</small>
@@ -542,12 +542,12 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
 
   return (
     <div className="space-y-6">
-      <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
+      <Card className="relative overflow-hidden border-orange-500/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
         <div className="absolute -right-24 -top-28 h-64 w-64 rounded-full bg-orange-500/10 blur-3xl" />
         <div className="absolute bottom-0 right-28 h-36 w-36 rounded-full bg-mint-500/10 blur-2xl" />
         <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="max-w-3xl min-w-0">
-            <div className="flex items-center gap-3 mb-3"><div className="p-2.5 rounded-2xl bg-orange-500 text-white shadow-lg shadow-solar-orange/20"><Settings2 size={22} /></div><Badge variant="solar">Controle total do administrador</Badge></div>
+            <div className="flex items-center gap-3 mb-3"><div className="p-2.5 rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/20"><Settings2 size={22} /></div><Badge variant="solar">Controle total do administrador</Badge></div>
             <h3 className="text-2xl md:text-3xl font-black text-text-primary tracking-tight">Central de Administração</h3>
             <p className="text-sm md:text-base text-text-primary mt-2 leading-relaxed">Defina padrões comerciais, regras de governança, alertas e atalhos seguros para controlar o CRM da Enervita sem expor páginas ou funções para quem não tem permissão.</p>
           </div>
@@ -638,7 +638,7 @@ function AdminMetric({ label, value, tone }: { label: string; value: string | nu
 }
 function PolicyCard({ icon: Icon, title, text }: { icon: AnyIcon; title: string; text: string }) { return <div className="rounded-2xl border border-border-soft p-4 bg-bg-surface-1"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-orange-500/10 text-orange-400"><Icon size={17} /></div><div><p className="font-bold text-sm text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-1">{text}</p></div></div></div>; }
 function AlertRule({ title, status, detail, danger = false }: { title: string; status: string; detail: string; danger?: boolean }) { return <div className={`rounded-2xl border p-4 ${danger ? 'border-red-100 bg-red-50/60' : 'border-border-soft bg-bg-surface-2/50/50'}`}><Badge variant={danger ? 'error' : 'success'}>{status}</Badge><p className="font-bold text-sm text-text-primary mt-3">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-1">{detail}</p></div>; }
-function AdminShortcut({ icon: Icon, title, description, onClick }: { icon: AnyIcon; title: string; description: string; onClick: () => void }) { return <button aria-label="Abrir atalho administrativo" onClick={onClick} className="w-full text-left rounded-2xl border border-border-soft p-3 hover:border-solar-orange/30 hover:bg-orange-500/5 transition-all"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-bg-surface-2/50 text-text-primary"><Icon size={16} /></div><div><p className="text-sm font-bold text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-0.5">{description}</p></div></div></button>; }
+function AdminShortcut({ icon: Icon, title, description, onClick }: { icon: AnyIcon; title: string; description: string; onClick: () => void }) { return <button aria-label="Abrir atalho administrativo" onClick={onClick} className="w-full text-left rounded-2xl border border-border-soft p-3 hover:border-orange-500/30 hover:bg-orange-500/5 transition-all"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-bg-surface-2/50 text-text-primary"><Icon size={16} /></div><div><p className="text-sm font-bold text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-0.5">{description}</p></div></div></button>; }
 
 const presetCards: Array<{ id: AppearancePresetId; name: string; description: string; icon: AnyIcon; badge: string }> = [
   { id: 'enervita', name: 'Enervita Comercial', description: 'Visual oficial: claro, solar, familiar para operação diária.', icon: SunMedium, badge: 'Padrão' },
@@ -683,12 +683,12 @@ function AppearanceSettingsPanel() {
 
   return (
     <div className="space-y-6">
-      <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
+      <Card className="relative overflow-hidden border-orange-500/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
         <div className="absolute -right-20 -top-24 h-56 w-56 rounded-full bg-orange-500/10 blur-3xl" />
         <div className="absolute right-24 bottom-0 h-32 w-32 rounded-full bg-mint-500/10 blur-2xl" />
         <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="max-w-3xl min-w-0">
-            <div className="flex items-center gap-3 mb-3"><div className="p-2.5 rounded-2xl bg-orange-500 text-white shadow-lg shadow-solar-orange/20"><Palette size={22} /></div><Badge variant="solar">Personalização visual</Badge></div>
+            <div className="flex items-center gap-3 mb-3"><div className="p-2.5 rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/20"><Palette size={22} /></div><Badge variant="solar">Personalização visual</Badge></div>
             <h3 className="text-2xl md:text-3xl font-black text-text-primary tracking-tight">Aparência do CRM</h3>
             <p className="text-sm md:text-base text-text-primary mt-2 leading-relaxed">Ajuste o visual do Cockpit em camadas: presets rápidos, cores, layout, leitura e recursos avançados sem deixar nada escapar do container.</p>
           </div>
@@ -709,7 +709,7 @@ function AppearanceSettingsPanel() {
                 const presetValues = appearancePresets[preset.id];
                 const active = settings.preset === preset.id;
                 return (
-                  <button key={preset.id} onClick={() => selectPreset(preset.id)} className={`text-left rounded-2xl border p-4 transition-all ${active ? 'border-solar-orange bg-orange-500/5 shadow-sm' : 'border-border-soft hover:border-solar-orange/30 hover:bg-bg-surface-2/50'}`}>
+                  <button key={preset.id} onClick={() => selectPreset(preset.id)} className={`text-left rounded-2xl border p-4 transition-all ${active ? 'border-orange-500 bg-orange-500/5 shadow-sm' : 'border-border-soft hover:border-orange-500/30 hover:bg-bg-surface-2/50'}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3"><div className={`p-2.5 rounded-xl ${active ? 'bg-orange-500 text-white' : 'bg-bg-surface-2/50 text-text-secondary'}`}><Icon size={18} /></div><div><p className="font-bold text-text-primary">{preset.name}</p><Badge variant={active ? 'solar' : 'default'}>{preset.badge}</Badge></div></div>
                       <div className="flex -space-x-1 pt-1">{[presetValues.primaryColor, presetValues.secondaryColor, presetValues.graphiteColor].map(color => <span key={color} className="h-5 w-5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: color }} />)}</div>
@@ -771,7 +771,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
 function SegmentedControl({ value, options, onChange }: { value: string; options: Array<{ value: string; label: string }>; onChange: (value: string) => void }) { return <div className="flex flex-wrap rounded-xl bg-bg-surface-2/50 p-1 gap-1 max-w-full">{options.map(option => <button key={option.value} onClick={() => onChange(option.value)} className={`flex-1 min-w-[72px] rounded-lg px-2.5 py-2 text-[11px] font-bold transition-all ${value === option.value ? 'bg-bg-surface-1 text-orange-400 shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>{option.label}</button>)}</div>; }
 function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) { return <button onClick={() => onChange(!checked)} className="w-full flex items-center justify-between gap-3 text-left"><span className="text-xs font-bold text-text-primary">{label}</span><span className={`relative h-6 w-11 rounded-full transition-all shrink-0 ${checked ? 'bg-orange-500' : 'bg-bg-surface-2/70'}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-bg-surface-1 shadow transition-all ${checked ? 'left-6' : 'left-1'}`} /></span></button>; }
 function OptionCard({ icon: Icon, title, description, children }: { icon: AnyIcon; title: string; description: string; children: ReactNode }) { return <div className="rounded-2xl border border-border-soft p-4 bg-bg-surface-2/50/40 space-y-4"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-bg-surface-1 text-orange-400 border border-border-soft"><Icon size={17} /></div><div><p className="font-bold text-sm text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-1">{description}</p></div></div>{children}</div>; }
-function AdvancedToggle({ icon: Icon, title, description, checked, onChange }: { icon: AnyIcon; title: string; description: string; checked: boolean; onChange: (value: boolean) => void }) { return <div className={`rounded-2xl border p-4 transition-all ${checked ? 'border-solar-orange/30 bg-orange-500/5' : 'border-border-soft bg-bg-surface-1'}`}><div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><div className={`p-2 rounded-xl ${checked ? 'bg-orange-500 text-white' : 'bg-bg-surface-2/50 text-text-secondary'}`}><Icon size={17} /></div><div><p className="font-bold text-sm text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-1">{description}</p></div></div><div className="w-12"><Toggle checked={checked} label="" onChange={onChange} /></div></div></div>; }
+function AdvancedToggle({ icon: Icon, title, description, checked, onChange }: { icon: AnyIcon; title: string; description: string; checked: boolean; onChange: (value: boolean) => void }) { return <div className={`rounded-2xl border p-4 transition-all ${checked ? 'border-orange-500/30 bg-orange-500/5' : 'border-border-soft bg-bg-surface-1'}`}><div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><div className={`p-2 rounded-xl ${checked ? 'bg-orange-500 text-white' : 'bg-bg-surface-2/50 text-text-secondary'}`}><Icon size={17} /></div><div><p className="font-bold text-sm text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-1">{description}</p></div></div><div className="w-12"><Toggle checked={checked} label="" onChange={onChange} /></div></div></div>; }
 function AppearancePreview({ settings, completion }: { settings: AppearanceSettings; completion: number }) { const radius = settings.corners === 'sharp' ? '10px' : settings.corners === 'rounded' ? '28px' : '18px'; const cardPadding = settings.density === 'compact' ? '12px' : settings.density === 'spacious' ? '22px' : '16px'; const previewCardClass = settings.cardStyle === 'glass' ? 'bg-bg-surface-1/65 backdrop-blur shadow-sm' : settings.cardStyle === 'flat' ? 'bg-bg-surface-1 border border-border-soft' : 'bg-bg-surface-1 shadow-sm'; return <Card className="p-5 bg-bg-surface-1"><div className="flex items-center justify-between mb-4"><div><h4 className="text-sm font-black text-text-primary">Prévia visual</h4><p className="text-xs text-text-secondary">Como a equipe perceberá o CRM.</p></div><Badge variant="success">{completion}% pronto</Badge></div><div className="rounded-[24px] border border-border-soft p-3 shadow-inner" style={{ background: settings.backgroundColor }}><div className="grid grid-cols-[70px_1fr] gap-3 min-h-[300px]"><div className="rounded-[18px] p-3 text-white flex flex-col gap-2" style={{ background: settings.graphiteColor }}><div className="h-8 w-8 rounded-xl bg-bg-surface-1/15" />{['Dash', 'Leads', 'Funil', 'Config'].map((item, index) => <div key={item} className={`h-8 rounded-xl ${index === 3 ? 'bg-bg-surface-1/20' : 'bg-bg-surface-1/8'} flex items-center justify-center text-[9px] font-bold`}>{settings.navigation === 'icons' ? item.slice(0, 1) : item}</div>)}</div><div className="space-y-3"><div className="flex items-center justify-between rounded-2xl bg-bg-surface-1/80 p-3"><div><p className="text-[10px] font-bold text-text-secondary uppercase tracking-wide">{settings.companyName}</p><p className="text-sm font-black" style={{ color: settings.graphiteColor }}>Configurações</p></div><div className="h-9 w-9 rounded-full" style={{ background: settings.primaryColor }} /></div><div className="grid grid-cols-2 gap-2">{['Leads', 'Propostas'].map((item, index) => <div key={item} className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><p className="text-[10px] font-bold text-text-secondary">{item}</p><p className="text-xl font-black" style={{ color: index === 0 ? settings.primaryColor : settings.secondaryColor }}>{index === 0 ? '148' : '32'}</p></div>)}</div><div className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><div className="flex items-center justify-between mb-3"><p className="text-xs font-black" style={{ color: settings.graphiteColor }}>Funil visual</p>{settings.fontScale !== 'normal' && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white mr-1" style={{ background: settings.primaryColor }}>{settings.fontScale === 'extra' ? 'TEXTO+' : 'TEXTO'}</span>}{settings.executiveMode && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white" style={{ background: settings.secondaryColor }}>EXEC</span>}</div><div className="space-y-2">{[78, 54, 28].map((width, index) => <div key={width} className="h-3 rounded-full bg-bg-surface-2/50 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${width}%`, background: index === 2 && settings.highlightOverdue ? settings.primaryColor : settings.secondaryColor }} /></div>)}</div></div>{settings.showHints && <div className="rounded-2xl border border-dashed bg-bg-surface-1/70 p-3" style={{ borderColor: settings.primaryColor }}><p className="text-[10px] font-bold" style={{ color: settings.primaryColor }}>Dica ativa</p><p className="text-[10px] text-text-secondary">Use filtros salvos para acompanhar campanhas críticas.</p></div>}</div></div></div></Card>; }
 function Insight({ label, text }: { label: string; text: string }) { return <div className="flex gap-3 rounded-xl bg-bg-surface-2/50 p-3"><span className="min-w-20 text-[10px] font-black text-orange-400 uppercase tracking-wide">{label}</span><span className="leading-relaxed">{text}</span></div>; }
 
@@ -847,7 +847,7 @@ function PipelineSettings() {
         <SectionTitle icon={Layers} title="Linha visual do funil" description="Clique em uma etapa para ver objetivo, entrada, saída, automações e riscos." />
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {stages.map((stage, index) => (
-            <button key={stage.key} onClick={() => setSelectedStage(stage.key)} className={`text-left rounded-3xl border p-4 transition-all ${selectedStage === stage.key ? 'border-solar-orange bg-orange-500/5 shadow-sm scale-[1.01]' : 'border-border-soft bg-bg-surface-1 hover:border-solar-orange/30'}`}>
+            <button key={stage.key} onClick={() => setSelectedStage(stage.key)} className={`text-left rounded-3xl border p-4 transition-all ${selectedStage === stage.key ? 'border-orange-500 bg-orange-500/5 shadow-sm scale-[1.01]' : 'border-border-soft bg-bg-surface-1 hover:border-orange-500/30'}`}>
               <div className="flex items-center justify-between gap-3">
                 <span className={`h-9 w-9 rounded-2xl ${stage.tone} text-white flex items-center justify-center text-xs font-black`}>{index + 1}</span>
                 <Badge variant={leadCountByStage[stage.key] > 0 ? 'success' : 'default'}>{leadCountByStage[stage.key] ?? 0} lead(s)</Badge>
@@ -1044,7 +1044,7 @@ Content-Type: application/json
           </div>
         </Card>
 
-        <Card className="p-6 border-solar-orange/20 bg-orange-500/5">
+        <Card className="p-6 border-orange-500/20 bg-orange-500/5">
           <SectionTitle icon={ShieldCheck} title="Gerador de chaves de acesso" description="Próxima peça antes de liberar webhooks externas." />
           <div className="mt-5 space-y-3 text-sm">
             {keyGeneratorRequirements.map(item => <div key={item} className="flex gap-2 text-text-primary"><CheckCircle2 size={16} className="text-mint-400 shrink-0 mt-0.5" /> {item}</div>)}
@@ -1101,7 +1101,7 @@ Content-Type: application/json
           </div>
           <div className="space-y-4">
             {loading ? <div className="py-8 text-center text-text-secondary">Carregando webhooks...</div> : webhooks.map(webhook => (
-              <div key={webhook.id} className="p-4 rounded-2xl border border-border-soft hover:border-solar-orange/20 transition-all">
+              <div key={webhook.id} className="p-4 rounded-2xl border border-border-soft hover:border-orange-500/20 transition-all">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                   <div className="min-w-0"><h4 className="font-bold text-sm text-text-primary">{webhook.name}</h4><span className="text-[10px] text-text-secondary">Destino seguro configurado</span></div>
                   <Badge variant={webhook.status === 'active' ? 'success' : webhook.status === 'failing' ? 'error' : 'default'}>{webhook.status === 'active' ? 'ativo' : webhook.status === 'failing' ? 'falhando' : webhook.status}</Badge>
@@ -1152,7 +1152,7 @@ Content-Type: application/json
             </div>
           ))}
         </div>
-        <div className="mt-5 rounded-2xl bg-orange-500/5 border border-solar-orange/10 p-4 text-sm text-text-primary leading-relaxed">
+        <div className="mt-5 rounded-2xl bg-orange-500/5 border border-orange-500/10 p-4 text-sm text-text-primary leading-relaxed">
           Nesta etapa, MCP/agentes deve ficar como preparação arquitetural, não como promessa de recurso pronto. O caminho correto é liberar primeiro Chaves de acesso com escopos, depois criar tools específicas para leitura de leads, propostas, tarefas e registro de atividades.
         </div>
       </Card>

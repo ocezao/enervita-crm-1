@@ -88,7 +88,7 @@ export default function Webhooks() {
               {loading ? (
                 <div className="py-8 text-center text-text-secondary">Carregando...</div>
               ) : webhooks.map((webhook) => (
-                <div key={webhook.id} className="p-4 rounded-xl border border-border-soft hover:border-solar-orange/20 transition-all group">
+                <div key={webhook.id} className="p-4 rounded-xl border border-border-soft hover:border-orange-500/20 transition-all group">
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h4 className="font-bold text-sm text-text-primary">{webhook.name}</h4>

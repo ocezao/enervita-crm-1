@@ -12,9 +12,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', ...props }, ref) => {
     const variants = {
-      primary: 'crm-button-primary bg-orange-500 text-white shadow-md shadow-solar-orange/20 hover:bg-orange-500/90 hover:shadow-lg hover:shadow-solar-orange/25',
+      primary: 'crm-button-primary bg-orange-500 text-white shadow-md shadow-orange-500/20 hover:bg-orange-500/90 hover:shadow-lg hover:shadow-orange-500/25',
       secondary: 'crm-button-secondary bg-bg-surface-1 border border-border-strong text-text-primary hover: bg-bg-surface-2/30',
-      outline: 'crm-button-outline border border-border-strong bg-transparent text-text-primary hover:border-solar-orange/70 hover:bg-orange-500/5 hover:text-orange-400 hover:shadow-sm',
+      outline: 'crm-button-outline border border-border-strong bg-transparent text-text-primary hover:border-orange-500/70 hover:bg-orange-500/5 hover:text-orange-400 hover:shadow-sm',
       ghost: 'crm-button-ghost text-text-primary hover: bg-bg-surface-2/30 hover:text-orange-400',
       danger: 'crm-button-danger bg-red-500 text-white shadow-md shadow-alert-red/20 hover:bg-red-500/90 hover:shadow-lg hover:shadow-alert-red/25',
       success: 'crm-button-success bg-mint-500 text-white shadow-md shadow-energy-green/20 hover:bg-mint-500/90 hover:shadow-lg hover:shadow-energy-green/25',
