@@ -1,13 +1,29 @@
 ```gitignore
 # Dependencies
 node_modules/
+.pnpm-store/
 
 # Build outputs
 dist/
 build/
-target/
+.next/
+out/
 
-# Python
+# Logs
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*
+
+# IDE specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python specific
 __pycache__/
 *.pyc
 *.pyo
@@ -16,53 +32,9 @@ __pycache__/
 env/
 venv/
 .venv/
-.ENV
-.env
-.env.*
-.env.local
-
-# Logs
-*.log
-
-# Coverage reports
-coverage/
-*.coverage
-.htmlcov/
-
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*.tmp
-
-# OS files
+pip-log.txt
+pip-selfcheck.json
+*.so
 .DS_Store
 Thumbs.db
-
-# Testing
-.pytest_cache/
-.mypy_cache/
-.nyc_output/
-coverage/
-
-# Distribution / packaging
-.Python
-env/
-venv/
-.venv/
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.out
-*.pid
-*.seed
-*.session
-.hypothesis/
 ```

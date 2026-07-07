@@ -51,9 +51,9 @@ function stageLabel(stage: string) {
 function iconTone(tone: 'blue' | 'orange' | 'green' | 'red') {
   const tones = {
     blue: 'bg-blue-50 text-blue-600',
-    orange: 'bg-orange-500/10 text-orange-400',
-    green: 'bg-mint-500/10 text-mint-400',
-    red: 'bg-red-500/10 text-alert-red',
+    orange: 'bg-brand-500/10 text-brand-400',
+    green: 'bg-success-500/10 text-success-400',
+    red: 'bg-error-500/10 text-error-500',
   };
   return tones[tone];
 }
@@ -101,14 +101,14 @@ export default function Dashboard() {
       label: 'Novos leads hoje',
       value: metrics.newLeadsToday,
       icon: Users,
-      color: 'from-solar-orange to-solar-yellow',
+      color: 'from-brand-500 to-warning-500',
       helper: 'Entradas capturadas nas últimas 24h.',
     },
     {
       label: 'Sem follow-up',
       value: metrics.leadsWithoutFollowup,
       icon: Clock,
-      color: 'from-alert-red to-solar-orange',
+      color: 'from-error-500 to-brand-500',
       helper: 'Leads sem próxima ação definida.',
     },
     {
@@ -129,12 +129,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-[2rem] bg-graphite p-8 text-white shadow-soft">
-        <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-orange-500/30 blur-3xl" />
-        <div className="absolute bottom-0 left-20 h-24 w-24 rounded-full bg-solar-yellow/20 blur-2xl" />
+      <div className="relative overflow-hidden rounded-[2rem] bg-bg-base p-8 text-white shadow-md">
+        <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-brand-500/30 blur-3xl" />
+        <div className="absolute bottom-0 left-20 h-24 w-24 rounded-full bg-warning-500/20 blur-2xl" />
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-8 items-center">
           <div>
-            <div className="flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-solar-yellow font-bold">
+            <div className="flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-warning-500 font-bold">
               <Sparkles size={16} /> Cockpit Enervita
             </div>
             <h1 className="mt-4 text-4xl font-black max-w-2xl">Operação comercial sob controle, do lead ao contrato ganho.</h1>
@@ -164,7 +164,7 @@ export default function Dashboard() {
                     <p className="text-sm font-semibold text-text-secondary">{label}</p>
                     <p className="mt-3 text-3xl font-black text-text-primary">{formatNumber(value)}</p>
                   </div>
-                  <div className="rounded-2xl bg-warm-sand/50 p-3 text-text-primary">
+                  <div className="rounded-2xl bg-bg-surface-2/50 p-3 text-text-primary">
                     <Icon size={22} />
                   </div>
                 </div>
@@ -178,7 +178,7 @@ export default function Dashboard() {
       {commercial && (
         <div className="space-y-6">
           <div>
-            <p className="text-sm font-semibold text-orange-400 uppercase tracking-[0.2em]">Gestão comercial</p>
+            <p className="text-sm font-semibold text-brand-400 uppercase tracking-[0.2em]">Gestão comercial</p>
             <h2 className="text-2xl font-bold text-text-primary mt-1">Dinheiro, gargalo e ação de hoje</h2>
           </div>
 
@@ -212,7 +212,7 @@ export default function Dashboard() {
                           <p className="text-xs text-text-secondary">{stageLabel(lead.stage)} · {lead.reason}</p>
                           <p className="text-xs text-text-secondary mt-1">Atualizado em {formatDate(lead.updatedAt)}</p>
                         </div>
-                        <ArrowUpRight size={16} className="text-orange-400" />
+                        <ArrowUpRight size={16} className="text-brand-400" />
                       </a>
                     ))}
                   </div>
@@ -229,7 +229,7 @@ export default function Dashboard() {
                   <p className="text-sm text-text-secondary">Sem dados de funil.</p>
                 ) : (
                   commercial.stageBreakdown.map((stage) => (
-                    <div key={stage.stage} className="rounded-xl bg-warm-sand/50 p-3">
+                    <div key={stage.stage} className="rounded-xl bg-bg-surface-2/50 p-3">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-semibold text-text-primary">{stageLabel(stage.stage)}</span>
                         <span className="text-text-secondary">{formatNumber(stage.count)}</span>
@@ -252,7 +252,7 @@ export default function Dashboard() {
           <div className="p-6">
             <div className="space-y-4">
               {metrics.leadsByStage.map((stage) => (
-                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-warm-sand/50 px-4 py-3">
+                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-bg-surface-2/50 px-4 py-3">
                   <div>
                     <p className="font-semibold text-text-primary">{stageLabel(stage.stage)}</p>
                     <p className="text-xs text-text-secondary">Distribuição do pipeline</p>
@@ -272,7 +272,7 @@ export default function Dashboard() {
             {metrics.recentEvents.length === 0 && <p className="text-sm text-text-secondary">Nenhuma atividade recente registrada.</p>}
             {metrics.recentEvents.map((event) => (
               <div key={event.id} className="flex gap-3">
-                <div className="mt-1 rounded-full bg-orange-500/10 p-2 text-orange-400">
+                <div className="mt-1 rounded-full bg-brand-500/10 p-2 text-brand-400">
                   {event.activityType === 'call' ? <Calendar size={16} /> : <History size={16} />}
                 </div>
                 <div>
