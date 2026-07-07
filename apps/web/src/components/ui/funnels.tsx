@@ -69,37 +69,36 @@ export function GeometricFunnel({ stages, className }: GeometricFunnelProps) {
 // ============================================================
 
 export interface VerticalFunnelProps {
-  stages: Array<{
+  steps: Array<{
     label: string;
     value: number | string;
-    dropOff?: { label: string; value: number };
-    color: string;
+    sublabel?: string;
+    color?: string;
   }>;
   className?: string;
 }
 
-export function VerticalFunnel({ stages, className }: VerticalFunnelProps) {
+export function VerticalFunnel({ steps, className }: VerticalFunnelProps) {
+  const defaultColors = ['#FF9640', '#FF7A1A', '#E8620A', '#B84C08', '#3FDDA3', '#2ED9A3', '#1FB584'];
+  
   return (
-    <div className={cn("flex flex-col items-center gap-0", className)}>
-      {stages.map((stage, index) => (
+    <div className={cn("flex flex-col gap-0", className)}>
+      {steps.map((step, index) => (
         <React.Fragment key={index}>
-          <div className="w-full flex flex-col items-center">
+          <div className="w-full">
             <div
               className="w-full rounded-md px-5 py-3.5 flex items-center justify-between transition-transform duration-240 hover:scale-[1.01]"
-              style={{ backgroundColor: stage.color }}
+              style={{ backgroundColor: step.color || defaultColors[index % defaultColors.length] }}
             >
-              <p className="text-[13px] font-semibold">{stage.label}</p>
-              <span className="font-mono text-[14px] font-semibold">{stage.value}</span>
+              <p className="text-[13px] font-semibold text-white/90">{step.label}</p>
+              <div className="text-right">
+                <span className="font-mono text-[14px] font-semibold text-white">{step.value}</span>
+                {step.sublabel && (
+                  <p className="text-[10px] text-white/70 font-mono">{step.sublabel}</p>
+                )}
+              </div>
             </div>
           </div>
-          {stage.dropOff && index < stages.length - 1 && (
-            <div className="flex items-center gap-1.5 py-1.5 font-mono text-[10.5px] text-text-muted">
-              <svg className="icon w-[11px] h-[11px]" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" fill="none">
-                <path d="M12 5v14M19 12l-7 7-7-7" />
-              </svg>
-              <span>{stage.dropOff.label}: {stage.dropOff.value}%</span>
-            </div>
-          )}
         </React.Fragment>
       ))}
     </div>

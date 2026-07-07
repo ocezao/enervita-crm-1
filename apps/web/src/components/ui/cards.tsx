@@ -7,62 +7,70 @@ import { cn, formatCurrency } from "@/lib/utils";
 
 export interface ContactCardProps {
   name: string;
+  company?: string;
   role?: string;
-  avatar?: React.ReactNode;
+  avatarUrl?: string;
   initials?: string;
-  tags?: string[];
-  fields?: Array<{ icon: React.ReactNode; text: string }>;
+  tags?: Array<{ slug: string; name: string }>;
+  fields?: Array<{ label: string; value: string }>;
   actions?: React.ReactNode;
   className?: string;
 }
 
 export function ContactCard({
   name,
+  company,
   role,
-  avatar,
+  avatarUrl,
   initials,
   tags = [],
   fields = [],
   actions,
   className,
 }: ContactCardProps) {
+  const avatarInitials = initials || name.split(' ').filter(Boolean).slice(0, 2).map((p) => p[0]).join('').toUpperCase() || 'C';
+  
   return (
     <div className={cn(
-      "bg-bg-surface-1 border border-border-hair rounded-lg p-5 transition-colors duration-240 hover:border-border-soft hover:-translate-y-0.5",
+      "flex items-start gap-4 p-4 rounded-xl bg-bg-surface-1 border border-border-soft hover:border-orange-500/30 transition-colors",
       className
     )}>
-      <div className="flex items-start justify-between mb-3.5">
-        <div className="w-11 h-11 rounded-md bg-gradient-to-br from-bg-surface-4 to-bg-surface-2 border border-border-soft flex items-center justify-center font-display text-[15px] font-semibold">
-          {avatar || initials}
-        </div>
-        {actions && <div>{actions}</div>}
+      <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-400 font-black text-sm shrink-0">
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={name} className="w-full h-full object-cover rounded-2xl" />
+        ) : (
+          avatarInitials
+        )}
       </div>
-      <div>
-        <h3 className="text-[14.5px] font-semibold mb-0.5">{name}</h3>
-        {role && <p className="text-[12px] text-text-muted">{role}</p>}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="font-bold text-text-primary truncate">{name}</p>
+            {company && <p className="text-xs text-text-secondary truncate">{company}</p>}
+            {role && <p className="text-xs text-text-muted mt-0.5">{role}</p>}
+          </div>
+          {actions}
+        </div>
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {tags.map((tag) => (
+              <span key={tag.slug} className="inline-flex items-center px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-400 text-[10px] font-bold uppercase tracking-wide">
+                #{tag.slug}
+              </span>
+            ))}
+          </div>
+        )}
+        {fields.length > 0 && (
+          <div className="space-y-1 mt-3">
+            {fields.map((field, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs">
+                <span className="text-text-muted font-medium">{field.label}:</span>
+                <span className="text-text-secondary">{field.value}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-      {tags.length > 0 && (
-        <div className="flex gap-1.5 flex-wrap my-3">
-          {tags.map((tag, index) => (
-            <span
-              key={index}
-              className="text-[10.5px] font-semibold px-2 py-0.5 rounded-full bg-bg-surface-3 text-text-secondary"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      )}
-      {fields.length > 0 && (
-        <div className="flex flex-col gap-2 pt-3 border-t border-border-hair">
-          {fields.map((field, index) => (
-            <div key={index} className="flex items-center gap-2 text-[12px] text-text-secondary">
-              <span className="w-3.5 h-3.5 text-text-muted flex-shrink-0">{field.icon}</span>
-              <span>{field.text}</span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -135,6 +143,7 @@ export type TaskPriority = "high" | "medium" | "low";
 
 export interface TaskCardProps {
   title: string;
+  description?: string;
   checked?: boolean;
   onCheck?: (checked: boolean) => void;
   priority?: TaskPriority;
@@ -145,6 +154,7 @@ export interface TaskCardProps {
 
 export function TaskCard({
   title,
+  description,
   checked = false,
   onCheck,
   priority = "medium",
@@ -156,17 +166,19 @@ export function TaskCard({
     high: "bg-red-500/14 text-red-400",
     medium: "bg-amber-500/14 text-amber-500",
     low: "bg-text-secondary/12 text-text-secondary",
+    urgent: "bg-orange-500/14 text-orange-400",
   };
 
   const priorityLabels: Record<TaskPriority, string> = {
     high: "Alta",
     medium: "Média",
     low: "Baixa",
+    urgent: "Urgente",
   };
 
   return (
     <div className={cn(
-      "bg-bg-surface-1 border border-border-hair rounded-lg p-5 flex items-start gap-3.5 transition-colors duration-240 hover:border-border-soft",
+      "bg-bg-surface-1 border border-border-hair rounded-lg p-4 flex items-start gap-3.5 transition-colors duration-240 hover:border-border-soft",
       className
     )}>
       <button
@@ -190,6 +202,23 @@ export function TaskCard({
         </svg>
       </button>
       <div className="flex-1">
+        <p className={cn("text-sm font-semibold", checked && "line-through text-text-muted")}>{title}</p>
+        {description && <p className="text-xs text-text-secondary mt-1">{description}</p>}
+        {(dueDate || meta || priority) && (
+          <div className="flex items-center gap-2 mt-2">
+            {priority && (
+              <span className={cn("text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-md", priorityClasses[priority])}>
+                {priorityLabels[priority]}
+              </span>
+            )}
+            {dueDate && <span className="text-[11px] text-text-muted font-mono">{dueDate}</span>}
+            {meta && <span className="text-[11px] text-text-muted">{meta}</span>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
         <h4 className={cn("text-[13px] font-semibold mb-1", checked && "line-through text-text-muted")}>
           {title}
         </h4>
@@ -274,10 +303,11 @@ export function NotificationCard({
 // ============================================================
 
 export interface EmptyStateProps {
-  icon?: React.ReactNode;
+  icon?: 'inbox' | 'search' | 'folder' | React.ReactNode;
   title: string;
   description: string;
-  action?: React.ReactNode;
+  actionLabel?: string;
+  onAction?: () => void;
   className?: string;
 }
 
@@ -285,9 +315,37 @@ export function EmptyState({
   icon,
   title,
   description,
-  action,
+  actionLabel,
+  onAction,
   className,
 }: EmptyStateProps) {
+  const renderIcon = () => {
+    if (icon === 'inbox') {
+      return (
+        <svg className="w-7 h-7" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none">
+          <path d="M22 12h-6l-2 3h-4l-2-3H2" />
+          <path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" />
+        </svg>
+      );
+    }
+    if (icon === 'search') {
+      return (
+        <svg className="w-7 h-7" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none">
+          <circle cx="11" cy="11" r="8" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+      );
+    }
+    if (icon === 'folder') {
+      return (
+        <svg className="w-7 h-7" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none">
+          <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+        </svg>
+      );
+    }
+    return icon;
+  };
+
   const defaultIcon = (
     <svg className="w-7 h-7" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.5" fill="none">
       <circle cx="12" cy="8" r="4" />
@@ -300,14 +358,21 @@ export function EmptyState({
       "flex flex-col items-center text-center p-12",
       className
     )}>
-      <div className="w-16 h-16 rounded-lg bg-bg-surface-2 border border-border-soft flex items-center justify-center mb-5">
-        {icon || defaultIcon}
+      <div className="w-16 h-16 rounded-lg bg-bg-surface-2 border border-border-soft flex items-center justify-center mb-5 text-text-secondary">
+        {renderIcon() || defaultIcon}
       </div>
       <h4 className="font-display text-[15px] font-semibold mb-2">{title}</h4>
       <p className="text-[12.5px] text-text-secondary max-w-[280px] leading-relaxed mb-5">
         {description}
       </p>
-      {action}
+      {actionLabel && onAction && (
+        <button
+          onClick={onAction}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-500 text-white font-semibold text-sm hover:bg-orange-600 transition-colors"
+        >
+          {actionLabel}
+        </button>
+      )}
     </div>
   );
 }
