@@ -74,6 +74,7 @@ export interface VerticalFunnelProps {
     value: number | string;
     sublabel?: string;
     color?: string;
+    dropOff?: string;
   }>;
   className?: string;
 }
@@ -99,6 +100,16 @@ export function VerticalFunnel({ steps, className }: VerticalFunnelProps) {
               </div>
             </div>
           </div>
+          {step.dropOff && index < steps.length - 1 && (
+            <div className="flex items-center justify-center py-2">
+              <div className="flex items-center gap-1.5 text-red-400">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5" fill="none">
+                  <path d="M12 5v14M5 12l7 7 7-7" />
+                </svg>
+                <span className="text-[11px] font-mono font-semibold">{step.dropOff}</span>
+              </div>
+            </div>
+          )}
         </React.Fragment>
       ))}
     </div>

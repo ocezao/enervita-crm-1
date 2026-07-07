@@ -219,22 +219,6 @@ export function TaskCard({
     </div>
   );
 }
-        <h4 className={cn("text-[13px] font-semibold mb-1", checked && "line-through text-text-muted")}>
-          {title}
-        </h4>
-        <div className="flex items-center gap-2.5 text-[11.5px] text-text-muted">
-          {priority && (
-            <span className={cn("text-[10px] font-bold px-2 rounded-full uppercase tracking-wider", priorityClasses[priority])}>
-              {priorityLabels[priority]}
-            </span>
-          )}
-          {dueDate && <span>{dueDate}</span>}
-          {meta && <span>{meta}</span>}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ============================================================
 
