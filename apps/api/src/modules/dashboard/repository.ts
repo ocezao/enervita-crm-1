@@ -14,6 +14,7 @@ export type CommercialStageBreakdown = {
   stage: PipelineStageKey;
   count: number;
   value: number;
+  dropOff?: string;
 };
 
 export type CommercialAttentionLead = {
@@ -194,7 +195,7 @@ async function getCommercialMetrics(pool: pg.Pool, tenantId: string, allowedStag
 
   const stageParams: unknown[] = [tenantId];
   const stageCte = filteredLeadsCte(stageParams, allowedStages, filters);
-  const stageBreakdown = await pool.query(
+  const stageBreakdownQuery = await pool.query(
     `${stageCte}
      select fl.stage::text as stage,
             count(*)::int as count,
@@ -204,6 +205,28 @@ async function getCommercialMetrics(pool: pg.Pool, tenantId: string, allowedStag
       order by ${pipelineOrderSql}`,
     stageParams,
   );
+
+  // Calcular drop-off entre etapas consecutivas
+  const rows = stageBreakdownQuery.rows;
+  const stageBreakdown = rows.map((row, i) => {
+    const currentCount = intValue(row.count);
+    let dropOff: string | undefined;
+    if (i > 0) {
+      const prevCount = intValue(rows[i - 1].count);
+      if (prevCount > 0) {
+        const loss = ((prevCount - currentCount) / prevCount) * 100;
+        if (loss > 0) {
+          dropOff = `−${loss.toFixed(0)}%`;
+        }
+      }
+    }
+    return {
+      stage: row.stage as PipelineStageKey,
+      count: currentCount,
+      value: numericValue(row.value),
+      dropOff,
+    };
+  });
 
   const attentionParams: unknown[] = [tenantId];
   const attentionCte = filteredLeadsCte(attentionParams, allowedStages, filters);
@@ -254,7 +277,7 @@ async function getCommercialMetrics(pool: pg.Pool, tenantId: string, allowedStag
     overdueTasks: intValue(taskResult.rows[0]?.count),
     leadsWithoutNextAction: intValue(stale.withoutNextAction),
     staleLeads: intValue(stale.staleLeads),
-    stageBreakdown: stageBreakdown.rows.map((row) => ({ stage: row.stage as PipelineStageKey, count: intValue(row.count), value: numericValue(row.value) })),
+    stageBreakdown,
     attentionLeads: attentionLeads.rows.map((row) => ({
       id: row.id as string,
       name: row.name as string,

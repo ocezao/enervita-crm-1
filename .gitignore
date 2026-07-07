@@ -1,1 +1,50 @@
-Nothing should be ignored since the changes only include source code files (.tsx) and no build artifacts, dependencies, or temporary files.
+```gitignore
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+.nuxt/
+out/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env
+.env.local
+.env.*
+!.env.example
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+.nyc_output/
+*.lcov
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+```
+
+Wait, let me reconsider this. Looking at the modified files, they appear to be TypeScript/JavaScript source files in a web application structure (`apps/api/src/`, `apps/web/src/`). There are no build artifacts, dependency directories, or temporary files in the changes. The current .gitignore appears to be for a JavaScript/TypeScript monorepo but doesn't contain any actual ignore rules yet.
+
+Actually, since there are no build artifacts, compiled files, or temporary files in the changes, and only source code files are being modified, I should not add any ignore rules.
+
+(empty — output nothing)

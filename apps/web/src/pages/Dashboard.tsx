@@ -244,6 +244,7 @@ export default function Dashboard() {
                       value: s.count,
                       sublabel: formatCurrency(s.value),
                       color: ['#FF9640', '#FF7A1A', '#E8620A', '#B84C08', '#3FDDA3', '#2ED9A3', '#1FB584'][i % 7],
+                      dropOff: s.dropOff,
                     }))}
                   />
                 )}

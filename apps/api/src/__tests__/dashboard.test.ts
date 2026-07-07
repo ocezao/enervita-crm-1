@@ -58,7 +58,7 @@ function makeMetrics(): DashboardMetrics {
       overdueTasks: 1,
       leadsWithoutNextAction: 2,
       staleLeads: 1,
-      stageBreakdown: [{ stage: 'novo_lead', count: 2, value: 10000 }],
+      stageBreakdown: [{ stage: 'novo_lead', count: 2, value: 10000, dropOff: undefined }],
       attentionLeads: [{ id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', name: 'Lead Atenção', stage: 'novo_lead', reason: 'Sem próxima ação', updatedAt: '2026-05-29T12:00:00.000Z', nextActionAt: null }],
     },
     recentEvents: [{
