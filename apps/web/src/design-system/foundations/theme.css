@@ -1,0 +1,89 @@
+/**
+ * Foundations: Theme Configuration
+ * 
+ * Registra todos os tokens no @theme do Tailwind CSS v4.
+ * Este arquivo conecta as variáveis CSS ao sistema de utilitários do Tailwind.
+ * 
+ * Tailwind v4 usa @theme para definir tokens nativamente em CSS.
+ * Não é necessário tailwind.config.ts para cores, fonts, shadows, etc.
+ */
+
+@theme {
+  /* ===== Colors ===== */
+  /* Mapeia variáveis CSS para utilities Tailwind */
+  --color-background-void: var(--color-background-void);
+  --color-background-base: var(--color-background-base);
+  --color-background-surface-1: var(--color-background-surface-1);
+  --color-background-surface-2: var(--color-background-surface-2);
+  --color-background-surface-3: var(--color-background-surface-3);
+  --color-background-overlay: var(--color-background-overlay);
+
+  --color-border-hair: var(--color-border-hair);
+  --color-border-soft: var(--color-border-soft);
+  --color-border-strong: var(--color-border-strong);
+
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-disabled: var(--color-text-disabled);
+
+  --color-brand-50: var(--color-brand-50);
+  --color-brand-200: var(--color-brand-200);
+  --color-brand-400: var(--color-brand-400);
+  --color-brand-500: var(--color-brand-500);
+  --color-brand-600: var(--color-brand-600);
+  --color-brand-700: var(--color-brand-700);
+
+  --color-success-50: var(--color-success-50);
+  --color-success-200: var(--color-success-200);
+  --color-success-400: var(--color-success-400);
+  --color-success-500: var(--color-success-500);
+  --color-success-600: var(--color-success-600);
+  --color-success-700: var(--color-success-700);
+
+  --color-error-500: var(--color-error-500);
+  --color-warning-500: var(--color-warning-500);
+
+  --color-glow-brand: var(--color-glow-brand);
+  --color-glow-brand-soft: var(--color-glow-brand-soft);
+  --color-glow-success: var(--color-glow-success);
+  --color-glow-success-soft: var(--color-glow-success-soft);
+
+  /* Compatibility aliases */
+  --color-card: var(--color-card);
+  --color-card-foreground: var(--color-card-foreground);
+  --color-muted: var(--color-muted);
+  --color-muted-foreground: var(--color-muted-foreground);
+  --color-background: var(--color-background);
+  --color-border: var(--color-border);
+  --color-warm-sand: var(--color-warm-sand);
+
+  /* ===== Fonts ===== */
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-mono: var(--font-mono);
+
+  /* ===== Radius ===== */
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-pill: var(--radius-pill);
+  --radius-none: var(--radius-none);
+
+  /* ===== Shadows ===== */
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-solar-orange: var(--shadow-solar-orange);
+  --shadow-energy-green: var(--shadow-energy-green);
+  --shadow-alert-red: var(--shadow-alert-red);
+
+  /* ===== Motion ===== */
+  --duration-fast: var(--duration-fast);
+  --duration-base: var(--duration-base);
+  --duration-slow: var(--duration-slow);
+  --ease-out: var(--ease-out);
+  --ease-spring: var(--ease-spring);
+}

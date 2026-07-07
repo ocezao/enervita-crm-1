@@ -1,0 +1,28 @@
+/**
+ * Design Tokens: Motion
+ * 
+ * Define durações, easings e curvas de animação do sistema.
+ * Valores migrados de globals.css e tailwind.config.ts.
+ */
+
+:root {
+  /* ===== Duration Scale ===== */
+  /* Valores migrados de globals.css --duration-* */
+  --duration-instant: 0ms;
+  --duration-fast: 140ms;
+  --duration-base: 240ms;
+  --duration-slow: 420ms;
+
+  /* ===== Easing Functions ===== */
+  /* Valores migrados de globals.css --ease-* */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-linear: linear;
+
+  /* ===== Reduced Motion ===== */
+  /* Respeita preferências de acessibilidade do usuário */
+  --duration-reduced: 0.01ms;
+}
+
+/* Media query para reduced motion é aplicada via utilities */

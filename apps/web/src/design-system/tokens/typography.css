@@ -1,0 +1,41 @@
+/**
+ * Design Tokens: Typography
+ * 
+ * Define todas as variáveis de tipografia do sistema.
+ * Inclui famílias de fontes, tamanhos, pesos e alturas de linha.
+ */
+
+:root {
+  /* ===== Font Families ===== */
+  /* Valores migrados de globals.css --font-* e tailwind.config.ts */
+  --font-sans: 'Inter', 'Space Grotesk', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* ===== Font Sizes (Escala base) ===== */
+  /* A ser refinada pelo novo Design System */
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.875rem;   /* 14px */
+  --text-base: 1rem;     /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.25rem;    /* 20px */
+  --text-2xl: 1.5rem;    /* 24px */
+  --text-3xl: 1.875rem;  /* 30px */
+  --text-4xl: 2.25rem;   /* 36px */
+
+  /* ===== Font Weights ===== */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ===== Line Heights ===== */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ===== Letter Spacing ===== */
+  --letter-spacing-tight: -0.025em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.025em;
+}

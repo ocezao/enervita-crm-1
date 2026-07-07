@@ -1,0 +1,53 @@
+/**
+ * Foundations: Base Styles
+ * 
+ * Define estilos base e reset moderno.
+ * Aplicado globalmente após o theme.
+ */
+
+@layer base {
+  /* ===== HTML & Body ===== */
+  html {
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    background-color: var(--color-background-void);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+
+  /* ===== Typography Headings ===== */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+  }
+
+  /* ===== Box Sizing ===== */
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* ===== Images & Media ===== */
+  img,
+  svg,
+  canvas,
+  video {
+    max-width: 100%;
+  }
+
+  /* ===== Container Constraints ===== */
+  [data-crm-content],
+  [data-crm-app-main] {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  [data-crm-app-main] > * {
+    min-width: 0;
+  }
+}

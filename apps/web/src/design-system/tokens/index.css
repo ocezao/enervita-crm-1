@@ -1,0 +1,30 @@
+/**
+ * Design Tokens - Entry Point
+ * 
+ * Centraliza todos os tokens de design atômicos.
+ * Cada arquivo contém uma categoria específica de tokens.
+ * 
+ * Os tokens são a única fonte de verdade para valores visuais.
+ * Nenhum valor hardcoded deve existir fora destes arquivos.
+ */
+
+/* Cores - Paleta completa do sistema */
+@import "./colors.css";
+
+/* Tipografia - Fontes, tamanhos, pesos, alturas de linha */
+@import "./typography.css";
+
+/* Espaçamento - Escala de espaçamento e grid */
+@import "./spacing.css";
+
+/* Radius - Escala de bordas arredondadas */
+@import "./radius.css";
+
+/* Sombras - Elevação, glows e efeitos de profundidade */
+@import "./shadows.css";
+
+/* Motion - Durações, easings e keyframes */
+@import "./motion.css";
+
+/* Z-Index - Camadas de empilhamento */
+@import "./z-index.css";

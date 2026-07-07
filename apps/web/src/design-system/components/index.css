@@ -1,0 +1,17 @@
+/**
+ * Components Entry Point
+ * 
+ * Orquestra o carregamento de estilos de componentes.
+ * 
+ * NOTA: Esta pasta está preparada para receber estilos de componentes
+ * quando o novo Design System for implementado.
+ * 
+ * Atualmente vazia - componentes existentes usam classes inline Tailwind.
+ */
+
+/* Component styles serão adicionados aqui futuramente */
+/* Exemplo:
+@import "./button.css";
+@import "./card.css";
+@import "./input.css";
+*/

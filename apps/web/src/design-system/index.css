@@ -1,0 +1,30 @@
+/**
+ * Design System CSS Entry Point
+ * 
+ * Orquestra o carregamento de todos os arquivos CSS do Design System.
+ * Este arquivo deve ser importado APÓS o tailwindcss e ANTES dos estilos da aplicação.
+ * 
+ * Ordem de carregamento:
+ * 1. tailwindcss (via @import "tailwindcss")
+ * 2. design-system/index.css (este arquivo)
+ * 3. globals.css (estilos específicos da aplicação, se necessário)
+ * 
+ * Fluxo:
+ * tokens → foundations → components → utilities
+ */
+
+/* ===== TOKENS (Átomos) ===== */
+/* Valores brutos que definem a identidade visual */
+@import "./tokens/index.css";
+
+/* ===== FOUNDATIONS (Moléculas) ===== */
+/* Configuração do tema e reset básico */
+@import "./foundations/index.css";
+
+/* ===== COMPONENTES (Organismos) ===== */
+/* Estilos específicos de componentes UI */
+@import "./components/index.css";
+
+/* ===== UTILITÁRIOS ===== */
+/* Utilitários customizados e efeitos especiais */
+@import "./utilities/index.css";

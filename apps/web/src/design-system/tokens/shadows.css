@@ -1,0 +1,31 @@
+/**
+ * Design Tokens: Shadows
+ * 
+ * Define sombras, elevações e efeitos de glow do sistema.
+ * Inclui placeholders para sombras customizadas usadas em componentes.
+ */
+
+:root {
+  /* ===== Shadow Scale (Elevação) ===== */
+  /* Sombras sutis para cards e superfícies */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.15);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.2);
+
+  /* ===== Glows (Brand - Laranja) ===== */
+  /* Valores migrados de globals.css */
+  --glow-brand: 0 0 20px var(--color-glow-brand);
+  --glow-brand-soft: 0 0 32px var(--color-glow-brand-soft);
+
+  /* ===== Glows (Success - Mint) ===== */
+  --glow-success: 0 0 20px var(--color-glow-success);
+  --glow-success-soft: 0 0 32px var(--color-glow-success-soft);
+
+  /* ===== Placeholders para compatibilidade ===== */
+  /* Sombras customizadas usadas em Base.tsx e outros componentes */
+  /* Mantidas para evitar quebras visuais até o novo Design System */
+  --shadow-solar-orange: var(--glow-brand);
+  --shadow-energy-green: var(--glow-success);
+  --shadow-alert-red: 0 0 20px rgba(241, 88, 78, 0.35);
+}

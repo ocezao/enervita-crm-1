@@ -1,5 +1,20 @@
-@import "tailwindcss";
+/**
+ * Globals CSS - Application Entry Point
+ * 
+ * Este arquivo agora é mínimo e serve apenas como orquestrador.
+ * Todo o Design System foi movido para src/design-system/.
+ * 
+ * Ordem de carregamento:
+ * 1. Tailwind CSS v4
+ * 2. Design System (tokens, foundations, components, utilities)
+ * 3. Estilos específicos da aplicação (se necessário)
+ */
 
+@import "tailwindcss";
+@import "./design-system/index.css";
+
+/* ===== Font Faces ===== */
+/* Mantidos aqui pois são carregamentos externos, não tokens */
 @font-face {
   font-family: 'Inter';
   font-style: normal;
@@ -80,159 +95,10 @@
   src: local('JetBrains Mono Medium'), local('JetBrainsMono-Medium');
 }
 
-@theme {
-  /* ===== Superfícies ===== */
-  --color-bg-void: #0A0D10;
-  --color-bg-base: #0D1114;
-  --color-bg-surface-1: #12171B;
-  --color-bg-surface-2: #171D22;
-  --color-bg-surface-3: #1D242A;
-  --color-bg-overlay: rgba(10,13,16,0.72);
+/* ===== CRM Appearance Settings ===== */
+/* Configurações de aparência do CRM (tema, densidade, navegação, etc.) */
+/* Estas regras são específicas da aplicação e não pertencem ao Design System */
 
-  /* ===== Bordas ===== */
-  --color-border-hair: rgba(255,255,255,0.06);
-  --color-border-soft: rgba(255,255,255,0.09);
-  --color-border-strong: rgba(255,255,255,0.14);
-
-  /* ===== Texto ===== */
-  --color-text-primary: #EDEFF1;
-  --color-text-secondary: #A3ACB3;
-  --color-text-muted: #626B72;
-  --color-text-disabled: #3D4449;
-
-  /* ===== Laranja — energia gerada / ação primária ===== */
-  --color-orange-50: #FFF2E7;
-  --color-orange-200: #FFC28A;
-  --color-orange-400: #FF9640;
-  --color-orange-500: #FF7A1A;
-  --color-orange-600: #E8620A;
-  --color-orange-700: #B84C08;
-  --color-glow-orange: rgba(255,122,26,0.35);
-  --color-glow-orange-soft: rgba(255,122,26,0.16);
-
-  /* ===== Verde-menta — economia / sucesso / ROI ===== */
-  --color-mint-50: #E4FBF3;
-  --color-mint-200: #86EFC9;
-  --color-mint-400: #3FDDA3;
-  --color-mint-500: #2ED9A3;
-  --color-mint-600: #1FB584;
-  --color-mint-700: #148A66;
-  --color-glow-mint: rgba(46,217,163,0.32);
-  --color-glow-mint-soft: rgba(46,217,163,0.14);
-
-  /* ===== Estados ===== */
-  --color-red-500: #F1584E;
-  --color-amber-500: #F0B429;
-
-  /* ===== Tipografia ===== */
-  --font-sans: 'Inter', 'Space Grotesk', system-ui, sans-serif;
-  --font-display: 'Space Grotesk', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-
-  /* ===== Forma ===== */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
-  --radius-pill: 999px;
-
-  /* ===== Movimento ===== */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --duration-fast: 140ms;
-  --duration-base: 240ms;
-  --duration-slow: 420ms;
-}
-
-@layer base {
-  html {
-    scroll-behavior: smooth;
-    scrollbar-gutter: stable;
-  }
-
-  body {
-    background-color: var(--color-bg-void);
-    color: var(--color-text-primary);
-    font-family: var(--font-sans);
-    -webkit-font-smoothing: antialiased;
-    text-rendering: geometricPrecision;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display);
-  }
-}
-
-@layer components {
-  .crm-button::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    background: radial-gradient(circle at 50% 0%, rgb(255 255 255 / 0.28), transparent 42%);
-    opacity: 0;
-    transform: translateY(35%) scale(0.75);
-    transition: opacity 180ms ease, transform 220ms ease;
-    pointer-events: none;
-  }
-
-  .crm-button:hover::after,
-  .crm-button:focus-visible::after {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-
-  .crm-button-outline::after,
-  .crm-button-ghost::after {
-    background: radial-gradient(circle at 50% 0%, rgb(192 88 0 / 0.12), transparent 46%);
-  }
-
-  .crm-scroll-panel {
-    scroll-behavior: smooth;
-    overscroll-behavior: contain;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-orange-500) var(--color-bg-surface-2);
-  }
-
-  .crm-scroll-panel::-webkit-scrollbar,
-  body::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-  }
-
-  .crm-scroll-panel::-webkit-scrollbar-track,
-  body::-webkit-scrollbar-track {
-    background: var(--color-bg-surface-2);
-    border-radius: 999px;
-  }
-
-  .crm-scroll-panel::-webkit-scrollbar-thumb,
-  body::-webkit-scrollbar-thumb {
-    border: 2px solid var(--color-bg-void);
-    border-radius: 999px;
-    background: linear-gradient(180deg, var(--color-orange-500), var(--color-mint-500));
-  }
-
-  .crm-scroll-panel::-webkit-scrollbar-thumb:hover,
-  body::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, var(--color-orange-600), var(--color-mint-400));
-  }
-}
-
-.glass-card {
-  @apply bg-bg-surface-1/80 backdrop-blur-md border border-border-soft shadow-sm;
-}
-
-.solar-gradient {
-  background: linear-gradient(135deg, var(--color-orange-400) 0%, var(--color-orange-500) 100%);
-}
-
-.energy-gradient {
-  background: linear-gradient(135deg, var(--color-mint-600) 0%, var(--color-mint-500) 100%);
-}
-
-/* Aparência do CRM: ajustes aplicados a partir de Configurações > Aparência. */
 html[data-crm-motion="reduced"] *,
 html[data-crm-motion="reduced"] *::before,
 html[data-crm-motion="reduced"] *::after {
@@ -259,7 +125,7 @@ html[data-crm-contrast="high"] body {
 
 html[data-crm-contrast="high"] .text-muted,
 html[data-crm-contrast="high"] .text-secondary {
-  color: var(--text-secondary) !important;
+  color: var(--color-text-secondary) !important;
 }
 
 html[data-crm-density="compact"] [data-crm-app-main] {
@@ -305,37 +171,6 @@ html[data-crm-corners="rounded"] .rounded-2xl {
   border-radius: 1.5rem !important;
 }
 
-/* Pente fino de container/responsividade para Aparência e shell do CRM. */
-html,
-body,
-#root {
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-img,
-svg,
-canvas,
-video {
-  max-width: 100%;
-}
-
-[data-crm-content],
-[data-crm-app-main] {
-  min-width: 0;
-  max-width: 100%;
-}
-
-[data-crm-app-main] > * {
-  min-width: 0;
-}
-
 html[data-crm-font-scale="large"] body {
   font-size: 16.5px;
 }
@@ -358,7 +193,7 @@ html[data-crm-card-style="flat"] .bg-white.rounded-2xl {
 
 html[data-crm-card-style="glass"] .bg-white.rounded-xl,
 html[data-crm-card-style="glass"] .bg-white.rounded-2xl {
-  background-color: var(--color-bg-surface-1) !important;
+  background-color: var(--color-background-surface-1) !important;
   backdrop-filter: blur(14px);
   border-color: var(--color-border-soft) !important;
 }
@@ -406,7 +241,7 @@ html[data-crm-density="compact"] table td {
   }
 }
 
-/* Premium rounded professional typography override */
+/* ===== Typography Override ===== */
 :root {
   --crm-font-rounded: "Inter", "Space Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }

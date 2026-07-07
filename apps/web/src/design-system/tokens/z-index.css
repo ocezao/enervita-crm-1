@@ -1,0 +1,25 @@
+/**
+ * Design Tokens: Z-Index
+ * 
+ * Define as camadas de empilhamento do sistema.
+ * Previne conflitos de sobreposição entre componentes.
+ */
+
+:root {
+  /* ===== Z-Index Scale ===== */
+  /* Valores baseados em múltiplos de 10 para fácil extensão */
+  --z-index-base: 0;
+  --z-index-dropdown: 100;
+  --z-index-sticky: 200;
+  --z-index-fixed: 300;
+  --z-index-modal-backdrop: 400;
+  --z-index-modal: 500;
+  --z-index-popover: 600;
+  --z-index-tooltip: 700;
+  --z-index-toast: 800;
+
+  /* ===== Alias para componentes específicos ===== */
+  --z-index-sidebar: var(--z-index-fixed);
+  --z-index-header: var(--z-index-sticky);
+  --z-index-overlay: var(--z-index-modal-backdrop);
+}

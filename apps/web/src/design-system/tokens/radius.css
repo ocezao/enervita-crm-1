@@ -1,0 +1,23 @@
+/**
+ * Design Tokens: Radius
+ * 
+ * Define a escala de bordas arredondadas do sistema.
+ * Valores migrados de globals.css e tailwind.config.ts.
+ */
+
+:root {
+  /* ===== Radius Scale ===== */
+  /* Valores migrados de globals.css --radius-* */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+  --radius-none: 0;
+
+  /* ===== Alias para compatibilidade ===== */
+  /* Usado por componentes existentes */
+  --radius-card: var(--radius-lg);
+  --radius-button: var(--radius-md);
+  --radius-input: var(--radius-md);
+}

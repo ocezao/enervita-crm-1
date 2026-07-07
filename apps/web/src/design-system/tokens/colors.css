@@ -1,0 +1,85 @@
+/**
+ * Design Tokens: Colors
+ * 
+ * Define todas as cores do sistema como variáveis CSS.
+ * Estas variáveis serão registradas no @theme do Tailwind v4.
+ * 
+ * Convenção de nomenclatura: --color-{category}-{variant}
+ * 
+ * Categorias:
+ * - background: Cores de fundo (superfícies)
+ * - border: Cores de borda
+ * - text: Cores de texto
+ * - brand: Cores da marca (primária, secundária)
+ * - status: Cores de estado (success, warning, error, info)
+ * - glow: Cores para efeitos de brilho/glow
+ */
+
+:root {
+  /* ===== Backgrounds / Superfícies ===== */
+  /* Valores migrados de globals.css --color-bg-* */
+  --color-background-void: #0A0D10;
+  --color-background-base: #0D1114;
+  --color-background-surface-1: #12171B;
+  --color-background-surface-2: #171D22;
+  --color-background-surface-3: #1D242A;
+  --color-background-overlay: rgba(10, 13, 16, 0.72);
+
+  /* ===== Borders ===== */
+  /* Valores migrados de globals.css --color-border-* */
+  --color-border-hair: rgba(255, 255, 255, 0.06);
+  --color-border-soft: rgba(255, 255, 255, 0.09);
+  --color-border-strong: rgba(255, 255, 255, 0.14);
+
+  /* ===== Text ===== */
+  /* Valores migrados de globals.css --color-text-* */
+  --color-text-primary: #EDEFF1;
+  --color-text-secondary: #A3ACB3;
+  --color-text-muted: #626B72;
+  --color-text-disabled: #3D4449;
+
+  /* ===== Brand - Laranja (Energia/Ação Primária) ===== */
+  /* Valores migrados de globals.css --color-orange-* */
+  --color-brand-50: #FFF2E7;
+  --color-brand-200: #FFC28A;
+  --color-brand-400: #FF9640;
+  --color-brand-500: #FF7A1A;
+  --color-brand-600: #E8620A;
+  --color-brand-700: #B84C08;
+
+  /* ===== Brand - Mint (Economia/Sucesso/ROI) ===== */
+  /* Valores migrados de globals.css --color-mint-* */
+  --color-success-50: #E4FBF3;
+  --color-success-200: #86EFC9;
+  --color-success-400: #3FDDA3;
+  --color-success-500: #2ED9A3;
+  --color-success-600: #1FB584;
+  --color-success-700: #148A66;
+
+  /* ===== Status - Semáforo ===== */
+  /* Valores migrados de globals.css --color-red-*, --color-amber-* */
+  --color-error-500: #F1584E;
+  --color-warning-500: #F0B429;
+
+  /* ===== Glows ===== */
+  /* Valores migrados de globals.css --color-glow-* */
+  --color-glow-brand: rgba(255, 122, 26, 0.35);
+  --color-glow-brand-soft: rgba(255, 122, 26, 0.16);
+  --color-glow-success: rgba(46, 217, 163, 0.32);
+  --color-glow-success-soft: rgba(46, 217, 163, 0.14);
+
+  /* ===== Placeholders para compatibilidade futura ===== */
+  /* Estes tokens serão definidos pelo novo Design System quando disponível */
+  /* Mantidos para evitar quebras em componentes que os referenciam */
+  
+  /* Shadcn compatibility placeholders (usados em card.tsx, mobile-enhancements.css) */
+  --color-card: var(--color-background-surface-1);
+  --color-card-foreground: var(--color-text-primary);
+  --color-muted: var(--color-background-surface-2);
+  --color-muted-foreground: var(--color-text-muted);
+  --color-background: var(--color-background-base);
+  --color-border: var(--color-border-soft);
+
+  /* Custom placeholders (usados em Base.tsx, timeline.tsx, etc.) */
+  --color-warm-sand: rgba(255, 255, 255, 0.03);
+}
