@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Helion CRM — Componentes estendidos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-void: #0A0D10;
+    --bg-surface-1: #12171B;
+    --bg-surface-2: #171D22;
+    --bg-surface-3: #1D242A;
+    --bg-surface-4: #232B32;
+
+    --border-hair: rgba(255,255,255,0.06);
+    --border-soft: rgba(255,255,255,0.09);
+    --border-strong: rgba(255,255,255,0.14);
+
+    --text-primary: #EDEFF1;
+    --text-secondary: #A3ACB3;
+    --text-muted: #626B72;
+    --text-disabled: #3D4449;
+
+    --orange-200: #FFC28A;
+    --orange-400: #FF9640;
+    --orange-500: #FF7A1A;
+    --orange-600: #E8620A;
+    --orange-700: #B84C08;
+    --glow-orange: rgba(255,122,26,0.35);
+    --glow-orange-soft: rgba(255,122,26,0.16);
+
+    --mint-200: #86EFC9;
+    --mint-400: #3FDDA3;
+    --mint-500: #2ED9A3;
+    --mint-600: #1FB584;
+    --mint-700: #148A66;
+    --glow-mint: rgba(46,217,163,0.32);
+    --glow-mint-soft: rgba(46,217,163,0.14);
+
+    --red-400: #F58B83;
+    --red-500: #F1584E;
+    --amber-400: #F5C451;
+    --amber-500: #F0B429;
+    --blue-400: #5B9EE8;
+    --blue-500: #3D82D1;
+    --glow-red-soft: rgba(241,88,78,0.15);
+    --glow-blue-soft: rgba(91,158,232,0.15);
+
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 18px;
+    --r-xl: 24px;
+    --r-pill: 999px;
+
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --dur-fast: 140ms;
+    --dur-base: 240ms;
+    --dur-slow: 420ms;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{background:var(--bg-void);}
+  body{
+    font-family: var(--font-body);
+    background: var(--bg-void);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    font-size: 14px;
+  }
+  ::selection{ background: var(--glow-orange-soft); color: var(--orange-200); }
+  .icon{ stroke: currentColor; stroke-width:1.7; fill:none; stroke-linecap:round; stroke-linejoin:round; display:block; flex-shrink:0; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; border:none; background:none; cursor:pointer; color:inherit; }
+  input, textarea, select{ font-family: var(--font-body); }
+
+  .canvas{
+    position: relative;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -5%, rgba(255,122,26,0.05), transparent 60%),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(46,217,163,0.045), transparent 60%),
+      var(--bg-void);
+    min-height: 100vh;
+    padding: 56px 48px 96px;
+  }
+  .canvas::before{
+    content:'';
+    position: fixed; inset:0;
+    background-image:
+      linear-gradient(var(--border-hair) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border-hair) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 100% 60% at 50% 0%, black 0%, transparent 70%);
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  .intro{ max-width: 1180px; margin: 0 auto 56px; position: relative; }
+  .intro-eyebrow{
+    display:flex; align-items:center; gap:10px;
+    font-family: var(--font-mono); font-size: 11.5px; letter-spacing: 0.08em;
+    color: var(--orange-400); text-transform: uppercase; margin-bottom: 18px;
+  }
+  .intro-eyebrow .dot{ width:6px; height:6px; border-radius:50%; background: var(--orange-500); box-shadow: 0 0 0 3px var(--glow-orange-soft); }
+  .intro h1{
+    font-family: var(--font-display); font-weight: 600;
+    font-size: clamp(28px, 3.4vw, 40px); line-height: 1.12;
+    letter-spacing: -0.01em;
+    margin-bottom: 14px;
+  }
+  .intro p{ color: var(--text-secondary); font-size: 15px; max-width: 640px; line-height: 1.6; }
+
+  .toc{ max-width:1180px; margin: 0 auto 64px; display:flex; flex-wrap:wrap; gap:8px; position:relative; }
+  .toc a{
+    font-family: var(--font-mono); font-size:11.5px; color:var(--text-secondary);
+    background: var(--bg-surface-1); border:1px solid var(--border-hair); border-radius:var(--r-pill);
+    padding: 6px 13px; transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+  }
+  .toc a:hover{ border-color: var(--orange-500); color: var(--orange-400); }
+
+  .section{ max-width: 1180px; margin: 0 auto 80px; position: relative; scroll-margin-top: 24px; }
+  .section-head{ display:flex; align-items:baseline; gap:14px; margin-bottom: 28px; }
+  .section-num{ font-family: var(--font-mono); font-size:12px; color: var(--text-muted); }
+  .section-head h2{ font-family: var(--font-display); font-size: 21px; font-weight: 600; letter-spacing: -0.01em; }
+  .section-head .rule{ flex:1; height:1px; background: var(--border-hair); }
+  .subhead{ font-size:12.5px; color:var(--text-muted); margin: -14px 0 20px; max-width:640px; line-height:1.6; }
+
+  .grid-2{ display:grid; grid-template-columns: repeat(2,1fr); gap:16px; }
+  .grid-3{ display:grid; grid-template-columns: repeat(3,1fr); gap:16px; }
+  .grid-4{ display:grid; grid-template-columns: repeat(4,1fr); gap:14px; }
+  .flex-row{ display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; }
+
+  .btn{
+    font-family: var(--font-body); font-weight:600; font-size:13px; letter-spacing:0.01em;
+    border-radius: var(--r-pill); padding: 9px 18px; border:1px solid transparent; cursor:pointer;
+    display:inline-flex; align-items:center; gap:7px;
+    transition: transform var(--dur-fast) var(--ease-out), box-shadow var(--dur-base) var(--ease-out), background var(--dur-base) var(--ease-out), border-color var(--dur-base) var(--ease-out);
+  }
+  .btn:active{ transform: scale(0.97); }
+  .btn svg{ width:15px; height:15px; }
+  .btn-primary{ background: linear-gradient(180deg, var(--orange-400), var(--orange-500)); color:#1A0D02; box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset; }
+  .btn-primary:hover{ box-shadow: 0 1px 0 rgba(255,255,255,0.3) inset, 0 0 18px 1px var(--glow-orange); transform: translateY(-1px); }
+  .btn-secondary{ background: var(--bg-surface-2); color:var(--text-primary); border-color: var(--border-soft); }
+  .btn-secondary:hover{ border-color: var(--border-strong); background: var(--bg-surface-3); }
+  .btn-ghost{ background:transparent; color:var(--text-secondary); }
+  .btn-ghost:hover{ color:var(--text-primary); background:var(--bg-surface-2); }
+  .btn-danger{ background:transparent; color:var(--red-400); border-color:rgba(241,88,78,0.28); }
+  .btn-danger:hover{ background:rgba(241,88,78,0.08); box-shadow:0 0 14px 0 var(--glow-red-soft); }
+
+  ::selection{ background: var(--glow-orange-soft); color: var(--orange-200); }
+
+  /* ============================================================
+     01 — FUNIS
+     ============================================================ */
+  .funnel-card{
+    background: var(--bg-surface-1); border:1px solid var(--border-hair); border-radius: var(--r-lg);
+    padding: 26px 28px;
+  }
+  .funnel-card-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
+  .funnel-card-head h3{ font-family:var(--font-display); font-size:15px; font-weight:600; }
+  .funnel-card-sub{ font-size:12px; color:var(--text-muted); margin-bottom:22px; }
+
+  /* --- Funil geométrico (trapézio) --- */
+  .geo-funnel-wrap{ display:flex; gap:28px; align-items:center; }
+  .geo-funnel-svg{ flex-shrink:0; }
+  .geo-funnel-legend{ display:flex; flex-direction:column; gap:14px; flex:1; }
+  .geo-legend-row{ display:flex; align-items:center; gap:12px; }
+  .geo-legend-swatch{ width:12px; height:12px; border-radius:3px; flex-shrink:0; }
+  .geo-legend-text{ flex:1; }
+  .geo-legend-text p{ font-size:12.5px; font-weight:600; }
+  .geo-legend-text span{ font-size:11px; color:var(--text-muted); }
+  .geo-legend-value{ font-family:var(--font-mono); font-size:15px; font-weight:500; text-align:right; }
+  .geo-legend-delta{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted); text-align:right; }
+
+  .funnel-seg{ cursor:pointer; transition: opacity var(--dur-fast) var(--ease-out); }
+  .funnel-seg:hover{ opacity:0.85; }
+
+  /* --- Funil vertical com drop-off --- */
+  .vfunnel{ display:flex; flex-direction:column; align-items:center; gap:0; }
+  .vfunnel-step{ width:100%; display:flex; flex-direction:column; align-items:center; }
+  .vfunnel-bar{
+    width:100%; border-radius:var(--r-md); padding: 14px 20px;
+    display:flex; align-items:center; justify-content:space-between;
+    transition: transform var(--dur-base) var(--ease-out);
+  }
+  .vfunnel-bar:hover{ transform: scale(1.01); }
+  .vfunnel-bar p{ font-size:13px; font-weight:600; }
+  .vfunnel-bar span{ font-family:var(--font-mono); font-size:14px; font-weight:600; }
+  .vfunnel-drop{
+    display:flex; align-items:center; gap:6px; padding: 7px 0;
+    font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted);
+  }
+  .vfunnel-drop svg{ width:11px; height:11px; color:var(--red-400); }
+
+  /* --- Mini funil compacto (para dentro de card) --- */
+  .mini-funnel{ display:flex; align-items:flex-end; gap:3px; height:56px; }
+  .mini-funnel-bar{ flex:1; border-radius:3px 3px 0 0; position:relative; transition: opacity var(--dur-fast) var(--ease-out); }
+  .mini-funnel-bar:hover{ opacity:0.8; }
+
+  /* ============================================================
+     02 — CARDS
+     ============================================================ */
+  .base-card{
+    background: var(--bg-surface-1); border:1px solid var(--border-hair); border-radius: var(--r-lg);
+    padding: 20px 22px; transition: border-color var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out);
+  }
+  .base-card:hover{ border-color: var(--border-soft); transform: translateY(-2px); }
+
+  /* --- Card de contato/empresa --- */
+  .contact-card-head{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; }
+  .contact-avatar{ width:44px; height:44px; border-radius:var(--r-md); background:linear-gradient(135deg, var(--bg-surface-4), var(--bg-surface-2)); border:1px solid var(--border-soft); display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:15px; font-weight:600; }
+  .contact-name{ font-size:14.5px; font-weight:600; margin-bottom:2px; }
+  .contact-role{ font-size:12px; color:var(--text-muted); }
+  .contact-tags{ display:flex; gap:6px; flex-wrap:wrap; margin: 12px 0 14px; }
+  .mini-tag{ font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:var(--r-pill); background:var(--bg-surface-3); color:var(--text-secondary); }
+  .contact-fields{ display:flex; flex-direction:column; gap:8px; padding-top:12px; border-top:1px solid var(--border-hair); }
+  .contact-field-row{ display:flex; align-items:center; gap:9px; font-size:12px; color:var(--text-secondary); }
+  .contact-field-row svg{ width:14px; height:14px; color:var(--text-muted); flex-shrink:0; }
+  .btn-icon-sq-mini{ width:28px; height:28px; border-radius:var(--r-sm); display:flex; align-items:center; justify-content:center; color:var(--text-muted); flex-shrink:0; transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
+  .btn-icon-sq-mini:hover{ background:var(--bg-surface-3); color:var(--text-primary); }
+
+  /* --- Card de proposta/orçamento --- */
+  .proposal-card{ position:relative; overflow:hidden; }
+  .proposal-status-strip{ position:absolute; left:0; top:0; bottom:0; width:3px; }
+  .proposal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .proposal-id{ font-family:var(--font-mono); font-size:11px; color:var(--text-muted); }
+  .proposal-title{ font-size:14.5px; font-weight:600; margin-bottom:14px; }
+  .proposal-value{ font-family:var(--font-display); font-size:24px; font-weight:600; margin-bottom:4px; }
+  .proposal-meta-row{ display:flex; align-items:center; justify-content:space-between; padding-top:14px; margin-top:8px; border-top:1px solid var(--border-hair); }
+  .proposal-validity{ font-size:11.5px; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
+  .proposal-validity svg{ width:13px; height:13px; }
+  .proposal-validity.urgent{ color: var(--amber-500); }
+
+  /* --- Card de tarefa/atividade --- */
+  .task-card{ display:flex; align-items:flex-start; gap:13px; }
+  .task-check{ width:19px; height:19px; border-radius:6px; border:1.5px solid var(--border-strong); flex-shrink:0; margin-top:1px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+  .task-check:hover{ border-color: var(--orange-500); }
+  .task-check.done{ background: var(--mint-500); border-color: var(--mint-500); }
+  .task-check svg{ width:12px; height:12px; color:#08211a; opacity:0; transition:opacity var(--dur-fast) var(--ease-out); }
+  .task-check.done svg{ opacity:1; }
+  .task-body{ flex:1; }
+  .task-title{ font-size:13px; font-weight:600; margin-bottom:4px; }
+  .task-title.done{ text-decoration: line-through; color: var(--text-muted); }
+  .task-meta{ display:flex; align-items:center; gap:10px; font-size:11.5px; color:var(--text-muted); }
+  .task-priority{ font-size:10px; font-weight:700; padding:2px 8px; border-radius:var(--r-pill); text-transform:uppercase; letter-spacing:0.03em; }
+  .prio-high{ background:rgba(241,88,78,0.14); color:var(--red-400); }
+  .prio-med{ background:rgba(240,180,41,0.14); color:var(--amber-500); }
+  .prio-low{ background:rgba(163,172,179,0.12); color:var(--text-secondary); }
+
+  /* --- Card de notificação --- */
+  .notif-card{ display:flex; gap:12px; align-items:flex-start; }
+  .notif-icon{ width:34px; height:34px; border-radius:var(--r-md); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .notif-icon svg{ width:16px; height:16px; }
+  .notif-icon.success{ background:rgba(46,217,163,0.12); color:var(--mint-400); }
+  .notif-icon.warning{ background:rgba(240,180,41,0.12); color:var(--amber-500); }
+  .notif-icon.info{ background:rgba(91,158,232,0.12); color:var(--blue-400); }
+  .notif-title{ font-size:13px; font-weight:600; margin-bottom:3px; }
+  .notif-desc{ font-size:12px; color:var(--text-secondary); line-height:1.5; }
+  .notif-time{ font-family:var(--font-mono); font-size:10.5px; color:var(--text-muted); margin-top:6px; display:block; }
+  .notif-dot-new{ width:7px; height:7px; border-radius:50%; background:var(--orange-500); box-shadow:0 0 6px 1px var(--glow-orange-soft); flex-shrink:0; margin-top:5px; }
+
+  /* --- Empty state --- */
+  .empty-state{ display:flex; flex-direction:column; align-items:center; text-align:center; padding: 48px 32px; }
+  .empty-icon-wrap{ width:64px; height:64px; border-radius:var(--r-lg); background:var(--bg-surface-2); border:1px solid var(--border-soft); display:flex; align-items:center; justify-content:center; margin-bottom:20px; }
+  .empty-icon-wrap svg{ width:28px; height:28px; color:var(--text-muted); }
+  .empty-state h4{ font-family:var(--font-display); font-size:15px; font-weight:600; margin-bottom:8px; }
+  .empty-state p{ font-size:12.5px; color:var(--text-secondary); max-width:280px; line-height:1.6; margin-bottom:20px; }
+
+  /* --- Card de integração/conector --- */
+  .integ-card{ display:flex; align-items:center; gap:14px; }
+  .integ-logo{ width:40px; height:40px; border-radius:var(--r-md); background:var(--bg-surface-3); border:1px solid var(--border-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .integ-logo svg{ width:19px; height:19px; }
+  .integ-name{ font-size:13.5px; font-weight:600; margin-bottom:2px; }
+  .integ-status{ font-size:11.5px; display:flex; align-items:center; gap:5px; }
+  .integ-status .dot{ width:6px; height:6px; border-radius:50%; }
+  .integ-status.connected{ color:var(--mint-400); }
+  .integ-status.connected .dot{ background:var(--mint-500); box-shadow:0 0 5px 1px var(--glow-mint-soft); }
+  .integ-status.disconnected{ color:var(--text-muted); }
+  .integ-status.disconnected .dot{ background:var(--text-disabled); }
+
+  /* --- Card comparativo (antes/depois) --- */
+  .compare-card{ display:grid; grid-template-columns: 1fr auto 1fr; align-items:center; gap:16px; }
+  .compare-side{ text-align:center; }
+  .compare-label{ font-size:11px; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; font-family:var(--font-mono); }
+  .compare-value{ font-family:var(--font-display); font-size:22px; font-weight:600; }
+  .compare-value.before{ color:var(--text-secondary); }
+  .compare-value.after{ color:var(--mint-400); }
+  .compare-arrow{ width:32px; height:32px; border-radius:50%; background:var(--bg-surface-3); display:flex; align-items:center; justify-content:center; color:var(--orange-400); }
+  .compare-arrow svg{ width:16px; height:16px; }
+
+  /* ============================================================
+     03 — MÉTRICAS EXTRA
+     ============================================================ */
+  .metric-block-card{ background: var(--bg-surface-1); border:1px solid var(--border-hair); border-radius: var(--r-lg); padding: 20px 22px; }
+  .metric-block-head{ font-family:var(--font-display); font-size:13.5px; font-weight:600; margin-bottom:14px; }
+
+  /* --- Sparkline inline (dentro de tabela/card) --- */
+  .spark-row{ display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border-hair); }
+  .spark-row:last-child{ border-bottom:none; }
+  .spark-label{ font-size:12.5px; flex:1; }
+  .spark-svg{ flex-shrink:0; }
+  .spark-value{ font-family:var(--font-mono); font-size:12.5px; width:60px; text-align:right; }
+
+  /* --- Barras verticais --- */
+  .vbar-chart{ display:flex; align-items:flex-end; gap:16px; height:160px; padding-top:10px; }
+  .vbar-col{ flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end; gap:8px; }
+  .vbar{ width:100%; max-width:40px; border-radius: 6px 6px 0 0; transition: opacity var(--dur-fast) var(--ease-out); position:relative; }
+  .vbar:hover{ opacity:0.85; }
+  .vbar-val{ font-family:var(--font-mono); font-size:11px; color:var(--text-secondary); }
+  .vbar-label{ font-size:11px; color:var(--text-muted); }
+
+  /* --- Heatmap de atividade --- */
+  .heatmap-grid{ display:grid; grid-template-columns: repeat(12, 1fr); gap:4px; }
+  .heat-cell{ aspect-ratio:1; border-radius:3px; transition: transform var(--dur-fast) var(--ease-out); cursor:pointer; }
+  .heat-cell:hover{ transform: scale(1.2); }
+  .heat-legend{ display:flex; align-items:center; gap:6px; margin-top:14px; font-size:10.5px; color:var(--text-muted); }
+  .heat-legend .heat-cell{ width:11px; height:11px; cursor:default; }
+  .heat-legend .heat-cell:hover{ transform:none; }
+
+  /* --- Gauge / velocímetro --- */
+  .gauge-wrap{ display:flex; flex-direction:column; align-items:center; }
+  .gauge-value{ font-family:var(--font-display); font-size:28px; font-weight:600; margin-top:-46px; }
+  .gauge-sub{ font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+
+  /* --- Comparação lado a lado --- */
+  .month-compare{ display:flex; align-items:center; gap:20px; }
+  .month-compare-bars{ flex:1; display:flex; flex-direction:column; gap:10px; }
+  .mc-row{ display:flex; align-items:center; gap:10px; }
+  .mc-label{ font-size:11.5px; color:var(--text-muted); width:64px; flex-shrink:0; }
+  .mc-track{ flex:1; height:20px; background:var(--bg-surface-3); border-radius:5px; overflow:hidden; }
+  .mc-fill{ height:100%; border-radius:5px; }
+  .mc-val{ font-family:var(--font-mono); font-size:11.5px; width:56px; text-align:right; flex-shrink:0; }
+
+  /* ============================================================
+     04 — FORMULÁRIOS
+     ============================================================ */
+  .form-card{ background: var(--bg-surface-1); border:1px solid var(--border-hair); border-radius: var(--r-lg); padding: 22px 24px; }
+  .form-card-head{ font-family:var(--font-display); font-size:13.5px; font-weight:600; margin-bottom:16px; }
+  .field-lg{ display:flex; flex-direction:column; gap:7px; }
+  .field-lg label{ font-size:12px; color:var(--text-secondary); font-weight:500; }
+  .field-lg input, .field-lg select, .field-lg textarea{
+    font-family: var(--font-body); background: var(--bg-surface-2); border: 1px solid var(--border-soft);
+    border-radius: var(--r-md); padding: 10px 14px; color: var(--text-primary); font-size: 13.5px; outline:none; width:100%;
+    transition: border-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+  }
+  .field-lg input::placeholder, .field-lg textarea::placeholder{ color: var(--text-disabled); }
+  .field-lg input:hover, .field-lg select:hover, .field-lg textarea:hover{ border-color: var(--border-strong); }
+  .field-lg input:focus, .field-lg select:focus, .field-lg textarea:focus{ border-color: var(--orange-500); box-shadow: 0 0 0 3px var(--glow-orange-soft); }
+  .field-lg textarea{ resize:vertical; min-height:80px; font-family:var(--font-body); line-height:1.5; }
+  .field-hint{ font-size:11px; color:var(--text-muted); }
+
+  /* --- Input com ícone --- */
+  .field-icon-wrap{ position:relative; }
+  .field-icon-wrap svg{ position:absolute; left:12px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--text-muted); pointer-events:none; }
+  .field-icon-wrap input{ padding-left:36px !important; }
+
+  /* --- Validação inline --- */
+  .field-valid input{ border-color: var(--mint-500) !important; }
+  .field-invalid input{ border-color: var(--red-500) !important; }
+  .field-msg{ font-size:11px; display:flex; align-items:center; gap:5px; }
+  .field-msg svg{ width:12px; height:12px; }
+  .field-msg.success{ color: var(--mint-400); }
+  .field-msg.error{ color: var(--red-400); }
+
+  /* --- Checkbox / radio --- */
+  .check-row{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .check-row:last-child{ margin-bottom:0; }
+  .cbx{ width:18px; height:18px; border-radius:6px; border:1.5px solid var(--border-strong); flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
+  .cbx.checked{ background:var(--orange-500); border-color:var(--orange-500); }
+  .cbx svg{ width:11px; height:11px; color:#1A0D02; opacity:0; }
+  .cbx.checked svg{ opacity:1; }
+  .rdo{ width:18px; height:18px; border-radius:50%; border:1.5px solid var(--border-strong); flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: border-color var(--dur-fast) var(--ease-out); }
+  .rdo.checked{ border-color:var(--orange-500); }
+  .rdo-dot{ width:9px; height:9px; border-radius:50%; background:var(--orange-500); opacity:0; transition:opacity var(--dur-fast) var(--ease-out); }
+  .rdo.checked .rdo-dot{ opacity:1; }
+  .check-label{ font-size:13px; color:var(--text-primary); cursor:pointer; }
+
+  /* --- Date picker (campo) --- */
+  .date-field{ position:relative; }
+  .date-field svg.cal-icon{ position:absolute; right:12px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--text-muted); pointer-events:none; }
+
+  /* --- Upload / dropzone --- */
+  .dropzone{
+    border: 1.5px dashed var(--border-strong); border-radius: var(--r-lg); padding: 32px; text-align:center;
+    transition: border-color var(--dur-base) var(--ease-out), background var(--dur-base) var(--ease-out); cursor:pointer;
+  }
+  .dropzone:hover{ border-color: var(--orange-500); background: rgba(255,122,26,0.03); }
+  .dropzone svg{ width:30px; height:30px; color:var(--text-muted); margin: 0 auto 12px; }
+  .dropzone p{ font-size:12.5px; color:var(--text-secondary); margin-bottom:4px; }
+  .dropzone span{ font-size:11px; color:var(--text-muted); }
+
+  /* --- Slider --- */
+  .slider-wrap{ padding: 6px 2px; }
+  .slider-track-bg{ height:5px; background:var(--bg-surface-3); border-radius:3px; position:relative; margin: 12px 0; }
+  .slider-track-fill{ position:absolute; left:0; top:0; height:100%; background:linear-gradient(90deg, var(--orange-500), var(--orange-400)); border-radius:3px; }
+  .slider-handle{ position:absolute; top:50%; width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid var(--orange-500); transform:translate(-50%,-50%); cursor:grab; box-shadow:0 1px 4px rgba(0,0,0,0.3); }
+  .slider-labels{ display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted); font-family:var(--font-mono); }
+
+  /* --- Combobox com busca --- */
+  .combo-wrap{ position:relative; }
+  .combo-dropdown{ position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--bg-surface-2); border:1px solid var(--border-soft); border-radius:var(--r-md); overflow:hidden; box-shadow:0 12px 28px rgba(0,0,0,0.35); z-index:10; }
+  .combo-opt{ padding:9px 14px; font-size:13px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; transition:background var(--dur-fast) var(--ease-out); }
+  .combo-opt:hover{ background:var(--bg-surface-3); }
+  .combo-opt.selected{ color:var(--orange-400); }
+  .combo-opt.selected svg{ width:14px; height:14px; }
+
+  /* --- Tag input --- */
+  .taginput-box{
+    display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+    background: var(--bg-surface-2); border:1px solid var(--border-soft); border-radius: var(--r-md); padding: 8px 10px;
+    transition: border-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out);
+  }
+  .taginput-box:focus-within{ border-color: var(--orange-500); box-shadow: 0 0 0 3px var(--glow-orange-soft); }
+  .tag-pill{ display:flex; align-items:center; gap:6px; background:var(--bg-surface-4); border-radius:var(--r-pill); padding:4px 6px 4px 11px; font-size:12px; }
+  .tag-pill button{ width:15px; height:15px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:var(--text-muted); transition:background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
+  .tag-pill button:hover{ background:var(--red-500); color:#fff; }
+  .tag-pill button svg{ width:10px; height:10px; }
+  .taginput-box input{ border:none; background:none; outline:none; color:var(--text-primary); font-size:13px; flex:1; min-width:80px; font-family:var(--font-body); }
+
+  /* ============================================================
+     05 — NAVEGAÇÃO
+     ============================================================ */
+  .nav-block-card{ background: var(--bg-surface-1); border:1px solid var(--border-hair); border-radius: var(--r-lg); padding: 22px 24px; }
+  .nav-block-head{ font-family:var(--font-display); font-size:13.5px; font-weight:600; margin-bottom:16px; }
+
+  /* --- Breadcrumb --- */
+  .breadcrumb{ display:flex; align-items:center; gap:8px; font-size:12.5px; }
+  .breadcrumb a{ color:var(--text-muted); transition:color var(--dur-fast) var(--ease-out); }
+  .breadcrumb a:hover{ color:var(--orange-400); }
+  .breadcrumb .current{ color:var(--text-primary); font-weight:500; }
+  .breadcrumb svg{ width:13px; height:13px; color:var(--text-disabled); }
+
+  /* --- Tabs genéricas --- */
+  .gtabs{ display:flex; gap:2px; border-bottom:1px solid var(--border-hair); }
+  .gtab{ padding:10px 18px; font-size:13px; font-weight:500; color:var(--text-secondary); position:relative; transition:color var(--dur-fast) var(--ease-out); }
+  .gtab:hover{ color:var(--text-primary); }
+  .gtab.active{ color:var(--orange-400); }
+  .gtab.active::after{ content:''; position:absolute; left:18px; right:18px; bottom:-1px; height:2px; background:var(--orange-500); box-shadow:0 0 8px 0 var(--glow-orange-soft); border-radius:2px; }
+
+  /* --- Paginação --- */
+  .pagination{ display:flex; align-items:center; gap:6px; }
+  .page-btn{ width:32px; height:32px; border-radius:var(--r-sm); display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:500; color:var(--text-secondary); transition:background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out); }
+  .page-btn:hover{ background:var(--bg-surface-2); color:var(--text-primary); }
+  .page-btn.active{ background:var(--orange-500); color:#1A0D02; }
+  .page-btn svg{ width:15px; height:15px; }
+  .page-dots{ color:var(--text-disabled); font-size:12px; padding:0 2px; }
+
+  /* --- Menu de contexto --- */
+  .ctx-menu{ background:var(--bg-surface-2); border:1px solid var(--border-soft); border-radius:var(--r-md); padding:6px; width:200px; box-shadow:0 16px 32px rgba(0,0,0,0.4); }
+  .ctx-item{ display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:var(--r-sm); font-size:12.5px; transition:background var(--dur-fast) var(--ease-out); }
+  .ctx-item:hover{ background:var(--bg-surface-3); }
+  .ctx-item svg{ width:14px; height:14px; color:var(--text-muted); }
+  .ctx-item.danger{ color:var(--red-400); }
+  .ctx-item.danger svg{ color:var(--red-400); }
+  .ctx-divider{ height:1px; background:var(--border-hair); margin:5px 4px; }
+
+  /* --- Dropdown de ações --- */
+  .dropdown-trigger{ display:flex; align-items:center; gap:8px; background:var(--bg-surface-2); border:1px solid var(--border-soft); border-radius:var(--r-md); padding:9px 14px; font-size:13px; font-weight:500; cursor:pointer; }
+  .dropdown-trigger svg{ width:15px; height:15px; color:var(--text-muted); }
+
+  /* --- Command palette --- */
+  .cmdk{ background:var(--bg-surface-2); border:1px solid var(--border-soft); border-radius:var(--r-lg); overflow:hidden; box-shadow:0 24px 48px rgba(0,0,0,0.5); }
+  .cmdk-input-row{ display:flex; align-items:center; gap:12px; padding:16px 18px; border-bottom:1px solid var(--border-hair); }
+  .cmdk-input-row svg{ width:17px; height:17px; color:var(--text-muted); }
+  .cmdk-input-row input{ flex:1; background:none; border:none; outline:none; color:var(--text-primary); font-size:14px; font-family:var(--font-body); }
+  .cmdk-kbd{ font-family:var(--font-mono); font-size:10.5px; background:var(--bg-surface-4); border:1px solid var(--border-soft); border-radius:5px; padding:2px 6px; color:var(--text-muted); }
+  .cmdk-section{ padding: 8px; }
+  .cmdk-section-label{ font-family:var(--font-mono); font-size:10px; color:var(--text-disabled); text-transform:uppercase; letter-spacing:0.06em; padding:6px 10px; }
+  .cmdk-item{ display:flex; align-items:center; gap:11px; padding:9px 10px; border-radius:var(--r-sm); font-size:13px; transition:background var(--dur-fast) var(--ease-out); cursor:pointer; }
+  .cmdk-item:hover, .cmdk-item.active{ background:var(--bg-surface-3); }
+  .cmdk-item svg{ width:15px; height:15px; color:var(--text-muted); }
+  .cmdk-item .cmdk-item-kbd{ margin-left:auto; }
+
+  /* ============================================================
+     06 — OVERLAYS
+     ============================================================ */
+  .ov-block-card{ background: var(--bg-surface-1); border:1px solid var(--border-hair); border-radius: var(--r-lg); padding: 22px 24px; }
+  .ov-block-head{ font-family:var(--font-display); font-size:13.5px; font-weight:600; margin-bottom:16px; }
+
+  /* --- Modal --- */
+  .modal-mock{ background:var(--bg-surface-2); border:1px solid var(--border-soft); border-radius:var(--r-lg); padding:24px; box-shadow:0 24px 48px rgba(0,0,0,0.5); max-width:360px; }
+  .modal-icon-warn{ width:44px; height:44px; border-radius:var(--r-md); background:rgba(240,180,41,0.12); color:var(--amber-500); display:flex; align-items:center; justify-content:center; margin-bottom:16px; }
+  .modal-icon-warn svg{ width:22px; height:22px; }
+  .modal-mock h4{ font-family:var(--font-display); font-size:15px; font-weight:600; margin-bottom:8px; }
+  .modal-mock p{ font-size:12.5px; color:var(--text-secondary); line-height:1.6; margin-bottom:22px; }
+  .modal-actions{ display:flex; gap:10px; justify-content:flex-end; }
+
+  /* --- Toast --- */
+  .toast{ display:flex; align-items:center; gap:12px; background:var(--bg-surface-2); border:1px solid var(--border-soft); border-radius:var(--r-md); padding:13px 16px; box-shadow:0 12px 28px rgba(0,0,0,0.35); }
+  .toast-icon{ width:30px; height:30px; border-radius:var(--r-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .toast-icon svg{ width:15px; height:15px; }
+  .toast.success .toast-icon{ background:rgba(46,217,163,0.12); color:var(--mint-400); }
+  .toast.error .toast-icon{ background:rgba(241,88,78,0.12); color:var(--red-400); }
+  .toast p{ font-size:12.5px; font-weight:500; flex:1; }
+  .toast-close{ color:var(--text-muted); }
+  .toast-close svg{ width:14px; height:14px; }
+
+  /* --- Tooltip / popover --- */
+  .tooltip-demo-wrap{ position:relative; display:inline-block; }
+  .tooltip-bubble{ position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:var(--bg-surface-4); border:1px solid var(--border-soft); border-radius:var(--r-sm); padding:6px 11px; font-size:11.5px; white-space:nowrap; box-shadow:0 8px 20px rgba(0,0,0,0.3); }
+  .tooltip-bubble::after{ content:''; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--bg-surface-4); }
+
+  .popover-mock{ background:var(--bg-surface-2); border:1px solid var(--border-soft); border-radius:var(--r-md); padding:16px; width:220px; box-shadow:0 16px 32px rgba(0,0,0,0.35); }
+  .popover-mock h5{ font-size:12.5px; font-weight:600; margin-bottom:6px; }
+  .popover-mock p{ font-size:11.5px; color:var(--text-secondary); line-height:1.5; }
+
+  /* --- Skeleton loading --- */
+  @keyframes skeletonPulse{ 0%,100%{ opacity:0.5; } 50%{ opacity:1; } }
+  .skel{ background:var(--bg-surface-3); border-radius:6px; animation: skeletonPulse 1.6s ease-in-out infinite; }
+
+  /* --- Banner de alerta inline --- */
+  .alert-banner{ display:flex; align-items:center; gap:12px; padding:13px 18px; border-radius:var(--r-md); border:1px solid; }
+  .alert-banner.warning{ background:rgba(240,180,41,0.08); border-color:rgba(240,180,41,0.25); }
+  .alert-banner.warning svg{ color:var(--amber-500); }
+  .alert-banner.info{ background:rgba(91,158,232,0.08); border-color:rgba(91,158,232,0.25); }
+  .alert-banner.info svg{ color:var(--blue-400); }
+  .alert-banner svg{ width:18px; height:18px; flex-shrink:0; }
+  .alert-banner p{ font-size:12.5px; flex:1; }
+  .alert-banner .link{ font-size:12px; font-weight:600; color:var(--orange-400); flex-shrink:0; }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; animation:none !important; } }
+</style>
+</head>
+<body>
+<div class="canvas">
+
+  <div class="intro">
+    <div class="intro-eyebrow"><span class="dot"></span>Componentes estendidos · v1.2</div>
+    <h1>Helion — biblioteca de componentes</h1>
+    <p>Funis de venda, cards de trabalho, formulários, navegação e overlays — a camada que faltava para operar o CRM no dia a dia, não só demonstrar telas.</p>
+  </div>
+
+  <div class="toc">
+    <a href="#funis">01 Funis</a>
+    <a href="#cards">02 Cards</a>
+    <a href="#metricas">03 Métricas extra</a>
+    <a href="#forms">04 Formulários</a>
+    <a href="#nav">05 Navegação</a>
+    <a href="#overlays">06 Overlays</a>
+  </div>
+
+  <!-- ============================================================
+       01 — FUNIS DE VENDA
+       ============================================================ -->
+  <div class="section" id="funis">
+    <div class="section-head"><span class="section-num">01</span><h2>Funis de venda</h2><div class="rule"></div></div>
+    <p class="subhead">Três formatos, cada um resolvendo uma pergunta diferente: a forma geométrica comunica proporção de um olhar; o vertical expõe onde o lead trava; o mini-funil cabe dentro de qualquer card sem ocupar uma seção inteira.</p>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <!-- Funil geométrico trapezoidal -->
+      <div class="funnel-card">
+        <div class="funnel-card-head"><h3>Funil geométrico</h3></div>
+        <div class="funnel-card-sub">Volume proporcional à largura real de cada etapa</div>
+
+        <div class="geo-funnel-wrap">
+          <svg class="geo-funnel-svg" width="220" height="220" viewBox="0 0 220 220" fill="none">
+            <defs>
+              <linearGradient id="segGrad1" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#B84C08"/><stop offset="100%" stop-color="#FF7A1A"/>
+              </linearGradient>
+              <linearGradient id="segGrad2" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#E8620A"/><stop offset="100%" stop-color="#FF9640"/>
+              </linearGradient>
+              <linearGradient id="segGrad3" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#FF7A1A"/><stop offset="100%" stop-color="#FFC28A"/>
+              </linearGradient>
+              <linearGradient id="segGrad4" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#FFC28A"/><stop offset="100%" stop-color="#86EFC9"/>
+              </linearGradient>
+              <linearGradient id="segGrad5" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#3FDDA3"/><stop offset="100%" stop-color="#2ED9A3"/>
+              </linearGradient>
+            </defs>
+            <!-- larguras proporcionais a 148/109/71/46/28, centralizadas -->
+            <!-- 148 -> 200px | 109 -> 147px | 71 -> 96px | 46 -> 62px | 28 -> 38px -->
+            <g class="funnel-seg"><polygon points="10,4 210,4 186.5,40 33.5,40" fill="url(#segGrad1)"/></g>
+            <g class="funnel-seg"><polygon points="186.5,44 33.5,44 163,80 57,80" fill="url(#segGrad2)"/></g>
+            <g class="funnel-seg"><polygon points="163,84 57,84 146,120 74,120" fill="url(#segGrad3)"/></g>
+            <g class="funnel-seg"><polygon points="146,124 74,124 129,160 91,160" fill="url(#segGrad4)"/></g>
+            <g class="funnel-seg"><polygon points="129,164 91,164 116,200 104,200" fill="url(#segGrad5)"/></g>
+
+            <text x="110" y="26" text-anchor="middle" font-family="JetBrains Mono" font-size="12" font-weight="500" fill="#1A0D02">148</text>
+            <text x="110" y="66" text-anchor="middle" font-family="JetBrains Mono" font-size="11.5" font-weight="500" fill="#1A0D02">109</text>
+            <text x="110" y="106" text-anchor="middle" font-family="JetBrains Mono" font-size="11" font-weight="500" fill="#1A0D02">71</text>
+            <text x="110" y="146" text-anchor="middle" font-family="JetBrains Mono" font-size="10.5" font-weight="500" fill="#1A0D02">46</text>
+            <text x="110" y="186" text-anchor="middle" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#052e21">28</text>
+          </svg>
+
+          <div class="geo-funnel-legend">
+            <div class="geo-legend-row">
+              <span class="geo-legend-swatch" style="background:var(--orange-700)"></span>
+              <div class="geo-legend-text"><p>Novo lead</p><span>100% do funil</span></div>
+              <div><div class="geo-legend-value">148</div></div>
+            </div>
+            <div class="geo-legend-row">
+              <span class="geo-legend-swatch" style="background:var(--orange-500)"></span>
+              <div class="geo-legend-text"><p>Qualificação</p><span>74% do funil</span></div>
+              <div><div class="geo-legend-value">109</div></div>
+            </div>
+            <div class="geo-legend-row">
+              <span class="geo-legend-swatch" style="background:var(--orange-400)"></span>
+              <div class="geo-legend-text"><p>Proposta</p><span>48% do funil</span></div>
+              <div><div class="geo-legend-value">71</div></div>
+            </div>
+            <div class="geo-legend-row">
+              <span class="geo-legend-swatch" style="background:var(--orange-200)"></span>
+              <div class="geo-legend-text"><p>Negociação</p><span>31% do funil</span></div>
+              <div><div class="geo-legend-value">46</div></div>
+            </div>
+            <div class="geo-legend-row">
+              <span class="geo-legend-swatch" style="background:var(--mint-500)"></span>
+              <div class="geo-legend-text"><p>Fechado</p><span>18,6% do funil</span></div>
+              <div><div class="geo-legend-value" style="color:var(--mint-400)">28</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Funil vertical com drop-off -->
+      <div class="funnel-card">
+        <div class="funnel-card-head"><h3>Funil com perda por etapa</h3></div>
+        <div class="funnel-card-sub">Mostra onde o lead está travando — foco no dropoff, não só no volume</div>
+
+        <div class="vfunnel">
+          <div class="vfunnel-step">
+            <div class="vfunnel-bar" style="background:linear-gradient(90deg, var(--orange-700), var(--orange-500));">
+              <p>Novo lead</p><span>148</span>
+            </div>
+          </div>
+          <div class="vfunnel-drop"><svg class="icon" viewBox="0 0 24 24" style="stroke-width:2"><path d="m18 15-6 6-6-6"/></svg>−39 leads (26%) não responderam ao contato</div>
+          <div class="vfunnel-step">
+            <div class="vfunnel-bar" style="background:linear-gradient(90deg, var(--orange-600), var(--orange-400)); width:88%;">
+              <p>Qualificação</p><span>109</span>
+            </div>
+          </div>
+          <div class="vfunnel-drop"><svg class="icon" viewBox="0 0 24 24" style="stroke-width:2"><path d="m18 15-6 6-6-6"/></svg>−38 leads (35%) sem retorno após proposta</div>
+          <div class="vfunnel-step">
+            <div class="vfunnel-bar" style="background:linear-gradient(90deg, var(--orange-500), var(--orange-300, var(--orange-400))); width:70%;">
+              <p>Proposta</p><span>71</span>
+            </div>
+          </div>
+          <div class="vfunnel-drop"><svg class="icon" viewBox="0 0 24 24" style="stroke-width:2"><path d="m18 15-6 6-6-6"/></svg>−25 leads (35%) — objeção de preço</div>
+          <div class="vfunnel-step">
+            <div class="vfunnel-bar" style="background:linear-gradient(90deg, var(--orange-400), var(--mint-600)); width:52%;">
+              <p>Negociação</p><span>46</span>
+            </div>
+          </div>
+          <div class="vfunnel-drop"><svg class="icon" viewBox="0 0 24 24" style="stroke-width:2; color:var(--mint-400)"><path d="M5 12h14M13 6l6 6-6 6"/></svg>18 fecharam — 39% de conversão final</div>
+          <div class="vfunnel-step">
+            <div class="vfunnel-bar" style="background:linear-gradient(90deg, var(--mint-600), var(--mint-400)); width:34%;">
+              <p>Fechado</p><span>28</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mini-funil compacto -->
+    <div class="funnel-card">
+      <div class="funnel-card-head"><h3>Mini-funil — para caber em qualquer card</h3></div>
+      <div class="funnel-card-sub">Mesma lógica de proporção, versão compacta para dashboards densos</div>
+
+      <div style="display:flex; gap:32px; align-items:center;">
+        <div class="mini-funnel" style="width:180px;">
+          <div class="mini-funnel-bar" style="height:100%; background:var(--orange-700);" title="Novo: 148"></div>
+          <div class="mini-funnel-bar" style="height:74%; background:var(--orange-600);" title="Qualificação: 109"></div>
+          <div class="mini-funnel-bar" style="height:48%; background:var(--orange-500);" title="Proposta: 71"></div>
+          <div class="mini-funnel-bar" style="height:31%; background:var(--orange-400);" title="Negociação: 46"></div>
+          <div class="mini-funnel-bar" style="height:18.6%; background:var(--mint-500);" title="Fechado: 28"></div>
+        </div>
+        <div style="font-size:12.5px; color:var(--text-secondary); line-height:1.6;">
+          <strong style="color:var(--text-primary); font-family:var(--font-display); font-size:20px; display:block; margin-bottom:2px;">18,6%</strong>
+          taxa de conversão ponta a ponta — passe o cursor sobre cada barra para ver o volume da etapa
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       02 — CARDS
+       ============================================================ -->
+  <div class="section" id="cards">
+    <div class="section-head"><span class="section-num">02</span><h2>Cards de trabalho</h2><div class="rule"></div></div>
+    <p class="subhead">Sete tipos cobrindo o que realmente aparece na tela de um vendedor: contatos, propostas, tarefas, notificações, estado vazio, integrações e comparação de resultado.</p>
+
+    <div class="grid-3" style="margin-bottom:16px;">
+      <!-- Contato/empresa -->
+      <div class="base-card">
+        <div class="contact-card-head">
+          <div style="display:flex; gap:12px;">
+            <div class="contact-avatar">CT</div>
+            <div>
+              <div class="contact-name">Clínica Terravita</div>
+              <div class="contact-role">Cliente PJ · Adamantina, SP</div>
+            </div>
+          </div>
+          <button class="btn-icon-sq-mini"><svg class="icon" viewBox="0 0 24 24" style="width:15px;height:15px"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg></button>
+        </div>
+        <div class="contact-tags">
+          <span class="mini-tag">Comercial</span>
+          <span class="mini-tag">920 kWh</span>
+          <span class="mini-tag" style="background:rgba(255,122,26,0.12); color:var(--orange-400);">Alto potencial</span>
+        </div>
+        <div class="contact-fields">
+          <div class="contact-field-row"><svg class="icon" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>(18) 99812-4471</div>
+          <div class="contact-field-row"><svg class="icon" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>contato@terravita.com.br</div>
+        </div>
+      </div>
+
+      <!-- Proposta/orçamento -->
+      <div class="base-card proposal-card">
+        <div class="proposal-status-strip" style="background:var(--amber-500);"></div>
+        <div class="proposal-head">
+          <span class="proposal-id">PROP-0847</span>
+          <span class="badge-mini" style="color:var(--amber-500); background:rgba(240,180,41,0.12); font-size:10.5px; font-weight:600; padding:3px 9px; border-radius:var(--r-pill);">Aguardando assinatura</span>
+        </div>
+        <div class="proposal-title">Sistema 6,4 kWp — João Ferreira</div>
+        <div class="proposal-value">R$ 24.800</div>
+        <div style="font-size:11.5px; color:var(--text-muted);">Payback estimado em 3,8 anos</div>
+        <div class="proposal-meta-row">
+          <div class="proposal-validity urgent"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>Vence em 2 dias</div>
+          <button class="btn btn-secondary" style="padding:6px 14px; font-size:11.5px;">Ver detalhes</button>
+        </div>
+      </div>
+
+      <!-- Tarefa/atividade -->
+      <div class="base-card">
+        <div class="task-card" style="margin-bottom:16px;">
+          <div class="task-check"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" fill="none"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div class="task-body">
+            <div class="task-title">Ligar para Roberto Andrade</div>
+            <div class="task-meta"><span class="task-priority prio-high">Alta</span><span>Hoje, 14:00</span></div>
+          </div>
+        </div>
+        <div class="task-card" style="margin-bottom:16px;">
+          <div class="task-check done"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" fill="none"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div class="task-body">
+            <div class="task-title done">Enviar proposta Clínica Terravita</div>
+            <div class="task-meta"><span class="task-priority prio-med">Média</span><span>Concluída</span></div>
+          </div>
+        </div>
+        <div class="task-card">
+          <div class="task-check"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" fill="none"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div class="task-body">
+            <div class="task-title">Follow-up Sítio Bela Vista</div>
+            <div class="task-meta"><span class="task-priority prio-low">Baixa</span><span>Amanhã</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-bottom:16px;">
+      <!-- Notificação -->
+      <div class="base-card">
+        <div class="notif-card" style="margin-bottom:18px;">
+          <div class="notif-icon success"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+          <div style="flex:1;">
+            <div class="notif-title">Proposta aceita</div>
+            <div class="notif-desc">Marcia Silveira assinou a proposta PROP-0812.</div>
+            <span class="notif-time">Há 12 min</span>
+          </div>
+        </div>
+        <div class="notif-card">
+          <div class="notif-icon warning"><svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+          <div style="flex:1;">
+            <div class="notif-title">3 propostas vencendo hoje</div>
+            <div class="notif-desc">Revise antes do fim do expediente.</div>
+            <span class="notif-time">Há 1h</span>
+          </div>
+          <div class="notif-dot-new"></div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="base-card">
+        <div class="empty-state">
+          <div class="empty-icon-wrap"><svg class="icon" viewBox="0 0 24 24" style="stroke-width:1.5"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg></div>
+          <h4>Nenhum lead nesta etapa</h4>
+          <p>Quando um lead avançar para "Negociação", ele vai aparecer aqui automaticamente.</p>
+          <button class="btn btn-secondary" style="padding:8px 16px; font-size:12px;"><svg viewBox="0 0 24 24" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>Adicionar manualmente</button>
+        </div>
+      </div>
+
+      <!-- Integração/conector -->
+      <div class="base-card">
+        <div class="integ-card" style="margin-bottom:16px; padding-bottom:16px; border-bottom:1px solid var(--border-hair);">
+          <div class="integ-logo"><svg class="icon" viewBox="0 0 24 24" style="color:var(--blue-400)"><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/><path d="M10 9h4v2c1-1.5 2.5-2 4-2 3 0 5 2 5 6v7h-4v-6.5c0-1.5-.5-2.5-2-2.5s-2 1-2 2.5V21h-4z"/></svg></div>
+          <div style="flex:1;">
+            <div class="integ-name">Meta Ads</div>
+            <div class="integ-status connected"><span class="dot"></span>Conectado — sincronizado agora há pouco</div>
+          </div>
+        </div>
+        <div class="integ-card">
+          <div class="integ-logo"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></div>
+          <div style="flex:1;">
+            <div class="integ-name">Google Ads</div>
+            <div class="integ-status disconnected"><span class="dot"></span>Desconectado</div>
+          </div>
+          <button class="btn btn-secondary" style="padding:6px 12px; font-size:11px;">Conectar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparativo -->
+    <div class="base-card compare-card">
+      <div class="compare-side">
+        <div class="compare-label">Conta de energia antes</div>
+        <div class="compare-value before">R$ 480<span style="font-size:13px">/mês</span></div>
+      </div>
+      <div class="compare-arrow"><svg class="icon" viewBox="0 0 24 24" style="stroke-width:2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="compare-side">
+        <div class="compare-label">Conta de energia depois</div>
+        <div class="compare-value after">R$ 62<span style="font-size:13px">/mês</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       03 — MÉTRICAS EXTRA
+       ============================================================ -->
+  <div class="section" id="metricas">
+    <div class="section-head"><span class="section-num">03</span><h2>Métricas complementares</h2><div class="rule"></div></div>
+    <p class="subhead">Formatos que cabem em espaços menores — dentro de uma célula de tabela, ao lado de um número, ou como resumo rápido sem abrir um gráfico completo.</p>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <!-- Sparklines -->
+      <div class="metric-block-card">
+        <div class="metric-block-head">Sparkline — tendência por vendedor</div>
+        <div class="spark-row">
+          <span class="spark-label">Cesar M.</span>
+          <svg class="spark-svg" width="90" height="28" viewBox="0 0 90 28"><path d="M2 20 L20 16 L38 18 L56 10 L74 8 L88 4" stroke="var(--mint-400)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="spark-value" style="color:var(--mint-400)">+18%</span>
+        </div>
+        <div class="spark-row">
+          <span class="spark-label">Ana P.</span>
+          <svg class="spark-svg" width="90" height="28" viewBox="0 0 90 28"><path d="M2 10 L20 14 L38 8 L56 16 L74 12 L88 18" stroke="var(--orange-400)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="spark-value" style="color:var(--red-400)">−6%</span>
+        </div>
+        <div class="spark-row">
+          <span class="spark-label">Lucas F.</span>
+          <svg class="spark-svg" width="90" height="28" viewBox="0 0 90 28"><path d="M2 18 L20 17 L38 15 L56 12 L74 13 L88 6" stroke="var(--mint-400)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="spark-value" style="color:var(--mint-400)">+9%</span>
+        </div>
+      </div>
+
+      <!-- Barras verticais -->
+      <div class="metric-block-card">
+        <div class="metric-block-head">Fechamentos por vendedor — mês corrente</div>
+        <div class="vbar-chart">
+          <div class="vbar-col">
+            <span class="vbar-val">12</span>
+            <div class="vbar" style="height:80%; background:linear-gradient(180deg, var(--orange-400), var(--orange-600));"></div>
+            <span class="vbar-label">Cesar</span>
+          </div>
+          <div class="vbar-col">
+            <span class="vbar-val">7</span>
+            <div class="vbar" style="height:47%; background:linear-gradient(180deg, var(--orange-400), var(--orange-600));"></div>
+            <span class="vbar-label">Ana</span>
+          </div>
+          <div class="vbar-col">
+            <span class="vbar-val">9</span>
+            <div class="vbar" style="height:60%; background:linear-gradient(180deg, var(--orange-400), var(--orange-600));"></div>
+            <span class="vbar-label">Lucas</span>
+          </div>
+          <div class="vbar-col">
+            <span class="vbar-val">15</span>
+            <div class="vbar" style="height:100%; background:linear-gradient(180deg, var(--mint-400), var(--mint-600));"></div>
+            <span class="vbar-label">Bia</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Heatmap -->
+      <div class="metric-block-card">
+        <div class="metric-block-head">Atividade de leads por dia — últimas 12 semanas</div>
+        <div class="heatmap-grid" id="heatmapGrid"></div>
+        <div class="heat-legend">
+          <span>menos</span>
+          <div class="heat-cell" style="background:var(--bg-surface-3)"></div>
+          <div class="heat-cell" style="background:rgba(255,122,26,0.25)"></div>
+          <div class="heat-cell" style="background:rgba(255,122,26,0.5)"></div>
+          <div class="heat-cell" style="background:rgba(255,122,26,0.75)"></div>
+          <div class="heat-cell" style="background:var(--orange-500)"></div>
+          <span>mais</span>
+        </div>
+      </div>
+
+      <!-- Gauge -->
+      <div class="metric-block-card">
+        <div class="metric-block-head">Meta do mês — vendas fechadas</div>
+        <div class="gauge-wrap">
+          <svg width="220" height="130" viewBox="0 0 220 130">
+            <path d="M 20 110 A 90 90 0 0 1 200 110" fill="none" stroke="var(--bg-surface-3)" stroke-width="16" stroke-linecap="round"/>
+            <path d="M 20 110 A 90 90 0 0 1 200 110" fill="none" stroke="url(#gaugeGrad)" stroke-width="16" stroke-linecap="round" stroke-dasharray="200 283" />
+            <defs>
+              <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stop-color="#FF7A1A"/><stop offset="100%" stop-color="#2ED9A3"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="gauge-value">28<span style="font-size:16px;color:var(--text-secondary);font-weight:400;">/40</span></div>
+          <div class="gauge-sub">70% da meta mensal atingida</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-block-card" style="margin-top:16px;">
+      <div class="metric-block-head">Este mês vs. mês anterior</div>
+      <div class="month-compare">
+        <div class="month-compare-bars">
+          <div class="mc-row">
+            <span class="mc-label">Jun 2026</span>
+            <div class="mc-track"><div class="mc-fill" style="width:68%; background:var(--bg-surface-4);"></div></div>
+            <span class="mc-val">R$ 612k</span>
+          </div>
+          <div class="mc-row">
+            <span class="mc-label">Jul 2026</span>
+            <div class="mc-track"><div class="mc-fill" style="width:100%; background:linear-gradient(90deg, var(--orange-500), var(--mint-500));"></div></div>
+            <span class="mc-val" style="color:var(--mint-400)">R$ 847k</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       04 — FORMULÁRIOS
+       ============================================================ -->
+  <div class="section" id="forms">
+    <div class="section-head"><span class="section-num">04</span><h2>Formulários</h2><div class="rule"></div></div>
+    <p class="subhead">Todo campo que um CRM precisa para cadastrar um lead, registrar uma nota ou configurar uma automação — não só o input de texto básico da v1.</p>
+
+    <div class="grid-3" style="margin-bottom:16px;">
+      <!-- Textarea -->
+      <div class="form-card">
+        <div class="form-card-head">Textarea</div>
+        <div class="field-lg">
+          <label>Notas da ligação</label>
+          <textarea placeholder="Ex: cliente confirmou interesse em financiamento próprio...">Confirmado interesse em financiamento próprio. Sem restrição de crédito informada.</textarea>
+          <span class="field-hint">Visível apenas para a equipe interna</span>
+        </div>
+      </div>
+
+      <!-- Input com ícone -->
+      <div class="form-card">
+        <div class="form-card-head">Input com ícone</div>
+        <div class="field-lg" style="margin-bottom:14px;">
+          <label>Telefone</label>
+          <div class="field-icon-wrap">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            <input type="text" placeholder="(18) 99999-0000">
+          </div>
+        </div>
+        <div class="field-lg">
+          <label>Valor da proposta</label>
+          <div class="field-icon-wrap">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2v20M17 6.5c0-1.9-2.2-3.5-5-3.5s-5 1.4-5 3.2 2.2 2.9 5 3.3 5 1.5 5 3.3-2.2 3.2-5 3.2-5-1.6-5-3.5"/></svg>
+            <input type="text" placeholder="0,00">
+          </div>
+        </div>
+      </div>
+
+      <!-- Validação inline -->
+      <div class="form-card">
+        <div class="form-card-head">Validação inline</div>
+        <div class="field-lg field-valid" style="margin-bottom:14px;">
+          <label>E-mail</label>
+          <input type="text" value="joao.ferreira@gmail.com">
+          <div class="field-msg success"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M20 6 9 17l-5-5"/></svg>E-mail válido</div>
+        </div>
+        <div class="field-lg field-invalid">
+          <label>CPF/CNPJ</label>
+          <input type="text" value="123.456.789-0">
+          <div class="field-msg error"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>CPF incompleto — faltam dígitos</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-bottom:16px;">
+      <!-- Checkbox / radio -->
+      <div class="form-card">
+        <div class="form-card-head">Checkbox &amp; radio</div>
+        <div class="check-row"><div class="cbx checked"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" fill="none"><path d="M20 6 9 17l-5-5"/></svg></div><span class="check-label">Notificar por WhatsApp</span></div>
+        <div class="check-row"><div class="cbx"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" fill="none"><path d="M20 6 9 17l-5-5"/></svg></div><span class="check-label">Notificar por e-mail</span></div>
+        <div style="height:1px; background:var(--border-hair); margin:14px 0;"></div>
+        <div class="check-row"><div class="rdo checked"><div class="rdo-dot"></div></div><span class="check-label">Financiamento próprio</span></div>
+        <div class="check-row"><div class="rdo"><div class="rdo-dot"></div></div><span class="check-label">Financiamento bancário</span></div>
+      </div>
+
+      <!-- Date picker -->
+      <div class="form-card">
+        <div class="form-card-head">Data</div>
+        <div class="field-lg" style="margin-bottom:14px;">
+          <label>Data prevista de instalação</label>
+          <div class="date-field">
+            <input type="text" value="15/08/2026">
+            <svg class="icon cal-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+          </div>
+        </div>
+        <div class="field-lg">
+          <label>Validade da proposta</label>
+          <div class="date-field">
+            <input type="text" value="08/07/2026">
+            <svg class="icon cal-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Upload / dropzone -->
+      <div class="form-card">
+        <div class="form-card-head">Upload de arquivo</div>
+        <div class="dropzone">
+          <svg class="icon" viewBox="0 0 24 24" style="stroke-width:1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>
+          <p>Arraste a conta de energia aqui</p>
+          <span>PDF ou imagem até 10MB</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <!-- Slider -->
+      <div class="form-card">
+        <div class="form-card-head">Faixa de consumo (kWh)</div>
+        <div class="slider-wrap">
+          <div class="slider-track-bg">
+            <div class="slider-track-fill" style="width:62%;"></div>
+            <div class="slider-handle" style="left:62%;"></div>
+          </div>
+          <div class="slider-labels"><span>0</span><span style="color:var(--orange-400)">620 kWh</span><span>1000</span></div>
+        </div>
+      </div>
+
+      <!-- Combobox com busca -->
+      <div class="form-card">
+        <div class="form-card-head">Combobox com busca</div>
+        <div class="combo-wrap">
+          <div class="field-icon-wrap">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" placeholder="Buscar vendedor..." value="ces">
+          </div>
+          <div class="combo-dropdown">
+            <div class="combo-opt selected">Cesar Machado <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M20 6 9 17l-5-5"/></svg></div>
+            <div class="combo-opt">Cesar Andrade</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tag input -->
+      <div class="form-card">
+        <div class="form-card-head">Tag input</div>
+        <div class="taginput-box">
+          <span class="tag-pill">Residencial<button><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>
+          <span class="tag-pill">Alto potencial<button><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>
+          <input type="text" placeholder="Adicionar tag...">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       05 — NAVEGAÇÃO
+       ============================================================ -->
+  <div class="section" id="nav">
+    <div class="section-head"><span class="section-num">05</span><h2>Navegação</h2><div class="rule"></div></div>
+    <p class="subhead">A estrutura que orienta o vendedor dentro do produto — de saber onde está até encontrar qualquer coisa em dois segundos com a busca global.</p>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <div class="nav-block-card">
+        <div class="nav-block-head">Breadcrumb</div>
+        <div class="breadcrumb">
+          <a href="#">Pipeline</a>
+          <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="m9 18 6-6-6-6"/></svg>
+          <a href="#">Qualificação</a>
+          <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="m9 18 6-6-6-6"/></svg>
+          <span class="current">João Ferreira</span>
+        </div>
+      </div>
+
+      <div class="nav-block-card">
+        <div class="nav-block-head">Tabs genéricas</div>
+        <div class="gtabs">
+          <div class="gtab active">Todos os leads</div>
+          <div class="gtab">Meus leads</div>
+          <div class="gtab">Em risco</div>
+          <div class="gtab">Arquivados</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <div class="nav-block-card">
+        <div class="nav-block-head">Paginação</div>
+        <div class="pagination">
+          <div class="page-btn"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="m15 18-6-6 6-6"/></svg></div>
+          <div class="page-btn active">1</div>
+          <div class="page-btn">2</div>
+          <div class="page-btn">3</div>
+          <span class="page-dots">···</span>
+          <div class="page-btn">12</div>
+          <div class="page-btn"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="m9 18 6-6-6-6"/></svg></div>
+        </div>
+      </div>
+
+      <div class="nav-block-card">
+        <div class="nav-block-head">Dropdown de ações</div>
+        <div class="dropdown-trigger">
+          Ações em massa
+          <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="m6 9 6 6 6-6"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Menu de contexto -->
+      <div class="nav-block-card">
+        <div class="nav-block-head">Menu de contexto</div>
+        <div class="ctx-menu">
+          <div class="ctx-item"><svg class="icon" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>Editar lead</div>
+          <div class="ctx-item"><svg class="icon" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8z"/></svg>Mover para Proposta</div>
+          <div class="ctx-item"><svg class="icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Duplicar</div>
+          <div class="ctx-divider"></div>
+          <div class="ctx-item danger"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg>Excluir lead</div>
+        </div>
+      </div>
+
+      <!-- Command palette -->
+      <div class="nav-block-card">
+        <div class="nav-block-head">Busca global (⌘K)</div>
+        <div class="cmdk">
+          <div class="cmdk-input-row">
+            <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" placeholder="Buscar lead, proposta, ação..." value="joão">
+            <span class="cmdk-kbd">ESC</span>
+          </div>
+          <div class="cmdk-section">
+            <div class="cmdk-section-label">Leads</div>
+            <div class="cmdk-item active"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>João Ferreira — Adamantina, SP</div>
+            <div class="cmdk-item"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>João Paulo Ricci — Adamantina, SP</div>
+          </div>
+          <div class="cmdk-section">
+            <div class="cmdk-section-label">Ações</div>
+            <div class="cmdk-item"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M12 5v14M5 12h14"/></svg>Criar novo lead <span class="cmdk-item-kbd cmdk-kbd">N</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       06 — OVERLAYS
+       ============================================================ -->
+  <div class="section" id="overlays">
+    <div class="section-head"><span class="section-num">06</span><h2>Overlays &amp; feedback</h2><div class="rule"></div></div>
+    <p class="subhead">Tudo que aparece por cima do conteúdo principal — confirmação, aviso temporário, ajuda contextual e o estado de "ainda carregando".</p>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <!-- Modal -->
+      <div class="ov-block-card">
+        <div class="ov-block-head">Modal de confirmação</div>
+        <div class="modal-mock">
+          <div class="modal-icon-warn"><svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+          <h4>Excluir este lead?</h4>
+          <p>João Ferreira será removido permanentemente do pipeline, incluindo histórico de atividades. Essa ação não pode ser desfeita.</p>
+          <div class="modal-actions">
+            <button class="btn btn-secondary" style="padding:8px 16px; font-size:12.5px;">Cancelar</button>
+            <button class="btn btn-danger" style="padding:8px 16px; font-size:12.5px; border-color:var(--red-500); background:var(--red-500); color:#fff;">Excluir</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Toasts -->
+      <div class="ov-block-card">
+        <div class="ov-block-head">Toast de notificação</div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="toast success">
+            <div class="toast-icon"><svg class="icon" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div>
+            <p>Proposta enviada com sucesso</p>
+            <button class="toast-close"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          </div>
+          <div class="toast error">
+            <div class="toast-icon"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
+            <p>Falha ao sincronizar com Meta Ads</p>
+            <button class="toast-close"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" fill="none"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px;">
+      <!-- Tooltip e popover -->
+      <div class="ov-block-card">
+        <div class="ov-block-head">Tooltip &amp; popover</div>
+        <div style="display:flex; gap:40px; align-items:center;">
+          <div class="tooltip-demo-wrap">
+            <div class="tooltip-bubble">Probabilidade calculada por IA</div>
+            <button class="btn btn-secondary" style="padding:8px 16px; font-size:12.5px;">70% de fechamento</button>
+          </div>
+          <div class="popover-mock">
+            <h5>Origem do lead</h5>
+            <p>Capturado via Meta Ads, campanha "Residência", conjunto Adamantina 25km.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Skeleton loading -->
+      <div class="ov-block-card">
+        <div class="ov-block-head">Skeleton loading</div>
+        <div style="display:flex; gap:14px; align-items:flex-start;">
+          <div class="skel" style="width:44px; height:44px; border-radius:var(--r-md); flex-shrink:0;"></div>
+          <div style="flex:1; display:flex; flex-direction:column; gap:8px;">
+            <div class="skel" style="width:60%; height:14px;"></div>
+            <div class="skel" style="width:85%; height:12px;"></div>
+            <div class="skel" style="width:40%; height:12px;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Banners de alerta -->
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div class="alert-banner warning">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>
+        <p>3 propostas vencem hoje — revise antes do fim do expediente.</p>
+        <span class="link">Ver propostas →</span>
+      </div>
+      <div class="alert-banner info">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p>A integração com Google Ads foi atualizada — novos campos de origem disponíveis.</p>
+        <span class="link">Saiba mais →</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script>
+  // Gera o heatmap de atividade com valores pseudo-aleatórios determinísticos
+  const heatmapGrid = document.getElementById('heatmapGrid');
+  if (heatmapGrid) {
+    const levels = ['var(--bg-surface-3)','rgba(255,122,26,0.25)','rgba(255,122,26,0.5)','rgba(255,122,26,0.75)','var(--orange-500)'];
+    let seed = 42;
+    const rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    for (let i = 0; i < 84; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'heat-cell';
+      const lvl = Math.floor(rand() * 5);
+      cell.style.background = levels[lvl];
+      heatmapGrid.appendChild(cell);
+    }
+  }
+</script>
+</body>
+</html>
+
