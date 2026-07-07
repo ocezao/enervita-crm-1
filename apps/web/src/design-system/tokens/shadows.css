@@ -1,0 +1,51 @@
+/**
+ * ============================================================================
+ * HELION DESIGN SYSTEM — TOKENS DE SOMBRA E ELEVAÇÃO
+ * ============================================================================
+ * Duas famílias distintas, propositalmente separadas:
+ *
+ *   1. shadow-elevation-*  → sombra neutra (preta translúcida). Comunica
+ *      "este elemento está mais perto da câmera" — profundidade física.
+ *      Usada em cards ao dar hover, dropdowns, modais, toasts.
+ *
+ *   2. shadow-glow-*       → sombra COLORIDA (a "shadow-solar-orange"
+ *      citada no relatório). Comunica ESTADO/REAÇÃO, não profundidade —
+ *      só aparece em resposta a interação (hover de botão primário, foco
+ *      de input, indicador "ao vivo"). Nunca em repouso.
+ *
+ * Confundir as duas famílias é o erro mais comum ao migrar este sistema:
+ * um card não ganha shadow-glow só por estar "em destaque" — glow é
+ * reação a toque, elevação é posição na pilha visual.
+ * ============================================================================
+ */
+
+@theme {
+  /* ============================================================
+     Elevação — profundidade física, sempre neutra
+     ============================================================ */
+  --shadow-elevation-none: none;
+  --shadow-elevation-sm: 0 1px 3px rgb(0 0 0 / 20%);
+  --shadow-elevation-md: 0 6px 18px rgb(0 0 0 / 28%);
+  --shadow-elevation-lg: 0 12px 28px rgb(0 0 0 / 35%);
+  --shadow-elevation-xl: 0 24px 48px rgb(0 0 0 / 45%);
+  --shadow-elevation-2xl: 0 32px 64px rgb(0 0 0 / 50%);
+
+  /* Inset sutil usado em superfícies de botão sólido, para dar
+     "espessura" de material sem depender de gradiente pesado. */
+  --shadow-inset-highlight: 0 1px 0 rgb(255 255 255 / 25%) inset;
+
+  /* ============================================================
+     Glow — reação colorida a interação, nunca em repouso
+     ============================================================ */
+  --shadow-glow-primary: 0 0 20px 2px var(--color-glow-primary);
+  --shadow-glow-primary-sm: 0 0 14px 0 var(--color-glow-primary-soft);
+  --shadow-glow-secondary: 0 0 20px 2px var(--color-glow-secondary);
+  --shadow-glow-secondary-sm: 0 0 14px 0 var(--color-glow-secondary-soft);
+  --shadow-glow-danger-sm: 0 0 14px 0 var(--color-glow-danger-soft);
+  --shadow-glow-info-sm: 0 0 14px 0 var(--color-glow-info-soft);
+
+  /* Anel de foco — usa a mesma cor do glow primário mas em formato de
+     anel sólido (não blur), para acessibilidade de teclado (:focus-visible).
+     Isto é INDEPENDENTE do glow decorativo — sempre visível, nunca opcional. */
+  --shadow-focus-ring: 0 0 0 3px var(--color-glow-primary-soft);
+}

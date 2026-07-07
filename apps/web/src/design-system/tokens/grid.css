@@ -1,0 +1,40 @@
+/**
+ * ============================================================================
+ * HELION DESIGN SYSTEM — TOKENS DE GRID E BREAKPOINTS
+ * ============================================================================
+ * NÃO existia nos protótipos HTML anteriores — cada tela usou
+ * grid-template-columns fixo (ex: "244px 1fr" para sidebar+main,
+ * "repeat(5, 1fr)" para kanban) sem nenhuma variação por viewport.
+ * Isso funciona para demonstração, não para produto real: um kanban de
+ * 5 colunas fixas quebra em qualquer tela abaixo de ~1200px.
+ *
+ * Estes tokens definem os PONTOS de quebra; a REGRA de como cada
+ * componente se comporta em cada ponto (ex: "kanban vira lista abaixo
+ * de md") fica documentada em motion-principles.md, seção de responsividade,
+ * e implementada no próprio componente React via Tailwind responsive
+ * prefixes (sm:, md:, lg:).
+ * ============================================================================
+ */
+
+@theme {
+  /* Breakpoints — nomenclatura padrão Tailwind, mantida para não
+     quebrar a expectativa de quem já usa prefixos sm:/md:/lg: */
+  --breakpoint-sm: 640px;   /* mobile grande / phablet          */
+  --breakpoint-md: 768px;   /* tablet retrato                   */
+  --breakpoint-lg: 1024px;  /* tablet paisagem / laptop pequeno */
+  --breakpoint-xl: 1280px;  /* desktop padrão                   */
+  --breakpoint-2xl: 1536px; /* desktop grande                   */
+
+  /* Container — largura máxima de conteúdo por contexto.
+     "content" é o usado nas telas de trabalho (dashboard, kanban);
+     "narrow" é para formulários e telas de foco único (login, modal
+     de página inteira). */
+  --container-narrow: 640px;
+  --container-content: 1280px;
+  --container-wide: 1440px;
+
+  /* Sidebar — largura fixa em desktop, referenciada pelo AppShell
+     (ver components/AppShell). Em breakpoints abaixo de lg, o AppShell
+     colapsa a sidebar para um drawer — ver motion-principles.md. */
+  --layout-sidebar-width: 244px;
+}

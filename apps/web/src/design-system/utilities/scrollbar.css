@@ -1,0 +1,34 @@
+/**
+ * ============================================================================
+ * UTILITY — SCROLLBAR CUSTOMIZADA
+ * ============================================================================
+ * Scrollbar fina e discreta, coerente com a estética do sistema. Aplicada
+ * globalmente via classe .scrollbar-helion (não em `*`, para permitir que
+ * áreas específicas — ex: um iframe embutido — usem o scrollbar nativo).
+ * ============================================================================
+ */
+
+@layer utilities {
+  .scrollbar-helion {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-background-surface-4) transparent;
+  }
+
+  .scrollbar-helion::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-helion::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-helion::-webkit-scrollbar-thumb {
+    background: var(--color-background-surface-4);
+    border-radius: var(--radius-full);
+  }
+
+  .scrollbar-helion::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-strong);
+  }
+}

@@ -1,0 +1,74 @@
+/**
+ * ============================================================================
+ * HELION DESIGN SYSTEM — TOKENS DE TIPOGRAFIA
+ * ============================================================================
+ * Escala tipográfica formal (razão ~1.200 — "Minor Third" ajustada nos
+ * extremos para densidade de CRM). Nos protótipos HTML anteriores os
+ * tamanhos foram escolhidos ad-hoc por tela (24px, 15px, 13.5px...);
+ * aqui cada tamanho tem posição e propósito fixos na escala, para que
+ * nenhum componente novo precise "inventar" um tamanho de fonte.
+ * ============================================================================
+ */
+
+@theme {
+  /* ============================================================
+     Famílias
+     ============================================================ */
+
+  /* Display — geométrica, técnica, usada em títulos, valores monetários
+     e métricas de destaque. NUNCA em parágrafos longos — é uma fonte
+     de "momento", não de leitura corrida. */
+  --font-family-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+
+  /* Body — neutra, alta legibilidade em densidade de CRM. Texto de
+     interface, tabelas, formulários, leitura corrida. */
+  --font-family-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Mono — reservada a valores técnicos (kWh, CPL, ROI, timestamps,
+     IDs). Reforça a sensação de precisão de engenharia por associação;
+     não usar em prosa. */
+  --font-family-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+
+  /* ============================================================
+     Escala de tamanho — nomeada por posição, não por uso.
+     Um componente escolhe o tamanho pela ESCALA; o significado
+     ("isto é um título de card") vive na camada de componente,
+     não no nome do token.
+     ============================================================ */
+  --font-size-2xs: 0.6875rem;   /* 11px  — labels de sistema, mono de badge */
+  --font-size-xs: 0.75rem;      /* 12px  — legendas, metadados, hints       */
+  --font-size-sm: 0.8125rem;    /* 13px  — corpo denso (tabela, card)       */
+  --font-size-base: 0.875rem;   /* 14px  — corpo padrão de interface        */
+  --font-size-md: 0.9375rem;    /* 15px  — corpo de leitura confortável     */
+  --font-size-lg: 1.0625rem;    /* 17px  — subtítulo de card                */
+  --font-size-xl: 1.3125rem;    /* 21px  — título de seção                  */
+  --font-size-2xl: 1.625rem;    /* 26px  — valor de métrica em destaque     */
+  --font-size-3xl: 2rem;        /* 32px  — título de página                 */
+  --font-size-4xl: 2.5rem;      /* 40px  — hero / display grande            */
+
+  /* ============================================================
+     Peso
+     ============================================================ */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* ============================================================
+     Altura de linha — nomeada por função, não por número solto
+     ============================================================ */
+  --line-height-tight: 1.1;    /* títulos display grandes            */
+  --line-height-snug: 1.3;     /* títulos de card, labels curtos     */
+  --line-height-normal: 1.5;   /* corpo de interface                 */
+  --line-height-relaxed: 1.65; /* prosa longa, descrições            */
+
+  /* ============================================================
+     Tracking (letter-spacing) — a fonte display fica melhor com
+     leve aperto negativo em tamanhos grandes; mono fica melhor com
+     leve abertura positiva em tamanhos pequenos (labels).
+     ============================================================ */
+  --tracking-tight: -0.01em;   /* títulos display                    */
+  --tracking-normal: 0;
+  --tracking-wide: 0.03em;     /* labels em mono, uppercase          */
+  --tracking-wider: 0.08em;    /* eyebrows, badges de sistema        */
+}

@@ -1,0 +1,137 @@
+/**
+ * ============================================================================
+ * HELION DESIGN SYSTEM — TOKENS DE COR
+ * ============================================================================
+ * Fase 3 (Reconstrução dos Design Tokens) + Fase 8 (Padronização de
+ * Nomenclatura) do Relatório de Arquitetura.
+ *
+ * ESTRUTURA EM DUAS CAMADAS — isto não é redundância, é o que elimina a
+ * duplicação que a Fase 11 proíbe:
+ *
+ *   1. PRIMITIVOS  (--palette-*)  → a escala crua de cor. Nunca usado
+ *      diretamente em componentes. Só existe para ser referenciado pela
+ *      camada semântica abaixo.
+ *   2. SEMÂNTICOS  (--color-*)    → o que os componentes de fato consomem.
+ *      Nomeado pelo PAPEL que a cor cumpre (background, brand-primary,
+ *      status-success), não pelo tom (orange-500). Se amanhã o laranja da
+ *      marca mudar de tom, edita-se UMA linha aqui — nenhum componente muda.
+ *
+ * Tabela de migração aplicada (Fase 8):
+ *   --color-bg-void      → --color-background-void
+ *   --color-orange-500   → --color-brand-primary
+ *   --color-mint-500     → --color-brand-secondary
+ *   text-energy-success  → --color-status-success
+ *   shadow-solar-orange  → ver tokens/shadows.css (--shadow-brand-primary)
+ * ============================================================================
+ */
+
+@theme {
+  /* ============================================================
+     1. PRIMITIVOS — escala crua, não usar direto em componentes
+     ============================================================ */
+
+  /* Neutros — base grafite fria, deliberadamente NÃO preto puro.
+     Preto puro + acento único é o clichê mais comum de dashboard
+     "genérico"; grafite dessaturado dá profundidade real. */
+  --palette-neutral-950: #0a0d10;
+  --palette-neutral-900: #0d1114;
+  --palette-neutral-850: #12171b;
+  --palette-neutral-800: #171d22;
+  --palette-neutral-750: #1d242a;
+  --palette-neutral-700: #232b32;
+  --palette-neutral-600: #3d4449;
+  --palette-neutral-500: #626b72;
+  --palette-neutral-400: #a3acb3;
+  --palette-neutral-100: #edeff1;
+
+  /* Laranja — energia gerada. Papel funcional: ação primária,
+     métricas de produção/geração, indicador "quente". */
+  --palette-orange-200: #ffc28a;
+  --palette-orange-400: #ff9640;
+  --palette-orange-500: #ff7a1a;
+  --palette-orange-600: #e8620a;
+  --palette-orange-700: #b84c08;
+
+  /* Verde-menta — economia entregue. Deliberadamente mais frio/digital
+     que um verde orgânico, para manter o eixo tecnológico do produto.
+     Papel funcional: ROI, sucesso, confirmação, ligação com o eixo
+     "energia -> economia" que é a proposta central do CRM solar. */
+  --palette-mint-200: #86efc9;
+  --palette-mint-400: #3fdda3;
+  --palette-mint-500: #2ed9a3;
+  --palette-mint-600: #1fb584;
+  --palette-mint-700: #148a66;
+
+  /* Status e acentos secundários */
+  --palette-red-400: #f58b83;
+  --palette-red-500: #f1584e;
+  --palette-amber-400: #f5c451;
+  --palette-amber-500: #f0b429;
+  --palette-blue-400: #5b9ee8;
+  --palette-blue-500: #3d82d1;
+
+  /* ============================================================
+     2. SEMÂNTICOS — o que os componentes consomem
+     ============================================================ */
+
+  /* Fundo — escala por nível de elevação/camada, não por "significado
+     visual". Ver foundations/elevation.css para a lógica de quando
+     usar cada nível. */
+  --color-background-void: var(--palette-neutral-950);
+  --color-background-base: var(--palette-neutral-900);
+  --color-background-surface-1: var(--palette-neutral-850);
+  --color-background-surface-2: var(--palette-neutral-800);
+  --color-background-surface-3: var(--palette-neutral-750);
+  --color-background-surface-4: var(--palette-neutral-700);
+
+  /* Bordas — três pesos, sempre brancos translúcidos (nunca cor sólida),
+     para funcionar sobre qualquer nível de superfície acima. */
+  --color-border-hairline: rgb(255 255 255 / 6%);
+  --color-border-soft: rgb(255 255 255 / 9%);
+  --color-border-strong: rgb(255 255 255 / 14%);
+
+  /* Texto — 4 níveis de ênfase */
+  --color-text-primary: var(--palette-neutral-100);
+  --color-text-secondary: var(--palette-neutral-400);
+  --color-text-muted: var(--palette-neutral-500);
+  --color-text-disabled: var(--palette-neutral-600);
+
+  /* Marca — os dois papéis centrais do produto */
+  --color-brand-primary: var(--palette-orange-500);
+  --color-brand-primary-hover: var(--palette-orange-400);
+  --color-brand-primary-active: var(--palette-orange-600);
+  --color-brand-primary-subtle: var(--palette-orange-200);
+  --color-brand-primary-emphasis: var(--palette-orange-700);
+
+  --color-brand-secondary: var(--palette-mint-500);
+  --color-brand-secondary-hover: var(--palette-mint-400);
+  --color-brand-secondary-active: var(--palette-mint-600);
+  --color-brand-secondary-subtle: var(--palette-mint-200);
+  --color-brand-secondary-emphasis: var(--palette-mint-700);
+
+  /* Status — semântica de estado, independente de marca */
+  --color-status-success: var(--palette-mint-500);
+  --color-status-success-subtle: var(--palette-mint-400);
+  --color-status-warning: var(--palette-amber-500);
+  --color-status-warning-subtle: var(--palette-amber-400);
+  --color-status-danger: var(--palette-red-500);
+  --color-status-danger-subtle: var(--palette-red-400);
+  --color-status-info: var(--palette-blue-500);
+  --color-status-info-subtle: var(--palette-blue-400);
+  --color-status-neutral: var(--palette-neutral-500);
+
+  /* Glow — camada translúcida usada SOMENTE em estados reativos
+     (hover, focus, active, "ao vivo"). Nunca em repouso — glow
+     ambiente constante é o "cheiro" mais óbvio de UI genérica
+     gerada sem critério. Ver motion.md, seção "Regra do glow". */
+  --color-glow-primary: rgb(255 122 26 / 35%);
+  --color-glow-primary-soft: rgb(255 122 26 / 16%);
+  --color-glow-secondary: rgb(46 217 163 / 32%);
+  --color-glow-secondary-soft: rgb(46 217 163 / 14%);
+  --color-glow-danger-soft: rgb(241 88 78 / 15%);
+  --color-glow-info-soft: rgb(91 158 232 / 15%);
+
+  /* Seleção de texto do navegador */
+  --color-selection-bg: var(--color-glow-primary-soft);
+  --color-selection-text: var(--palette-orange-200);
+}

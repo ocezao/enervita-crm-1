@@ -1,0 +1,85 @@
+/**
+ * ============================================================================
+ * HELION DESIGN SYSTEM — BASE (RESET E NORMAS GLOBAIS)
+ * ============================================================================
+ * Fase 10, camada "Foundations": aplica reset e normas globais. Roda
+ * DEPOIS de theme.css (precisa que os tokens já existam) e ANTES de
+ * qualquer components/*.css.
+ * ============================================================================
+ */
+
+@import "tailwindcss";
+@import "./theme.css";
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  html {
+    background: var(--color-background-void);
+    color-scheme: dark;
+  }
+
+  body {
+    font-family: var(--font-family-body);
+    background: var(--color-background-void);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-normal);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button {
+    font-family: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+  }
+
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+    color: inherit;
+  }
+
+  /* Seleção de texto usa a cor de marca, não o azul padrão do navegador —
+     detalhe pequeno, mas é o tipo de coisa que sinaliza "sistema com
+     intenção" em vez de "estilos default esquecidos". */
+  ::selection {
+    background: var(--color-selection-bg);
+    color: var(--color-selection-text);
+  }
+
+  /* Foco visível SEMPRE — nunca remover outline sem substituir por
+     shadow-focus-ring. Acessibilidade de teclado não é opcional. */
+  :focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus-ring);
+  }
+
+  /* Respeita a preferência de movimento reduzido do usuário. Isto é
+     GLOBAL — nenhum componente precisa reimplementar esta regra. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

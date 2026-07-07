@@ -1,0 +1,63 @@
+/**
+ * ============================================================================
+ * UTILITY — GLOW PULSE
+ * ============================================================================
+ * A animação de "pulso de energia percorrendo uma linha" usada no elemento
+ * de assinatura do produto (ver components/Funnel/ConversionNode). Extraída
+ * para utilitário porque é reutilizável em qualquer contexto que precise
+ * comunicar "dado fluindo em tempo real" — não é exclusiva de um componente.
+ *
+ * Regra de uso (ver motion-principles.md): esta é uma das ÚNICAS animações
+ * do sistema que roda em loop contínuo sem gatilho de interação. Reservada
+ * para comunicar processo ativo (dado sincronizando, energia fluindo).
+ * Nunca usar como decoração ambiente genérica.
+ * ============================================================================
+ */
+
+@theme {
+  --animate-glow-pulse: glow-pulse 2.8s ease-in-out infinite;
+  --animate-ring-pulse: ring-pulse 2.8s ease-in-out infinite;
+  --animate-skeleton-pulse: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes glow-pulse {
+  0% {
+    stroke-dashoffset: 240;
+    opacity: 0;
+  }
+  8% {
+    opacity: 1;
+  }
+  45% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 0;
+  }
+}
+
+@keyframes ring-pulse {
+  0%,
+  100% {
+    r: 16;
+    opacity: 0.4;
+  }
+  50% {
+    r: 20;
+    opacity: 0.15;
+  }
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
