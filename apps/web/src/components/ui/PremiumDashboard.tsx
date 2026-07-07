@@ -12,8 +12,6 @@ export function PremiumSurface({ children, className, dark = false }: { children
       className={cn(
         'relative overflow-hidden rounded-[2rem] border shadow-[0_24px_80px_rgba(15,23,42,0.10)] backdrop-blur-xl',
         dark ? 'border-border-strong/80 bg-bg-surface-2 text-white' : 'border-white/70 bg-bg-surface-1/75',
-        'before:absolute before:inset-0 before:pointer-events-none before:bg-[radial-gradient(circle_at_20%_0%,rgba(246,139,31,0.12),transparent_35%),radial-gradient(circle_at_90%_10%,rgba(28,168,115,0.12),transparent_34%)]',
-        'after:absolute after:inset-0 after:pointer-events-none after:bg-[linear-gradient(135deg,rgba(255,255,255,0.62),transparent_35%,rgba(255,255,255,0.22))]',
         className,
       )}
     >

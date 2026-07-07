@@ -218,13 +218,11 @@ export default function DashboardPremium() {
 
   return (
     <div className="relative -m-6 min-h-screen overflow-hidden bg-bg-void p-6 text-text-primary lg:p-8">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(249,115,22,0.20),transparent_28%),radial-gradient(circle_at_85%_5%,rgba(34,197,94,0.18),transparent_25%),linear-gradient(135deg,rgba(255,255,255,0.82),rgba(255,247,237,0.55))]" />
       <div className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:linear-gradient(#0f172a_1px,transparent_1px),linear-gradient(90deg,#0f172a_1px,transparent_1px)] [background-size:28px_28px]" />
 
       <div className="relative mx-auto max-w-7xl space-y-6">
         <PremiumSurface dark className="overflow-hidden p-0">
           <div className="relative grid gap-6 p-6 lg:grid-cols-[1.25fr_0.75fr] lg:p-8">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_20%,rgba(249,115,22,0.35),transparent_28%),radial-gradient(circle_at_85%_80%,rgba(34,197,94,0.25),transparent_25%)]" />
             <div className="relative z-10 space-y-6">
               <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-bg-surface-1/10 px-3 py-1 text-xs font-black uppercase tracking-[0.24em] text-orange-100 backdrop-blur">
                 <Sparkles size={14} /> Enervita CRM · Dashboard principal
