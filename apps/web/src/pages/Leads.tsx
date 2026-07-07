@@ -273,12 +273,12 @@ export default function Leads() {
         </Card>
         <Card className="p-5 bg-orange-500/5 border-solar-orange/10"><Users className="text-orange-400" size={20} /><p className="mt-3 text-xs font-bold text-orange-400 uppercase tracking-wider">Total de Leads</p><h4 className="text-3xl font-black text-text-primary mt-1">{leads.length}</h4></Card>
         <Card className="p-5 bg-mint-500/5 border-energy-green/10"><Flame className="text-mint-400" size={20} /><p className="mt-3 text-xs font-bold text-mint-400 uppercase tracking-wider">Qualificados</p><h4 className="text-3xl font-black text-text-primary mt-1">{qualified}</h4></Card>
-        <Card className="p-5 bg-graphite/5 border-graphite/10"><Clock className="text-text-primary" size={20} /><p className="mt-3 text-xs font-bold text-text-secondary uppercase tracking-wider">Aguardando Contato</p><h4 className="text-3xl font-black text-text-primary mt-1">{waiting}</h4></Card>
+        <Card className="p-5 bg-bg-surface-2/5 border-graphite/10"><Clock className="text-text-primary" size={20} /><p className="mt-3 text-xs font-bold text-text-secondary uppercase tracking-wider">Aguardando Contato</p><h4 className="text-3xl font-black text-text-primary mt-1">{waiting}</h4></Card>
         <Card className="p-5 bg-red-500/5 border-alert-red/10"><Flame className="text-alert-red" size={20} /><p className="mt-3 text-xs font-bold text-alert-red uppercase tracking-wider">Prioridade alta</p><h4 className="text-3xl font-black text-text-primary mt-1">{hot}</h4></Card>
       </div>
 
       <Card className="overflow-hidden">
-        <div className="p-4 border-b border-border-soft bg-warm-sand/50/50 space-y-4">
+        <div className="p-4 border-b border-border-soft bg-bg-surface-2/50/50 space-y-4">
           <div className="flex flex-col lg:flex-row gap-3 lg:items-center justify-between">
             <div className="relative w-full lg:max-w-lg">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" size={16} />
@@ -356,7 +356,7 @@ export default function Leads() {
                       navigate(`/leads/${lead.id}`);
                     }
                   }}
-                  className={`hover:bg-warm-sand/50/50 transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-solar-orange/30 ${selectedSet.has(lead.id) ? 'bg-orange-500/5' : ''}`}
+                  className={`hover:bg-bg-surface-2/50/50 transition-colors group cursor-pointer focus:outline-none focus:ring-2 focus:ring-solar-orange/30 ${selectedSet.has(lead.id) ? 'bg-orange-500/5' : ''}`}
                 >
                   <td className="px-4 py-4" onClick={(event) => event.stopPropagation()}>
                     <input aria-label={`Selecionar ${lead.contact?.name || 'lead sem nome'}`} type="checkbox" checked={selectedSet.has(lead.id)} onChange={() => toggleSelected(lead.id)} className="h-4 w-4 rounded border-border-strong text-orange-400 focus:ring-solar-orange" />
@@ -366,12 +366,12 @@ export default function Leads() {
                   <td className="px-6 py-4"><div className="flex flex-col gap-1"><span className="text-sm font-bold text-text-primary truncate max-w-[170px]">{lead.sdrOwner || 'Sem responsável'}</span><span className="text-[10px] text-text-secondary">Próx. ação {lead.nextActionAt ? new Date(lead.nextActionAt).toLocaleDateString('pt-BR') : 'não definida'}</span></div></td>
                   <td className="px-6 py-4"><PriorityBadge priority={lead.priority} /></td>
                   <td className="px-6 py-4"><p className="text-sm font-black text-text-primary">{formatCurrency(lead.energyBillValue)}</p><p className="text-[10px] text-text-secondary">Econ. {formatCurrency(lead.projectedSavings)}</p></td>
-                  <td className="px-6 py-4 max-w-[180px]"><Badge variant="default" className="bg-warm-sand/50 text-text-secondary lowercase normal-case max-w-full truncate inline-block">{lead.leadSource}</Badge></td>
+                  <td className="px-6 py-4 max-w-[180px]"><Badge variant="default" className="bg-bg-surface-2/50 text-text-secondary lowercase normal-case max-w-full truncate inline-block">{lead.leadSource}</Badge></td>
                   <td className="px-6 py-4 max-w-[220px]"><div className="flex flex-wrap gap-1">{(lead.tags ?? []).length === 0 ? <span className="text-xs text-text-secondary">Sem tags</span> : lead.tags.map((tag) => <Badge key={tag.slug} variant="default" className="bg-orange-500/10 text-orange-400 lowercase normal-case">#{tag.slug}</Badge>)}</div></td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity" onClick={(event) => event.stopPropagation()}>
                       <Link to={`/leads/${lead.id}`}><Button aria-label="Abrir lead" variant="ghost" size="icon" className="h-8 w-8 rounded-lg"><Eye size={16} className="text-text-secondary" /></Button></Link>
-                      {whatsappUrl(lead) ? <a aria-label={`Enviar WhatsApp para ${lead.contact?.name || 'lead'}`} href={whatsappUrl(lead) ?? undefined} target="_blank" rel="noreferrer" className="inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-warm-sand/50"><MessageSquare size={16} className="text-text-secondary" /></a> : <Button aria-label="WhatsApp indisponível sem telefone" variant="ghost" size="icon" className="h-8 w-8 rounded-lg opacity-40" disabled><MessageSquare size={16} className="text-text-secondary" /></Button>}
+                      {whatsappUrl(lead) ? <a aria-label={`Enviar WhatsApp para ${lead.contact?.name || 'lead'}`} href={whatsappUrl(lead) ?? undefined} target="_blank" rel="noreferrer" className="inline-flex h-8 w-8 items-center justify-center rounded-lg hover:bg-bg-surface-2/50"><MessageSquare size={16} className="text-text-secondary" /></a> : <Button aria-label="WhatsApp indisponível sem telefone" variant="ghost" size="icon" className="h-8 w-8 rounded-lg opacity-40" disabled><MessageSquare size={16} className="text-text-secondary" /></Button>}
                       {canEditLead ? <Button aria-label={`Excluir ${lead.contact?.name || 'lead'}`} variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-red-500/10" disabled={bulkBusy} onClick={() => void deleteOne(lead)}><Trash2 size={16} className="text-alert-red" /></Button> : null}
                       <Button aria-label="Mais ações" variant="ghost" size="icon" className="h-8 w-8 rounded-lg opacity-50" disabled><MoreHorizontal size={16} className="text-text-secondary" /></Button>
                     </div>
@@ -381,11 +381,11 @@ export default function Leads() {
             </tbody>
           </table>
         </div>
-        <div className="p-4 border-t border-border-soft bg-warm-sand/50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><p className="text-xs text-text-secondary">Mostrando {filteredLeads.length} de {leads.length} leads{activeTags.length ? ` filtrados por ${activeTags.join(', ')} (${tagMode === 'all' ? 'todas' : 'qualquer'})` : ''}</p><p className="text-xs text-text-secondary">{audienceReadyCount} lead(s) têm e-mail ou telefone para público Meta/Google.</p></div>
+        <div className="p-4 border-t border-border-soft bg-bg-surface-2/50/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3"><p className="text-xs text-text-secondary">Mostrando {filteredLeads.length} de {leads.length} leads{activeTags.length ? ` filtrados por ${activeTags.join(', ')} (${tagMode === 'all' ? 'todas' : 'qualquer'})` : ''}</p><p className="text-xs text-text-secondary">{audienceReadyCount} lead(s) têm e-mail ou telefone para público Meta/Google.</p></div>
       </Card>
 
       {showCreateLead ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-graphite/45 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-bg-surface-2/45 p-4">
           <Card className="w-full max-w-5xl max-h-[92vh] overflow-hidden">
             <form onSubmit={createManualLead} className="flex max-h-[92vh] flex-col">
               <div className="flex items-start justify-between gap-4 border-b border-border-soft p-5">

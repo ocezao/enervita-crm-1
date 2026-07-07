@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../design-system/foundations/theme.css";
 
 @font-face {
   font-family: 'Inter';

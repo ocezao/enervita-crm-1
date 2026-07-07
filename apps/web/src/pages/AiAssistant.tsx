@@ -71,7 +71,7 @@ export default function AiAssistant() {
               <div key={index} className={item.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                 <div className={item.role === 'user'
                   ? 'max-w-[80%] rounded-2xl bg-orange-500 text-white px-4 py-3 text-sm'
-                  : 'max-w-[80%] rounded-2xl bg-warm-sand/50 text-text-primary px-4 py-3 text-sm leading-relaxed'}>
+                  : 'max-w-[80%] rounded-2xl bg-bg-surface-2/50 text-text-primary px-4 py-3 text-sm leading-relaxed'}>
                   {item.content}
                 </div>
               </div>
@@ -102,7 +102,7 @@ export default function AiAssistant() {
             <h2 className="font-bold text-text-primary mb-3">Sugestões</h2>
             <div className="space-y-2">
               {suggestions.map((item) => (
-                <button key={item} onClick={() => void send(item)} className="w-full text-left text-sm bg-warm-sand/50 hover:bg-mint-light/60 rounded-2xl px-3 py-3 text-text-primary">
+                <button key={item} onClick={() => void send(item)} className="w-full text-left text-sm bg-bg-surface-2/50 hover:bg-mint-light/60 rounded-2xl px-3 py-3 text-text-primary">
                   {item}
                 </button>
               ))}

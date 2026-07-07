@@ -66,7 +66,7 @@ function TaskCard({ task, canCompleteTask, onComplete }: { task: Task; canComple
       <div className="mt-4 flex items-center justify-between gap-3">
         <Badge variant={task.status === 'atrasado' ? 'error' : task.status === 'concluido' ? 'success' : 'info'}>{task.status}</Badge>
         <div className="flex items-center gap-2 text-xs text-text-secondary min-w-0" aria-label={`Responsável: ${task.owner || 'sem responsável'}`}>
-          <div className="h-7 w-7 rounded-full bg-warm-sand/50 flex items-center justify-center text-text-secondary shrink-0"><User size={13} /></div>
+          <div className="h-7 w-7 rounded-full bg-bg-surface-2/50 flex items-center justify-center text-text-secondary shrink-0"><User size={13} /></div>
           <span className="font-bold text-text-secondary shrink-0">Responsável</span>
           <span className="truncate">{task.owner || 'Sem responsável'}</span>
         </div>
@@ -195,7 +195,7 @@ export default function Tasks() {
           </div>
         </Card>
 
-        <Card className="p-5 bg-graphite text-white relative overflow-hidden">
+        <Card className="p-5 bg-bg-surface-2 text-white relative overflow-hidden">
           <div className="absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-orange-500/20 blur-3xl" />
           <div className="relative z-10">
             <div className="flex items-center gap-2 text-orange-400"><Sparkles size={18} /><span className="text-xs uppercase tracking-widest font-bold">Próxima melhor ação</span></div>
@@ -219,7 +219,7 @@ export default function Tasks() {
           <div className="relative min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" size={16} />
             <label className="sr-only" htmlFor="tasks-search">Buscar tarefas</label>
-            <input id="tasks-search" aria-label="Buscar tarefas por título, lead, responsável ou prioridade" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por tarefa, lead, responsável ou prioridade..." className="w-full bg-warm-sand/50 border border-border-soft rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+            <input id="tasks-search" aria-label="Buscar tarefas por título, lead, responsável ou prioridade" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por tarefa, lead, responsável ou prioridade..." className="w-full bg-bg-surface-2/50 border border-border-soft rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
           </div>
           <div className="flex flex-wrap gap-2 xl:justify-end">
             {(Object.keys(filterLabels) as TaskFilter[]).map((filter) => (
@@ -247,7 +247,7 @@ export default function Tasks() {
           {kanban.map((column) => {
             const Icon = column.icon;
             return (
-              <Card key={column.id} className="p-4 bg-warm-sand/50/60 overflow-visible">
+              <Card key={column.id} className="p-4 bg-bg-surface-2/50/60 overflow-visible">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-black text-text-primary flex items-center gap-2"><Icon size={18} className="text-orange-400" /> {column.title}</h3>
                   <Badge variant="default">{column.tasks.length}</Badge>

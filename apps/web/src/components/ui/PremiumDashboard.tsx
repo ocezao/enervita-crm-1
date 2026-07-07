@@ -11,7 +11,7 @@ export function PremiumSurface({ children, className, dark = false }: { children
       transition={{ type: 'spring', stiffness: 120, damping: 22 }}
       className={cn(
         'relative overflow-hidden rounded-[2rem] border shadow-[0_24px_80px_rgba(15,23,42,0.10)] backdrop-blur-xl',
-        dark ? 'border-graphite/80 bg-graphite text-white' : 'border-white/70 bg-bg-surface-1/75',
+        dark ? 'border-graphite/80 bg-bg-surface-2 text-white' : 'border-white/70 bg-bg-surface-1/75',
         'before:absolute before:inset-0 before:pointer-events-none before:bg-[radial-gradient(circle_at_20%_0%,rgba(246,139,31,0.12),transparent_35%),radial-gradient(circle_at_90%_10%,rgba(28,168,115,0.12),transparent_34%)]',
         'after:absolute after:inset-0 after:pointer-events-none after:bg-[linear-gradient(135deg,rgba(255,255,255,0.62),transparent_35%,rgba(255,255,255,0.22))]',
         className,
@@ -78,7 +78,7 @@ export function ContextHint({ text, title = 'Contexto' }: { text: string; title?
       <button type="button" aria-label={title} className="grid h-7 w-7 place-items-center rounded-full border border-white/40 bg-bg-surface-1/70 text-text-secondary shadow-sm backdrop-blur transition hover:text-text-primary focus:outline-none focus:ring-4 focus:ring-orange-200">
         <HelpCircle size={15} />
       </button>
-      <div className="pointer-events-none absolute right-0 top-9 z-50 w-72 translate-y-1 rounded-2xl border border-white/15 bg-graphite/95 p-4 text-left text-xs font-semibold leading-5 text-warm-white opacity-0 shadow-2xl shadow-graphite/30 backdrop-blur-xl transition group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
+      <div className="pointer-events-none absolute right-0 top-9 z-50 w-72 translate-y-1 rounded-2xl border border-white/15 bg-bg-surface-2/95 p-4 text-left text-xs font-semibold leading-5 text-warm-white opacity-0 shadow-2xl shadow-graphite/30 backdrop-blur-xl transition group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100">
         <p className="mb-1 text-[11px] font-black uppercase tracking-[0.18em] text-orange-300">{title}</p>
         <p>{text}</p>
       </div>

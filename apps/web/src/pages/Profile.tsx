@@ -119,7 +119,7 @@ export default function Profile() {
             <div className={`relative grid h-24 w-24 place-items-center overflow-hidden rounded-[2rem] border bg-bg-surface-1/10 text-3xl font-black shadow-inner transition ${uploadingAvatar ? 'border-solar-orange/70 ring-4 ring-solar-orange/20' : 'border-white/20'}`}>
               {user?.avatarUrl ? <img src={user.avatarUrl} alt="Foto do usuário" className={`h-full w-full object-cover transition ${uploadingAvatar ? 'scale-105 opacity-50 blur-[1px]' : 'opacity-100'}`} /> : initials(user?.name)}
               {uploadingAvatar && (
-                <div className="absolute inset-0 grid place-items-center bg-graphite/55 backdrop-blur-[2px]" aria-label="Enviando foto">
+                <div className="absolute inset-0 grid place-items-center bg-bg-surface-2/55 backdrop-blur-[2px]" aria-label="Enviando foto">
                   <Loader2 className="animate-spin text-orange-400 drop-shadow" size={30} />
                 </div>
               )}
@@ -187,7 +187,7 @@ export default function Profile() {
             <div data-testid="profile-access-summary" className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {accessiblePages.map((page) => {
                 const Icon = page.icon;
-                return <Link key={page.path} to={page.path} className="group rounded-2xl border border-border-soft bg-warm-sand/50/70 p-4 transition hover:border-solar-orange/40 hover:bg-orange-500/5"><div className="flex items-start gap-3"><div className="rounded-xl bg-bg-surface-1 p-2 text-orange-400 shadow-sm"><Icon size={18} /></div><div><p className="font-black text-text-primary group-hover:text-orange-400">{page.label}</p><p className="mt-1 text-xs text-text-secondary">{page.description}</p></div></div></Link>;
+                return <Link key={page.path} to={page.path} className="group rounded-2xl border border-border-soft bg-bg-surface-2/50/70 p-4 transition hover:border-solar-orange/40 hover:bg-orange-500/5"><div className="flex items-start gap-3"><div className="rounded-xl bg-bg-surface-1 p-2 text-orange-400 shadow-sm"><Icon size={18} /></div><div><p className="font-black text-text-primary group-hover:text-orange-400">{page.label}</p><p className="mt-1 text-xs text-text-secondary">{page.description}</p></div></div></Link>;
               })}
             </div>
           </Card>

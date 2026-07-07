@@ -77,10 +77,10 @@ export function InsightsPanel() {
     return (
       <div className="p-6 bg-bg-surface-1 rounded-lg shadow">
         <div className="animate-pulse">
-          <div className="h-4 bg-warm-sand/70 rounded w-1/4 mb-4" />
+          <div className="h-4 bg-bg-surface-2/70 rounded w-1/4 mb-4" />
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 bg-warm-sand/50 rounded" />
+              <div key={i} className="h-20 bg-bg-surface-2/50 rounded" />
             ))}
           </div>
         </div>
