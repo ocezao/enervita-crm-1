@@ -3,7 +3,15 @@
  * 
  * Variantes de tema e configurações de aparência do CRM.
  * Estas regras são específicas da aplicação e não do Design System core.
+ * 
+ * GOVERNANÇA: Toda regra baseada em html[data-*] deve obrigatoriamente
+ * ficar neste arquivo. Nunca em globals.css.
  */
+
+/* ===== Variável Global de Fonte ===== */
+:root {
+  --crm-font-rounded: "Inter", "Space Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
 
 /* CRM Appearance Settings */
 html[data-crm-motion="reduced"] *,
@@ -26,6 +34,48 @@ html[data-crm-motion="reduced"] *::after {
   }
 }
 
+html[data-crm-contrast="high"] body {
+  color: var(--color-text-primary);
+}
+
+html[data-crm-contrast="high"] .text-muted,
+html[data-crm-contrast="high"] .text-secondary {
+  color: var(--color-text-secondary) !important;
+}
+
+html[data-crm-density="compact"] [data-crm-app-main] {
+  padding: 1rem;
+}
+
+html[data-crm-density="spacious"] [data-crm-app-main] {
+  padding: 2.5rem;
+}
+
+html[data-crm-navigation="compact"] [data-crm-sidebar] {
+  width: 14rem;
+}
+
+html[data-crm-navigation="compact"] [data-crm-content] {
+  padding-left: 14rem;
+}
+
+html[data-crm-navigation="icons"] [data-crm-sidebar] {
+  width: 5.5rem;
+}
+
+html[data-crm-navigation="icons"] [data-crm-content] {
+  padding-left: 5.5rem;
+}
+
+html[data-crm-navigation="icons"] [data-crm-sidebar-label],
+html[data-crm-navigation="icons"] [data-crm-sidebar-user] p {
+  display: none;
+}
+
+html[data-crm-navigation="icons"] [data-crm-sidebar-nav] a {
+  justify-content: center;
+}
+
 html[data-crm-corners="sharp"] .rounded-xl,
 html[data-crm-corners="sharp"] .rounded-2xl {
   border-radius: 0.625rem !important;
@@ -34,6 +84,20 @@ html[data-crm-corners="sharp"] .rounded-2xl {
 html[data-crm-corners="rounded"] .rounded-xl,
 html[data-crm-corners="rounded"] .rounded-2xl {
   border-radius: 1.5rem !important;
+}
+
+html[data-crm-font-scale="large"] body {
+  font-size: 16.5px;
+}
+
+html[data-crm-font-scale="extra"] body {
+  font-size: 18px;
+}
+
+html[data-crm-content-width="focused"] [data-crm-app-main] > * {
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 html[data-crm-card-style="flat"] .bg-white.rounded-xl,
@@ -47,4 +111,47 @@ html[data-crm-card-style="glass"] .bg-white.rounded-2xl {
   background-color: var(--color-background-surface-1) !important;
   backdrop-filter: blur(14px);
   border-color: var(--color-border-soft) !important;
+}
+
+html[data-crm-density="compact"] table th,
+html[data-crm-density="compact"] table td {
+  padding-top: 0.55rem;
+  padding-bottom: 0.55rem;
+}
+
+@media (max-width: 900px) {
+  [data-crm-sidebar] {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  [data-crm-sidebar-nav] {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+    gap: 0.35rem;
+  }
+
+  [data-crm-sidebar-nav] a {
+    justify-content: center;
+    text-align: center;
+    min-width: 0;
+  }
+
+  [data-crm-sidebar-label] {
+    font-size: 0.72rem;
+    line-height: 1rem;
+  }
+
+  [data-crm-content],
+  html[data-crm-navigation="compact"] [data-crm-content],
+  html[data-crm-navigation="icons"] [data-crm-content] {
+    padding-left: 0 !important;
+  }
+
+  [data-crm-app-main],
+  html[data-crm-density="compact"] [data-crm-app-main],
+  html[data-crm-density="spacious"] [data-crm-app-main] {
+    padding: 1rem !important;
+  }
 }

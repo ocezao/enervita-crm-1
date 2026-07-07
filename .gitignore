@@ -1,13 +1,8 @@
-```
+```gitignore
 # Dependencies
 node_modules/
 
-# Environment
-.env
-.env.local
-.env.*
-
-# Build artifacts
+# Build outputs
 dist/
 build/
 target/
@@ -17,7 +12,41 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-*.py.class
+.Python
+env/
+venv/
+.venv/
+.ENV
+.env
+.env.*
+.env.local
+
+# Logs
+*.log
+
+# Coverage reports
+coverage/
+*.coverage
+.htmlcov/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.mypy_cache/
+.nyc_output/
+coverage/
+
+# Distribution / packaging
 .Python
 env/
 venv/
@@ -31,50 +60,9 @@ pip-delete-this-directory.txt
 nosetests.xml
 coverage.xml
 *.cover
-*.log
-*.tmp
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
-
-# IDE
-.vscode/
-.idea/
-
-# Testing
-.coverage
-htmlcov/
-.nyc_output
-coverage/
-junit.xml
-test-results/
-
-# Distribution / packaging
-*.tar.gz
-*.whl
-*.egg
-*.egg-info/
-.installed.cfg
-*.egg-info/
-
-# Translations
-*.mo
-*.pot
-
-# Documentation
-docs/_build/
-
-# Logs
-*.log
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-iTunes_Control/
-Thumbs.db
+*.out
+*.pid
+*.seed
+*.session
+.hypothesis/
 ```
