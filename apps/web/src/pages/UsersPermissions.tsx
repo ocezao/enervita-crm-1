@@ -112,22 +112,22 @@ export default function UsersPermissions({ embedded = false }: UsersPermissionsP
 
       {embedded && (
         <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5 p-6 md:p-8">
-          <div className="absolute -right-16 -top-20 h-44 w-44 rounded-full bg-solar-orange/10 blur-3xl" />
+          <div className="absolute -right-16 -top-20 h-44 w-44 rounded-full bg-orange-500/10 blur-3xl" />
           <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-3xl">
               <Badge variant="solar">Controle de acessos</Badge>
-              <h2 className="mt-3 text-2xl md:text-3xl font-black text-graphite tracking-tight">Usuários e acessos</h2>
-              <p className="mt-2 text-sm md:text-base text-graphite leading-relaxed">Liste todos os usuários, crie novos acessos, edite pessoas existentes e defina permissões por página, ação e etapa do funil comercial.</p>
+              <h2 className="mt-3 text-2xl md:text-3xl font-black text-text-primary tracking-tight">Usuários e acessos</h2>
+              <p className="mt-2 text-sm md:text-base text-text-primary leading-relaxed">Liste todos os usuários, crie novos acessos, edite pessoas existentes e defina permissões por página, ação e etapa do funil comercial.</p>
             </div>
-            <Button variant="outline" onClick={() => setSelected(null)} className="bg-white/80">Novo usuário</Button>
+            <Button variant="outline" onClick={() => setSelected(null)} className="bg-bg-surface-1/80">Novo usuário</Button>
           </div>
         </Card>
       )}
 
-      {error && <div role="alert" className="rounded-xl border border-alert-red/20 bg-alert-red/5 px-4 py-3 text-sm text-alert-red">{error}</div>}
+      {error && <div role="alert" className="rounded-xl border border-alert-red/20 bg-red-500/5 px-4 py-3 text-sm text-alert-red">{error}</div>}
       {success && <div role="status" className="rounded-xl border border-energy-success/20 bg-mint-light/50 px-4 py-3 text-sm text-energy-success">{success}</div>}
 
-      {loading && <div className="rounded-xl bg-white p-6 text-sm text-graphite-soft shadow-sm">Carregando usuários e permissões...</div>}
+      {loading && <div className="rounded-xl bg-bg-surface-1 p-6 text-sm text-text-secondary shadow-sm">Carregando usuários e permissões...</div>}
 
       {!loading && catalog && (
         <div className="grid gap-6 xl:grid-cols-[320px_1fr]">

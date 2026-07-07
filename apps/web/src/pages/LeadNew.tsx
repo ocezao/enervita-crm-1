@@ -72,41 +72,41 @@ export default function LeadNew() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 p-4">
-      <div className="rounded-xl border border-warm-sand/50 bg-white p-6">
+      <div className="rounded-xl border border-border-soft bg-bg-surface-1 p-6">
         <div className="mb-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-graphite">Novo lead</h1>
-          <Link to="/leads" className="text-sm text-graphite underline">Voltar</Link>
+          <h1 className="text-2xl font-bold text-text-primary">Novo lead</h1>
+          <Link to="/leads" className="text-sm text-text-primary underline">Voltar</Link>
         </div>
 
         <form onSubmit={onSubmit} className="grid gap-3">
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome" required className="rounded-lg border border-warm-sand/70 px-3 py-2" />
-          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" type="email" className="rounded-lg border border-warm-sand/70 px-3 py-2" />
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefone" className="rounded-lg border border-warm-sand/70 px-3 py-2" />
-          <input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Empresa" className="rounded-lg border border-warm-sand/70 px-3 py-2" />
-          <input value={cpf} onChange={(e) => setCpf(formatCpf(e.target.value))} placeholder="CPF do contato" inputMode="numeric" className="rounded-lg border border-warm-sand/70 px-3 py-2" />
-          <input value={cnpj} onChange={(e) => setCnpj(formatCnpj(e.target.value))} placeholder="CNPJ da empresa" inputMode="numeric" className="rounded-lg border border-warm-sand/70 px-3 py-2" />
-          <input value={leadSource} onChange={(e) => setLeadSource(e.target.value)} placeholder="Fonte" className="rounded-lg border border-warm-sand/70 px-3 py-2" />
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome" required className="rounded-lg border border-border-strong px-3 py-2" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" type="email" className="rounded-lg border border-border-strong px-3 py-2" />
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefone" className="rounded-lg border border-border-strong px-3 py-2" />
+          <input value={company} onChange={(e) => setCompany(e.target.value)} placeholder="Empresa" className="rounded-lg border border-border-strong px-3 py-2" />
+          <input value={cpf} onChange={(e) => setCpf(formatCpf(e.target.value))} placeholder="CPF do contato" inputMode="numeric" className="rounded-lg border border-border-strong px-3 py-2" />
+          <input value={cnpj} onChange={(e) => setCnpj(formatCnpj(e.target.value))} placeholder="CNPJ da empresa" inputMode="numeric" className="rounded-lg border border-border-strong px-3 py-2" />
+          <input value={leadSource} onChange={(e) => setLeadSource(e.target.value)} placeholder="Fonte" className="rounded-lg border border-border-strong px-3 py-2" />
 
-          <select value={qualificationStatus} onChange={(e) => setQualificationStatus(e.target.value)} className="rounded-lg border border-warm-sand/70 px-3 py-2">
+          <select value={qualificationStatus} onChange={(e) => setQualificationStatus(e.target.value)} className="rounded-lg border border-border-strong px-3 py-2">
             <option value="">Qualificação</option>
             <option value="frio">Frio</option>
             <option value="morno">Morno</option>
             <option value="quente">Quente</option>
           </select>
 
-          <select value={priority} onChange={(e) => setPriority(e.target.value as typeof priority)} className="rounded-lg border border-warm-sand/70 px-3 py-2">
+          <select value={priority} onChange={(e) => setPriority(e.target.value as typeof priority)} className="rounded-lg border border-border-strong px-3 py-2">
             <option value="baixa">Baixa</option>
             <option value="media">Média</option>
             <option value="alta">Alta</option>
             <option value="urgente">Urgente</option>
           </select>
 
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="Observações" className="rounded-lg border border-warm-sand/70 px-3 py-2" />
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="Observações" className="rounded-lg border border-border-strong px-3 py-2" />
 
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
           <div className="flex justify-end gap-2">
-            <button type="submit" disabled={saving} className="rounded-lg bg-solar-orange px-4 py-2 font-semibold text-white disabled:opacity-50">
+            <button type="submit" disabled={saving} className="rounded-lg bg-orange-500 px-4 py-2 font-semibold text-white disabled:opacity-50">
               {saving ? 'Salvando...' : 'Salvar lead'}
             </button>
           </div>

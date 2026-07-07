@@ -1,60 +1,147 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: 'Manrope';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('../assets/fonts/Manrope-400.ttf') format('truetype');
+  src: local('Inter'), local('Inter-Regular');
 }
 
 @font-face {
-  font-family: 'Manrope';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('../assets/fonts/Manrope-500.ttf') format('truetype');
+  src: local('Inter Medium'), local('Inter-Medium');
 }
 
 @font-face {
-  font-family: 'Manrope';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('../assets/fonts/Manrope-600.ttf') format('truetype');
+  src: local('Inter SemiBold'), local('Inter-SemiBold');
 }
 
 @font-face {
-  font-family: 'Manrope';
+  font-family: 'Inter';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('../assets/fonts/Manrope-700.ttf') format('truetype');
+  src: local('Inter Bold'), local('Inter-Bold');
 }
 
 @font-face {
-  font-family: 'Manrope';
+  font-family: 'Space Grotesk';
   font-style: normal;
-  font-weight: 800;
+  font-weight: 400;
   font-display: swap;
-  src: url('../assets/fonts/Manrope-800.ttf') format('truetype');
+  src: local('Space Grotesk Regular'), local('SpaceGrotesk-Regular');
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: local('Space Grotesk Medium'), local('SpaceGrotesk-Medium');
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Space Grotesk SemiBold'), local('SpaceGrotesk-SemiBold');
+}
+
+@font-face {
+  font-family: 'Space Grotesk';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Space Grotesk Bold'), local('SpaceGrotesk-Bold');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('JetBrains Mono Regular'), local('JetBrainsMono-Regular');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: local('JetBrains Mono Medium'), local('JetBrainsMono-Medium');
 }
 
 @theme {
-  --color-solar-orange: #C05800;
-  --color-energy-green: #2EAD5B;
-  --color-energy-deep: #0E7A3D;
-  --color-energy-success: #22A06B;
-  --color-graphite: #17211B;
-  --color-graphite-soft: #2A332D;
-  --color-warm-white: #FAF7F0;
-  --color-warm-sand: #EFE6D4;
-  --color-mint-light: #EAF6EE;
-  --color-alert-red: #D94A38;
-  --color-alert-amber: #F5A524;
+  /* ===== Superfícies ===== */
+  --color-bg-void: #0A0D10;
+  --color-bg-base: #0D1114;
+  --color-bg-surface-1: #12171B;
+  --color-bg-surface-2: #171D22;
+  --color-bg-surface-3: #1D242A;
+  --color-bg-overlay: rgba(10,13,16,0.72);
 
-  --font-sans: "Manrope", "Inter", "system-ui", "sans-serif";
-  --font-display: "Manrope", "Lexend", "sans-serif";
+  /* ===== Bordas ===== */
+  --color-border-hair: rgba(255,255,255,0.06);
+  --color-border-soft: rgba(255,255,255,0.09);
+  --color-border-strong: rgba(255,255,255,0.14);
+
+  /* ===== Texto ===== */
+  --color-text-primary: #EDEFF1;
+  --color-text-secondary: #A3ACB3;
+  --color-text-muted: #626B72;
+  --color-text-disabled: #3D4449;
+
+  /* ===== Laranja — energia gerada / ação primária ===== */
+  --color-orange-50: #FFF2E7;
+  --color-orange-200: #FFC28A;
+  --color-orange-400: #FF9640;
+  --color-orange-500: #FF7A1A;
+  --color-orange-600: #E8620A;
+  --color-orange-700: #B84C08;
+  --color-glow-orange: rgba(255,122,26,0.35);
+  --color-glow-orange-soft: rgba(255,122,26,0.16);
+
+  /* ===== Verde-menta — economia / sucesso / ROI ===== */
+  --color-mint-50: #E4FBF3;
+  --color-mint-200: #86EFC9;
+  --color-mint-400: #3FDDA3;
+  --color-mint-500: #2ED9A3;
+  --color-mint-600: #1FB584;
+  --color-mint-700: #148A66;
+  --color-glow-mint: rgba(46,217,163,0.32);
+  --color-glow-mint-soft: rgba(46,217,163,0.14);
+
+  /* ===== Estados ===== */
+  --color-red-500: #F1584E;
+  --color-amber-500: #F0B429;
+
+  /* ===== Tipografia ===== */
+  --font-sans: 'Inter', 'Space Grotesk', system-ui, sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* ===== Forma ===== */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-pill: 999px;
+
+  /* ===== Movimento ===== */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 140ms;
+  --duration-base: 240ms;
+  --duration-slow: 420ms;
 }
 
 @layer base {
@@ -64,13 +151,15 @@
   }
 
   body {
-    @apply bg-warm-white text-graphite font-sans;
+    background-color: var(--color-bg-void);
+    color: var(--color-text-primary);
+    font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: geometricPrecision;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display;
+    font-family: var(--font-display);
   }
 }
 
@@ -103,7 +192,7 @@
     scroll-behavior: smooth;
     overscroll-behavior: contain;
     scrollbar-width: thin;
-    scrollbar-color: rgb(192 88 0 / 0.45) rgb(239 230 212 / 0.45);
+    scrollbar-color: var(--color-orange-500) var(--color-bg-surface-2);
   }
 
   .crm-scroll-panel::-webkit-scrollbar,
@@ -114,33 +203,33 @@
 
   .crm-scroll-panel::-webkit-scrollbar-track,
   body::-webkit-scrollbar-track {
-    background: rgb(239 230 212 / 0.45);
+    background: var(--color-bg-surface-2);
     border-radius: 999px;
   }
 
   .crm-scroll-panel::-webkit-scrollbar-thumb,
   body::-webkit-scrollbar-thumb {
-    border: 2px solid rgb(250 247 240 / 0.9);
+    border: 2px solid var(--color-bg-void);
     border-radius: 999px;
-    background: linear-gradient(180deg, rgb(192 88 0 / 0.78), rgb(46 173 91 / 0.62));
+    background: linear-gradient(180deg, var(--color-orange-500), var(--color-mint-500));
   }
 
   .crm-scroll-panel::-webkit-scrollbar-thumb:hover,
   body::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, rgb(192 88 0 / 0.95), rgb(46 173 91 / 0.78));
+    background: linear-gradient(180deg, var(--color-orange-600), var(--color-mint-400));
   }
 }
 
 .glass-card {
-  @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-sm;
+  @apply bg-bg-surface-1/80 backdrop-blur-md border border-border-soft shadow-sm;
 }
 
 .solar-gradient {
-  background: linear-gradient(135deg, #F58220 0%, #F5A524 100%);
+  background: linear-gradient(135deg, var(--color-orange-400) 0%, var(--color-orange-500) 100%);
 }
 
 .energy-gradient {
-  background: linear-gradient(135deg, #0E7A3D 0%, #2EAD5B 100%);
+  background: linear-gradient(135deg, var(--color-mint-600) 0%, var(--color-mint-500) 100%);
 }
 
 /* Aparência do CRM: ajustes aplicados a partir de Configurações > Aparência. */
@@ -165,12 +254,12 @@ html[data-crm-motion="reduced"] *::after {
 }
 
 html[data-crm-contrast="high"] body {
-  color: var(--color-graphite);
+  color: var(--color-text-primary);
 }
 
-html[data-crm-contrast="high"] .text-gray-400,
-html[data-crm-contrast="high"] .text-gray-500 {
-  color: #4B5563 !important;
+html[data-crm-contrast="high"] .text-muted,
+html[data-crm-contrast="high"] .text-secondary {
+  color: var(--text-secondary) !important;
 }
 
 html[data-crm-density="compact"] [data-crm-app-main] {
@@ -264,14 +353,14 @@ html[data-crm-content-width="focused"] [data-crm-app-main] > * {
 html[data-crm-card-style="flat"] .bg-white.rounded-xl,
 html[data-crm-card-style="flat"] .bg-white.rounded-2xl {
   box-shadow: none !important;
-  border-color: #E5E7EB !important;
+  border-color: var(--color-border-strong) !important;
 }
 
 html[data-crm-card-style="glass"] .bg-white.rounded-xl,
 html[data-crm-card-style="glass"] .bg-white.rounded-2xl {
-  background-color: rgb(255 255 255 / 0.78) !important;
+  background-color: var(--color-bg-surface-1) !important;
   backdrop-filter: blur(14px);
-  border-color: rgb(255 255 255 / 0.55) !important;
+  border-color: var(--color-border-soft) !important;
 }
 
 html[data-crm-density="compact"] table th,
@@ -319,7 +408,7 @@ html[data-crm-density="compact"] table td {
 
 /* Premium rounded professional typography override */
 :root {
-  --crm-font-rounded: "Manrope", ui-rounded, "SF Pro Rounded", "Aptos", "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --crm-font-rounded: "Inter", "Space Grotesk", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 html,

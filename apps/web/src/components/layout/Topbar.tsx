@@ -182,28 +182,28 @@ export const Topbar = () => {
   };
 
   return (
-    <header className="h-16 border-b border-warm-sand/50 bg-white/80 backdrop-blur-md sticky top-0 z-10 px-8 flex items-center justify-between">
+    <header className="h-16 border-b border-border-soft bg-bg-surface-1/80 backdrop-blur-md sticky top-0 z-10 px-8 flex items-center justify-between">
       <div className="flex items-center gap-4 w-1/3 min-w-[280px]">
         <div ref={wrapperRef} className="relative w-full max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite-soft z-10" size={18} />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary z-10" size={18} />
           <input
             ref={inputRef}
             value={query}
             onChange={(event) => { setQuery(event.target.value); setOpen(true); }}
             onFocus={() => setOpen(true)}
             placeholder="Busque páginas, funções ou leads..."
-            className="w-full bg-white border border-warm-sand/70 rounded-xl py-2 pl-10 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50 transition-all"
+            className="w-full bg-bg-surface-1 border border-border-strong rounded-xl py-2 pl-10 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-500/50 transition-all"
             aria-label="Busca global"
           />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded border border-warm-sand/70 bg-warm-sand/50 text-[10px] text-graphite-soft">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded border border-border-strong bg-bg-surface-2 text-[10px] text-text-secondary">
             <Command size={10} /> K
           </div>
 
           {open && (
-            <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-2xl border border-warm-sand/50 bg-white shadow-2xl z-50">
+            <div className="absolute left-0 right-0 top-full mt-2 overflow-hidden rounded-2xl border border-border-soft bg-bg-surface-1 shadow-2xl z-50">
               <div className="max-h-[420px] crm-scroll-panel overflow-y-auto p-2">
                 {suggestions.length === 0 ? (
-                  <div className="px-4 py-5 text-center text-sm text-graphite-soft">Nenhuma página ou lead encontrado.</div>
+                  <div className="px-4 py-5 text-center text-sm text-text-secondary">Nenhuma página ou lead encontrado.</div>
                 ) : suggestions.map((suggestion) => {
                   const Icon = suggestion.icon;
                   return (
@@ -212,21 +212,21 @@ export const Topbar = () => {
                       type="button"
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => goToSuggestion(suggestion)}
-                      className="w-full flex items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-solar-orange/5 focus:bg-solar-orange/5 focus:outline-none transition-colors"
+                      className="w-full flex items-start gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-orange-500/10 focus:bg-orange-500/10 focus:outline-none transition-colors"
                     >
-                      <div className="mt-0.5 h-8 w-8 rounded-xl bg-warm-sand/50 flex items-center justify-center text-solar-orange shrink-0"><Icon size={16} /></div>
+                      <div className="mt-0.5 h-8 w-8 rounded-xl bg-bg-surface-2 flex items-center justify-center text-orange-400 shrink-0"><Icon size={16} /></div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="text-sm font-black text-graphite truncate">{suggestion.label}</p>
-                          <span className="rounded-full bg-warm-sand/50 px-2 py-0.5 text-[10px] font-bold uppercase text-graphite-soft">{suggestion.type === 'lead' ? 'Lead' : suggestion.type === 'subpage' ? 'Subpágina' : 'Página'}</span>
+                          <p className="text-sm font-black text-text-primary truncate">{suggestion.label}</p>
+                          <span className="rounded-full bg-bg-surface-2 px-2 py-0.5 text-[10px] font-bold uppercase text-text-secondary">{suggestion.type === 'lead' ? 'Lead' : suggestion.type === 'subpage' ? 'Subpágina' : 'Página'}</span>
                         </div>
-                        <p className="mt-0.5 text-xs text-graphite-soft truncate">{suggestion.description}</p>
+                        <p className="mt-0.5 text-xs text-text-secondary truncate">{suggestion.description}</p>
                       </div>
                     </button>
                   );
                 })}
               </div>
-              <div className="border-t border-warm-sand/30 px-3 py-2 text-[11px] text-graphite-soft">Digite nome, telefone, e-mail, página ou função. Clique em uma sugestão para abrir.</div>
+              <div className="border-t border-border-hair px-3 py-2 text-[11px] text-text-secondary">Digite nome, telefone, e-mail, página ou função. Clique em uma sugestão para abrir.</div>
             </div>
           )}
         </div>
@@ -235,28 +235,28 @@ export const Topbar = () => {
       <div className="flex items-center gap-4">
         <div className="relative">
           <Button variant="outline" size="icon" className="relative rounded-xl" aria-label="Notificações" title="Notificações" onClick={() => setNotificationsOpen(prev => !prev)}>
-            <Bell size={20} className="text-graphite-soft" />
-            {unreadCount > 0 && <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-alert-red px-1 text-[10px] font-black text-white">{unreadCount}</span>}
+            <Bell size={20} className="text-text-secondary" />
+            {unreadCount > 0 && <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-500 px-1 text-[10px] font-black text-white">{unreadCount}</span>}
           </Button>
           {notificationsOpen && (
-            <div className="absolute right-0 z-50 mt-3 w-80 overflow-hidden rounded-2xl border border-warm-sand/50 bg-white shadow-xl">
-              <div className="flex items-center justify-between border-b border-warm-sand/50 p-3">
+            <div className="absolute right-0 z-50 mt-3 w-80 overflow-hidden rounded-2xl border border-border-soft bg-bg-surface-1 shadow-xl">
+              <div className="flex items-center justify-between border-b border-border-soft p-3">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-solar-orange">Notificações</p>
-                  <p className="text-xs text-graphite-soft">{unreadCount} não lida{unreadCount === 1 ? '' : 's'}</p>
+                  <p className="text-xs font-black uppercase tracking-wider text-orange-400">Notificações</p>
+                  <p className="text-xs text-text-secondary">{unreadCount} não lida{unreadCount === 1 ? '' : 's'}</p>
                 </div>
-                <button type="button" onClick={handleMarkAllNotificationsRead} className="text-xs font-bold text-energy-green hover:underline">Marcar todas</button>
+                <button type="button" onClick={handleMarkAllNotificationsRead} className="text-xs font-bold text-mint-400 hover:underline">Marcar todas</button>
               </div>
               <div className="max-h-96 overflow-y-auto">
                 {notifications.length === 0 ? (
-                  <p className="p-4 text-sm text-graphite-soft">Nenhuma notificação por enquanto.</p>
+                  <p className="p-4 text-sm text-text-secondary">Nenhuma notificação por enquanto.</p>
                 ) : notifications.map((notification) => (
-                  <button key={notification.id} type="button" onClick={() => handleNotificationClick(notification)} className="block w-full border-b border-warm-sand/30 p-4 text-left hover:bg-warm-sand/50">
+                  <button key={notification.id} type="button" onClick={() => handleNotificationClick(notification)} className="block w-full border-b border-border-hair p-4 text-left hover:bg-bg-surface-2">
                     <div className="flex items-start gap-3">
-                      <span className={`mt-1 h-2 w-2 rounded-full ${notification.readAt ? 'bg-warm-sand/70' : 'bg-solar-orange'}`} />
+                      <span className={`mt-1 h-2 w-2 rounded-full ${notification.readAt ? 'bg-bg-surface-2' : 'bg-orange-500'}`} />
                       <div className="min-w-0">
-                        <p className="text-sm font-black text-graphite">{notification.title}</p>
-                        {notification.body && <p className="mt-1 line-clamp-2 text-xs text-graphite-soft">{notification.body}</p>}
+                        <p className="text-sm font-black text-text-primary">{notification.title}</p>
+                        {notification.body && <p className="mt-1 line-clamp-2 text-xs text-text-secondary">{notification.body}</p>}
                       </div>
                     </div>
                   </button>
@@ -266,13 +266,13 @@ export const Topbar = () => {
           )}
         </div>
         <div className="hidden md:flex flex-col items-end leading-tight">
-          <span className="text-sm font-semibold text-graphite">{user?.name ?? 'Operador'}</span>
-          <span className="text-xs text-graphite-soft">{user?.email}</span>
+          <span className="text-sm font-semibold text-text-primary">{user?.name ?? 'Operador'}</span>
+          <span className="text-xs text-text-secondary">{user?.email}</span>
         </div>
-        <button type="button" onClick={() => navigate('/profile')} className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-energy-green text-sm font-black text-white ring-2 ring-white shadow-sm" aria-label="Abrir minha página">
+        <button type="button" onClick={() => navigate('/profile')} className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-mint-500 text-sm font-black text-white ring-2 ring-border-hair shadow-sm" aria-label="Abrir minha página">
           {user?.avatarUrl ? <img src={user.avatarUrl} alt="Foto do perfil no topo" className="h-full w-full object-cover" /> : (user?.name?.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'US')}
         </button>
-        <div className="h-8 w-[1px] bg-warm-sand/50 mx-2"></div>
+        <div className="h-8 w-[1px] bg-bg-surface-2 mx-2"></div>
         <Button variant="primary" className="gap-2 rounded-xl" onClick={() => navigate('/leads')} title="Abrir lista de leads">
           <Plus size={18} />
           <span>Leads</span>

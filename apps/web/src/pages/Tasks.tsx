@@ -40,23 +40,23 @@ function taskScore(task: Task) {
 function TaskCard({ task, canCompleteTask, onComplete }: { task: Task; canCompleteTask: boolean; onComplete: (id: string) => void }) {
   const completed = task.status === 'concluido';
   return (
-    <div className="rounded-2xl border border-warm-sand/50 bg-white p-4 shadow-sm hover:shadow-md transition-all min-w-0">
+    <div className="rounded-2xl border border-border-soft bg-bg-surface-1 p-4 shadow-sm hover:shadow-md transition-all min-w-0">
       <div className="flex items-start justify-between gap-3">
         <button
           onClick={() => canCompleteTask && !completed && onComplete(task.id)}
           disabled={!canCompleteTask || completed}
           aria-label={canCompleteTask ? 'Concluir tarefa' : 'Sem permissão para concluir tarefa'}
-          className={`mt-0.5 h-7 w-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all ${completed ? 'bg-energy-success border-energy-success text-white' : canCompleteTask ? 'border-warm-sand/70 hover:border-solar-orange hover:bg-solar-orange/5' : 'border-warm-sand/50 cursor-not-allowed opacity-60'}`}
+          className={`mt-0.5 h-7 w-7 rounded-xl border-2 flex items-center justify-center shrink-0 transition-all ${completed ? 'bg-energy-success border-energy-success text-white' : canCompleteTask ? 'border-border-strong hover:border-solar-orange hover:bg-orange-500/5' : 'border-border-soft cursor-not-allowed opacity-60'}`}
         >
           {completed && <CheckCircle2 size={15} />}
         </button>
         <div className="min-w-0 flex-1">
-          <h3 className={`font-black text-sm leading-snug break-words ${completed ? 'text-graphite-soft line-through' : 'text-graphite'}`}>{task.title}</h3>
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-graphite-soft">
+          <h3 className={`font-black text-sm leading-snug break-words ${completed ? 'text-text-secondary line-through' : 'text-text-primary'}`}>{task.title}</h3>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-text-secondary">
             {task.leadId ? (
-              <Link to={`/leads/${task.leadId}`} className="font-semibold text-solar-orange hover:underline max-w-full truncate">{task.leadName || 'Abrir lead'}</Link>
+              <Link to={`/leads/${task.leadId}`} className="font-semibold text-orange-400 hover:underline max-w-full truncate">{task.leadName || 'Abrir lead'}</Link>
             ) : <span>Sem lead vinculado</span>}
-            <span className="text-graphite-soft">•</span>
+            <span className="text-text-secondary">•</span>
             <span className="inline-flex items-center gap-1"><Calendar size={12} /> {formatDate(task.dueDate)}</span>
           </div>
         </div>
@@ -65,9 +65,9 @@ function TaskCard({ task, canCompleteTask, onComplete }: { task: Task; canComple
 
       <div className="mt-4 flex items-center justify-between gap-3">
         <Badge variant={task.status === 'atrasado' ? 'error' : task.status === 'concluido' ? 'success' : 'info'}>{task.status}</Badge>
-        <div className="flex items-center gap-2 text-xs text-graphite-soft min-w-0" aria-label={`Responsável: ${task.owner || 'sem responsável'}`}>
-          <div className="h-7 w-7 rounded-full bg-warm-sand/50 flex items-center justify-center text-graphite-soft shrink-0"><User size={13} /></div>
-          <span className="font-bold text-graphite-soft shrink-0">Responsável</span>
+        <div className="flex items-center gap-2 text-xs text-text-secondary min-w-0" aria-label={`Responsável: ${task.owner || 'sem responsável'}`}>
+          <div className="h-7 w-7 rounded-full bg-warm-sand/50 flex items-center justify-center text-text-secondary shrink-0"><User size={13} /></div>
+          <span className="font-bold text-text-secondary shrink-0">Responsável</span>
           <span className="truncate">{task.owner || 'Sem responsável'}</span>
         </div>
       </div>
@@ -163,16 +163,16 @@ export default function Tasks() {
       {message && <Card className="p-4 bg-energy-success/5 border-energy-success/20 text-energy-success text-sm font-semibold">{message}</Card>}
 
       {showCreate && (
-        <Card className="p-5 border-solar-orange/20 bg-solar-orange/5 overflow-visible">
+        <Card className="p-5 border-solar-orange/20 bg-orange-500/5 overflow-visible">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_220px_150px_220px_auto_auto] xl:items-end gap-3">
-            <label className="min-w-0 space-y-1 md:col-span-2 xl:col-span-1"><span className="text-xs font-bold text-graphite-soft uppercase">Tarefa</span><input value={newTask.title} onChange={(event) => setNewTask(prev => ({ ...prev, title: event.target.value }))} placeholder="Ex.: Ligar para lead de conta alta" className="w-full bg-white border border-warm-sand/70 rounded-xl px-3 py-2 text-sm" /></label>
-            <label className="min-w-0 space-y-1"><span className="text-xs font-bold text-graphite-soft uppercase">Atribuir para</span><select value={newTask.ownerId || user?.id || ''} onChange={(event) => setNewTask(prev => ({ ...prev, ownerId: event.target.value }))} className="w-full bg-white border border-warm-sand/70 rounded-xl px-3 py-2 text-sm">{assignmentUsers.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-            <label className="min-w-0 space-y-1"><span className="text-xs font-bold text-graphite-soft uppercase">Prioridade</span><select value={newTask.priority} onChange={(event) => setNewTask(prev => ({ ...prev, priority: event.target.value }))} className="w-full bg-white border border-warm-sand/70 rounded-xl px-3 py-2 text-sm"><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
-            <label className="min-w-0 space-y-1"><span className="text-xs font-bold text-graphite-soft uppercase">Vencimento</span><input type="datetime-local" value={newTask.dueDate} onChange={(event) => setNewTask(prev => ({ ...prev, dueDate: event.target.value }))} className="w-full bg-white border border-warm-sand/70 rounded-xl px-3 py-2 text-sm" /></label>
+            <label className="min-w-0 space-y-1 md:col-span-2 xl:col-span-1"><span className="text-xs font-bold text-text-secondary uppercase">Tarefa</span><input value={newTask.title} onChange={(event) => setNewTask(prev => ({ ...prev, title: event.target.value }))} placeholder="Ex.: Ligar para lead de conta alta" className="w-full bg-bg-surface-1 border border-border-strong rounded-xl px-3 py-2 text-sm" /></label>
+            <label className="min-w-0 space-y-1"><span className="text-xs font-bold text-text-secondary uppercase">Atribuir para</span><select value={newTask.ownerId || user?.id || ''} onChange={(event) => setNewTask(prev => ({ ...prev, ownerId: event.target.value }))} className="w-full bg-bg-surface-1 border border-border-strong rounded-xl px-3 py-2 text-sm">{assignmentUsers.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
+            <label className="min-w-0 space-y-1"><span className="text-xs font-bold text-text-secondary uppercase">Prioridade</span><select value={newTask.priority} onChange={(event) => setNewTask(prev => ({ ...prev, priority: event.target.value }))} className="w-full bg-bg-surface-1 border border-border-strong rounded-xl px-3 py-2 text-sm"><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
+            <label className="min-w-0 space-y-1"><span className="text-xs font-bold text-text-secondary uppercase">Vencimento</span><input type="datetime-local" value={newTask.dueDate} onChange={(event) => setNewTask(prev => ({ ...prev, dueDate: event.target.value }))} className="w-full bg-bg-surface-1 border border-border-strong rounded-xl px-3 py-2 text-sm" /></label>
             <Button variant="primary" size="sm" className="w-full xl:w-auto whitespace-nowrap" onClick={handleCreateTask}>Criar e atribuir</Button>
             <Button variant="ghost" size="sm" className="w-full xl:w-auto whitespace-nowrap" onClick={() => setShowCreate(false)}>Cancelar</Button>
           </div>
-          <textarea value={newTask.notes} onChange={(event) => setNewTask(prev => ({ ...prev, notes: event.target.value }))} placeholder="Observação opcional para quem vai executar a tarefa..." className="mt-3 w-full bg-white border border-warm-sand/70 rounded-xl px-3 py-2 text-sm" />
+          <textarea value={newTask.notes} onChange={(event) => setNewTask(prev => ({ ...prev, notes: event.target.value }))} placeholder="Observação opcional para quem vai executar a tarefa..." className="mt-3 w-full bg-bg-surface-1 border border-border-strong rounded-xl px-3 py-2 text-sm" />
         </Card>
       )}
 
@@ -180,15 +180,15 @@ export default function Tasks() {
         <Card className="p-6 bg-gradient-to-br from-white to-solar-orange/5 border-solar-orange/10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div className="min-w-0">
-              <p className="text-xs uppercase tracking-[0.28em] font-black text-solar-orange">Fila inteligente</p>
-              <h2 className="mt-2 text-2xl font-black text-graphite">{overdue > 0 ? `${overdue} tarefa(s) pedem atenção` : 'Operação comercial em dia'}</h2>
-              <p className="mt-1 text-sm text-graphite-soft">A prioridade considera atraso, urgência, data de vencimento e vínculo com lead.</p>
+              <p className="text-xs uppercase tracking-[0.28em] font-black text-orange-400">Fila inteligente</p>
+              <h2 className="mt-2 text-2xl font-black text-text-primary">{overdue > 0 ? `${overdue} tarefa(s) pedem atenção` : 'Operação comercial em dia'}</h2>
+              <p className="mt-1 text-sm text-text-secondary">A prioridade considera atraso, urgência, data de vencimento e vínculo com lead.</p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
-              {[['Pendentes', pending, 'text-solar-orange'], ['Atrasadas', overdue, 'text-alert-red'], ['Hoje', dueToday, 'text-blue-600'], ['Concluídas', done, 'text-energy-success']].map(([label, value, color]) => (
-                <div key={label} className="rounded-2xl bg-white border border-warm-sand/50 px-4 py-3 text-center shadow-sm">
+              {[['Pendentes', pending, 'text-orange-400'], ['Atrasadas', overdue, 'text-alert-red'], ['Hoje', dueToday, 'text-blue-600'], ['Concluídas', done, 'text-energy-success']].map(([label, value, color]) => (
+                <div key={label} className="rounded-2xl bg-bg-surface-1 border border-border-soft px-4 py-3 text-center shadow-sm">
                   <p className={`text-2xl font-black ${color}`}>{value}</p>
-                  <p className="text-[10px] uppercase tracking-wider text-graphite-soft font-bold">{label}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-text-secondary font-bold">{label}</p>
                 </div>
               ))}
             </div>
@@ -196,17 +196,17 @@ export default function Tasks() {
         </Card>
 
         <Card className="p-5 bg-graphite text-white relative overflow-hidden">
-          <div className="absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-solar-orange/20 blur-3xl" />
+          <div className="absolute -right-8 -bottom-8 h-32 w-32 rounded-full bg-orange-500/20 blur-3xl" />
           <div className="relative z-10">
-            <div className="flex items-center gap-2 text-solar-orange"><Sparkles size={18} /><span className="text-xs uppercase tracking-widest font-bold">Próxima melhor ação</span></div>
+            <div className="flex items-center gap-2 text-orange-400"><Sparkles size={18} /><span className="text-xs uppercase tracking-widest font-bold">Próxima melhor ação</span></div>
             {urgentQueue[0] ? (
               <div className="mt-4">
                 <h3 className="font-black text-lg break-words">{urgentQueue[0].title}</h3>
                 <p className="mt-1 text-sm text-white/60">{urgentQueue[0].leadName || 'Sem lead vinculado'} · {formatDate(urgentQueue[0].dueDate)}</p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {urgentQueue[0].leadId && <Link to={`/leads/${urgentQueue[0].leadId}`}><Button size="sm" variant="secondary" className="gap-2"><ArrowUpRight size={14} /> Abrir lead</Button></Link>}
-                  <Button size="sm" variant="outline" className="gap-2 bg-white/10 border-white/20 text-white opacity-50" disabled title="Abra o lead para ver telefone"><PhoneCall size={14} /> Ligar</Button>
-                  <Button size="sm" variant="outline" className="gap-2 bg-white/10 border-white/20 text-white opacity-50" disabled title="Abra o lead para WhatsApp"><MessageSquare size={14} /> WhatsApp</Button>
+                  <Button size="sm" variant="outline" className="gap-2 bg-bg-surface-1/10 border-white/20 text-white opacity-50" disabled title="Abra o lead para ver telefone"><PhoneCall size={14} /> Ligar</Button>
+                  <Button size="sm" variant="outline" className="gap-2 bg-bg-surface-1/10 border-white/20 text-white opacity-50" disabled title="Abra o lead para WhatsApp"><MessageSquare size={14} /> WhatsApp</Button>
                 </div>
               </div>
             ) : <p className="mt-4 text-sm text-white/60">Nenhuma tarefa urgente no momento.</p>}
@@ -217,9 +217,9 @@ export default function Tasks() {
       <Card className="p-4 overflow-visible">
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(260px,1fr)_auto] gap-4">
           <div className="relative min-w-0">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-graphite-soft pointer-events-none" size={16} />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" size={16} />
             <label className="sr-only" htmlFor="tasks-search">Buscar tarefas</label>
-            <input id="tasks-search" aria-label="Buscar tarefas por título, lead, responsável ou prioridade" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por tarefa, lead, responsável ou prioridade..." className="w-full bg-warm-sand/50 border border-warm-sand/50 rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
+            <input id="tasks-search" aria-label="Buscar tarefas por título, lead, responsável ou prioridade" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Buscar por tarefa, lead, responsável ou prioridade..." className="w-full bg-warm-sand/50 border border-border-soft rounded-2xl py-3 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30" />
           </div>
           <div className="flex flex-wrap gap-2 xl:justify-end">
             {(Object.keys(filterLabels) as TaskFilter[]).map((filter) => (
@@ -227,20 +227,20 @@ export default function Tasks() {
             ))}
             <Button size="sm" variant="ghost" className="gap-2 whitespace-nowrap" onClick={() => { setQuery(''); setActiveFilter('todas'); setDateRange(rangeForPeriod('30')); }}><Filter size={14} /> Limpar</Button>
           </div>
-          <div className="xl:col-span-2 border-t border-warm-sand/50 pt-4 min-w-0">
-            <p className="mb-3 text-xs font-bold uppercase tracking-wider text-graphite-soft">Tarefas com vencimento no período</p>
+          <div className="xl:col-span-2 border-t border-border-soft pt-4 min-w-0">
+            <p className="mb-3 text-xs font-bold uppercase tracking-wider text-text-secondary">Tarefas com vencimento no período</p>
             <DateRangeFilter value={dateRange} onChange={setDateRange} className="max-w-4xl" />
           </div>
         </div>
       </Card>
 
       {loading ? (
-        <Card className="p-10 text-center text-graphite-soft">Carregando tarefas...</Card>
+        <Card className="p-10 text-center text-text-secondary">Carregando tarefas...</Card>
       ) : filteredTasks.length === 0 ? (
         <Card className="p-12 text-center">
           <CheckCircle2 size={52} className="mx-auto text-energy-success/40 mb-4" />
-          <h4 className="font-black text-graphite">Nenhuma tarefa nessa visão</h4>
-          <p className="text-sm text-graphite-soft mt-1">Ajuste filtros ou crie uma tarefa vinculada ao próximo follow-up comercial.</p>
+          <h4 className="font-black text-text-primary">Nenhuma tarefa nessa visão</h4>
+          <p className="text-sm text-text-secondary mt-1">Ajuste filtros ou crie uma tarefa vinculada ao próximo follow-up comercial.</p>
         </Card>
       ) : view === 'pipeline' ? (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
@@ -249,7 +249,7 @@ export default function Tasks() {
             return (
               <Card key={column.id} className="p-4 bg-warm-sand/50/60 overflow-visible">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-black text-graphite flex items-center gap-2"><Icon size={18} className="text-solar-orange" /> {column.title}</h3>
+                  <h3 className="font-black text-text-primary flex items-center gap-2"><Icon size={18} className="text-orange-400" /> {column.title}</h3>
                   <Badge variant="default">{column.tasks.length}</Badge>
                 </div>
                 <div className="space-y-3">{column.tasks.map((task) => <TaskCard key={task.id} task={task} canCompleteTask={canCompleteTask} onComplete={handleComplete} />)}</div>
@@ -258,16 +258,16 @@ export default function Tasks() {
           })}
         </div>
       ) : (
-        <Card className="divide-y divide-gray-50 overflow-hidden">
+        <Card className="divide-y divide-border-hair overflow-hidden">
           {filteredTasks.map((task) => <TaskCard key={task.id} task={task} canCompleteTask={canCompleteTask} onComplete={handleComplete} />)}
         </Card>
       )}
 
-      <Card className="p-5 border-dashed bg-white/70">
+      <Card className="p-5 border-dashed bg-bg-surface-1/70">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h3 className="font-black text-graphite flex items-center gap-2"><Target size={18} className="text-energy-success" /> Rotina recomendada</h3>
-            <p className="text-sm text-graphite-soft mt-1">Comece pelas atrasadas/urgentes, registre contato no lead e conclua apenas quando houver próximo passo definido.</p>
+            <h3 className="font-black text-text-primary flex items-center gap-2"><Target size={18} className="text-energy-success" /> Rotina recomendada</h3>
+            <p className="text-sm text-text-secondary mt-1">Comece pelas atrasadas/urgentes, registre contato no lead e conclua apenas quando houver próximo passo definido.</p>
           </div>
           <Badge variant="solar">{filteredTasks.length} tarefa(s) na visão atual</Badge>
         </div>

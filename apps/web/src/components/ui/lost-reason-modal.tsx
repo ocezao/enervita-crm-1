@@ -54,9 +54,9 @@ export function LostReasonModal({ isOpen, onClose, onConfirm }: LostReasonModalP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-        <h2 className="text-xl font-semibold text-graphite mb-4">Motivo da Perda</h2>
-        <p className="text-sm text-graphite mb-4">
+      <div className="bg-bg-surface-1 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+        <h2 className="text-xl font-semibold text-text-primary mb-4">Motivo da Perda</h2>
+        <p className="text-sm text-text-primary mb-4">
           Selecione o motivo pelo qual este lead foi perdido:
         </p>
 
@@ -67,7 +67,7 @@ export function LostReasonModal({ isOpen, onClose, onConfirm }: LostReasonModalP
               className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                 selectedReason === reason.value
                   ? 'border-red-500 bg-red-50'
-                  : 'border-warm-sand/70 hover:border-warm-sand/70'
+                  : 'border-border-strong hover:border-border-strong'
               }`}
             >
               <input
@@ -82,8 +82,8 @@ export function LostReasonModal({ isOpen, onClose, onConfirm }: LostReasonModalP
                 className="mt-1 text-red-600 focus:ring-red-500"
               />
               <div className="flex-1">
-                <span className="font-medium text-graphite">{reason.label}</span>
-                <p className="text-xs text-graphite-soft mt-1">{reason.description}</p>
+                <span className="font-medium text-text-primary">{reason.label}</span>
+                <p className="text-xs text-text-secondary mt-1">{reason.description}</p>
               </div>
             </label>
           ))}
@@ -91,7 +91,7 @@ export function LostReasonModal({ isOpen, onClose, onConfirm }: LostReasonModalP
 
         {selectedReason === 'Outro' && (
           <div className="mb-4">
-            <label className="block text-sm font-medium text-graphite mb-1">
+            <label className="block text-sm font-medium text-text-primary mb-1">
               Especifique o motivo *
             </label>
             <textarea
@@ -101,10 +101,10 @@ export function LostReasonModal({ isOpen, onClose, onConfirm }: LostReasonModalP
                 setError('');
               }}
               placeholder="Descreva o motivo da perda..."
-              className="w-full px-3 py-2 border border-warm-sand/70 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-border-strong rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
               rows={3}
             />
-            <p className="text-xs text-graphite-soft mt-1">
+            <p className="text-xs text-text-secondary mt-1">
               Mínimo de 10 caracteres
             </p>
           </div>
@@ -120,7 +120,7 @@ export function LostReasonModal({ isOpen, onClose, onConfirm }: LostReasonModalP
           <button
             type="button"
             onClick={handleCancel}
-            className="px-4 py-2 text-sm font-medium text-graphite bg-white border border-warm-sand/70 rounded-md hover:bg-warm-sand/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            className="px-4 py-2 text-sm font-medium text-text-primary bg-bg-surface-1 border border-border-strong rounded-md hover:bg-warm-sand/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
           >
             Cancelar
           </button>

@@ -23,7 +23,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 
 function PageFallback() {
   return (
-    <div className="flex min-h-[240px] items-center justify-center text-sm font-semibold text-graphite-soft" role="status">
+    <div className="flex min-h-[240px] items-center justify-center text-sm font-semibold text-text-secondary" role="status">
       Carregando módulo...
     </div>
   );

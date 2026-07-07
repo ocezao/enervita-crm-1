@@ -10,14 +10,14 @@ export const AppShell = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-warm-white">
+    <div className="min-h-screen bg-bg-void">
       <Sidebar />
       <div data-crm-content className="pl-64 flex flex-col min-h-screen">
         <Topbar />
         <main data-crm-app-main className="crm-scroll-panel flex-1 p-8">
           <Outlet />
         </main>
-        <footer className="px-8 py-3 text-center text-[10px] text-graphite-soft/40">
+        <footer className="px-8 py-3 text-center text-[10px] text-text-muted/40">
           Feito por{" "}
           <a
             href="https://www.linkedin.com/in/cezao/"

@@ -51,46 +51,46 @@ export default function AiAssistant() {
     <div className="p-8 space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-solar-orange/10 text-solar-orange flex items-center justify-center">
+          <div className="w-11 h-11 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center">
             <Bot size={24} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-graphite">Assistente IA</h1>
-            <p className="text-sm text-graphite-soft">Consulta segura do CRM · modo read-only</p>
+            <h1 className="text-2xl font-bold text-text-primary">Assistente IA</h1>
+            <p className="text-sm text-text-secondary">Consulta segura do CRM · modo read-only</p>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-xs text-energy-green bg-mint-light/70 px-3 py-2 rounded-full">
+        <div className="flex items-center gap-2 text-xs text-mint-400 bg-mint-light/70 px-3 py-2 rounded-full">
           <ShieldCheck size={16} /> Operação segura / sem credenciais no frontend
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
-        <section className="bg-white border border-warm-sand/50 rounded-3xl shadow-sm min-h-[560px] flex flex-col overflow-hidden">
+        <section className="bg-bg-surface-1 border border-border-soft rounded-3xl shadow-sm min-h-[560px] flex flex-col overflow-hidden">
           <div className="flex-1 p-5 space-y-4 crm-scroll-panel overflow-y-auto">
             {messages.map((item, index) => (
               <div key={index} className={item.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
                 <div className={item.role === 'user'
-                  ? 'max-w-[80%] rounded-2xl bg-solar-orange text-white px-4 py-3 text-sm'
-                  : 'max-w-[80%] rounded-2xl bg-warm-sand/50 text-graphite px-4 py-3 text-sm leading-relaxed'}>
+                  ? 'max-w-[80%] rounded-2xl bg-orange-500 text-white px-4 py-3 text-sm'
+                  : 'max-w-[80%] rounded-2xl bg-warm-sand/50 text-text-primary px-4 py-3 text-sm leading-relaxed'}>
                   {item.content}
                 </div>
               </div>
             ))}
-            {loading && <div className="text-sm text-graphite-soft">Pensando...</div>}
+            {loading && <div className="text-sm text-text-secondary">Pensando...</div>}
           </div>
 
-          <div className="border-t border-warm-sand/50 p-4 flex gap-3">
+          <div className="border-t border-border-soft p-4 flex gap-3">
             <input
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               onKeyDown={(event) => { if (event.key === 'Enter') void send(); }}
               placeholder="Pergunte sobre leads, tarefas, campanhas ou funil..."
-              className="flex-1 rounded-2xl border border-warm-sand/70 px-4 py-3 text-sm outline-none focus:border-solar-orange"
+              className="flex-1 rounded-2xl border border-border-strong px-4 py-3 text-sm outline-none focus:border-solar-orange"
             />
             <button
               onClick={() => void send()}
               disabled={loading}
-              className="rounded-2xl bg-solar-orange text-white px-5 py-3 text-sm font-semibold disabled:opacity-50 flex items-center gap-2"
+              className="rounded-2xl bg-orange-500 text-white px-5 py-3 text-sm font-semibold disabled:opacity-50 flex items-center gap-2"
             >
               <Send size={16} /> Enviar
             </button>
@@ -98,11 +98,11 @@ export default function AiAssistant() {
         </section>
 
         <aside className="space-y-4">
-          <div className="bg-white border border-warm-sand/50 rounded-3xl p-5 shadow-sm">
-            <h2 className="font-bold text-graphite mb-3">Sugestões</h2>
+          <div className="bg-bg-surface-1 border border-border-soft rounded-3xl p-5 shadow-sm">
+            <h2 className="font-bold text-text-primary mb-3">Sugestões</h2>
             <div className="space-y-2">
               {suggestions.map((item) => (
-                <button key={item} onClick={() => void send(item)} className="w-full text-left text-sm bg-warm-sand/50 hover:bg-mint-light/60 rounded-2xl px-3 py-3 text-graphite">
+                <button key={item} onClick={() => void send(item)} className="w-full text-left text-sm bg-warm-sand/50 hover:bg-mint-light/60 rounded-2xl px-3 py-3 text-text-primary">
                   {item}
                 </button>
               ))}

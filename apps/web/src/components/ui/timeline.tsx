@@ -31,7 +31,7 @@ export function Timeline({ items, className }: TimelineProps) {
       case 'warning': return 'bg-amber-500 border-amber-600';
       case 'error': return 'bg-red-500 border-red-600';
       case 'info': return 'bg-blue-500 border-blue-600';
-      default: return 'bg-warm-sand/50 border-warm-sand/70';
+      default: return 'bg-warm-sand/50 border-border-strong';
     }
   };
 
@@ -59,7 +59,7 @@ export function Timeline({ items, className }: TimelineProps) {
             getStatusColor(item.status)
           )}>
             {item.icon || (
-              <div className="h-2 w-2 rounded-full bg-white" />
+              <div className="h-2 w-2 rounded-full bg-bg-surface-1" />
             )}
           </div>
 

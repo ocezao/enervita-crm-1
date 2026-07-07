@@ -305,27 +305,27 @@ function proposalFileDataUrl(file: { mimeType?: string | null; dataBase64?: stri
 
 function renderProposalFilePreview(file: ProposalFileAttachment) {
   const dataUrl = proposalFileDataUrl(file);
-  if (!dataUrl) return <p className="text-xs text-graphite-soft">Arquivo sem prévia (sem conteúdo). Baixe para revisar.</p>;
+  if (!dataUrl) return <p className="text-xs text-text-secondary">Arquivo sem prévia (sem conteúdo). Baixe para revisar.</p>;
   const mimeType = file.mimeType.toLowerCase();
 
   if (mimeType.startsWith('image/')) {
-    return <img src={dataUrl} alt={file.name} className="max-h-64 w-full rounded-xl border border-warm-sand/70 object-contain bg-white" />;
+    return <img src={dataUrl} alt={file.name} className="max-h-64 w-full rounded-xl border border-border-strong object-contain bg-bg-surface-1" />;
   }
 
   if (isTextualDocument(mimeType)) {
     const previewText = decodeBase64ToText(file.dataBase64 || '');
     return previewText
-      ? <pre className="max-h-64 overflow-auto rounded-xl border border-warm-sand/70 bg-warm-sand/50 p-3 text-xs whitespace-pre-wrap">{previewText}</pre>
-      : <p className="text-xs text-graphite-soft">Previa textual indisponivel para este arquivo.</p>;
+      ? <pre className="max-h-64 overflow-auto rounded-xl border border-border-strong bg-warm-sand/50 p-3 text-xs whitespace-pre-wrap">{previewText}</pre>
+      : <p className="text-xs text-text-secondary">Previa textual indisponivel para este arquivo.</p>;
   }
 
   if (mimeType === 'application/pdf' || mimeType.includes('pdf')) {
-    return <iframe src={dataUrl} title={`preview-${file.name}`} className="h-64 w-full rounded-xl border border-warm-sand/70" />;
+    return <iframe src={dataUrl} title={`preview-${file.name}`} className="h-64 w-full rounded-xl border border-border-strong" />;
   }
 
   if (mimeType.startsWith('video/')) {
     return (
-      <video controls className="h-64 w-full rounded-xl border border-warm-sand/70 bg-black">
+      <video controls className="h-64 w-full rounded-xl border border-border-strong bg-black">
         <source src={dataUrl} type={mimeType} />
       </video>
     );
@@ -340,15 +340,15 @@ function renderProposalFilePreview(file: ProposalFileAttachment) {
       <object
         data={dataUrl}
         type={mimeType}
-        className="h-64 w-full rounded-xl border border-warm-sand/70 bg-warm-sand/50"
+        className="h-64 w-full rounded-xl border border-border-strong bg-warm-sand/50"
         aria-label={`preview ${file.name}`}
       >
-        <p className="p-3 text-xs text-graphite-soft">Previa do documento indisponivel. Baixe para abrir.</p>
+        <p className="p-3 text-xs text-text-secondary">Previa do documento indisponivel. Baixe para abrir.</p>
       </object>
     );
   }
 
-  return <p className="text-xs text-graphite-soft">Prévia não disponível para este tipo de arquivo. Baixe para abrir.</p>;
+  return <p className="text-xs text-text-secondary">Prévia não disponível para este tipo de arquivo. Baixe para abrir.</p>;
 }
 
 function getProposalAttachment(proposal: Proposal): ProposalFileAttachment | null {
@@ -1241,7 +1241,7 @@ async function handleDeleteLead() {
           </Button>
         </Link>
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-graphite">{lead.contact?.name}</h1>
+          <h1 className="text-2xl font-bold text-text-primary">{lead.contact?.name}</h1>
           <StageBadge stage={lead.stage} />
           <PriorityBadge priority={lead.priority} />
         </div>
@@ -1252,8 +1252,8 @@ async function handleDeleteLead() {
           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div>
               <p className="text-xs uppercase tracking-[0.18em] text-energy-success font-black">Inteligência Enervita</p>
-              <h2 className="mt-1 text-xl font-black text-graphite">Diagnóstico comercial do lead</h2>
-              <p className="mt-1 text-sm font-semibold text-graphite-soft">Leitura personalizada para priorizar economia, proposta e próximo contato.</p>
+              <h2 className="mt-1 text-xl font-black text-text-primary">Diagnóstico comercial do lead</h2>
+              <p className="mt-1 text-sm font-semibold text-text-secondary">Leitura personalizada para priorizar economia, proposta e próximo contato.</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={enervitaIntelligence.potentialTone}>Potencial {enervitaIntelligence.potential}</Badge>
@@ -1266,18 +1266,18 @@ async function handleDeleteLead() {
           </div>
 
           <div className="mt-5 grid grid-cols-1 xl:grid-cols-3 gap-4">
-            <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-              <p className="text-[10px] uppercase tracking-widest font-black text-graphite-soft flex items-center gap-1"><Zap size={12} /> Próxima melhor ação</p>
-              <p className="mt-2 text-sm font-black text-graphite">{enervitaIntelligence.nextAction}</p>
+            <div className="rounded-2xl border border-white/80 bg-bg-surface-1/80 p-4">
+              <p className="text-[10px] uppercase tracking-widest font-black text-text-secondary flex items-center gap-1"><Zap size={12} /> Próxima melhor ação</p>
+              <p className="mt-2 text-sm font-black text-text-primary">{enervitaIntelligence.nextAction}</p>
             </div>
-            <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-              <p className="text-[10px] uppercase tracking-widest font-black text-graphite-soft flex items-center gap-1"><MessageSquare size={12} /> Argumento recomendado</p>
-              <p className="mt-2 text-sm font-semibold text-graphite">{enervitaIntelligence.argument}</p>
+            <div className="rounded-2xl border border-white/80 bg-bg-surface-1/80 p-4">
+              <p className="text-[10px] uppercase tracking-widest font-black text-text-secondary flex items-center gap-1"><MessageSquare size={12} /> Argumento recomendado</p>
+              <p className="mt-2 text-sm font-semibold text-text-primary">{enervitaIntelligence.argument}</p>
             </div>
-            <div className="rounded-2xl border border-white/80 bg-white/80 p-4">
-              <p className="text-[10px] uppercase tracking-widest font-black text-graphite-soft flex items-center gap-1"><CheckCircle2 size={12} /> Dados críticos</p>
+            <div className="rounded-2xl border border-white/80 bg-bg-surface-1/80 p-4">
+              <p className="text-[10px] uppercase tracking-widest font-black text-text-secondary flex items-center gap-1"><CheckCircle2 size={12} /> Dados críticos</p>
               {enervitaIntelligence.missing.length ? (
-                <ul className="mt-2 space-y-1 text-sm font-semibold text-graphite">
+                <ul className="mt-2 space-y-1 text-sm font-semibold text-text-primary">
                   {enervitaIntelligence.missing.map((item) => <li key={item}>• Falta {item}</li>)}
                 </ul>
               ) : (
@@ -1288,7 +1288,7 @@ async function handleDeleteLead() {
 
           <div className="mt-4 flex flex-wrap gap-2">
             {enervitaIntelligence.signals.map((signal) => (
-              <span key={signal} className="rounded-full bg-white/85 px-3 py-1 text-xs font-bold text-graphite-soft border border-white">{signal}</span>
+              <span key={signal} className="rounded-full bg-bg-surface-1/85 px-3 py-1 text-xs font-bold text-text-secondary border border-white">{signal}</span>
             ))}
           </div>
         </Card>
@@ -1299,64 +1299,64 @@ async function handleDeleteLead() {
         <div className="space-y-6">
           <Card className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="font-bold text-graphite">Informações do Contato</h3>
+              <h3 className="font-bold text-text-primary">Informações do Contato</h3>
               <div className="flex items-center gap-2">
                 {canEditLead && !editing ? <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar lead" onClick={startEditing}><Edit3 size={16} /></Button> : null}
-                {canEditLead ? <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-alert-red/10" aria-label="Excluir lead" disabled={savingLead} onClick={handleDeleteLead}><Trash2 size={16} className="text-alert-red" /></Button> : null}
+                {canEditLead ? <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-500/10" aria-label="Excluir lead" disabled={savingLead} onClick={handleDeleteLead}><Trash2 size={16} className="text-alert-red" /></Button> : null}
               </div>
             </div>
 
-            {leadMessage ? <p className="mb-4 rounded-xl bg-solar-orange/10 px-3 py-2 text-xs font-semibold text-solar-orange">{leadMessage}</p> : null}
+            {leadMessage ? <p className="mb-4 rounded-xl bg-orange-500/10 px-3 py-2 text-xs font-semibold text-orange-400">{leadMessage}</p> : null}
             {editing ? (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 gap-3">
-                  <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Nome<input value={editDraft.name} onChange={(event) => setEditDraft((current) => ({ ...current, name: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
-                  <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Telefone<input value={editDraft.phone} onChange={(event) => setEditDraft((current) => ({ ...current, phone: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
-                  <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">E-mail<input value={editDraft.email} onChange={(event) => setEditDraft((current) => ({ ...current, email: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
-                  <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Empresa / Unidade<input value={editDraft.company} onChange={(event) => setEditDraft((current) => ({ ...current, company: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
-                  <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Origem<input value={editDraft.leadSource} onChange={(event) => setEditDraft((current) => ({ ...current, leadSource: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
-                  <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Status de qualificação<input value={editDraft.qualificationStatus} onChange={(event) => setEditDraft((current) => ({ ...current, qualificationStatus: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
-                  <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Prioridade<select value={editDraft.priority} onChange={(event) => setEditDraft((current) => ({ ...current, priority: event.target.value as typeof editDraft.priority }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite"><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
-                  <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Observações<textarea value={editDraft.notes} onChange={(event) => setEditDraft((current) => ({ ...current, notes: event.target.value }))} className="mt-1 min-h-[80px] w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
+                  <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Nome<input value={editDraft.name} onChange={(event) => setEditDraft((current) => ({ ...current, name: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
+                  <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Telefone<input value={editDraft.phone} onChange={(event) => setEditDraft((current) => ({ ...current, phone: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
+                  <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">E-mail<input value={editDraft.email} onChange={(event) => setEditDraft((current) => ({ ...current, email: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
+                  <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Empresa / Unidade<input value={editDraft.company} onChange={(event) => setEditDraft((current) => ({ ...current, company: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
+                  <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Origem<input value={editDraft.leadSource} onChange={(event) => setEditDraft((current) => ({ ...current, leadSource: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
+                  <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Status de qualificação<input value={editDraft.qualificationStatus} onChange={(event) => setEditDraft((current) => ({ ...current, qualificationStatus: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
+                  <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Prioridade<select value={editDraft.priority} onChange={(event) => setEditDraft((current) => ({ ...current, priority: event.target.value as typeof editDraft.priority }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary"><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
+                  <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Observações<textarea value={editDraft.notes} onChange={(event) => setEditDraft((current) => ({ ...current, notes: event.target.value }))} className="mt-1 min-h-[80px] w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
                 </div>
                 <div className="flex flex-wrap gap-2"><Button variant="primary" size="sm" className="gap-2" disabled={savingLead || !editDraft.name.trim()} onClick={handleSaveLead}><Save size={15} /> Salvar alterações</Button><Button variant="outline" size="sm" className="gap-2" disabled={savingLead} onClick={() => setEditing(false)}><X size={15} /> Cancelar</Button></div>
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-start gap-3"><div className="p-2 bg-warm-sand/50 rounded-lg"><Phone size={16} className="text-graphite-soft" /></div><div><p className="text-xs text-graphite-soft">Telefone</p><p className="text-sm font-medium text-graphite">{lead.contact?.phone || 'Não informado'}</p></div></div>
-                <div className="flex items-start gap-3"><div className="p-2 bg-warm-sand/50 rounded-lg"><Mail size={16} className="text-graphite-soft" /></div><div><p className="text-xs text-graphite-soft">E-mail</p><p className="text-sm font-medium text-graphite">{lead.contact?.email || 'Não informado'}</p></div></div>
-                <div className="flex items-start gap-3"><div className="p-2 bg-warm-sand/50 rounded-lg"><MapPin size={16} className="text-graphite-soft" /></div><div><p className="text-xs text-graphite-soft">Empresa / Unidade</p><p className="text-sm font-medium text-graphite">{lead.contact?.company || 'Não informado'}</p></div></div>
+                <div className="flex items-start gap-3"><div className="p-2 bg-warm-sand/50 rounded-lg"><Phone size={16} className="text-text-secondary" /></div><div><p className="text-xs text-text-secondary">Telefone</p><p className="text-sm font-medium text-text-primary">{lead.contact?.phone || 'Não informado'}</p></div></div>
+                <div className="flex items-start gap-3"><div className="p-2 bg-warm-sand/50 rounded-lg"><Mail size={16} className="text-text-secondary" /></div><div><p className="text-xs text-text-secondary">E-mail</p><p className="text-sm font-medium text-text-primary">{lead.contact?.email || 'Não informado'}</p></div></div>
+                <div className="flex items-start gap-3"><div className="p-2 bg-warm-sand/50 rounded-lg"><MapPin size={16} className="text-text-secondary" /></div><div><p className="text-xs text-text-secondary">Empresa / Unidade</p><p className="text-sm font-medium text-text-primary">{lead.contact?.company || 'Não informado'}</p></div></div>
               </div>
             )}
 
             <div className="mt-8 grid grid-cols-2 gap-2">
-              {phoneHref ? <a href={phoneHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-warm-sand/50 px-4 py-2 text-sm font-bold text-graphite hover:bg-warm-sand/70"><Phone size={16} /> Ligar</a> : <Button variant="secondary" className="gap-2 w-full opacity-50" disabled><Phone size={16} /> Sem telefone</Button>}
-              {whatsappHref ? <button type="button" onClick={handleWhatsappClick} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-warm-sand/70 px-4 py-2 text-sm font-bold text-graphite hover:bg-warm-sand/50"><MessageSquare size={16} /> WhatsApp</button> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
+              {phoneHref ? <a href={phoneHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-warm-sand/50 px-4 py-2 text-sm font-bold text-text-primary hover:bg-warm-sand/70"><Phone size={16} /> Ligar</a> : <Button variant="secondary" className="gap-2 w-full opacity-50" disabled><Phone size={16} /> Sem telefone</Button>}
+              {whatsappHref ? <button type="button" onClick={handleWhatsappClick} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm font-bold text-text-primary hover:bg-warm-sand/50"><MessageSquare size={16} /> WhatsApp</button> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
             </div>
-            <div className="mt-4 rounded-2xl border border-solar-orange/15 bg-solar-orange/5 p-4">
-              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-solar-orange">Próxima ação</p>
+            <div className="mt-4 rounded-2xl border border-solar-orange/15 bg-orange-500/5 p-4">
+              <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-400">Próxima ação</p>
               {nextOpenTask ? (
                 <div className="mt-2 space-y-1">
-                  <p className="text-sm font-black text-graphite">{nextOpenTask.title}</p>
-                  <p className="text-xs font-semibold text-graphite-soft">Prioridade: {nextOpenTask.priority} · Vence em {formatDate(nextOpenTask.dueDate)}</p>
+                  <p className="text-sm font-black text-text-primary">{nextOpenTask.title}</p>
+                  <p className="text-xs font-semibold text-text-secondary">Prioridade: {nextOpenTask.priority} · Vence em {formatDate(nextOpenTask.dueDate)}</p>
                 </div>
               ) : (
-                <p className="mt-2 text-sm font-semibold text-graphite-soft">Nenhuma próxima ação cadastrada. Crie uma tarefa para evitar lead parado.</p>
+                <p className="mt-2 text-sm font-semibold text-text-secondary">Nenhuma próxima ação cadastrada. Crie uma tarefa para evitar lead parado.</p>
               )}
             </div>
           </Card>
 
-            <div className="rounded-2xl border border-solar-orange/20 bg-solar-orange/5 p-4 mb-4">
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-solar-orange">Oportunidade</p>
+            <div className="rounded-2xl border border-solar-orange/20 bg-orange-500/5 p-4 mb-4">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-400">Oportunidade</p>
               {lead.opportunity ? (
                 <div className="mt-2 space-y-1">
-                  <p className="font-bold text-graphite">{lead.opportunity.title}</p>
-                  <p className="text-xs text-graphite-soft">Status: {lead.opportunity.status} · Probabilidade: {lead.opportunity.probability}% · Convertida em {formatDate(lead.opportunity.convertedAt)}</p>
+                  <p className="font-bold text-text-primary">{lead.opportunity.title}</p>
+                  <p className="text-xs text-text-secondary">Status: {lead.opportunity.status} · Probabilidade: {lead.opportunity.probability}% · Convertida em {formatDate(lead.opportunity.convertedAt)}</p>
                   {lead.opportunity.acceptedProposalId && <p className="text-xs font-semibold text-green-700">Contrato ganho via proposta aceita em {(lead.opportunity.acceptedAt ? formatDate(lead.opportunity.acceptedAt) : 'data não informada')}</p>}
                 </div>
               ) : (
                 <div className="mt-2 space-y-3">
-                  <p className="text-sm text-graphite">Lead ainda não virou oportunidade. Converta quando houver intenção comercial clara e próximo passo de venda.</p>
+                  <p className="text-sm text-text-primary">Lead ainda não virou oportunidade. Converta quando houver intenção comercial clara e próximo passo de venda.</p>
                   <Button size="sm" onClick={() => void handleConvertToOpportunity()} disabled={convertingOpportunity}>
                     {convertingOpportunity ? 'Convertendo...' : 'Converter em oportunidade'}
                   </Button>
@@ -1367,18 +1367,18 @@ async function handleDeleteLead() {
 
           {/* Card do Responsavel */}
           <Card className="p-6">
-            <h3 className="font-bold text-graphite mb-4">Responsavel</h3>
+            <h3 className="font-bold text-text-primary mb-4">Responsavel</h3>
             {ownerMessage && (
-              <p className={`mb-3 rounded-xl px-3 py-2 text-xs font-semibold ${ownerMessage.includes('sucesso') ? 'bg-energy-green/10 text-energy-green' : 'bg-alert-red/10 text-alert-red'}`}>
+              <p className={`mb-3 rounded-xl px-3 py-2 text-xs font-semibold ${ownerMessage.includes('sucesso') ? 'bg-mint-500/10 text-mint-400' : 'bg-red-500/10 text-alert-red'}`}>
                 {ownerMessage}
               </p>
             )}
             <div className="flex items-center gap-3">
               <div className="p-2 bg-warm-sand/50 rounded-lg">
-                <User size={16} className="text-graphite-soft" />
+                <User size={16} className="text-text-secondary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-graphite truncate">{lead.sdrOwner || 'Sem responsavel'}</p>
+                <p className="text-sm font-medium text-text-primary truncate">{lead.sdrOwner || 'Sem responsavel'}</p>
               </div>
               {isAdminUser(user) && (
                 <div className="relative">
@@ -1407,16 +1407,16 @@ async function handleDeleteLead() {
                     <>
                       <div className="fixed inset-0 z-40" onClick={() => { setOwnerDropdownOpen(false); setDropdownPos(null); setConfirmChange(null); setOwnerSearch(''); }} />
                       <div
-                        className="fixed w-72 bg-white border border-warm-sand/70 rounded-xl shadow-lg z-50 flex flex-col"
+                        className="fixed w-72 bg-bg-surface-1 border border-border-strong rounded-xl shadow-lg z-50 flex flex-col"
                         style={{ top: dropdownPos.top, right: dropdownPos.right, maxHeight: '320px' }}
                       >
                         {/* Campo de busca */}
-                        <div className="p-2 border-b border-warm-sand/50">
+                        <div className="p-2 border-b border-border-soft">
                           <input
                             placeholder="Buscar usuario..."
                             value={ownerSearch}
                             onChange={(e) => setOwnerSearch(e.target.value)}
-                            className="w-full px-3 py-2 text-sm border border-warm-sand/70 rounded-lg focus:outline-none focus:ring-2 focus:ring-solar-orange/30"
+                            className="w-full px-3 py-2 text-sm border border-border-strong rounded-lg focus:outline-none focus:ring-2 focus:ring-solar-orange/30"
                             autoFocus
                           />
                         </div>
@@ -1424,13 +1424,13 @@ async function handleDeleteLead() {
                         {/* Lista de usuarios */}
                         <div className="overflow-y-auto flex-1 p-1">
                           <button
-                            className="w-full text-left px-3 py-2 text-sm text-graphite-soft hover:bg-warm-sand/50 rounded-lg transition-colors"
+                            className="w-full text-left px-3 py-2 text-sm text-text-secondary hover:bg-warm-sand/50 rounded-lg transition-colors"
                             onClick={() => setConfirmChange({ userId: null, userName: 'Sem responsavel' })}
                           >
                             Sem responsavel
                           </button>
                           {ownerUsers.length === 0 && (
-                            <p className="px-3 py-2 text-xs text-graphite-soft">Carregando...</p>
+                            <p className="px-3 py-2 text-xs text-text-secondary">Carregando...</p>
                           )}
                           {ownerUsers
                             .filter(u => u.name.toLowerCase().includes(ownerSearch.toLowerCase()))
@@ -1439,37 +1439,37 @@ async function handleDeleteLead() {
                                 key={u.id}
                                 className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
                                   lead.sdrOwnerId === u.id
-                                    ? 'bg-solar-orange/10 text-solar-orange font-semibold'
-                                    : 'text-graphite hover:bg-warm-sand/50'
+                                    ? 'bg-orange-500/10 text-orange-400 font-semibold'
+                                    : 'text-text-primary hover:bg-warm-sand/50'
                                 }`}
                                 onClick={() => setConfirmChange({ userId: u.id, userName: u.name })}
                               >
                                 {u.name}
-                                <span className="text-xs text-graphite-soft ml-1">({u.roles?.[0] || ''})</span>
+                                <span className="text-xs text-text-secondary ml-1">({u.roles?.[0] || ''})</span>
                               </button>
                             ))
                           }
                           {ownerUsers.filter(u => u.name.toLowerCase().includes(ownerSearch.toLowerCase())).length === 0 && ownerSearch && (
-                            <p className="px-3 py-2 text-xs text-graphite-soft">Nenhum usuario encontrado</p>
+                            <p className="px-3 py-2 text-xs text-text-secondary">Nenhum usuario encontrado</p>
                           )}
                         </div>
 
                         {/* Confirmacao inline */}
                         {confirmChange && (
                           <div className="p-3 bg-amber-50 border-t border-amber-200 rounded-b-xl">
-                            <p className="text-sm font-semibold text-graphite">
+                            <p className="text-sm font-semibold text-text-primary">
                               Atribuir para <strong>{confirmChange.userName}</strong>?
                             </p>
                             <div className="flex gap-2 mt-2">
                               <button
-                                className="px-3 py-1.5 text-xs font-bold bg-solar-orange text-white rounded-lg hover:bg-solar-orange/90 transition-colors"
+                                className="px-3 py-1.5 text-xs font-bold bg-orange-500 text-white rounded-lg hover:bg-orange-500/90 transition-colors"
                                 onClick={() => handleAssignOwner(confirmChange.userId)}
                                 disabled={assigningOwner}
                               >
                                 {assigningOwner ? 'Salvando...' : 'Confirmar'}
                               </button>
                               <button
-                                className="px-3 py-1.5 text-xs font-bold text-graphite-soft hover:bg-warm-sand/50 rounded-lg transition-colors"
+                                className="px-3 py-1.5 text-xs font-bold text-text-secondary hover:bg-warm-sand/50 rounded-lg transition-colors"
                                 onClick={() => setConfirmChange(null)}
                               >
                                 Cancelar
@@ -1488,59 +1488,59 @@ async function handleDeleteLead() {
 
 
           <Card className="p-6">
-            <h3 className="font-bold text-graphite mb-4">Tags internas</h3>
+            <h3 className="font-bold text-text-primary mb-4">Tags internas</h3>
             <div className="flex flex-wrap gap-2 mb-4">
-              {(lead.tags ?? []).length === 0 ? <span className="text-sm text-graphite-soft">Nenhuma tag interna ainda.</span> : lead.tags.map((tag) => <Badge key={tag.slug} variant="default" className="bg-solar-orange/10 text-solar-orange lowercase normal-case">#{tag.slug}</Badge>)}
+              {(lead.tags ?? []).length === 0 ? <span className="text-sm text-text-secondary">Nenhuma tag interna ainda.</span> : lead.tags.map((tag) => <Badge key={tag.slug} variant="default" className="bg-orange-500/10 text-orange-400 lowercase normal-case">#{tag.slug}</Badge>)}
             </div>
-            <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Editar tags separadas por vírgula
-              <input aria-label="Editar tags internas" value={tagDraft ?? currentTagsText} onChange={(event) => setTagDraft(event.target.value)} className="mt-2 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case tracking-normal text-graphite" placeholder="vip, urgente, conta-recebida" />
+            <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Editar tags separadas por vírgula
+              <input aria-label="Editar tags internas" value={tagDraft ?? currentTagsText} onChange={(event) => setTagDraft(event.target.value)} className="mt-2 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case tracking-normal text-text-primary" placeholder="vip, urgente, conta-recebida" />
             </label>
-            {userHasPermission(user, 'lead.edit') ? <Button variant="primary" size="sm" className="mt-3" onClick={handleSaveTags}>Salvar tags</Button> : <p className="mt-3 text-xs text-graphite-soft">Sem permissão para editar tags.</p>}
+            {userHasPermission(user, 'lead.edit') ? <Button variant="primary" size="sm" className="mt-3" onClick={handleSaveTags}>Salvar tags</Button> : <p className="mt-3 text-xs text-text-secondary">Sem permissão para editar tags.</p>}
           </Card>
 
           <Card className="p-6">
-            <h3 className="font-bold text-graphite mb-4">Informações de cadastro</h3>
+            <h3 className="font-bold text-text-primary mb-4">Informações de cadastro</h3>
             <div className="space-y-3">
               {cadastro.map((item) => (
                 <div key={item.label} className="rounded-xl bg-warm-sand/50 p-3">
-                  <p className="text-[10px] font-bold uppercase tracking-wide text-graphite-soft">{item.label}</p>
-                  <p className="mt-1 break-words text-sm font-semibold text-graphite">{item.value}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-wide text-text-secondary">{item.label}</p>
+                  <p className="mt-1 break-words text-sm font-semibold text-text-primary">{item.value}</p>
                 </div>
               ))}
             </div>
           </Card>
 
           <Card className="p-6">
-            <div className="mb-6 flex items-center justify-between gap-3"><h3 className="font-bold text-graphite">Dados Técnicos</h3>{canEditLead && !editing ? <Button variant="ghost" size="sm" className="gap-2" onClick={startEditing}><Edit3 size={15} /> Editar</Button> : null}</div>
+            <div className="mb-6 flex items-center justify-between gap-3"><h3 className="font-bold text-text-primary">Dados Técnicos</h3>{canEditLead && !editing ? <Button variant="ghost" size="sm" className="gap-2" onClick={startEditing}><Edit3 size={15} /> Editar</Button> : null}</div>
             {editing ? (
               <div className="space-y-3">
-                <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Valor da conta<input value={editDraft.energyBillValue} onChange={(event) => setEditDraft((current) => ({ ...current, energyBillValue: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
-                <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Consumo médio kWh<input value={editDraft.averageConsumptionKwh} onChange={(event) => setEditDraft((current) => ({ ...current, averageConsumptionKwh: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
-                <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Concessionária<input value={editDraft.concessionaria} onChange={(event) => setEditDraft((current) => ({ ...current, concessionaria: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
-                <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">CPF<input inputMode="numeric" value={editDraft.cpf} onChange={(event) => setEditDraft((current) => ({ ...current, cpf: formatCpf(event.target.value) }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
-                <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">CNPJ<input inputMode="numeric" value={editDraft.cnpj} onChange={(event) => setEditDraft((current) => ({ ...current, cnpj: formatCnpj(event.target.value) }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
-                <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Oferta<input value={editDraft.offer} onChange={(event) => setEditDraft((current) => ({ ...current, offer: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
-                <label className="text-xs font-bold uppercase tracking-wide text-graphite-soft">Economia estimada<input value={editDraft.projectedSavings} onChange={(event) => setEditDraft((current) => ({ ...current, projectedSavings: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case text-graphite" /></label>
+                <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Valor da conta<input value={editDraft.energyBillValue} onChange={(event) => setEditDraft((current) => ({ ...current, energyBillValue: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
+                <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Consumo médio kWh<input value={editDraft.averageConsumptionKwh} onChange={(event) => setEditDraft((current) => ({ ...current, averageConsumptionKwh: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
+                <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Concessionária<input value={editDraft.concessionaria} onChange={(event) => setEditDraft((current) => ({ ...current, concessionaria: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
+                <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">CPF<input inputMode="numeric" value={editDraft.cpf} onChange={(event) => setEditDraft((current) => ({ ...current, cpf: formatCpf(event.target.value) }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
+                <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">CNPJ<input inputMode="numeric" value={editDraft.cnpj} onChange={(event) => setEditDraft((current) => ({ ...current, cnpj: formatCnpj(event.target.value) }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
+                <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Oferta<input value={editDraft.offer} onChange={(event) => setEditDraft((current) => ({ ...current, offer: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
+                <label className="text-xs font-bold uppercase tracking-wide text-text-secondary">Economia estimada<input value={editDraft.projectedSavings} onChange={(event) => setEditDraft((current) => ({ ...current, projectedSavings: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case text-text-primary" /></label>
               </div>
             ) : <div className="space-y-4">
-              <div className="flex justify-between items-center py-2 border-b border-warm-sand/30">
-                <span className="text-sm text-graphite-soft">Valor da Conta</span>
-                <span className="text-sm font-bold text-energy-green">{formatCurrency(lead.energyBillValue)}</span>
+              <div className="flex justify-between items-center py-2 border-b border-border-hair">
+                <span className="text-sm text-text-secondary">Valor da Conta</span>
+                <span className="text-sm font-bold text-mint-400">{formatCurrency(lead.energyBillValue)}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-warm-sand/30">
-                <span className="text-sm text-graphite-soft">Consumo Médio</span>
-                <span className="text-sm font-bold text-graphite">{lead.averageConsumptionKwh} kWh</span>
+              <div className="flex justify-between items-center py-2 border-b border-border-hair">
+                <span className="text-sm text-text-secondary">Consumo Médio</span>
+                <span className="text-sm font-bold text-text-primary">{lead.averageConsumptionKwh} kWh</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-warm-sand/30">
-                <span className="text-sm text-graphite-soft">Concessionária</span>
-                <span className="text-sm font-bold text-graphite">{lead.concessionaria}</span>
+              <div className="flex justify-between items-center py-2 border-b border-border-hair">
+                <span className="text-sm text-text-secondary">Concessionária</span>
+                <span className="text-sm font-bold text-text-primary">{lead.concessionaria}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-warm-sand/30">
-                <span className="text-sm text-graphite-soft">Oferta</span>
+              <div className="flex justify-between items-center py-2 border-b border-border-hair">
+                <span className="text-sm text-text-secondary">Oferta</span>
                 <Badge variant="solar">{lead.offer}</Badge>
               </div>
-              <div className="bg-energy-green/5 p-4 rounded-xl mt-4">
-                <p className="text-xs text-energy-green font-bold uppercase mb-1">Economia Estimada</p>
+              <div className="bg-mint-500/5 p-4 rounded-xl mt-4">
+                <p className="text-xs text-mint-400 font-bold uppercase mb-1">Economia Estimada</p>
                 <p className="text-xl font-bold text-energy-deep">{formatCurrency(lead.projectedSavings)}/mês</p>
               </div>
             </div>}
@@ -1562,7 +1562,7 @@ async function handleDeleteLead() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === tab.id ? 'bg-white text-solar-orange shadow-sm' : 'text-graphite-soft hover:text-graphite'
+                  activeTab === tab.id ? 'bg-bg-surface-1 text-orange-400 shadow-sm' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >
                 <tab.icon size={16} />
@@ -1581,7 +1581,7 @@ async function handleDeleteLead() {
                       value={activityNote}
                       onChange={(event) => setActivityNote(event.target.value)}
                       disabled={!canCreateActivity}
-                      className="w-full bg-warm-sand/50 border border-warm-sand/70 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 min-h-[100px] disabled:opacity-60"
+                      className="w-full bg-warm-sand/50 border border-border-strong rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 min-h-[100px] disabled:opacity-60"
                     />
                     <div className="flex justify-end mt-2">
                       {canCreateActivity && <Button variant="primary" size="sm" onClick={handleCreateActivity}>Registrar Atividade</Button>}
@@ -1592,27 +1592,27 @@ async function handleDeleteLead() {
                 <div className="relative space-y-8 before:absolute before:inset-0 before:ml-5 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-gray-200 before:via-gray-200 before:to-transparent">
                   {activities.map((activity) => (
                     <div key={activity.id} className="relative flex items-start gap-4 pl-12">
-                      <div className="absolute left-0 w-10 h-10 rounded-full bg-white border-2 border-warm-sand/50 flex items-center justify-center text-graphite-soft shadow-sm">
+                      <div className="absolute left-0 w-10 h-10 rounded-full bg-bg-surface-1 border-2 border-border-soft flex items-center justify-center text-text-secondary shadow-sm">
                         {activity.activityType === 'call' ? <Phone size={16} /> : <FileText size={16} />}
                       </div>
-                      <div className="flex-1 bg-warm-sand/50 rounded-2xl p-4 border border-warm-sand/50">
+                      <div className="flex-1 bg-warm-sand/50 rounded-2xl p-4 border border-border-soft">
                         <div className="flex justify-between items-start mb-2">
-                          <p className="text-sm font-bold text-graphite">
+                          <p className="text-sm font-bold text-text-primary">
                             {activity.activityType === 'call' ? 'Contato Telefônico' : 'Nota'}
                           </p>
-                          <span className="text-[10px] text-graphite-soft font-medium">{formatDate(activity.occurredAt)}</span>
+                          <span className="text-[10px] text-text-secondary font-medium">{formatDate(activity.occurredAt)}</span>
                         </div>
-                        <p className="text-sm text-graphite leading-relaxed">{activity.outcome}</p>
+                        <p className="text-sm text-text-primary leading-relaxed">{activity.outcome}</p>
                       </div>
                     </div>
                   ))}
                   <div className="relative flex items-start gap-4 pl-12">
-                    <div className="absolute left-0 w-10 h-10 rounded-full bg-solar-orange/10 border-2 border-solar-orange/20 flex items-center justify-center text-solar-orange shadow-sm">
+                    <div className="absolute left-0 w-10 h-10 rounded-full bg-orange-500/10 border-2 border-solar-orange/20 flex items-center justify-center text-orange-400 shadow-sm">
                       <Plus size={16} />
                     </div>
                     <div className="flex-1 py-2">
-                      <p className="text-sm font-bold text-graphite">Lead Criado via {lead.leadSource}</p>
-                      <p className="text-xs text-graphite-soft">{formatDate(lead.createdAt)}</p>
+                      <p className="text-sm font-bold text-text-primary">Lead Criado via {lead.leadSource}</p>
+                      <p className="text-xs text-text-secondary">{formatDate(lead.createdAt)}</p>
                     </div>
                   </div>
                 </div>
@@ -1622,28 +1622,28 @@ async function handleDeleteLead() {
             {activeTab === 'tasks' && (
               <div className="p-6 space-y-6">
                 {canCreateTask && (
-                  <div className="rounded-2xl border border-warm-sand/50 bg-warm-sand/50 p-4 space-y-4">
-                    <h4 className="font-bold text-graphite">Nova tarefa para este lead</h4>
+                  <div className="rounded-2xl border border-border-soft bg-warm-sand/50 p-4 space-y-4">
+                    <h4 className="font-bold text-text-primary">Nova tarefa para este lead</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <label className="text-xs font-bold text-graphite-soft uppercase">Título da tarefa
-                        <input aria-label="Título da tarefa" value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm" />
+                      <label className="text-xs font-bold text-text-secondary uppercase">Título da tarefa
+                        <input aria-label="Título da tarefa" value={taskTitle} onChange={(event) => setTaskTitle(event.target.value)} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm" />
                       </label>
-                      <label className="text-xs font-bold text-graphite-soft uppercase">Prioridade
-                        <select aria-label="Prioridade" value={taskPriority} onChange={(event) => setTaskPriority(event.target.value as typeof taskPriority)} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm">
+                      <label className="text-xs font-bold text-text-secondary uppercase">Prioridade
+                        <select aria-label="Prioridade" value={taskPriority} onChange={(event) => setTaskPriority(event.target.value as typeof taskPriority)} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm">
                           <option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="urgente">Urgente</option>
                         </select>
                       </label>
-                      <label className="text-xs font-bold text-graphite-soft uppercase">Vencimento
-                        <input aria-label="Vencimento" type="datetime-local" value={taskDueDate} onChange={(event) => setTaskDueDate(event.target.value)} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm" />
+                      <label className="text-xs font-bold text-text-secondary uppercase">Vencimento
+                        <input aria-label="Vencimento" type="datetime-local" value={taskDueDate} onChange={(event) => setTaskDueDate(event.target.value)} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm" />
                       </label>
                     </div>
                     <Button variant="primary" size="sm" className="gap-2" onClick={handleCreateTask}><Plus size={16} /> Criar tarefa</Button>
                   </div>
                 )}
                 {tasks.length === 0 ? (
-                  <div className="p-12 text-center"><CheckCircle2 size={48} className="mx-auto text-graphite-soft mb-4" /><h4 className="font-bold text-graphite">Nenhuma tarefa pendente</h4><p className="text-sm text-graphite-soft mt-2">Tudo em dia com este lead.</p></div>
+                  <div className="p-12 text-center"><CheckCircle2 size={48} className="mx-auto text-text-secondary mb-4" /><h4 className="font-bold text-text-primary">Nenhuma tarefa pendente</h4><p className="text-sm text-text-secondary mt-2">Tudo em dia com este lead.</p></div>
                 ) : (
-                  <div className="space-y-3">{tasks.map((task) => (<div key={task.id} className="rounded-xl border border-warm-sand/50 bg-white p-4 flex items-start justify-between gap-4"><div><p className="font-bold text-graphite">{task.title}</p><p className="text-xs text-graphite-soft">Status: {task.status} · Prioridade: {task.priority} · Vence em {formatDate(task.dueDate)}</p></div>{canCompleteTask && task.status !== 'concluido' && <Button variant="outline" size="sm" onClick={() => completeTask(task.id)}>Concluir tarefa</Button>}</div>))}</div>
+                  <div className="space-y-3">{tasks.map((task) => (<div key={task.id} className="rounded-xl border border-border-soft bg-bg-surface-1 p-4 flex items-start justify-between gap-4"><div><p className="font-bold text-text-primary">{task.title}</p><p className="text-xs text-text-secondary">Status: {task.status} · Prioridade: {task.priority} · Vence em {formatDate(task.dueDate)}</p></div>{canCompleteTask && task.status !== 'concluido' && <Button variant="outline" size="sm" onClick={() => completeTask(task.id)}>Concluir tarefa</Button>}</div>))}</div>
                 )}
               </div>
             )}
@@ -1651,41 +1651,41 @@ async function handleDeleteLead() {
             {activeTab === 'events' && (
               <div className="p-6 space-y-6">
                 <div className="space-y-2">
-                  <h4 className="font-bold text-graphite">Resumo de tracking do lead</h4>
-                  <p className="text-sm text-graphite-soft">Origem comercial, campanha, conjunto, anúncio, página e eventos capturados para este lead.</p>
+                  <h4 className="font-bold text-text-primary">Resumo de tracking do lead</h4>
+                  <p className="text-sm text-text-secondary">Origem comercial, campanha, conjunto, anúncio, página e eventos capturados para este lead.</p>
                 </div>
                 {trackingDetails.length > 0 ? (
-                  <div className="rounded-2xl border border-warm-sand/50 bg-white p-5">
-                    <h5 className="font-bold text-graphite">Atribuição e origem</h5>
+                  <div className="rounded-2xl border border-border-soft bg-bg-surface-1 p-5">
+                    <h5 className="font-bold text-text-primary">Atribuição e origem</h5>
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       {trackingDetails.map((item) => (
                         <div key={item.label} className="rounded-xl bg-warm-sand/50 p-4">
-                          <span className="text-xs font-bold uppercase tracking-wide text-graphite-soft">{item.label}</span>
-                          <p className="mt-1 break-words font-semibold text-graphite">{item.value}</p>
+                          <span className="text-xs font-bold uppercase tracking-wide text-text-secondary">{item.label}</span>
+                          <p className="mt-1 break-words font-semibold text-text-primary">{item.value}</p>
                         </div>
                       ))}
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-warm-sand/70 bg-warm-sand/50 p-5 text-sm text-graphite-soft">Este lead ainda não tem origem, campanha, conjunto, anúncio ou página registrados.</div>
+                  <div className="rounded-2xl border border-dashed border-border-strong bg-warm-sand/50 p-5 text-sm text-text-secondary">Este lead ainda não tem origem, campanha, conjunto, anúncio ou página registrados.</div>
                 )}
-                <div className="rounded-2xl border border-warm-sand/50 bg-white p-5">
+                <div className="rounded-2xl border border-border-soft bg-bg-surface-1 p-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <h5 className="font-bold text-graphite">Eventos enviados</h5>
+                    <h5 className="font-bold text-text-primary">Eventos enviados</h5>
                     <Badge variant="default">{trackingEvents.length} evento(s)</Badge>
                   </div>
                   {trackingEvents.length === 0 ? (
-                    <div className="mt-4 rounded-xl border border-dashed border-warm-sand/70 bg-warm-sand/50 p-4 text-sm text-graphite-soft">Nenhum evento de tracking encontrado para este lead.</div>
+                    <div className="mt-4 rounded-xl border border-dashed border-border-strong bg-warm-sand/50 p-4 text-sm text-text-secondary">Nenhum evento de tracking encontrado para este lead.</div>
                   ) : (
                     <div className="mt-4 space-y-3">
                       {trackingEvents.map((event) => (
-                        <article key={event.id} className="rounded-xl border border-warm-sand/50 bg-warm-sand/50 p-4">
+                        <article key={event.id} className="rounded-xl border border-border-soft bg-warm-sand/50 p-4">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
-                              <p className="text-sm font-bold text-graphite">{event.eventName}</p>
-                              <p className="text-xs text-graphite-soft">{event.platform} | {event.status} | tentativas: {event.attempts}</p>
+                              <p className="text-sm font-bold text-text-primary">{event.eventName}</p>
+                              <p className="text-xs text-text-secondary">{event.platform} | {event.status} | tentativas: {event.attempts}</p>
                             </div>
-                            <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-graphite-soft">{event.sentAt ? formatDate(event.sentAt) : event.nextRetryAt ? `Fila: ${formatDate(event.nextRetryAt)}` : 'Sem envio'}</span>
+                            <span className="rounded-full bg-bg-surface-1 px-3 py-1 text-xs font-semibold text-text-secondary">{event.sentAt ? formatDate(event.sentAt) : event.nextRetryAt ? `Fila: ${formatDate(event.nextRetryAt)}` : 'Sem envio'}</span>
                           </div>
                           {event.errorMessage && <p className="mt-3 rounded-lg bg-red-50 p-2 text-xs font-semibold text-red-700">{event.errorMessage}</p>}
                         </article>
@@ -1693,40 +1693,40 @@ async function handleDeleteLead() {
                     </div>
                   )}
                 </div>
-                <p className="text-xs text-graphite-soft">IDs técnicos e sinais de clique aparecem quando foram capturados no lead, metadata ou payload dos eventos.</p>
+                <p className="text-xs text-text-secondary">IDs técnicos e sinais de clique aparecem quando foram capturados no lead, metadata ou payload dos eventos.</p>
               </div>
             )}
 
             {activeTab === 'history' && (
               <div className="p-6 space-y-4" role="region" aria-label="Histórico do lead">
                 <div>
-                  <h4 className="font-bold text-graphite">Histórico do lead</h4>
-                  <p className="text-sm text-graphite-soft">Auditoria de alterações registradas para este lead.</p>
+                  <h4 className="font-bold text-text-primary">Histórico do lead</h4>
+                  <p className="text-sm text-text-secondary">Auditoria de alterações registradas para este lead.</p>
                 </div>
                 {history.length === 0 ? (
                   <div className="p-12 text-center">
-                    <History size={48} className="mx-auto text-graphite-soft mb-4" />
-                    <h4 className="font-bold text-graphite">Nenhum histórico registrado</h4>
-                    <p className="text-sm text-graphite-soft mt-2">As alterações deste lead aparecerão aqui quando forem registradas.</p>
+                    <History size={48} className="mx-auto text-text-secondary mb-4" />
+                    <h4 className="font-bold text-text-primary">Nenhum histórico registrado</h4>
+                    <p className="text-sm text-text-secondary mt-2">As alterações deste lead aparecerão aqui quando forem registradas.</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {history.map((entry) => (
-                      <article key={entry.id} className="rounded-2xl border border-warm-sand/50 bg-white p-4 shadow-sm">
+                      <article key={entry.id} className="rounded-2xl border border-border-soft bg-bg-surface-1 p-4 shadow-sm">
                         <div className="flex flex-wrap items-start justify-between gap-3">
                           <div>
-                            <p className="text-xs font-bold uppercase tracking-wide text-solar-orange">{entry.action}</p>
-                            <h5 className="mt-1 font-bold text-graphite">{entry.summary}</h5>
-                            <p className="mt-1 text-xs text-graphite-soft">{entry.actor.name} · {entry.actor.email}</p>
+                            <p className="text-xs font-bold uppercase tracking-wide text-orange-400">{entry.action}</p>
+                            <h5 className="mt-1 font-bold text-text-primary">{entry.summary}</h5>
+                            <p className="mt-1 text-xs text-text-secondary">{entry.actor.name} · {entry.actor.email}</p>
                           </div>
-                          <span className="rounded-full bg-warm-sand/50 px-3 py-1 text-xs font-semibold text-graphite-soft">{formatDate(entry.occurredAt)}</span>
+                          <span className="rounded-full bg-warm-sand/50 px-3 py-1 text-xs font-semibold text-text-secondary">{formatDate(entry.occurredAt)}</span>
                         </div>
                         {entry.changes.length > 0 ? (
                           <div className="mt-4 space-y-2">
                             {entry.changes.map((change) => (
                               <div key={`${entry.id}-${change.field}`} className="rounded-xl bg-warm-sand/50 p-3 text-sm">
-                                <p className="text-xs font-bold uppercase tracking-wide text-graphite-soft">{change.label}</p>
-                                <p className="mt-1 text-graphite"><span className="font-semibold text-graphite">{historyValue(change.before)}</span>{' '}{String.fromCharCode(8594)}{' '}<span className="font-semibold text-graphite">{historyValue(change.after)}</span></p>
+                                <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">{change.label}</p>
+                                <p className="mt-1 text-text-primary"><span className="font-semibold text-text-primary">{historyValue(change.before)}</span>{' '}{String.fromCharCode(8594)}{' '}<span className="font-semibold text-text-primary">{historyValue(change.after)}</span></p>
                               </div>
                             ))}
                           </div>
@@ -1742,8 +1742,8 @@ async function handleDeleteLead() {
               <div className="p-6 space-y-6">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h4 className="font-bold text-graphite">Documentos do lead</h4>
-                    <p className="text-sm text-graphite-soft">Arquivos, imagens e comprovantes vinculados somente a este lead.</p>
+                    <h4 className="font-bold text-text-primary">Documentos do lead</h4>
+                    <p className="text-sm text-text-secondary">Arquivos, imagens e comprovantes vinculados somente a este lead.</p>
                   </div>
                   <Badge variant="default">{documents.length} arquivo(s)</Badge>
                 </div>
@@ -1751,10 +1751,10 @@ async function handleDeleteLead() {
                 {documentMessage && <div className="rounded-2xl border border-green-100 bg-green-50 p-3 text-sm font-semibold text-green-700">{documentMessage}</div>}
                 {documentError && <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">{documentError}</div>}
 
-                <label className={`block rounded-2xl border border-dashed p-6 text-center transition ${canEditLead ? 'cursor-pointer border-solar-orange/40 bg-solar-orange/5 hover:bg-solar-orange/10' : 'border-warm-sand/70 bg-warm-sand/50 opacity-70'}`}>
-                  <Upload size={28} className="mx-auto mb-3 text-solar-orange" />
-                  <span className="block text-sm font-bold text-graphite">{documentsUploading ? 'Enviando arquivos...' : 'Enviar documentos'}</span>
-                  <span className="mt-1 block text-xs text-graphite-soft">PDF, imagens, planilhas, textos, videos e arquivos ate 20 MB.</span>
+                <label className={`block rounded-2xl border border-dashed p-6 text-center transition ${canEditLead ? 'cursor-pointer border-solar-orange/40 bg-orange-500/5 hover:bg-orange-500/10' : 'border-border-strong bg-warm-sand/50 opacity-70'}`}>
+                  <Upload size={28} className="mx-auto mb-3 text-orange-400" />
+                  <span className="block text-sm font-bold text-text-primary">{documentsUploading ? 'Enviando arquivos...' : 'Enviar documentos'}</span>
+                  <span className="mt-1 block text-xs text-text-secondary">PDF, imagens, planilhas, textos, videos e arquivos ate 20 MB.</span>
                   <input
                     type="file"
                     multiple
@@ -1768,27 +1768,27 @@ async function handleDeleteLead() {
                 </label>
 
                 {documents.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-warm-sand/70 bg-warm-sand/50 p-10 text-center">
-                    <FileText size={42} className="mx-auto mb-3 text-graphite-soft" />
-                    <h5 className="font-bold text-graphite">Nenhum documento anexado</h5>
-                    <p className="mt-1 text-sm text-graphite-soft">Os arquivos enviados para este lead aparecem aqui.</p>
+                  <div className="rounded-2xl border border-dashed border-border-strong bg-warm-sand/50 p-10 text-center">
+                    <FileText size={42} className="mx-auto mb-3 text-text-secondary" />
+                    <h5 className="font-bold text-text-primary">Nenhum documento anexado</h5>
+                    <p className="mt-1 text-sm text-text-secondary">Os arquivos enviados para este lead aparecem aqui.</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {documents.map((document) => (
-                      <article key={document.id} className="rounded-2xl border border-warm-sand/50 bg-white p-4 shadow-sm">
+                      <article key={document.id} className="rounded-2xl border border-border-soft bg-bg-surface-1 p-4 shadow-sm">
                         <div className="flex items-start gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-warm-sand/50 text-solar-orange">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-warm-sand/50 text-orange-400">
                             <FileText size={20} />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h5 className="truncate font-bold text-graphite" title={document.fileName}>{document.fileName}</h5>
-                            <p className="mt-1 text-xs text-graphite-soft">{document.mimeType || 'application/octet-stream'} | {fileSizeLabel(document.fileSize ?? 0)} | {formatDate(document.createdAt)}</p>
+                            <h5 className="truncate font-bold text-text-primary" title={document.fileName}>{document.fileName}</h5>
+                            <p className="mt-1 text-xs text-text-secondary">{document.mimeType || 'application/octet-stream'} | {fileSizeLabel(document.fileSize ?? 0)} | {formatDate(document.createdAt)}</p>
                           </div>
                         </div>
                         <div className="mt-4 flex flex-wrap gap-2">
                           <Button variant="outline" size="sm" className="gap-2" onClick={() => setPreviewDocument(document)}><Eye size={15} /> Preview</Button>
-                          <a href={document.downloadUrl || document.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-warm-sand/70 px-3 py-2 text-sm font-semibold text-graphite hover:bg-warm-sand/50"><Download size={15} /> Baixar</a>
+                          <a href={document.downloadUrl || document.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-border-strong px-3 py-2 text-sm font-semibold text-text-primary hover:bg-warm-sand/50"><Download size={15} /> Baixar</a>
                           {canEditLead && <Button variant="ghost" size="sm" className="gap-2 text-red-600" onClick={() => void handleDeleteDocument(document)}><Trash2 size={15} /> Excluir</Button>}
                         </div>
                       </article>
@@ -1798,28 +1798,28 @@ async function handleDeleteLead() {
 
                 {previewDocument && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-                    <div className="flex max-h-[90vh] w-full max-w-5xl flex-col rounded-2xl bg-white shadow-2xl">
-                      <div className="flex items-start justify-between gap-4 border-b border-warm-sand/50 p-4">
+                    <div className="flex max-h-[90vh] w-full max-w-5xl flex-col rounded-2xl bg-bg-surface-1 shadow-2xl">
+                      <div className="flex items-start justify-between gap-4 border-b border-border-soft p-4">
                         <div className="min-w-0">
-                          <h5 className="truncate font-bold text-graphite">{previewDocument.fileName}</h5>
-                          <p className="text-xs text-graphite-soft">{previewDocument.mimeType || 'application/octet-stream'} | {fileSizeLabel(previewDocument.fileSize ?? 0)}</p>
+                          <h5 className="truncate font-bold text-text-primary">{previewDocument.fileName}</h5>
+                          <p className="text-xs text-text-secondary">{previewDocument.mimeType || 'application/octet-stream'} | {fileSizeLabel(previewDocument.fileSize ?? 0)}</p>
                         </div>
                         <div className="flex shrink-0 gap-2">
-                          <a href={previewDocument.downloadUrl || previewDocument.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-xl border border-warm-sand/70 px-3 text-sm font-semibold text-graphite hover:bg-warm-sand/50"><Download size={15} /> Baixar</a>
+                          <a href={previewDocument.downloadUrl || previewDocument.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-xl border border-border-strong px-3 text-sm font-semibold text-text-primary hover:bg-warm-sand/50"><Download size={15} /> Baixar</a>
                           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setPreviewDocument(null)}><X size={16} /></Button>
                         </div>
                       </div>
                       <div className="min-h-[360px] overflow-auto bg-warm-sand/50 p-4">
-                        {documentPreviewType(previewDocument) === 'image' && <img src={previewDocument.previewUrl || previewDocument.fileUrl || ''} alt={previewDocument.fileName} className="mx-auto max-h-[72vh] max-w-full rounded-xl bg-white object-contain" />}
-                        {documentPreviewType(previewDocument) === 'pdf' && <iframe src={previewDocument.previewUrl || previewDocument.fileUrl || ''} title={previewDocument.fileName} className="h-[72vh] w-full rounded-xl border border-warm-sand/70 bg-white" />}
+                        {documentPreviewType(previewDocument) === 'image' && <img src={previewDocument.previewUrl || previewDocument.fileUrl || ''} alt={previewDocument.fileName} className="mx-auto max-h-[72vh] max-w-full rounded-xl bg-bg-surface-1 object-contain" />}
+                        {documentPreviewType(previewDocument) === 'pdf' && <iframe src={previewDocument.previewUrl || previewDocument.fileUrl || ''} title={previewDocument.fileName} className="h-[72vh] w-full rounded-xl border border-border-strong bg-bg-surface-1" />}
                         {documentPreviewType(previewDocument) === 'video' && <video src={previewDocument.previewUrl || previewDocument.fileUrl || ''} controls className="mx-auto max-h-[72vh] max-w-full rounded-xl bg-black" />}
-                        {documentPreviewType(previewDocument) === 'text' && <iframe src={previewDocument.previewUrl || previewDocument.fileUrl || ''} title={previewDocument.fileName} className="h-[72vh] w-full rounded-xl border border-warm-sand/70 bg-white" />}
+                        {documentPreviewType(previewDocument) === 'text' && <iframe src={previewDocument.previewUrl || previewDocument.fileUrl || ''} title={previewDocument.fileName} className="h-[72vh] w-full rounded-xl border border-border-strong bg-bg-surface-1" />}
                         {documentPreviewType(previewDocument) === 'download' && (
-                          <div className="flex min-h-[360px] flex-col items-center justify-center rounded-xl border border-dashed border-warm-sand/70 bg-white p-8 text-center">
-                            <FileText size={48} className="mb-4 text-graphite-soft" />
-                            <h5 className="font-bold text-graphite">Preview indisponível para este tipo de arquivo</h5>
-                            <p className="mt-2 max-w-md text-sm text-graphite-soft">Use o botao de download para abrir o arquivo no aplicativo adequado.</p>
-                            <a href={previewDocument.downloadUrl || previewDocument.fileUrl || '#'} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-solar-orange px-4 py-2 text-sm font-bold text-white"><ExternalLink size={16} /> Abrir / baixar</a>
+                          <div className="flex min-h-[360px] flex-col items-center justify-center rounded-xl border border-dashed border-border-strong bg-bg-surface-1 p-8 text-center">
+                            <FileText size={48} className="mb-4 text-text-secondary" />
+                            <h5 className="font-bold text-text-primary">Preview indisponível para este tipo de arquivo</h5>
+                            <p className="mt-2 max-w-md text-sm text-text-secondary">Use o botao de download para abrir o arquivo no aplicativo adequado.</p>
+                            <a href={previewDocument.downloadUrl || previewDocument.fileUrl || '#'} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 rounded-xl bg-orange-500 px-4 py-2 text-sm font-bold text-white"><ExternalLink size={16} /> Abrir / baixar</a>
                           </div>
                         )}
                       </div>
@@ -1833,38 +1833,38 @@ async function handleDeleteLead() {
               <div className="p-6 space-y-6">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <div>
-                    <h4 className="font-bold text-graphite">Propostas vinculadas ao lead</h4>
-                    <p className="text-sm text-graphite-soft">Crie do zero pelo editor, salve como modelo reutilizável ou importe PDF/arquivo externo.</p>
+                    <h4 className="font-bold text-text-primary">Propostas vinculadas ao lead</h4>
+                    <p className="text-sm text-text-secondary">Crie do zero pelo editor, salve como modelo reutilizável ou importe PDF/arquivo externo.</p>
                   </div>
                   <Badge variant="solar">{sortedProposals.length} proposta(s)</Badge>
                 </div>
 
-                {proposalMessage && <div className="rounded-2xl border border-solar-orange/20 bg-solar-orange/5 p-3 text-sm font-semibold text-solar-orange">{proposalMessage}</div>}
-                {solarMessage && <div className="rounded-2xl border border-energy-green/20 bg-energy-green/5 p-3 text-sm font-semibold text-energy-green">{solarMessage}</div>}
+                {proposalMessage && <div className="rounded-2xl border border-solar-orange/20 bg-orange-500/5 p-3 text-sm font-semibold text-orange-400">{proposalMessage}</div>}
+                {solarMessage && <div className="rounded-2xl border border-energy-green/20 bg-mint-500/5 p-3 text-sm font-semibold text-mint-400">{solarMessage}</div>}
 
-                <div className="rounded-2xl border border-solar-orange/20 bg-white p-5 shadow-sm">
+                <div className="rounded-2xl border border-solar-orange/20 bg-bg-surface-1 p-5 shadow-sm">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
-                        <Zap size={18} className="text-solar-orange" />
-                        <h5 className="font-black text-graphite">Dimensionamento solar</h5>
+                        <Zap size={18} className="text-orange-400" />
+                        <h5 className="font-black text-text-primary">Dimensionamento solar</h5>
                       </div>
-                      <p className="mt-1 text-sm text-graphite-soft">Pré-cálculo manual com cidade, consumo, perda, sobra e placa padrão.</p>
+                      <p className="mt-1 text-sm text-text-secondary">Pré-cálculo manual com cidade, consumo, perda, sobra e placa padrão.</p>
                     </div>
                     <Badge variant="solar">{solarDimensionamento ? 'Calculado' : 'Pré-proposta'}</Badge>
                   </div>
 
                   <div className="mt-5 space-y-5">
-                    <section className="rounded-2xl border border-warm-sand/50 bg-warm-sand/50/70 p-4">
-                      <label className="block text-xs font-bold uppercase text-graphite-soft">Cidade de irradiação</label>
+                    <section className="rounded-2xl border border-border-soft bg-warm-sand/50/70 p-4">
+                      <label className="block text-xs font-bold uppercase text-text-secondary">Cidade de irradiação</label>
                       <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_120px]">
-                        <input aria-label="Buscar cidade de irradiação" value={solarCidadeQuery} onChange={(event) => { setSolarCidadeQuery(event.target.value); setSolarCidade(null); }} className="h-11 min-w-0 rounded-xl border border-warm-sand/70 bg-white px-3 text-sm outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: Franca/SP" />
+                        <input aria-label="Buscar cidade de irradiação" value={solarCidadeQuery} onChange={(event) => { setSolarCidadeQuery(event.target.value); setSolarCidade(null); }} className="h-11 min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: Franca/SP" />
                         <Button type="button" size="sm" variant="outline" className="h-11 justify-center" onClick={handleSearchSolarCity} disabled={solarLoadingRefs}>Buscar</Button>
                       </div>
                       {solarCities.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-2">
                           {solarCities.slice(0, 8).map((city) => (
-                            <button key={city.id} type="button" onClick={() => { setSolarCidade(city); setSolarCidadeQuery(`${city.cidade}/${city.uf}`); }} className={`max-w-full rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${solarCidade?.id === city.id ? 'border-solar-orange bg-solar-orange/10 text-solar-orange' : 'border-warm-sand/70 bg-white text-graphite hover:border-solar-orange/40'}`}>
+                            <button key={city.id} type="button" onClick={() => { setSolarCidade(city); setSolarCidadeQuery(`${city.cidade}/${city.uf}`); }} className={`max-w-full rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${solarCidade?.id === city.id ? 'border-solar-orange bg-orange-500/10 text-orange-400' : 'border-border-strong bg-bg-surface-1 text-text-primary hover:border-solar-orange/40'}`}>
                               <span className="inline-block max-w-[260px] truncate align-bottom">{city.cidade}/{city.uf}</span> · {solarNumberText(city.irradiacao_kwh_m2_dia)}
                             </button>
                           ))}
@@ -1874,31 +1874,31 @@ async function handleDeleteLead() {
 
                     <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr]">
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <label className="block text-xs font-bold uppercase text-graphite-soft">Consumo kWh/mês
-                          <input aria-label="Consumo médio mensal para dimensionamento" value={solarConsumo} onChange={(event) => setSolarConsumo(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-warm-sand/70 bg-white px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: 1800" />
+                        <label className="block text-xs font-bold uppercase text-text-secondary">Consumo kWh/mês
+                          <input aria-label="Consumo médio mensal para dimensionamento" value={solarConsumo} onChange={(event) => setSolarConsumo(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: 1800" />
                         </label>
-                        <label className="block text-xs font-bold uppercase text-graphite-soft">Tipo de telhado
-                          <select aria-label="Tipo de telhado" value={solarTelhado} onChange={(event) => setSolarTelhado(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-warm-sand/70 bg-white px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20">
+                        <label className="block text-xs font-bold uppercase text-text-secondary">Tipo de telhado
+                          <select aria-label="Tipo de telhado" value={solarTelhado} onChange={(event) => setSolarTelhado(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20">
                             {solarTelhados.map((telhado) => <option key={telhado.id} value={telhado.nome}>{telhado.nome}</option>)}
                           </select>
                         </label>
                       </div>
-                      <label className="block text-xs font-bold uppercase text-graphite-soft">Placa padrão
-                        <select aria-label="Modelo de placa" value={solarPlacaId} onChange={(event) => setSolarPlacaId(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-warm-sand/70 bg-white px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20">
+                      <label className="block text-xs font-bold uppercase text-text-secondary">Placa padrão
+                        <select aria-label="Modelo de placa" value={solarPlacaId} onChange={(event) => setSolarPlacaId(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20">
                           {solarPlacas.map((placa) => <option key={placa.id} value={placa.id}>{placa.nome} · {placa.potencia_wp}Wp</option>)}
                         </select>
                       </label>
                     </section>
 
                     <section className="grid grid-cols-1 gap-3 md:grid-cols-[repeat(3,minmax(0,1fr))_150px]">
-                      <label className="block text-xs font-bold uppercase text-graphite-soft">Perda %
-                        <input aria-label="Perda percentual do sistema" value={solarPerda} onChange={(event) => setSolarPerda(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-warm-sand/70 bg-white px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
+                      <label className="block text-xs font-bold uppercase text-text-secondary">Perda %
+                        <input aria-label="Perda percentual do sistema" value={solarPerda} onChange={(event) => setSolarPerda(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
                       </label>
-                      <label className="block text-xs font-bold uppercase text-graphite-soft">Sobra %
-                        <input aria-label="Sobra percentual de energia" value={solarSobra} onChange={(event) => setSolarSobra(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-warm-sand/70 bg-white px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
+                      <label className="block text-xs font-bold uppercase text-text-secondary">Sobra %
+                        <input aria-label="Sobra percentual de energia" value={solarSobra} onChange={(event) => setSolarSobra(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
                       </label>
-                      <label className="block text-xs font-bold uppercase text-graphite-soft">Distância km
-                        <input aria-label="Distância em quilômetros" value={solarDistancia} onChange={(event) => setSolarDistancia(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-warm-sand/70 bg-white px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
+                      <label className="block text-xs font-bold uppercase text-text-secondary">Distância km
+                        <input aria-label="Distância em quilômetros" value={solarDistancia} onChange={(event) => setSolarDistancia(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
                       </label>
                       <div className="flex items-end">
                         <Button type="button" size="sm" className="h-11 w-full justify-center gap-2" onClick={handleCalcularSolar} disabled={solarCalculating || solarLoadingRefs || solarPlacas.length === 0}>
@@ -1909,36 +1909,36 @@ async function handleDeleteLead() {
 
                     {solarDimensionamento && (
                       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Módulos</p><p className="mt-1 text-lg font-black text-graphite">{solarDimensionamento.quantidade_sugerida ?? '-'}</p></div>
-                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Potência</p><p className="mt-1 text-lg font-black text-graphite">{solarNumberText(solarDimensionamento.potencia_total_sugerida_kwp)} kWp</p></div>
-                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Inversor</p><p className="mt-1 truncate text-sm font-black text-graphite">{solarDimensionamento.modelo_inversor_nome ?? 'A validar'}</p></div>
-                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Irradiação</p><p className="mt-1 text-lg font-black text-graphite">{solarNumberText(solarDimensionamento.irradiacao_kwh_m2_dia)}</p></div>
-                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-graphite-soft">Custo base</p><p className="mt-1 text-lg font-black text-energy-success">{formatCurrency(solarCustos?.total_geral ?? solarCustos?.total_final ?? 0)}</p></div>
+                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Módulos</p><p className="mt-1 text-lg font-black text-text-primary">{solarDimensionamento.quantidade_sugerida ?? '-'}</p></div>
+                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Potência</p><p className="mt-1 text-lg font-black text-text-primary">{solarNumberText(solarDimensionamento.potencia_total_sugerida_kwp)} kWp</p></div>
+                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Inversor</p><p className="mt-1 truncate text-sm font-black text-text-primary">{solarDimensionamento.modelo_inversor_nome ?? 'A validar'}</p></div>
+                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Irradiação</p><p className="mt-1 text-lg font-black text-text-primary">{solarNumberText(solarDimensionamento.irradiacao_kwh_m2_dia)}</p></div>
+                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Custo base</p><p className="mt-1 text-lg font-black text-energy-success">{formatCurrency(solarCustos?.total_geral ?? solarCustos?.total_final ?? 0)}</p></div>
                       </section>
                     )}
                   </div>
                 </div>
 
                 {showTemplateSelector && (
-                  <div className="rounded-2xl border border-solar-orange/30 bg-white p-4 space-y-3">
+                  <div className="rounded-2xl border border-solar-orange/30 bg-bg-surface-1 p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <h5 className="font-bold text-graphite">Selecionar Modelo</h5>
+                      <h5 className="font-bold text-text-primary">Selecionar Modelo</h5>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowTemplateSelector(false)}><X size={16} /></Button>
                     </div>
                     {templates.length === 0 ? (
-                      <p className="text-sm text-graphite-soft">Nenhum modelo encontrado. Crie uma proposta com "Salvar como modelo" marcado.</p>
+                      <p className="text-sm text-text-secondary">Nenhum modelo encontrado. Crie uma proposta com "Salvar como modelo" marcado.</p>
                     ) : (
                       <div className="space-y-2 max-h-[300px] overflow-y-auto">
                         {templates.map((template) => (
-                          <button key={template.id} type="button" onClick={() => handleSelectTemplate(template)} className="w-full text-left rounded-xl border border-warm-sand/50 bg-warm-sand/50 p-3 hover:border-solar-orange/40 hover:bg-solar-orange/5 transition-colors">
+                          <button key={template.id} type="button" onClick={() => handleSelectTemplate(template)} className="w-full text-left rounded-xl border border-border-soft bg-warm-sand/50 p-3 hover:border-solar-orange/40 hover:bg-orange-500/5 transition-colors">
                             <div className="flex items-center justify-between">
                               <div>
-                                <p className="font-bold text-graphite text-sm">{template.templateName || template.title}</p>
-                                <p className="text-xs text-graphite-soft mt-1">{template.sourceType === 'file' ? `Arquivo: ${template.importedFileName ?? 'importado'}` : 'Editor'}{template.discountPercentage ? ` · ${template.discountPercentage}% desconto` : ''}</p>
+                                <p className="font-bold text-text-primary text-sm">{template.templateName || template.title}</p>
+                                <p className="text-xs text-text-secondary mt-1">{template.sourceType === 'file' ? `Arquivo: ${template.importedFileName ?? 'importado'}` : 'Editor'}{template.discountPercentage ? ` · ${template.discountPercentage}% desconto` : ''}</p>
                               </div>
                               <Badge variant="info">Modelo</Badge>
                             </div>
-                            {template.contentText && <p className="mt-2 text-xs text-graphite-soft line-clamp-2">{template.contentText}</p>}
+                            {template.contentText && <p className="mt-2 text-xs text-text-secondary line-clamp-2">{template.contentText}</p>}
                           </button>
                         ))}
                       </div>
@@ -1946,7 +1946,7 @@ async function handleDeleteLead() {
                   </div>
                 )}
 
-                <div className="rounded-2xl border border-warm-sand/50 bg-warm-sand/50 p-4 space-y-4">
+                <div className="rounded-2xl border border-border-soft bg-warm-sand/50 p-4 space-y-4">
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant="outline" className="gap-2" onClick={handleLoadTemplates} disabled={loadingTemplates}>
                       <Copy size={14} /> {loadingTemplates ? 'Carregando...' : 'Carregar Modelo'}
@@ -1958,33 +1958,33 @@ async function handleDeleteLead() {
                     )}
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <label className="text-xs font-bold text-graphite-soft uppercase">Título da proposta
-                      <input aria-label="Título da proposta" value={proposalDraft.title} onChange={(event) => setProposalDraft((current) => ({ ...current, title: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case" placeholder="Ex.: Proposta Enervita - Mercado Solar" />
+                    <label className="text-xs font-bold text-text-secondary uppercase">Título da proposta
+                      <input aria-label="Título da proposta" value={proposalDraft.title} onChange={(event) => setProposalDraft((current) => ({ ...current, title: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case" placeholder="Ex.: Proposta Enervita - Mercado Solar" />
                     </label>
-                    <label className="text-xs font-bold text-graphite-soft uppercase">Modelo editável
-                      <input aria-label="Nome do modelo" value={proposalDraft.templateName} onChange={(event) => setProposalDraft((current) => ({ ...current, templateName: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case" placeholder="Opcional: Modelo B2B conta alta" />
+                    <label className="text-xs font-bold text-text-secondary uppercase">Modelo editável
+                      <input aria-label="Nome do modelo" value={proposalDraft.templateName} onChange={(event) => setProposalDraft((current) => ({ ...current, templateName: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case" placeholder="Opcional: Modelo B2B conta alta" />
                     </label>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-                    <label className="text-xs font-bold text-graphite-soft uppercase">Conta R$<input aria-label="Valor mensal da conta" value={proposalDraft.monthlyBillValue} onChange={(event) => setProposalDraft((current) => ({ ...current, monthlyBillValue: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case" /></label>
-                    <label className="text-xs font-bold text-graphite-soft uppercase">kWh<input aria-label="Consumo estimado" value={proposalDraft.estimatedKwh} onChange={(event) => setProposalDraft((current) => ({ ...current, estimatedKwh: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case" /></label>
-                    <label className="text-xs font-bold text-graphite-soft uppercase">Desconto %<input aria-label="Percentual de desconto" value={proposalDraft.discountPercentage} onChange={(event) => setProposalDraft((current) => ({ ...current, discountPercentage: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case" /></label>
-                    <label className="text-xs font-bold text-graphite-soft uppercase">Economia/mês<input aria-label="Economia mensal projetada" value={proposalDraft.projectedMonthlySavings} onChange={(event) => setProposalDraft((current) => ({ ...current, projectedMonthlySavings: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case" placeholder="auto" /></label>
-                    <label className="text-xs font-bold text-graphite-soft uppercase">Validade<input aria-label="Validade da proposta" type="date" value={proposalDraft.validUntil} onChange={(event) => setProposalDraft((current) => ({ ...current, validUntil: event.target.value }))} className="mt-1 w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm normal-case" /></label>
+                    <label className="text-xs font-bold text-text-secondary uppercase">Conta R$<input aria-label="Valor mensal da conta" value={proposalDraft.monthlyBillValue} onChange={(event) => setProposalDraft((current) => ({ ...current, monthlyBillValue: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case" /></label>
+                    <label className="text-xs font-bold text-text-secondary uppercase">kWh<input aria-label="Consumo estimado" value={proposalDraft.estimatedKwh} onChange={(event) => setProposalDraft((current) => ({ ...current, estimatedKwh: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case" /></label>
+                    <label className="text-xs font-bold text-text-secondary uppercase">Desconto %<input aria-label="Percentual de desconto" value={proposalDraft.discountPercentage} onChange={(event) => setProposalDraft((current) => ({ ...current, discountPercentage: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case" /></label>
+                    <label className="text-xs font-bold text-text-secondary uppercase">Economia/mês<input aria-label="Economia mensal projetada" value={proposalDraft.projectedMonthlySavings} onChange={(event) => setProposalDraft((current) => ({ ...current, projectedMonthlySavings: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case" placeholder="auto" /></label>
+                    <label className="text-xs font-bold text-text-secondary uppercase">Validade<input aria-label="Validade da proposta" type="date" value={proposalDraft.validUntil} onChange={(event) => setProposalDraft((current) => ({ ...current, validUntil: event.target.value }))} className="mt-1 w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm normal-case" /></label>
                   </div>
 
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant={proposalDraft.sourceType === 'editor' ? 'primary' : 'outline'} onClick={() => setProposalDraft((current) => ({ ...current, sourceType: 'editor', importedFile: undefined, removeImportedFile: false }))}><Copy size={14} className="mr-2" /> Criar no editor</Button>
-                    <label className="inline-flex cursor-pointer items-center rounded-xl border border-warm-sand/70 bg-white px-3 py-2 text-sm font-bold text-graphite hover:border-solar-orange/40">
-                      <Upload size={14} className="mr-2 text-solar-orange" /> Importar arquivo
+                    <label className="inline-flex cursor-pointer items-center rounded-xl border border-border-strong bg-bg-surface-1 px-3 py-2 text-sm font-bold text-text-primary hover:border-solar-orange/40">
+                      <Upload size={14} className="mr-2 text-orange-400" /> Importar arquivo
                       <input type="file" className="hidden" onChange={(event) => void handleProposalFile(event.target.files?.[0])} disabled={isProposalBusy} />
                     </label>
-                    <label className="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-bold text-graphite"><input type="checkbox" checked={proposalDraft.isTemplate} onChange={(event) => setProposalDraft((current) => ({ ...current, isTemplate: event.target.checked }))} /> Salvar como modelo</label>
+                    <label className="inline-flex items-center gap-2 rounded-xl bg-bg-surface-1 px-3 py-2 text-sm font-bold text-text-primary"><input type="checkbox" checked={proposalDraft.isTemplate} onChange={(event) => setProposalDraft((current) => ({ ...current, isTemplate: event.target.checked }))} /> Salvar como modelo</label>
                   </div>
                   {proposalDraft.importedFile && (
-                    <div className="rounded-2xl border border-warm-sand/70 bg-white p-3 space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-graphite-soft">
+                    <div className="rounded-2xl border border-border-strong bg-bg-surface-1 p-3 space-y-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-text-secondary">
                         <span>{proposalDraft.importedFile.name}</span>
                         <span>{fileSizeLabel(proposalDraft.importedFile.size)}</span>
                       </div>
@@ -1993,12 +1993,12 @@ async function handleDeleteLead() {
                   )}
 
                   {proposalDraft.sourceType === 'editor' ? (
-                    <textarea aria-label="Conteúdo editável da proposta" value={proposalDraft.contentText} onChange={(event) => setProposalDraft((current) => ({ ...current, contentText: event.target.value }))} className="min-h-[190px] w-full rounded-2xl border border-warm-sand/70 bg-white p-4 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-solar-orange/30" placeholder="Escreva a proposta: diagnóstico, economia estimada, condições comerciais, validade e próximos passos..." />
+                    <textarea aria-label="Conteúdo editável da proposta" value={proposalDraft.contentText} onChange={(event) => setProposalDraft((current) => ({ ...current, contentText: event.target.value }))} className="min-h-[190px] w-full rounded-2xl border border-border-strong bg-bg-surface-1 p-4 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-solar-orange/30" placeholder="Escreva a proposta: diagnóstico, economia estimada, condições comerciais, validade e próximos passos..." />
                   ) : (
-                    <div className="rounded-2xl border border-dashed border-warm-sand/70 bg-white p-6 text-center text-sm text-graphite-soft">{proposalDraft.importedFile ? 'Arquivo pronto para salvar junto ao lead.' : 'Selecione um arquivo para importar a proposta existente.'}</div>
+                    <div className="rounded-2xl border border-dashed border-border-strong bg-bg-surface-1 p-6 text-center text-sm text-text-secondary">{proposalDraft.importedFile ? 'Arquivo pronto para salvar junto ao lead.' : 'Selecione um arquivo para importar a proposta existente.'}</div>
                   )}
 
-                  <textarea aria-label="Observações da proposta" value={proposalDraft.notes} onChange={(event) => setProposalDraft((current) => ({ ...current, notes: event.target.value }))} className="w-full rounded-xl border border-warm-sand/70 bg-white p-2 text-sm" placeholder="Observações internas opcionais..." />
+                  <textarea aria-label="Observações da proposta" value={proposalDraft.notes} onChange={(event) => setProposalDraft((current) => ({ ...current, notes: event.target.value }))} className="w-full rounded-xl border border-border-strong bg-bg-surface-1 p-2 text-sm" placeholder="Observações internas opcionais..." />
                   {editingProposalId ? (
                     <Button variant="primary" size="sm" className="gap-2" onClick={handleUpdateProposal} disabled={isProposalBusy}><Save size={16} /> {isProposalBusy ? 'Enviando...' : 'Atualizar proposta'}</Button>
                   ) : (
@@ -2007,40 +2007,40 @@ async function handleDeleteLead() {
                 </div>
 
                 {sortedProposals.length === 0 ? (
-                  <div className="p-10 text-center text-graphite-soft"><FileText className="mx-auto mb-3" />Nenhuma proposta salva para este lead.</div>
+                  <div className="p-10 text-center text-text-secondary"><FileText className="mx-auto mb-3" />Nenhuma proposta salva para este lead.</div>
                 ) : (
                   <div className="space-y-3">
                     {sortedProposals.map((proposal) => (
-                      <article key={proposal.id} className="rounded-2xl border border-warm-sand/50 bg-white p-4 shadow-sm">
+                      <article key={proposal.id} className="rounded-2xl border border-border-soft bg-bg-surface-1 p-4 shadow-sm">
                         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                           <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2"><h5 className="font-bold text-graphite">{proposal.title}</h5><Badge variant={proposalStatusVariants[proposal.status]}>{proposalStatusLabels[proposal.status]}</Badge>{proposal.isTemplate && <Badge variant="info">Modelo</Badge>}</div>
-                            <p className="mt-1 text-xs text-graphite-soft">Criada em {formatDate(proposal.createdAt)} · {proposal.sourceType === 'file' ? `Arquivo: ${proposal.importedFileName ?? 'importado'}` : `Editor${proposal.templateName ? ` · ${proposal.templateName}` : ''}`}</p>
+                            <div className="flex flex-wrap items-center gap-2"><h5 className="font-bold text-text-primary">{proposal.title}</h5><Badge variant={proposalStatusVariants[proposal.status]}>{proposalStatusLabels[proposal.status]}</Badge>{proposal.isTemplate && <Badge variant="info">Modelo</Badge>}</div>
+                            <p className="mt-1 text-xs text-text-secondary">Criada em {formatDate(proposal.createdAt)} · {proposal.sourceType === 'file' ? `Arquivo: ${proposal.importedFileName ?? 'importado'}` : `Editor${proposal.templateName ? ` · ${proposal.templateName}` : ''}`}</p>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="text-right text-sm"><p className="font-black text-energy-success">{formatCurrency(proposal.projectedAnnualSavings)}/ano</p><p className="text-xs text-graphite-soft">{proposal.discountPercentage}% desconto</p></div>
+                            <div className="text-right text-sm"><p className="font-black text-energy-success">{formatCurrency(proposal.projectedAnnualSavings)}/ano</p><p className="text-xs text-text-secondary">{proposal.discountPercentage}% desconto</p></div>
                             <div className="flex items-center gap-1">
                               <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Editar proposta" onClick={() => handleEditProposal(proposal)}><Edit3 size={14} /></Button>
                               {proposal.status !== 'accepted' && <Button size="sm" onClick={() => handleAcceptProposal(proposal.id)}>Marcar aceita</Button>}
-                              {isAdminUser(user) && <Button variant="ghost" size="sm" className="h-8 hover:bg-alert-red/10" aria-label="Excluir" onClick={() => void handleDeleteProposal(proposal.id)}>Excluir</Button>}
+                              {isAdminUser(user) && <Button variant="ghost" size="sm" className="h-8 hover:bg-red-500/10" aria-label="Excluir" onClick={() => void handleDeleteProposal(proposal.id)}>Excluir</Button>}
                             </div>
                           </div>
                         </div>
                         {proposal.solarSummary && (
-                          <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-energy-green/10 bg-energy-green/5 p-3 text-xs text-graphite md:grid-cols-4">
-                            <div><span className="block font-bold uppercase text-graphite-soft">Módulos</span>{proposal.solarSummary.quantidadeSugerida ?? '-'}</div>
-                            <div><span className="block font-bold uppercase text-graphite-soft">Potência</span>{solarNumberText(proposal.solarSummary.potenciaTotalKwp)} kWp</div>
-                            <div><span className="block font-bold uppercase text-graphite-soft">Inversor</span>{proposal.solarSummary.inversorSugeridoNome ?? '-'}</div>
-                            <div><span className="block font-bold uppercase text-graphite-soft">Cidade</span>{proposal.solarSummary.cidade}/{proposal.solarSummary.uf}</div>
+                          <div className="mt-3 grid grid-cols-2 gap-2 rounded-xl border border-energy-green/10 bg-mint-500/5 p-3 text-xs text-text-primary md:grid-cols-4">
+                            <div><span className="block font-bold uppercase text-text-secondary">Módulos</span>{proposal.solarSummary.quantidadeSugerida ?? '-'}</div>
+                            <div><span className="block font-bold uppercase text-text-secondary">Potência</span>{solarNumberText(proposal.solarSummary.potenciaTotalKwp)} kWp</div>
+                            <div><span className="block font-bold uppercase text-text-secondary">Inversor</span>{proposal.solarSummary.inversorSugeridoNome ?? '-'}</div>
+                            <div><span className="block font-bold uppercase text-text-secondary">Cidade</span>{proposal.solarSummary.cidade}/{proposal.solarSummary.uf}</div>
                           </div>
                         )}
-                        {proposal.contentText && <p className="mt-3 line-clamp-3 whitespace-pre-wrap rounded-xl bg-warm-sand/50 p-3 text-sm text-graphite">{proposal.contentText}</p>}
+                        {proposal.contentText && <p className="mt-3 line-clamp-3 whitespace-pre-wrap rounded-xl bg-warm-sand/50 p-3 text-sm text-text-primary">{proposal.contentText}</p>}
                         {getProposalAttachment(proposal) && (
                           <div className="mt-3 space-y-2">
-                            <p className="text-xs font-bold text-graphite-soft">Arquivo: {proposal.importedFileName}</p>
+                            <p className="text-xs font-bold text-text-secondary">Arquivo: {proposal.importedFileName}</p>
                             {renderProposalFilePreview(getProposalAttachment(proposal)!)}
                             <div className="flex flex-wrap items-center gap-2">
-                              <a className="inline-flex items-center gap-2 text-sm font-bold text-solar-orange hover:underline" download={proposal.importedFileName} href={proposalFileDataUrl(getProposalAttachment(proposal)!) ?? ''}>
+                              <a className="inline-flex items-center gap-2 text-sm font-bold text-orange-400 hover:underline" download={proposal.importedFileName} href={proposalFileDataUrl(getProposalAttachment(proposal)!) ?? ''}>
                                 <Download size={14} /> Baixar arquivo
                               </a>
                               <Button variant="ghost" size="sm" onClick={() => void handleDeleteProposalFile(proposal.id)}>Excluir</Button>
@@ -2059,17 +2059,17 @@ async function handleDeleteLead() {
 
       {whatsappConfirmOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="whatsapp-confirm-title">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
+          <div className="w-full max-w-md rounded-3xl bg-bg-surface-1 p-6 shadow-xl">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
-                <h3 id="whatsapp-confirm-title" className="text-lg font-black text-graphite">Confirmar abertura do WhatsApp</h3>
-                <p className="mt-1 text-sm text-graphite-soft">Vou registrar esta ação na timeline do lead e abrir o WhatsApp em uma nova aba.</p>
+                <h3 id="whatsapp-confirm-title" className="text-lg font-black text-text-primary">Confirmar abertura do WhatsApp</h3>
+                <p className="mt-1 text-sm text-text-secondary">Vou registrar esta ação na timeline do lead e abrir o WhatsApp em uma nova aba.</p>
               </div>
-              <button type="button" className="rounded-full p-1 text-graphite-soft hover:bg-warm-sand/50 hover:text-graphite" onClick={() => setWhatsappConfirmOpen(false)} aria-label="Fechar confirmação"><X size={18} /></button>
+              <button type="button" className="rounded-full p-1 text-text-secondary hover:bg-warm-sand/50 hover:text-text-primary" onClick={() => setWhatsappConfirmOpen(false)} aria-label="Fechar confirmação"><X size={18} /></button>
             </div>
             {whatsappStatus && <p className="mb-3 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-700">{whatsappStatus}</p>}
-            <label className="mb-5 flex items-center gap-3 rounded-2xl bg-warm-sand/50 p-3 text-sm font-semibold text-graphite">
-              <input type="checkbox" checked={whatsappDoNotAskAgain} onChange={(event) => setWhatsappDoNotAskAgain(event.target.checked)} className="h-4 w-4 rounded border-warm-sand/70 text-solar-orange focus:ring-solar-orange" />
+            <label className="mb-5 flex items-center gap-3 rounded-2xl bg-warm-sand/50 p-3 text-sm font-semibold text-text-primary">
+              <input type="checkbox" checked={whatsappDoNotAskAgain} onChange={(event) => setWhatsappDoNotAskAgain(event.target.checked)} className="h-4 w-4 rounded border-border-strong text-orange-400 focus:ring-solar-orange" />
               Não mostrar novamente neste navegador
             </label>
             <div className="flex justify-end gap-3">

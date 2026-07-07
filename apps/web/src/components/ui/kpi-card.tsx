@@ -35,32 +35,32 @@ export function KpiCard({
   }
 
   const getTrendIcon = () => {
-    if (!trend && trend !== 0) return <Minus className="h-4 w-4 text-graphite-soft" />;
-    if (trend > 0) return <TrendingUp className="h-4 w-4 text-energy-green" />;
+    if (!trend && trend !== 0) return <Minus className="h-4 w-4 text-text-secondary" />;
+    if (trend > 0) return <TrendingUp className="h-4 w-4 text-mint-400" />;
     if (trend < 0) return <TrendingDown className="h-4 w-4 text-alert-red" />;
-    return <Minus className="h-4 w-4 text-graphite-soft" />;
+    return <Minus className="h-4 w-4 text-text-secondary" />;
   };
 
   const getTrendColor = () => {
-    if (!trend && trend !== 0) return 'text-graphite-soft';
-    return trend > 0 ? 'text-energy-green' : 'text-alert-red';
+    if (!trend && trend !== 0) return 'text-text-secondary';
+    return trend > 0 ? 'text-mint-400' : 'text-alert-red';
   };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <h3 className="text-sm font-medium text-graphite-soft">{title}</h3>
-        {icon && <div className="text-graphite-soft">{icon}</div>}
+        <h3 className="text-sm font-medium text-text-secondary">{title}</h3>
+        {icon && <div className="text-text-secondary">{icon}</div>}
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold text-graphite">{value}</div>
+        <div className="text-2xl font-bold text-text-primary">{value}</div>
         {trend !== undefined && (
           <div className="flex items-center text-xs mt-1">
             {getTrendIcon()}
             <span className={`ml-1 font-medium ${getTrendColor()}`}>
               {trend > 0 ? '+' : ''}{trend.toFixed(1)}%
             </span>
-            <span className="text-graphite-soft ml-1">{trendLabel}</span>
+            <span className="text-text-secondary ml-1">{trendLabel}</span>
           </div>
         )}
       </CardContent>

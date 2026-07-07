@@ -51,9 +51,9 @@ function stageLabel(stage: string) {
 function iconTone(tone: 'blue' | 'orange' | 'green' | 'red') {
   const tones = {
     blue: 'bg-blue-50 text-blue-600',
-    orange: 'bg-solar-orange/10 text-solar-orange',
-    green: 'bg-energy-green/10 text-energy-green',
-    red: 'bg-alert-red/10 text-alert-red',
+    orange: 'bg-orange-500/10 text-orange-400',
+    green: 'bg-mint-500/10 text-mint-400',
+    red: 'bg-red-500/10 text-alert-red',
   };
   return tones[tone];
 }
@@ -76,9 +76,9 @@ function CommercialMetricCard({
       <div className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-graphite-soft">{title}</p>
-            <p className="mt-2 text-2xl font-black text-graphite">{value}</p>
-            <p className="mt-1 text-xs text-graphite-soft">{subtitle}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-text-secondary">{title}</p>
+            <p className="mt-2 text-2xl font-black text-text-primary">{value}</p>
+            <p className="mt-1 text-xs text-text-secondary">{subtitle}</p>
           </div>
           <div className={`rounded-2xl p-3 ${iconTone(tone)}`}>
             <Icon size={20} />
@@ -130,7 +130,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       <div className="relative overflow-hidden rounded-[2rem] bg-graphite p-8 text-white shadow-soft">
-        <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-solar-orange/30 blur-3xl" />
+        <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-orange-500/30 blur-3xl" />
         <div className="absolute bottom-0 left-20 h-24 w-24 rounded-full bg-solar-yellow/20 blur-2xl" />
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-8 items-center">
           <div>
@@ -141,11 +141,11 @@ export default function Dashboard() {
             <p className="mt-3 text-white/70 max-w-xl">Acompanhe captação, follow-up, oportunidades, propostas e gargalos comerciais em um só lugar.</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
+            <div className="rounded-2xl bg-bg-surface-1/10 border border-white/10 p-4">
               <p className="text-xs text-white/50 uppercase font-bold">Leads sem ação</p>
               <p className="text-3xl font-black mt-1">{metrics.leadsWithoutFollowup}</p>
             </div>
-            <div className="rounded-2xl bg-white/10 border border-white/10 p-4">
+            <div className="rounded-2xl bg-bg-surface-1/10 border border-white/10 p-4">
               <p className="text-xs text-white/50 uppercase font-bold">Tarefas vencidas</p>
               <p className="text-3xl font-black mt-1">{metrics.overdueTasks}</p>
             </div>
@@ -161,14 +161,14 @@ export default function Dashboard() {
               <div className="p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-graphite-soft">{label}</p>
-                    <p className="mt-3 text-3xl font-black text-graphite">{formatNumber(value)}</p>
+                    <p className="text-sm font-semibold text-text-secondary">{label}</p>
+                    <p className="mt-3 text-3xl font-black text-text-primary">{formatNumber(value)}</p>
                   </div>
-                  <div className="rounded-2xl bg-warm-sand/50 p-3 text-graphite">
+                  <div className="rounded-2xl bg-warm-sand/50 p-3 text-text-primary">
                     <Icon size={22} />
                   </div>
                 </div>
-                <p className="mt-4 text-xs text-graphite-soft leading-relaxed">{helper}</p>
+                <p className="mt-4 text-xs text-text-secondary leading-relaxed">{helper}</p>
               </div>
             </div>
           </Card>
@@ -178,8 +178,8 @@ export default function Dashboard() {
       {commercial && (
         <div className="space-y-6">
           <div>
-            <p className="text-sm font-semibold text-solar-orange uppercase tracking-[0.2em]">Gestão comercial</p>
-            <h2 className="text-2xl font-bold text-graphite mt-1">Dinheiro, gargalo e ação de hoje</h2>
+            <p className="text-sm font-semibold text-orange-400 uppercase tracking-[0.2em]">Gestão comercial</p>
+            <h2 className="text-2xl font-bold text-text-primary mt-1">Dinheiro, gargalo e ação de hoje</h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -197,22 +197,22 @@ export default function Dashboard() {
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <Card className="xl:col-span-2">
-              <div className="border-b border-warm-sand/50 px-6 py-4">
-                <h3 className="text-lg font-bold text-graphite">Atenção agora</h3>
+              <div className="border-b border-border-soft px-6 py-4">
+                <h3 className="text-lg font-bold text-text-primary">Atenção agora</h3>
               </div>
               <div className="p-6">
                 {commercial.attentionLeads.length === 0 ? (
-                  <p className="text-sm text-graphite-soft">Nenhum lead crítico no momento.</p>
+                  <p className="text-sm text-text-secondary">Nenhum lead crítico no momento.</p>
                 ) : (
                   <div className="space-y-3">
                     {commercial.attentionLeads.map((lead) => (
-                      <a key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between rounded-xl border border-warm-sand/50 bg-white p-4 transition hover:border-solar-orange/40">
+                      <a key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between rounded-xl border border-border-soft bg-bg-surface-1 p-4 transition hover:border-solar-orange/40">
                         <div>
-                          <p className="font-bold text-graphite">{lead.name}</p>
-                          <p className="text-xs text-graphite-soft">{stageLabel(lead.stage)} · {lead.reason}</p>
-                          <p className="text-xs text-graphite-soft mt-1">Atualizado em {formatDate(lead.updatedAt)}</p>
+                          <p className="font-bold text-text-primary">{lead.name}</p>
+                          <p className="text-xs text-text-secondary">{stageLabel(lead.stage)} · {lead.reason}</p>
+                          <p className="text-xs text-text-secondary mt-1">Atualizado em {formatDate(lead.updatedAt)}</p>
                         </div>
-                        <ArrowUpRight size={16} className="text-solar-orange" />
+                        <ArrowUpRight size={16} className="text-orange-400" />
                       </a>
                     ))}
                   </div>
@@ -221,20 +221,20 @@ export default function Dashboard() {
             </Card>
 
             <Card>
-              <div className="border-b border-warm-sand/50 px-6 py-4">
-                <h3 className="text-lg font-bold text-graphite">Funil por etapa</h3>
+              <div className="border-b border-border-soft px-6 py-4">
+                <h3 className="text-lg font-bold text-text-primary">Funil por etapa</h3>
               </div>
               <div className="space-y-3 p-6">
                 {commercial.stageBreakdown.length === 0 ? (
-                  <p className="text-sm text-graphite-soft">Sem dados de funil.</p>
+                  <p className="text-sm text-text-secondary">Sem dados de funil.</p>
                 ) : (
                   commercial.stageBreakdown.map((stage) => (
                     <div key={stage.stage} className="rounded-xl bg-warm-sand/50 p-3">
                       <div className="flex items-center justify-between text-sm">
-                        <span className="font-semibold text-graphite">{stageLabel(stage.stage)}</span>
-                        <span className="text-graphite-soft">{formatNumber(stage.count)}</span>
+                        <span className="font-semibold text-text-primary">{stageLabel(stage.stage)}</span>
+                        <span className="text-text-secondary">{formatNumber(stage.count)}</span>
                       </div>
-                      <p className="text-xs text-graphite-soft mt-1">{formatCurrency(stage.value)} em aberto</p>
+                      <p className="text-xs text-text-secondary mt-1">{formatCurrency(stage.value)} em aberto</p>
                     </div>
                   ))
                 )}
@@ -246,16 +246,16 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <Card className="xl:col-span-2">
-          <div className="border-b border-warm-sand/50 px-6 py-4">
-            <h3 className="text-lg font-bold text-graphite">Leads por etapa</h3>
+          <div className="border-b border-border-soft px-6 py-4">
+            <h3 className="text-lg font-bold text-text-primary">Leads por etapa</h3>
           </div>
           <div className="p-6">
             <div className="space-y-4">
               {metrics.leadsByStage.map((stage) => (
                 <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-warm-sand/50 px-4 py-3">
                   <div>
-                    <p className="font-semibold text-graphite">{stageLabel(stage.stage)}</p>
-                    <p className="text-xs text-graphite-soft">Distribuição do pipeline</p>
+                    <p className="font-semibold text-text-primary">{stageLabel(stage.stage)}</p>
+                    <p className="text-xs text-text-secondary">Distribuição do pipeline</p>
                   </div>
                   <Badge variant="info">{stage.count} leads</Badge>
                 </div>
@@ -265,19 +265,19 @@ export default function Dashboard() {
         </Card>
 
         <Card>
-          <div className="border-b border-warm-sand/50 px-6 py-4">
-            <h3 className="text-lg font-bold text-graphite">Eventos recentes</h3>
+          <div className="border-b border-border-soft px-6 py-4">
+            <h3 className="text-lg font-bold text-text-primary">Eventos recentes</h3>
           </div>
           <div className="space-y-4 p-6">
-            {metrics.recentEvents.length === 0 && <p className="text-sm text-graphite-soft">Nenhuma atividade recente registrada.</p>}
+            {metrics.recentEvents.length === 0 && <p className="text-sm text-text-secondary">Nenhuma atividade recente registrada.</p>}
             {metrics.recentEvents.map((event) => (
               <div key={event.id} className="flex gap-3">
-                <div className="mt-1 rounded-full bg-solar-orange/10 p-2 text-solar-orange">
+                <div className="mt-1 rounded-full bg-orange-500/10 p-2 text-orange-400">
                   {event.activityType === 'call' ? <Calendar size={16} /> : <History size={16} />}
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-graphite">{event.outcome}</p>
-                  <p className="text-xs text-graphite-soft">{formatDate(event.occurredAt)}</p>
+                  <p className="text-sm font-semibold text-text-primary">{event.outcome}</p>
+                  <p className="text-xs text-text-secondary">{formatDate(event.occurredAt)}</p>
                 </div>
               </div>
             ))}
@@ -287,29 +287,29 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <div className="border-b border-warm-sand/50 px-6 py-4">
-            <h3 className="text-lg font-bold text-graphite">Origem dos leads</h3>
+          <div className="border-b border-border-soft px-6 py-4">
+            <h3 className="text-lg font-bold text-text-primary">Origem dos leads</h3>
           </div>
           <div className="space-y-4 p-6">
             {metrics.leadsBySource.map((source) => (
               <div key={source.source} className="flex items-center justify-between">
-                <span className="text-sm font-medium text-graphite">{source.source}</span>
-                <span className="font-bold text-graphite">{source.count}</span>
+                <span className="text-sm font-medium text-text-primary">{source.source}</span>
+                <span className="font-bold text-text-primary">{source.count}</span>
               </div>
             ))}
           </div>
         </Card>
 
         <Card>
-          <div className="border-b border-warm-sand/50 px-6 py-4">
-            <h3 className="text-lg font-bold text-graphite">Conversões enviadas</h3>
+          <div className="border-b border-border-soft px-6 py-4">
+            <h3 className="text-lg font-bold text-text-primary">Conversões enviadas</h3>
           </div>
           <div className="space-y-4 p-6">
-            {metrics.conversionsByPlatform.length === 0 && <p className="text-sm text-graphite-soft">Nenhum evento enviado ainda.</p>}
+            {metrics.conversionsByPlatform.length === 0 && <p className="text-sm text-text-secondary">Nenhum evento enviado ainda.</p>}
             {metrics.conversionsByPlatform.map((item) => (
               <div key={item.platform} className="flex items-center justify-between">
-                <span className="text-sm font-medium text-graphite">{item.platform}</span>
-                <span className="font-bold text-graphite">{item.count}</span>
+                <span className="text-sm font-medium text-text-primary">{item.platform}</span>
+                <span className="font-bold text-text-primary">{item.count}</span>
               </div>
             ))}
           </div>

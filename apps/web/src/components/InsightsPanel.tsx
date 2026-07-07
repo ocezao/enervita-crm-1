@@ -75,7 +75,7 @@ export function InsightsPanel() {
 
   if (loading) {
     return (
-      <div className="p-6 bg-white rounded-lg shadow">
+      <div className="p-6 bg-bg-surface-1 rounded-lg shadow">
         <div className="animate-pulse">
           <div className="h-4 bg-warm-sand/70 rounded w-1/4 mb-4" />
           <div className="space-y-3">
@@ -90,7 +90,7 @@ export function InsightsPanel() {
 
   if (error) {
     return (
-      <div className="p-6 bg-white rounded-lg shadow">
+      <div className="p-6 bg-bg-surface-1 rounded-lg shadow">
         <div className="text-red-600">{error}</div>
         <button onClick={loadInsights} className="mt-2 text-sm text-blue-600 hover:underline">
           Tentar novamente
@@ -106,7 +106,7 @@ export function InsightsPanel() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-graphite">Insights Inteligentes</h2>
+        <h2 className="text-2xl font-bold text-text-primary">Insights Inteligentes</h2>
         <select
           value={days}
           onChange={(event) => setDays(Number(event.target.value))}
@@ -120,35 +120,35 @@ export function InsightsPanel() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-graphite-soft">Total de Leads</p>
+        <div className="bg-bg-surface-1 p-4 rounded-lg shadow">
+          <p className="text-sm text-text-secondary">Total de Leads</p>
           <p className="text-2xl font-bold">{insights.summary.totalLeads}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-graphite-soft">Taxa de Conversão</p>
+        <div className="bg-bg-surface-1 p-4 rounded-lg shadow">
+          <p className="text-sm text-text-secondary">Taxa de Conversão</p>
           <p className="text-2xl font-bold">{insights.summary.conversionRate}%</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-graphite-soft">Tempo Médio (dias)</p>
+        <div className="bg-bg-surface-1 p-4 rounded-lg shadow">
+          <p className="text-sm text-text-secondary">Tempo Médio (dias)</p>
           <p className="text-2xl font-bold">{insights.summary.avgTimeToConvert}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-sm text-graphite-soft">Top Source</p>
+        <div className="bg-bg-surface-1 p-4 rounded-lg shadow">
+          <p className="text-sm text-text-secondary">Top Source</p>
           <p className="text-lg font-bold truncate">{insights.summary.topSource}</p>
         </div>
       </div>
 
-      <p className="text-xs text-graphite-soft">{insights.summary.bottleneck}</p>
-      <p className="text-xs text-graphite-soft">Gerado em: {new Date(insights.generatedAt).toLocaleString('pt-BR')}</p>
+      <p className="text-xs text-text-secondary">{insights.summary.bottleneck}</p>
+      <p className="text-xs text-text-secondary">Gerado em: {new Date(insights.generatedAt).toLocaleString('pt-BR')}</p>
 
       <div className="space-y-4">
         {insights.insights.length === 0 ? (
-          <div className="p-6 bg-white rounded-lg shadow text-center text-graphite-soft">
+          <div className="p-6 bg-bg-surface-1 rounded-lg shadow text-center text-text-secondary">
             Nenhum insight disponível para este período.
           </div>
         ) : (
           insights.insights.map((item) => (
-            <div key={item.id} className={`p-4 bg-white rounded-lg shadow border-l-4 ${PRIORITY_COLORS[item.priority]}`}>
+            <div key={item.id} className={`p-4 bg-bg-surface-1 rounded-lg shadow border-l-4 ${PRIORITY_COLORS[item.priority]}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span>{TYPE_ICONS[item.type]}</span>
@@ -156,9 +156,9 @@ export function InsightsPanel() {
                 </div>
                 {item.trend ? <span>{TREND_ICONS[item.trend]}</span> : null}
               </div>
-              <p className="text-sm text-graphite mt-2">{item.description}</p>
+              <p className="text-sm text-text-primary mt-2">{item.description}</p>
               {item.metric ? <p className="text-xs mt-2">{item.metric}</p> : null}
-              {item.comparison ? <p className="text-xs text-graphite-soft">{item.comparison}</p> : null}
+              {item.comparison ? <p className="text-xs text-text-secondary">{item.comparison}</p> : null}
               {item.action ? <p className="text-xs text-blue-700 mt-2"><strong>Recomendação:</strong> {item.action}</p> : null}
             </div>
           ))
