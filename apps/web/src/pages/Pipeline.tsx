@@ -354,7 +354,7 @@ function KanbanCardContextMenu({ menu, canMoveStage, onClose, onMove }: { menu: 
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: -4 }}
         transition={{ type: 'spring', stiffness: 520, damping: 36 }}
-        className="fixed z-50 w-[270px] overflow-hidden rounded-2xl border border-border-strong bg-bg-surface-1 shadow-2xl shadow-graphite/20"
+        className="fixed z-50 w-[270px] overflow-hidden rounded-2xl border border-border-strong bg-bg-surface-1 shadow-2xl shadow-md/20"
         style={{ left: menu.x, top: menu.y }}
         onClick={(event) => event.stopPropagation()}
         role="menu"

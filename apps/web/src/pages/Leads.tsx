@@ -273,7 +273,7 @@ export default function Leads() {
         </Card>
         <Card className="p-5 bg-orange-500/5 border-solar-orange/10"><Users className="text-orange-400" size={20} /><p className="mt-3 text-xs font-bold text-orange-400 uppercase tracking-wider">Total de Leads</p><h4 className="text-3xl font-black text-text-primary mt-1">{leads.length}</h4></Card>
         <Card className="p-5 bg-mint-500/5 border-energy-green/10"><Flame className="text-mint-400" size={20} /><p className="mt-3 text-xs font-bold text-mint-400 uppercase tracking-wider">Qualificados</p><h4 className="text-3xl font-black text-text-primary mt-1">{qualified}</h4></Card>
-        <Card className="p-5 bg-bg-surface-2/5 border-graphite/10"><Clock className="text-text-primary" size={20} /><p className="mt-3 text-xs font-bold text-text-secondary uppercase tracking-wider">Aguardando Contato</p><h4 className="text-3xl font-black text-text-primary mt-1">{waiting}</h4></Card>
+        <Card className="p-5 bg-bg-surface-2/5 border-border-soft/10"><Clock className="text-text-primary" size={20} /><p className="mt-3 text-xs font-bold text-text-secondary uppercase tracking-wider">Aguardando Contato</p><h4 className="text-3xl font-black text-text-primary mt-1">{waiting}</h4></Card>
         <Card className="p-5 bg-red-500/5 border-alert-red/10"><Flame className="text-alert-red" size={20} /><p className="mt-3 text-xs font-bold text-alert-red uppercase tracking-wider">Prioridade alta</p><h4 className="text-3xl font-black text-text-primary mt-1">{hot}</h4></Card>
       </div>
 
