@@ -117,7 +117,7 @@ function percentFmt(value: number, total: number): string {
 function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value?: number; name?: string; color?: string }>; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-2xl border border-white/40 bg-graphite px-4 py-3 text-xs font-bold text-white shadow-2xl backdrop-blur-xl">
+    <div className="rounded-2xl border border-white/40 bg-bg-surface-2 px-4 py-3 text-xs font-bold text-white shadow-2xl backdrop-blur-xl">
       <p className="mb-1 text-text-secondary">{label}</p>
       {payload.map((item) => <p key={item.name} style={{ color: item.color }}>{item.name}: {numberFmt(Number(item.value ?? 0))}</p>)}
     </div>
@@ -273,7 +273,7 @@ export default function DashboardPremium() {
           </div>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm font-bold text-text-secondary">{activeFilterCount ? `${activeFilterCount} filtro(s) aplicado(s)` : 'Sem filtros: visão geral completa.'}</p>
-            <button type="button" onClick={() => setAppliedFilters(draftFilters)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-graphite px-5 py-3 text-sm font-black text-white shadow-xl shadow-graphite/20 transition hover:-translate-y-0.5 hover:bg-graphite"><RefreshCw size={16} /> Aplicar filtros</button>
+            <button type="button" onClick={() => setAppliedFilters(draftFilters)} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-bg-surface-2 px-5 py-3 text-sm font-black text-white shadow-xl shadow-bg-surface-2/20 transition hover:-translate-y-0.5 hover:bg-bg-surface-2"><RefreshCw size={16} /> Aplicar filtros</button>
           </div>
         </PremiumSurface>
 
@@ -316,7 +316,7 @@ export default function DashboardPremium() {
             <div className="mt-6 space-y-4">
               {sourceData.map((item, index) => {
                 const max = Math.max(...sourceData.map((source) => source.leads), 1);
-                return <div key={item.source} className="rounded-3xl border border-white/70 bg-bg-surface-1/70 p-4"><div className="flex items-center justify-between text-sm font-black"><span>{item.source}</span><span>{numberFmt(item.leads)}</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-warm-sand/50"><motion.div initial={{ width: 0 }} animate={{ width: `${Math.max(8, (item.leads / max) * 100)}%` }} transition={{ duration: 0.8, delay: index * 0.05 }} className="h-full rounded-full bg-gradient-to-r from-orange-500 to-emerald-500" /></div></div>;
+                return <div key={item.source} className="rounded-3xl border border-white/70 bg-bg-surface-1/70 p-4"><div className="flex items-center justify-between text-sm font-black"><span>{item.source}</span><span>{numberFmt(item.leads)}</span></div><div className="mt-3 h-3 overflow-hidden rounded-full bg-bg-surface-2/50"><motion.div initial={{ width: 0 }} animate={{ width: `${Math.max(8, (item.leads / max) * 100)}%` }} transition={{ duration: 0.8, delay: index * 0.05 }} className="h-full rounded-full bg-gradient-to-r from-orange-500 to-emerald-500" /></div></div>;
               })}
               {!sourceData.length && <p className="text-sm font-bold text-text-secondary">Nenhuma origem encontrada neste recorte.</p>}
             </div>
@@ -380,7 +380,7 @@ export default function DashboardPremium() {
             <div className="mt-6 space-y-4">
               {commercialStageData.map((stage, index) => {
                 const share = commercialStageValue ? Math.max(6, Math.round((stage.value / commercialStageValue) * 100)) : 0;
-                return <div key={stage.stage} className="rounded-3xl border border-white/70 bg-bg-surface-1/70 p-4" data-testid={`value-stage-${stage.stage}`}><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black text-text-primary">{stageLabels[stage.stage]}</p><p className="text-xs font-bold text-text-secondary">{numberFmt(stage.count)} leads</p></div><strong className="text-sm text-text-primary">{formatCurrency(stage.value)}</strong></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-warm-sand/50"><motion.div initial={{ width: 0 }} animate={{ width: `${share}%` }} transition={{ duration: 0.8, delay: index * 0.05 }} className="h-full rounded-full" style={{ backgroundColor: stageColors[stage.stage] }} /></div></div>;
+                return <div key={stage.stage} className="rounded-3xl border border-white/70 bg-bg-surface-1/70 p-4" data-testid={`value-stage-${stage.stage}`}><div className="flex items-center justify-between gap-3"><div><p className="text-sm font-black text-text-primary">{stageLabels[stage.stage]}</p><p className="text-xs font-bold text-text-secondary">{numberFmt(stage.count)} leads</p></div><strong className="text-sm text-text-primary">{formatCurrency(stage.value)}</strong></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-bg-surface-2/50"><motion.div initial={{ width: 0 }} animate={{ width: `${share}%` }} transition={{ duration: 0.8, delay: index * 0.05 }} className="h-full rounded-full" style={{ backgroundColor: stageColors[stage.stage] }} /></div></div>;
               })}
               {!commercialStageValue && <p className="rounded-3xl border border-dashed border-border-soft bg-bg-surface-1/60 p-4 text-sm font-bold text-text-secondary">Nenhum valor estimado neste recorte.</p>}
             </div>

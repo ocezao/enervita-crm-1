@@ -1,0 +1,24 @@
+@theme {
+  /* Brand */
+  --color-brand-500: var(--color-brand-500);
+  --color-brand-600: var(--color-brand-600);
+  --color-brand-400: var(--color-brand-400);
+  
+  /* Status */
+  --color-success-500: var(--color-success-500);
+  --color-error-500: var(--color-error-500);
+  --color-warning-500: var(--color-warning-500);
+  
+  /* Backgrounds & Surfaces */
+  --color-bg-base: var(--color-background-base);
+  --color-bg-surface-1: var(--color-background-surface-1);
+  --color-bg-surface-2: var(--color-background-surface-2);
+  
+  /* Text */
+  --color-text-primary: var(--color-text-primary);
+  --color-text-secondary: var(--color-text-secondary);
+  
+  /* Shadows & Glows */
+  --shadow-md: var(--shadow-md);
+  --glow-brand: var(--glow-brand);
+}
