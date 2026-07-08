@@ -1,0 +1,23 @@
+/* Helion Design System - Motion Tokens */
+
+:root {
+  /* Duration */
+  --helion-duration-instant: 0ms;
+  --helion-duration-fast: 140ms;
+  --helion-duration-base: 240ms;
+  --helion-duration-slow: 420ms;
+  --helion-duration-slower: 600ms;
+
+  /* Easing Functions */
+  --helion-ease-linear: linear;
+  --helion-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --helion-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --helion-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --helion-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --helion-ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+  /* Transition Presets */
+  --helion-transition-fast: var(--helion-duration-fast) var(--helion-ease-out);
+  --helion-transition-base: var(--helion-duration-base) var(--helion-ease-out);
+  --helion-transition-slow: var(--helion-duration-slow) var(--helion-ease-out);
+}

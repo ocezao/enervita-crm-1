@@ -1,0 +1,38 @@
+/* Helion Design System - Typography Tokens */
+
+:root {
+  /* Font Families */
+  --helion-font-sans: 'Inter', 'Space Grotesk', system-ui, sans-serif;
+  --helion-font-display: 'Space Grotesk', sans-serif;
+  --helion-font-mono: 'JetBrains Mono', monospace;
+
+  /* Font Sizes */
+  --helion-text-xs: 0.75rem;
+  --helion-text-sm: 0.875rem;
+  --helion-text-base: 1rem;
+  --helion-text-lg: 1.125rem;
+  --helion-text-xl: 1.25rem;
+  --helion-text-2xl: 1.5rem;
+  --helion-text-3xl: 1.875rem;
+  --helion-text-4xl: 2.25rem;
+  --helion-text-5xl: 3rem;
+
+  /* Font Weights */
+  --helion-font-normal: 400;
+  --helion-font-medium: 500;
+  --helion-font-semibold: 600;
+  --helion-font-bold: 700;
+
+  /* Line Heights */
+  --helion-leading-tight: 1.25;
+  --helion-leading-normal: 1.5;
+  --helion-leading-relaxed: 1.625;
+  --helion-leading-loose: 2;
+
+  /* Letter Spacing */
+  --helion-tracking-tighter: -0.05em;
+  --helion-tracking-tight: -0.025em;
+  --helion-tracking-normal: 0;
+  --helion-tracking-wide: 0.025em;
+  --helion-tracking-wider: 0.05em;
+}

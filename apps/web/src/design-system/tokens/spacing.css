@@ -1,0 +1,40 @@
+/* Helion Design System - Spacing Tokens */
+
+:root {
+  /* Spacing Scale */
+  --helion-spacing-0: 0;
+  --helion-spacing-1: 0.25rem;
+  --helion-spacing-2: 0.5rem;
+  --helion-spacing-3: 0.75rem;
+  --helion-spacing-4: 1rem;
+  --helion-spacing-5: 1.25rem;
+  --helion-spacing-6: 1.5rem;
+  --helion-spacing-8: 2rem;
+  --helion-spacing-10: 2.5rem;
+  --helion-spacing-12: 3rem;
+  --helion-spacing-16: 4rem;
+  --helion-spacing-20: 5rem;
+  --helion-spacing-24: 6rem;
+  --helion-spacing-32: 8rem;
+
+  /* Padding Aliases */
+  --helion-padding-xs: var(--helion-spacing-2);
+  --helion-padding-sm: var(--helion-spacing-3);
+  --helion-padding-md: var(--helion-spacing-4);
+  --helion-padding-lg: var(--helion-spacing-6);
+  --helion-padding-xl: var(--helion-spacing-8);
+
+  /* Margin Aliases */
+  --helion-margin-xs: var(--helion-spacing-2);
+  --helion-margin-sm: var(--helion-spacing-3);
+  --helion-margin-md: var(--helion-spacing-4);
+  --helion-margin-lg: var(--helion-spacing-6);
+  --helion-margin-xl: var(--helion-spacing-8);
+
+  /* Gap */
+  --helion-gap-xs: var(--helion-spacing-2);
+  --helion-gap-sm: var(--helion-spacing-3);
+  --helion-gap-md: var(--helion-spacing-4);
+  --helion-gap-lg: var(--helion-spacing-6);
+  --helion-gap-xl: var(--helion-spacing-8);
+}

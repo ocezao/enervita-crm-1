@@ -1,0 +1,22 @@
+@theme {
+  /* Cores */
+  --color-brand: var(--helion-orange-500);
+  --color-success: var(--helion-mint-500);
+  --color-error: var(--helion-red-500);
+  --color-warning: var(--helion-amber-500);
+  
+  /* Superfícies */
+  --color-bg-void: var(--helion-bg-void);
+  --color-bg-surface-1: var(--helion-bg-surface-1);
+  --color-bg-surface-2: var(--helion-bg-surface-2);
+  
+  /* Bordas */
+  --color-border-hair: var(--helion-border-hair);
+  --color-border-soft: var(--helion-border-soft);
+  --color-border-strong: var(--helion-border-strong);
+  
+  /* Texto */
+  --color-text-primary: var(--helion-text-primary);
+  --color-text-secondary: var(--helion-text-secondary);
+  --color-text-muted: var(--helion-text-muted);
+}
