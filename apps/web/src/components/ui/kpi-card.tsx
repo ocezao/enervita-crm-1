@@ -23,12 +23,12 @@ export function KpiCard({
     return (
       <Card className="animate-pulse">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div className="h-4 bg-warm-sand/50 rounded w-24" />
-          <div className="h-8 w-8 bg-warm-sand/50 rounded" />
+          <div className="h-4 bg-bg-surface-2/50 rounded w-24" />
+          <div className="h-8 w-8 bg-bg-surface-2/50 rounded" />
         </CardHeader>
         <CardContent>
-          <div className="h-8 bg-warm-sand/50 rounded w-32 mb-2" />
-          <div className="h-3 bg-warm-sand/50 rounded w-40" />
+          <div className="h-8 bg-bg-surface-2/50 rounded w-32 mb-2" />
+          <div className="h-3 bg-bg-surface-2/50 rounded w-40" />
         </CardContent>
       </Card>
     );

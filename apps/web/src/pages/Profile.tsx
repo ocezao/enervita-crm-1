@@ -116,10 +116,10 @@ export default function Profile() {
         <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-orange-500/25 blur-3xl" />
         <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-5">
-            <div className={`relative grid h-24 w-24 place-items-center overflow-hidden rounded-[2rem] border bg-bg-surface-1/10 text-3xl font-black shadow-inner transition ${uploadingAvatar ? 'border-solar-orange/70 ring-4 ring-solar-orange/20' : 'border-white/20'}`}>
+            <div className={`relative grid h-24 w-24 place-items-center overflow-hidden rounded-[2rem] border bg-bg-surface-1/10 text-3xl font-black shadow-inner transition ${uploadingAvatar ? 'border-orange-500/70 ring-4 ring-solar-orange/20' : 'border-white/20'}`}>
               {user?.avatarUrl ? <img src={user.avatarUrl} alt="Foto do usuário" className={`h-full w-full object-cover transition ${uploadingAvatar ? 'scale-105 opacity-50 blur-[1px]' : 'opacity-100'}`} /> : initials(user?.name)}
               {uploadingAvatar && (
-                <div className="absolute inset-0 grid place-items-center bg-graphite/55 backdrop-blur-[2px]" aria-label="Enviando foto">
+                <div className="absolute inset-0 grid place-items-center bg-bg-surface-2/55 backdrop-blur-[2px]" aria-label="Enviando foto">
                   <Loader2 className="animate-spin text-orange-400 drop-shadow" size={30} />
                 </div>
               )}
@@ -143,15 +143,15 @@ export default function Profile() {
           <Card className="p-6">
             <div className="mb-5 flex items-center gap-2"><Sparkles className="text-orange-400" size={20} /><h3 className="text-lg font-black text-text-primary">Personalização</h3></div>
             <form className="space-y-4" onSubmit={handleProfileSubmit}>
-              <label className="block space-y-1 text-sm font-bold text-text-primary">Nome de exibição<input aria-label="Nome de exibição" value={profileForm.name} onChange={(event) => setProfileForm({ ...profileForm, name: event.target.value })} className="w-full rounded-xl border border-border-strong px-3 py-2 font-medium outline-none focus:border-solar-orange" /></label>
-              <label className="block space-y-1 text-sm font-bold text-text-primary">Email<input aria-label="Email" type="email" value={profileForm.email} onChange={(event) => setProfileForm({ ...profileForm, email: event.target.value })} className="w-full rounded-xl border border-border-strong px-3 py-2 font-medium outline-none focus:border-solar-orange" /></label>
-              <label className="block space-y-1 text-sm font-bold text-text-primary">URL da foto<input aria-label="URL da foto" value={profileForm.avatarUrl} onChange={(event) => setProfileForm({ ...profileForm, avatarUrl: event.target.value })} placeholder="https://... ou /uploads/avatars/..." className="w-full rounded-xl border border-border-strong px-3 py-2 font-medium outline-none focus:border-solar-orange" /></label>
-              <label className={`flex items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-3 text-sm font-black transition ${uploadingAvatar ? 'cursor-wait border-solar-orange/70 bg-orange-500/10 text-orange-400 shadow-sm' : 'cursor-pointer border-solar-orange/40 bg-orange-500/5 text-orange-400 hover:bg-orange-500/10'}`}>
+              <label className="block space-y-1 text-sm font-bold text-text-primary">Nome de exibição<input aria-label="Nome de exibição" value={profileForm.name} onChange={(event) => setProfileForm({ ...profileForm, name: event.target.value })} className="w-full rounded-xl border border-border-strong px-3 py-2 font-medium outline-none focus:border-orange-500" /></label>
+              <label className="block space-y-1 text-sm font-bold text-text-primary">Email<input aria-label="Email" type="email" value={profileForm.email} onChange={(event) => setProfileForm({ ...profileForm, email: event.target.value })} className="w-full rounded-xl border border-border-strong px-3 py-2 font-medium outline-none focus:border-orange-500" /></label>
+              <label className="block space-y-1 text-sm font-bold text-text-primary">URL da foto<input aria-label="URL da foto" value={profileForm.avatarUrl} onChange={(event) => setProfileForm({ ...profileForm, avatarUrl: event.target.value })} placeholder="https://... ou /uploads/avatars/..." className="w-full rounded-xl border border-border-strong px-3 py-2 font-medium outline-none focus:border-orange-500" /></label>
+              <label className={`flex items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-3 text-sm font-black transition ${uploadingAvatar ? 'cursor-wait border-orange-500/70 bg-orange-500/10 text-orange-400 shadow-sm' : 'cursor-pointer border-orange-500/40 bg-orange-500/5 text-orange-400 hover:bg-orange-500/10'}`}>
                 {uploadingAvatar ? <Loader2 className="animate-spin" size={17} /> : <UploadCloud size={17} />}{uploadingAvatar ? 'Enviando foto...' : 'Enviar foto local'}
                 <input aria-label="Enviar foto local" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onChange={handleAvatarUpload} disabled={uploadingAvatar} className="sr-only" />
               </label>
               {uploadingAvatar && (
-                <div role="status" aria-live="polite" className="flex items-center gap-3 rounded-2xl border border-solar-orange/20 bg-orange-500/10 px-4 py-3 text-sm font-bold text-text-primary">
+                <div role="status" aria-live="polite" className="flex items-center gap-3 rounded-2xl border border-orange-500/20 bg-orange-500/10 px-4 py-3 text-sm font-bold text-text-primary">
                   <Loader2 className="shrink-0 animate-spin text-orange-400" size={18} />
                   <span>Enviando foto e atualizando seu perfil. Aguarde alguns segundos...</span>
                 </div>
@@ -187,7 +187,7 @@ export default function Profile() {
             <div data-testid="profile-access-summary" className="grid grid-cols-1 gap-3 md:grid-cols-2">
               {accessiblePages.map((page) => {
                 const Icon = page.icon;
-                return <Link key={page.path} to={page.path} className="group rounded-2xl border border-border-soft bg-warm-sand/50/70 p-4 transition hover:border-solar-orange/40 hover:bg-orange-500/5"><div className="flex items-start gap-3"><div className="rounded-xl bg-bg-surface-1 p-2 text-orange-400 shadow-sm"><Icon size={18} /></div><div><p className="font-black text-text-primary group-hover:text-orange-400">{page.label}</p><p className="mt-1 text-xs text-text-secondary">{page.description}</p></div></div></Link>;
+                return <Link key={page.path} to={page.path} className="group rounded-2xl border border-border-soft bg-bg-surface-2/50/70 p-4 transition hover:border-orange-500/40 hover:bg-orange-500/5"><div className="flex items-start gap-3"><div className="rounded-xl bg-bg-surface-1 p-2 text-orange-400 shadow-sm"><Icon size={18} /></div><div><p className="font-black text-text-primary group-hover:text-orange-400">{page.label}</p><p className="mt-1 text-xs text-text-secondary">{page.description}</p></div></div></Link>;
               })}
             </div>
           </Card>

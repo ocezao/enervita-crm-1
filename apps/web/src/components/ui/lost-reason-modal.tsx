@@ -120,7 +120,7 @@ export function LostReasonModal({ isOpen, onClose, onConfirm }: LostReasonModalP
           <button
             type="button"
             onClick={handleCancel}
-            className="px-4 py-2 text-sm font-medium text-text-primary bg-bg-surface-1 border border-border-strong rounded-md hover:bg-warm-sand/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            className="px-4 py-2 text-sm font-medium text-text-primary bg-bg-surface-1 border border-border-strong rounded-md hover:bg-bg-surface-2/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
           >
             Cancelar
           </button>

@@ -269,7 +269,7 @@ function EmptyState({ title, text }: { title: string; text: string }) {
 }
 
 function Field({ label, value }: { label: string; value: ReactNode }) {
-  return <div className="rounded-xl bg-warm-sand/50 p-3"><p className="text-[11px] font-bold uppercase tracking-wide text-text-secondary">{label}</p><div className="mt-1 text-sm font-semibold text-text-primary">{value}</div></div>;
+  return <div className="rounded-xl bg-bg-surface-2/50 p-3"><p className="text-[11px] font-bold uppercase tracking-wide text-text-secondary">{label}</p><div className="mt-1 text-sm font-semibold text-text-primary">{value}</div></div>;
 }
 
 function ModeSwitch({ mode, setMode }: { mode: WorkspaceMode; setMode: (mode: WorkspaceMode) => void }) {
@@ -280,7 +280,7 @@ function ModeSwitch({ mode, setMode }: { mode: WorkspaceMode; setMode: (mode: Wo
           const Icon = modeCopy[item].icon;
           const active = item === mode;
           return (
-            <button key={item} type="button" onClick={() => setMode(item)} className={`rounded-2xl p-4 text-left transition ${active ? 'bg-graphite text-white shadow-sm' : 'bg-bg-surface-1 text-text-primary hover:bg-warm-sand/50'}`}>
+            <button key={item} type="button" onClick={() => setMode(item)} className={`rounded-2xl p-4 text-left transition ${active ? 'bg-bg-surface-2 text-white shadow-sm' : 'bg-bg-surface-1 text-text-primary hover:bg-bg-surface-2/50'}`}>
               <div className="flex items-center gap-2"><Icon size={18} className={active ? 'text-orange-400' : 'text-text-secondary'} /><p className="font-black">{modeCopy[item].title}</p></div>
               <p className={`mt-2 text-sm leading-relaxed ${active ? 'text-white/70' : 'text-text-secondary'}`}>{modeCopy[item].subtitle}</p>
             </button>
@@ -297,7 +297,7 @@ function FilterBar({ filters, setFilters, objectives, shown, total }: { filters:
       <div className="grid gap-3 xl:grid-cols-[1.4fr_0.9fr_0.9fr_0.9fr_auto] xl:items-end">
         <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-text-secondary">
           Busca global
-          <div className="flex items-center gap-2 rounded-xl border border-border-strong bg-bg-surface-1 px-3 py-2 focus-within:border-solar-orange">
+          <div className="flex items-center gap-2 rounded-xl border border-border-strong bg-bg-surface-1 px-3 py-2 focus-within:border-orange-500">
             <Search size={16} className="text-text-secondary" />
             <input value={filters.search} onChange={(event) => setFilters({ ...filters, search: event.target.value })} placeholder="campanha, público, criativo, texto, ID..." className="w-full bg-transparent text-sm font-semibold normal-case tracking-normal text-text-primary outline-none" />
             {filters.search && <button type="button" onClick={() => setFilters({ ...filters, search: '' })}><X size={14} /></button>}
@@ -319,7 +319,7 @@ function FilterBar({ filters, setFilters, objectives, shown, total }: { filters:
 function AdMiniCard({ ad }: { ad: AdCreative }) {
   return (
     <div className="flex gap-3 rounded-2xl border border-border-soft bg-bg-surface-1 p-3">
-      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-warm-sand/50">{ad.thumbnailUrl ? <img src={ad.thumbnailUrl} alt={creativeHeadline(ad)} className="h-full w-full object-cover" /> : <ImageIcon size={22} className="text-text-secondary" />}</div>
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-bg-surface-2/50">{ad.thumbnailUrl ? <img src={ad.thumbnailUrl} alt={creativeHeadline(ad)} className="h-full w-full object-cover" /> : <ImageIcon size={22} className="text-text-secondary" />}</div>
       <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><Badge variant={statusVariant(ad.effectiveStatus)}>{statusLabel(ad.effectiveStatus)}</Badge><span className="text-xs font-bold text-text-secondary">{formatCurrency(ad.spendAmount)}</span></div><p className="mt-1 line-clamp-1 text-sm font-black text-text-primary">{creativeHeadline(ad)}</p><p className="mt-1 line-clamp-2 text-xs text-text-secondary">{creativeBody(ad)}</p></div>
     </div>
   );
@@ -349,7 +349,7 @@ function ClientSummaryView({ campaigns }: { campaigns: AdCampaign[] }) {
         <div className="grid gap-4 md:grid-cols-2">
           {Object.entries(groups).map(([objective, items]) => {
             const groupTotals = campaignTotals(items);
-            return <Card key={objective} className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="font-black text-text-primary">{objective}</p><p className="mt-1 text-sm text-text-secondary">{items.length} campanha{items.length === 1 ? '' : 's'} neste objetivo</p></div><Target size={20} className="text-orange-400" /></div><div className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-warm-sand/50 p-3"><p className="font-black text-text-primary">{formatCurrency(groupTotals.spend)}</p><p className="text-[11px] text-text-secondary">investido</p></div><div className="rounded-xl bg-warm-sand/50 p-3"><p className="font-black text-text-primary">{groupTotals.leads}</p><p className="text-[11px] text-text-secondary">leads</p></div><div className="rounded-xl bg-warm-sand/50 p-3"><p className="font-black text-text-primary">{groupTotals.ads}</p><p className="text-[11px] text-text-secondary">anúncios</p></div></div></Card>;
+            return <Card key={objective} className="p-5"><div className="flex items-start justify-between gap-3"><div><p className="font-black text-text-primary">{objective}</p><p className="mt-1 text-sm text-text-secondary">{items.length} campanha{items.length === 1 ? '' : 's'} neste objetivo</p></div><Target size={20} className="text-orange-400" /></div><div className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-xl bg-bg-surface-2/50 p-3"><p className="font-black text-text-primary">{formatCurrency(groupTotals.spend)}</p><p className="text-[11px] text-text-secondary">investido</p></div><div className="rounded-xl bg-bg-surface-2/50 p-3"><p className="font-black text-text-primary">{groupTotals.leads}</p><p className="text-[11px] text-text-secondary">leads</p></div><div className="rounded-xl bg-bg-surface-2/50 p-3"><p className="font-black text-text-primary">{groupTotals.ads}</p><p className="text-[11px] text-text-secondary">anúncios</p></div></div></Card>;
           })}
         </div>
       </section>
@@ -359,7 +359,7 @@ function ClientSummaryView({ campaigns }: { campaigns: AdCampaign[] }) {
           <div className="flex items-center gap-2"><AlertTriangle size={18} className="text-alert-amber" /><h3 className="font-black text-text-primary">Pontos de atenção</h3></div>
           <div className="mt-4 space-y-3">{attention.length === 0 ? <p className="text-sm text-text-secondary">Nenhum alerta relevante nos filtros atuais.</p> : attention.map((campaign) => <div key={campaign.id} className="rounded-2xl bg-amber-50 p-3"><p className="font-bold text-text-primary line-clamp-1">{campaign.name}</p><p className="mt-1 text-xs text-text-primary">{campaign.spendAmount > 0 && campaign.leads === 0 ? 'Teve investimento, mas não registrou leads no período.' : 'Está ativa, mas sem grupos importados.'}</p></div>)}</div>
         </Card>
-        <Card className="p-5"><h3 className="font-black text-text-primary">Maiores investimentos</h3><div className="mt-4 space-y-3">{topCampaigns.map((campaign, index) => <div key={campaign.id} className="flex items-center gap-3"><div className="flex h-7 w-7 items-center justify-center rounded-full bg-warm-sand/50 text-xs font-black text-text-secondary">{index + 1}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-text-primary">{campaign.name}</p><p className="text-xs text-text-secondary">{formatCurrency(campaign.spendAmount)} · {campaign.leads} leads</p></div></div>)}</div></Card>
+        <Card className="p-5"><h3 className="font-black text-text-primary">Maiores investimentos</h3><div className="mt-4 space-y-3">{topCampaigns.map((campaign, index) => <div key={campaign.id} className="flex items-center gap-3"><div className="flex h-7 w-7 items-center justify-center rounded-full bg-bg-surface-2/50 text-xs font-black text-text-secondary">{index + 1}</div><div className="min-w-0 flex-1"><p className="truncate text-sm font-bold text-text-primary">{campaign.name}</p><p className="text-xs text-text-secondary">{formatCurrency(campaign.spendAmount)} · {campaign.leads} leads</p></div></div>)}</div></Card>
       </aside>
     </div>
   );
@@ -368,7 +368,7 @@ function ClientSummaryView({ campaigns }: { campaigns: AdCampaign[] }) {
 function CampaignTable({ campaigns, selectedId, setSelectedId }: { campaigns: AdCampaign[]; selectedId: string | null; setSelectedId: (id: string) => void }) {
   return (
     <Card className="overflow-hidden">
-      <div className="border-b border-border-soft bg-warm-sand/50 px-4 py-3"><p className="text-xs font-black uppercase tracking-wide text-text-secondary">Campanhas</p></div>
+      <div className="border-b border-border-soft bg-bg-surface-2/50 px-4 py-3"><p className="text-xs font-black uppercase tracking-wide text-text-secondary">Campanhas</p></div>
       <div className="max-h-[760px] crm-scroll-panel overflow-auto">
         <table className="w-full text-left text-sm">
           <thead className="sticky top-0 z-10 bg-bg-surface-1 text-xs uppercase tracking-wide text-text-secondary"><tr><th className="p-3">Nome</th><th className="p-3">Objetivo</th><th className="p-3">Status</th><th className="p-3 text-right">Investido</th><th className="p-3 text-right">Leads</th><th className="p-3"></th></tr></thead>
@@ -388,7 +388,7 @@ function CampaignInspector({ campaign }: { campaign: AdCampaign | undefined }) {
       <div className="flex items-start justify-between gap-3"><div><Badge variant={statusVariant(campaign.effectiveStatus)}>{statusLabel(campaign.effectiveStatus)}</Badge><h3 className="mt-3 text-lg font-black text-text-primary">{campaign.name}</h3><p className="mt-2 text-sm leading-relaxed text-text-secondary"><strong className="text-text-primary">{objective.label}.</strong> {objective.description}</p></div></div>
       <div className="mt-5 grid grid-cols-2 gap-2"><MetricPill label="Investido" value={formatCurrency(campaign.spendAmount)} icon={Wallet} /><MetricPill label="Leads" value={campaign.leads} icon={MessageCircle} /><MetricPill label="Cliques" value={formatNumber(campaign.clicks)} icon={MousePointerClick} /><MetricPill label="Impressões" value={formatNumber(campaign.impressions)} icon={Eye} /></div>
       <div className="mt-5 grid gap-3"><Field label="Estratégia" value={campaign.bidStrategy ? (bidStrategyLabels[campaign.bidStrategy] ?? humanizeToken(campaign.bidStrategy)) : 'Não informada'} /><Field label="Orçamento" value={campaign.budgetAmount === null ? 'Não informado' : formatCurrency(campaign.budgetAmount)} /></div>
-      <div className="mt-5"><h4 className="font-black text-text-primary">Grupos</h4><div className="mt-3 space-y-3">{campaign.adSets.map((set) => <div key={set.id} className="rounded-2xl bg-warm-sand/50 p-3"><div className="flex items-center justify-between gap-3"><p className="line-clamp-1 font-bold text-text-primary">{set.name}</p><Badge variant={statusVariant(set.effectiveStatus)}>{statusLabel(set.effectiveStatus)}</Badge></div><p className="mt-1 text-xs text-text-secondary">{set.audienceSummary ?? 'Público não informado'} · {set.ads.length} anúncios</p></div>)}</div></div>
+      <div className="mt-5"><h4 className="font-black text-text-primary">Grupos</h4><div className="mt-3 space-y-3">{campaign.adSets.map((set) => <div key={set.id} className="rounded-2xl bg-bg-surface-2/50 p-3"><div className="flex items-center justify-between gap-3"><p className="line-clamp-1 font-bold text-text-primary">{set.name}</p><Badge variant={statusVariant(set.effectiveStatus)}>{statusLabel(set.effectiveStatus)}</Badge></div><p className="mt-1 text-xs text-text-secondary">{set.audienceSummary ?? 'Público não informado'} · {set.ads.length} anúncios</p></div>)}</div></div>
       <div className="mt-5"><h4 className="font-black text-text-primary">Criativos principais</h4><div className="mt-3 space-y-3">{ads.slice(0, 4).map((ad) => <AdMiniCard key={ad.id} ad={ad} />)}</div>{ads.length > 4 && <p className="mt-3 text-xs font-semibold text-text-secondary">+ {ads.length - 4} anúncios no total</p>}</div>
     </Card>
   );
@@ -398,7 +398,7 @@ function ManagerWorkspace({ campaigns, selectedId, setSelectedId, filters, setFi
   const selected = campaigns.find((campaign) => campaign.id === selectedId) ?? campaigns[0];
   return (
     <div className="grid gap-5 xl:grid-cols-[230px_minmax(0,1fr)_360px]">
-      <aside className="space-y-4"><Card className="p-4"><p className="text-xs font-black uppercase tracking-wide text-text-secondary">Visões rápidas</p><div className="mt-3 space-y-2">{visibleStatusFilters.map((status) => <button key={status} type="button" onClick={() => setFilters({ ...filters, status })} className={`w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition ${filters.status === status ? 'bg-graphite text-white' : 'bg-warm-sand/50 text-text-primary hover:bg-warm-sand/50'}`}>{statusFilterLabels[status]}</button>)}</div></Card><Card className="p-4"><p className="text-xs font-black uppercase tracking-wide text-text-secondary">Como usar</p><p className="mt-2 text-sm leading-relaxed text-text-secondary">Use os filtros laterais, selecione uma campanha e acompanhe os detalhes no painel à direita.</p></Card></aside>
+      <aside className="space-y-4"><Card className="p-4"><p className="text-xs font-black uppercase tracking-wide text-text-secondary">Visões rápidas</p><div className="mt-3 space-y-2">{visibleStatusFilters.map((status) => <button key={status} type="button" onClick={() => setFilters({ ...filters, status })} className={`w-full rounded-xl px-3 py-2 text-left text-sm font-bold transition ${filters.status === status ? 'bg-bg-surface-2 text-white' : 'bg-bg-surface-2/50 text-text-primary hover:bg-bg-surface-2/50'}`}>{statusFilterLabels[status]}</button>)}</div></Card><Card className="p-4"><p className="text-xs font-black uppercase tracking-wide text-text-secondary">Como usar</p><p className="mt-2 text-sm leading-relaxed text-text-secondary">Use os filtros laterais, selecione uma campanha e acompanhe os detalhes no painel à direita.</p></Card></aside>
       <CampaignTable campaigns={campaigns} selectedId={selected?.id ?? null} setSelectedId={setSelectedId} />
       <CampaignInspector campaign={selected} />
     </div>
@@ -410,7 +410,7 @@ function TechTable({ campaigns, tab, setTab }: { campaigns: AdCampaign[]; tab: E
   const ads = adSets.flatMap(({ campaign, set }) => set.ads.map((ad) => ({ campaign, set, ad })));
   return (
     <Card className="overflow-hidden">
-      <div className="flex flex-wrap items-center gap-2 border-b border-border-soft bg-warm-sand/50 p-3">{(['campaigns', 'adsets', 'ads'] as EntityTab[]).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-xl px-3 py-2 text-xs font-black ${tab === item ? 'bg-graphite text-white' : 'bg-bg-surface-1 text-text-secondary'}`}>{item === 'campaigns' ? 'Campanhas' : item === 'adsets' ? 'Grupos' : 'Anúncios'}</button>)}</div>
+      <div className="flex flex-wrap items-center gap-2 border-b border-border-soft bg-bg-surface-2/50 p-3">{(['campaigns', 'adsets', 'ads'] as EntityTab[]).map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-xl px-3 py-2 text-xs font-black ${tab === item ? 'bg-bg-surface-2 text-white' : 'bg-bg-surface-1 text-text-secondary'}`}>{item === 'campaigns' ? 'Campanhas' : item === 'adsets' ? 'Grupos' : 'Anúncios'}</button>)}</div>
       <div className="crm-scroll-panel overflow-auto">
         {tab === 'campaigns' && <table className="w-full whitespace-nowrap text-left text-xs"><thead className="bg-bg-surface-1 text-text-secondary"><tr><th className="p-3">ID</th><th className="p-3">Nome</th><th className="p-3">Status bruto</th><th className="p-3">Objetivo bruto</th><th className="p-3 text-right">Spend</th><th className="p-3 text-right">Leads</th></tr></thead><tbody className="divide-y divide-border-hair">{campaigns.map((campaign) => <tr key={campaign.id}><td className="p-3 font-mono text-text-secondary">{campaign.externalCampaignId ?? '—'}</td><td className="p-3 font-bold text-text-primary">{campaign.name}</td><td className="p-3">{campaign.effectiveStatus}</td><td className="p-3">{campaign.objective ?? '—'}</td><td className="p-3 text-right">{campaign.spendAmount}</td><td className="p-3 text-right">{campaign.leads}</td></tr>)}</tbody></table>}
         {tab === 'adsets' && <table className="w-full whitespace-nowrap text-left text-xs"><thead className="bg-bg-surface-1 text-text-secondary"><tr><th className="p-3">ID grupo</th><th className="p-3">Grupo</th><th className="p-3">Campanha</th><th className="p-3">Status</th><th className="p-3">Otimização</th><th className="p-3">Cobrança</th></tr></thead><tbody className="divide-y divide-border-hair">{adSets.map(({ campaign, set }) => <tr key={set.id}><td className="p-3 font-mono text-text-secondary">{set.externalAdSetId ?? '—'}</td><td className="p-3 font-bold text-text-primary">{set.name}</td><td className="p-3">{campaign.name}</td><td className="p-3">{set.effectiveStatus}</td><td className="p-3">{set.optimizationGoal ?? '—'}</td><td className="p-3">{set.billingEvent ?? '—'}</td></tr>)}</tbody></table>}
@@ -467,7 +467,7 @@ export default function Ads() {
 
       {filteredCampaigns.length === 0 ? <EmptyState title="Nenhuma campanha ativa elegível" text="O CRM só exibe campanhas em que campanha, conjunto e anúncio estão ativos ao mesmo tempo. Se qualquer nível estiver desativado, ele fica oculto." /> : mode === 'cliente' ? <ClientSummaryView campaigns={filteredCampaigns} /> : mode === 'gestor' ? <ManagerWorkspace campaigns={filteredCampaigns} selectedId={selectedCampaignId} setSelectedId={setSelectedCampaignId} filters={filters} setFilters={setFilters} /> : <TechTable campaigns={filteredCampaigns} tab={techTab} setTab={setTechTab} />}
 
-      {mode === 'tecnico' && audiences.length > 0 && <Card className="p-5"><h3 className="font-black text-text-primary">Públicos Meta retornados</h3><div className="mt-4 grid gap-3 md:grid-cols-3">{audiences.slice(0, 12).map((audience) => <div key={String(audience.id)} className="rounded-2xl bg-warm-sand/50 p-3"><p className="font-bold text-text-primary">{text(audience.name) ?? 'Público sem nome'}</p><p className="text-xs text-text-secondary">{humanizeToken(text(audience.subtype) ?? 'custom')} · {String(audience.approximate_count ?? '—')} pessoas</p></div>)}</div></Card>}
+      {mode === 'tecnico' && audiences.length > 0 && <Card className="p-5"><h3 className="font-black text-text-primary">Públicos Meta retornados</h3><div className="mt-4 grid gap-3 md:grid-cols-3">{audiences.slice(0, 12).map((audience) => <div key={String(audience.id)} className="rounded-2xl bg-bg-surface-2/50 p-3"><p className="font-bold text-text-primary">{text(audience.name) ?? 'Público sem nome'}</p><p className="text-xs text-text-secondary">{humanizeToken(text(audience.subtype) ?? 'custom')} · {String(audience.approximate_count ?? '—')} pessoas</p></div>)}</div></Card>}
     </div>
   );
 }

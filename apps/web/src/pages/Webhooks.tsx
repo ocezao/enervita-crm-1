@@ -88,7 +88,7 @@ export default function Webhooks() {
               {loading ? (
                 <div className="py-8 text-center text-text-secondary">Carregando...</div>
               ) : webhooks.map((webhook) => (
-                <div key={webhook.id} className="p-4 rounded-xl border border-border-soft hover:border-solar-orange/20 transition-all group">
+                <div key={webhook.id} className="p-4 rounded-xl border border-border-soft hover:border-orange-500/20 transition-all group">
                   <div className="flex justify-between items-start mb-2">
                     <div>
                       <h4 className="font-bold text-sm text-text-primary">{webhook.name}</h4>
@@ -101,7 +101,7 @@ export default function Webhooks() {
 
                   <div className="flex flex-wrap gap-1 mb-4">
                     {webhook.eventTypes.map(e => (
-                      <span key={e} className="text-[9px] bg-warm-sand/50 text-text-secondary px-1.5 py-0.5 rounded font-mono">
+                      <span key={e} className="text-[9px] bg-bg-surface-2/50 text-text-secondary px-1.5 py-0.5 rounded font-mono">
                         {e}
                       </span>
                     ))}
@@ -136,7 +136,7 @@ export default function Webhooks() {
               <Activity size={20} className="text-mint-400" />
               Entregas recentes das integrações
             </h3>
-            <div className="bg-graphite rounded-xl p-4 font-mono text-xs text-mint-400 crm-scroll-panel overflow-x-auto space-y-2">
+            <div className="bg-bg-surface-2 rounded-xl p-4 font-mono text-xs text-mint-400 crm-scroll-panel overflow-x-auto space-y-2">
               {deliveries.length === 0 ? (
                 <p className="opacity-50">Nenhuma entrega registrada ainda</p>
               ) : deliveries.slice(0, 6).map((delivery) => (

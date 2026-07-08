@@ -9,11 +9,11 @@ function cacheControlFor(reqUrl, contentType) {
   if (path.startsWith("/api/") || path === "/health" || path.startsWith("/uploads/")) {
     return "no-store";
   }
-  if (path.startsWith("/assets/")) {
-    return "public, max-age=31536000, immutable";
-  }
   if ((contentType || "").includes("text/html")) {
     return "no-store";
+  }
+  if (path.startsWith("/assets/")) {
+    return "public, max-age=31536000, immutable";
   }
   return "public, max-age=3600";
 }

@@ -88,7 +88,7 @@ export default function Settings() {
               key={tab.id}
               onClick={() => openTab(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                activeTab === tab.id ? 'bg-orange-500/10 text-orange-400 shadow-sm' : 'text-text-secondary hover:bg-warm-sand/50'
+                activeTab === tab.id ? 'bg-orange-500/10 text-orange-400 shadow-sm' : 'text-text-secondary hover:bg-bg-surface-2/50'
               }`}
             >
               <tab.icon size={18} />
@@ -290,7 +290,7 @@ function LeadRoutingSettings() {
   return (
     <div className="space-y-6">
       {/* Hero Card */}
-      <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
+      <Card className="relative overflow-hidden border-orange-500/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
         <div className="absolute -right-24 -top-28 h-64 w-64 rounded-full bg-orange-500/10 blur-3xl" />
         <div className="absolute bottom-0 right-28 h-36 w-36 rounded-full bg-mint-500/10 blur-2xl" />
         <div className="relative p-6 md:p-8">
@@ -339,7 +339,7 @@ function LeadRoutingSettings() {
                 key={rule.key}
                 className={`rounded-2xl border p-4 transition-all ${
                   rule.isActive
-                    ? 'border-solar-orange/30 bg-orange-500/5'
+                    ? 'border-orange-500/30 bg-orange-500/5'
                     : 'border-border-strong bg-bg-surface-1 hover:border-border-strong'
                 }`}
               >
@@ -359,7 +359,7 @@ function LeadRoutingSettings() {
                   <button
                     onClick={() => toggleRule(rule.key, !rule.isActive)}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                      rule.isActive ? 'bg-orange-500' : 'bg-warm-sand/70'
+                      rule.isActive ? 'bg-orange-500' : 'bg-bg-surface-2/70'
                     }`}
                   >
                     <span
@@ -389,7 +389,7 @@ function LeadRoutingSettings() {
         
         {/* Random and Auto-reassign toggles */}
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className={`rounded-2xl border p-4 flex items-center justify-between gap-4 ${config.randomEnabled ? 'border-energy-green/30 bg-mint-500/10' : 'border-border-strong bg-warm-sand/50'}`}>
+          <label className={`rounded-2xl border p-4 flex items-center justify-between gap-4 ${config.randomEnabled ? 'border-energy-green/30 bg-mint-500/10' : 'border-border-strong bg-bg-surface-2/50'}`}>
             <span className="min-w-0">
               <strong className="block text-sm text-text-primary">Aleatorio</strong>
               <small className="text-xs text-text-secondary leading-relaxed">Liga o ciclo entre contas selecionadas como Aleatorio.</small>
@@ -401,7 +401,7 @@ function LeadRoutingSettings() {
               onChange={(event) => setRandomEnabled(event.target.checked)}
             />
           </label>
-          <label className={`rounded-2xl border p-4 flex items-center justify-between gap-4 ${autoReassign?.enabled ? 'border-solar-orange/30 bg-orange-500/10' : 'border-border-strong bg-warm-sand/50'}`}>
+          <label className={`rounded-2xl border p-4 flex items-center justify-between gap-4 ${autoReassign?.enabled ? 'border-orange-500/30 bg-orange-500/10' : 'border-border-strong bg-bg-surface-2/50'}`}>
             <span className="min-w-0">
               <strong className="block text-sm text-text-primary">Reatribuicao Automatica</strong>
               <small className="text-xs text-text-secondary leading-relaxed">Reatribui leads parados ha 7 dias para outro vendedor.</small>
@@ -423,7 +423,7 @@ function LeadRoutingSettings() {
           <SectionTitle icon={Tag} title="Atribuicao por Servico" description="Cada servico pode ter um vendedor especifico. Se nao configurado, o lead vai para round-robin." />
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeServices.map(service => (
-              <div key={service.key} className="rounded-2xl border border-border-soft bg-warm-sand/50/60 p-4">
+              <div key={service.key} className="rounded-2xl border border-border-soft bg-bg-surface-2/50/60 p-4">
                 <p className="font-bold text-sm text-text-primary">{service.label}</p>
                 <select
                   value={serviceAssignments[service.key] ?? ''}
@@ -446,7 +446,7 @@ function LeadRoutingSettings() {
         <SectionTitle icon={Layers} title="Pipelines e responsaveis" description="Defina quais contas podem visualizar e receber leads em cada pipeline operacional." />
         <div className="mt-5 grid grid-cols-1 xl:grid-cols-3 gap-4">
           {config.pipelines.map((pipeline) => (
-            <div key={pipeline.key} className="rounded-2xl border border-border-soft bg-warm-sand/50/60 p-4">
+            <div key={pipeline.key} className="rounded-2xl border border-border-soft bg-bg-surface-2/50/60 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-black text-text-primary">{pipeline.label}</p>
@@ -503,7 +503,7 @@ function LeadRoutingSettings() {
                 value={user.ruleKey}
                 disabled={user.status !== 'active'}
                 onChange={(event) => setUserRule(user.id, event.target.value)}
-                className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-bg-surface-1 disabled:bg-warm-sand/50 disabled:text-text-secondary"
+                className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-bg-surface-1 disabled:bg-bg-surface-2/50 disabled:text-text-secondary"
               >
                 {ruleOptions.map((option) => <option key={option.key} value={option.key}>{option.label}</option>)}
               </select>
@@ -542,12 +542,12 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
 
   return (
     <div className="space-y-6">
-      <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
+      <Card className="relative overflow-hidden border-orange-500/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
         <div className="absolute -right-24 -top-28 h-64 w-64 rounded-full bg-orange-500/10 blur-3xl" />
         <div className="absolute bottom-0 right-28 h-36 w-36 rounded-full bg-mint-500/10 blur-2xl" />
         <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="max-w-3xl min-w-0">
-            <div className="flex items-center gap-3 mb-3"><div className="p-2.5 rounded-2xl bg-orange-500 text-white shadow-lg shadow-solar-orange/20"><Settings2 size={22} /></div><Badge variant="solar">Controle total do administrador</Badge></div>
+            <div className="flex items-center gap-3 mb-3"><div className="p-2.5 rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/20"><Settings2 size={22} /></div><Badge variant="solar">Controle total do administrador</Badge></div>
             <h3 className="text-2xl md:text-3xl font-black text-text-primary tracking-tight">Central de Administração</h3>
             <p className="text-sm md:text-base text-text-primary mt-2 leading-relaxed">Defina padrões comerciais, regras de governança, alertas e atalhos seguros para controlar o CRM da Enervita sem expor páginas ou funções para quem não tem permissão.</p>
           </div>
@@ -565,12 +565,12 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
           <Card className="p-6">
             <SectionTitle icon={Settings2} title="Empresa e operação" description="Dados-base que orientam relatórios, atendimento e padrões do CRM." />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
-              <Field label="Nome da empresa"><input readOnly className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-warm-sand/50" value="Enervita Energia Solar" /></Field>
-              <Field label="E-mail de suporte"><input readOnly className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-warm-sand/50" value="contato@enervita.com.br" /></Field>
-              <Field label="Fuso horário"><input readOnly className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-warm-sand/50" value="Brasília (GMT-3)" /></Field>
-              <Field label="Moeda e idioma"><input readOnly className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-warm-sand/50" value="pt-BR / BRL" /></Field>
-              <Field label="Horário comercial padrão" hint="Usado como referência para SLA e alertas."><input readOnly className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-warm-sand/50" value="Segunda a sexta, 08:00 às 18:00" /></Field>
-              <Field label="Equipe responsável padrão" hint="Novos leads sem dono entram para triagem comercial."><input readOnly className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-warm-sand/50" value="Comercial / SDR Enervita" /></Field>
+              <Field label="Nome da empresa"><input readOnly className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-bg-surface-2/50" value="Enervita Energia Solar" /></Field>
+              <Field label="E-mail de suporte"><input readOnly className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-bg-surface-2/50" value="contato@enervita.com.br" /></Field>
+              <Field label="Fuso horário"><input readOnly className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-bg-surface-2/50" value="Brasília (GMT-3)" /></Field>
+              <Field label="Moeda e idioma"><input readOnly className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-bg-surface-2/50" value="pt-BR / BRL" /></Field>
+              <Field label="Horário comercial padrão" hint="Usado como referência para SLA e alertas."><input readOnly className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-bg-surface-2/50" value="Segunda a sexta, 08:00 às 18:00" /></Field>
+              <Field label="Equipe responsável padrão" hint="Novos leads sem dono entram para triagem comercial."><input readOnly className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-bg-surface-2/50" value="Comercial / SDR Enervita" /></Field>
             </div>
           </Card>
 
@@ -579,8 +579,8 @@ function GeneralSettings({ onOpenTab }: { onOpenTab: (tabId: string) => void }) 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-5">
               <Field label="SLA do primeiro contato" hint="Usado como referência visual para alertas e rotina comercial."><select value={generalPrefs.slaHours ?? '4'} onChange={event => updateGeneralPref('slaHours', event.target.value)} className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-bg-surface-1"><option value="1">Até 1 hora</option><option value="4">Até 4 horas</option><option value="24">Até 24 horas</option></select></Field>
               <Field label="Responsável padrão" hint="Texto de referência para novos cadastros sem dono definido."><input value={generalPrefs.defaultOwner ?? 'Comercial / SDR Enervita'} onChange={event => updateGeneralPref('defaultOwner', event.target.value)} className="w-full border border-border-strong rounded-xl px-4 py-2.5 text-sm bg-bg-surface-1" /></Field>
-              <label className="rounded-2xl border border-border-soft p-4 bg-warm-sand/50/60 flex items-center justify-between gap-3"><span><strong className="block text-sm text-text-primary">Exigir motivo de perda</strong><small className="text-xs text-text-secondary">Regra administrativa para manter aprendizado comercial.</small></span><input type="checkbox" checked={generalPrefs.requireLostReason ?? true} onChange={event => updateGeneralPref('requireLostReason', event.target.checked)} /></label>
-              <label className="rounded-2xl border border-border-soft p-4 bg-warm-sand/50/60 flex items-center justify-between gap-3"><span><strong className="block text-sm text-text-primary">Resumo diário do gestor</strong><small className="text-xs text-text-secondary">Deixa a preferência pronta para automação aprovada.</small></span><input type="checkbox" checked={generalPrefs.dailySummary ?? false} onChange={event => updateGeneralPref('dailySummary', event.target.checked)} /></label>
+              <label className="rounded-2xl border border-border-soft p-4 bg-bg-surface-2/50/60 flex items-center justify-between gap-3"><span><strong className="block text-sm text-text-primary">Exigir motivo de perda</strong><small className="text-xs text-text-secondary">Regra administrativa para manter aprendizado comercial.</small></span><input type="checkbox" checked={generalPrefs.requireLostReason ?? true} onChange={event => updateGeneralPref('requireLostReason', event.target.checked)} /></label>
+              <label className="rounded-2xl border border-border-soft p-4 bg-bg-surface-2/50/60 flex items-center justify-between gap-3"><span><strong className="block text-sm text-text-primary">Resumo diário do gestor</strong><small className="text-xs text-text-secondary">Deixa a preferência pronta para automação aprovada.</small></span><input type="checkbox" checked={generalPrefs.dailySummary ?? false} onChange={event => updateGeneralPref('dailySummary', event.target.checked)} /></label>
             </div>
             <div className="mt-5 flex items-center gap-3"><Button variant="primary" size="sm" className="gap-2" onClick={saveGeneralPrefs}><Save size={15} /> Salvar Geral</Button>{savedGeneral && <Badge variant="success">Preferências salvas</Badge>}</div>
           </Card>
@@ -637,8 +637,8 @@ function AdminMetric({ label, value, tone }: { label: string; value: string | nu
   return <div className={`min-w-0 rounded-2xl p-3 ${toneClass}`}><p className="break-words text-[10px] font-black uppercase tracking-wide opacity-80">{label}</p><p className="break-words text-2xl font-black mt-1">{value}</p></div>;
 }
 function PolicyCard({ icon: Icon, title, text }: { icon: AnyIcon; title: string; text: string }) { return <div className="rounded-2xl border border-border-soft p-4 bg-bg-surface-1"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-orange-500/10 text-orange-400"><Icon size={17} /></div><div><p className="font-bold text-sm text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-1">{text}</p></div></div></div>; }
-function AlertRule({ title, status, detail, danger = false }: { title: string; status: string; detail: string; danger?: boolean }) { return <div className={`rounded-2xl border p-4 ${danger ? 'border-red-100 bg-red-50/60' : 'border-border-soft bg-warm-sand/50/50'}`}><Badge variant={danger ? 'error' : 'success'}>{status}</Badge><p className="font-bold text-sm text-text-primary mt-3">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-1">{detail}</p></div>; }
-function AdminShortcut({ icon: Icon, title, description, onClick }: { icon: AnyIcon; title: string; description: string; onClick: () => void }) { return <button aria-label="Abrir atalho administrativo" onClick={onClick} className="w-full text-left rounded-2xl border border-border-soft p-3 hover:border-solar-orange/30 hover:bg-orange-500/5 transition-all"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-warm-sand/50 text-text-primary"><Icon size={16} /></div><div><p className="text-sm font-bold text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-0.5">{description}</p></div></div></button>; }
+function AlertRule({ title, status, detail, danger = false }: { title: string; status: string; detail: string; danger?: boolean }) { return <div className={`rounded-2xl border p-4 ${danger ? 'border-red-100 bg-red-50/60' : 'border-border-soft bg-bg-surface-2/50/50'}`}><Badge variant={danger ? 'error' : 'success'}>{status}</Badge><p className="font-bold text-sm text-text-primary mt-3">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-1">{detail}</p></div>; }
+function AdminShortcut({ icon: Icon, title, description, onClick }: { icon: AnyIcon; title: string; description: string; onClick: () => void }) { return <button aria-label="Abrir atalho administrativo" onClick={onClick} className="w-full text-left rounded-2xl border border-border-soft p-3 hover:border-orange-500/30 hover:bg-orange-500/5 transition-all"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-bg-surface-2/50 text-text-primary"><Icon size={16} /></div><div><p className="text-sm font-bold text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-0.5">{description}</p></div></div></button>; }
 
 const presetCards: Array<{ id: AppearancePresetId; name: string; description: string; icon: AnyIcon; badge: string }> = [
   { id: 'enervita', name: 'Enervita Comercial', description: 'Visual oficial: claro, solar, familiar para operação diária.', icon: SunMedium, badge: 'Padrão' },
@@ -683,12 +683,12 @@ function AppearanceSettingsPanel() {
 
   return (
     <div className="space-y-6">
-      <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
+      <Card className="relative overflow-hidden border-orange-500/10 bg-gradient-to-br from-white via-white to-solar-orange/5">
         <div className="absolute -right-20 -top-24 h-56 w-56 rounded-full bg-orange-500/10 blur-3xl" />
         <div className="absolute right-24 bottom-0 h-32 w-32 rounded-full bg-mint-500/10 blur-2xl" />
         <div className="relative p-6 md:p-8 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="max-w-3xl min-w-0">
-            <div className="flex items-center gap-3 mb-3"><div className="p-2.5 rounded-2xl bg-orange-500 text-white shadow-lg shadow-solar-orange/20"><Palette size={22} /></div><Badge variant="solar">Personalização visual</Badge></div>
+            <div className="flex items-center gap-3 mb-3"><div className="p-2.5 rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/20"><Palette size={22} /></div><Badge variant="solar">Personalização visual</Badge></div>
             <h3 className="text-2xl md:text-3xl font-black text-text-primary tracking-tight">Aparência do CRM</h3>
             <p className="text-sm md:text-base text-text-primary mt-2 leading-relaxed">Ajuste o visual do Cockpit em camadas: presets rápidos, cores, layout, leitura e recursos avançados sem deixar nada escapar do container.</p>
           </div>
@@ -709,9 +709,9 @@ function AppearanceSettingsPanel() {
                 const presetValues = appearancePresets[preset.id];
                 const active = settings.preset === preset.id;
                 return (
-                  <button key={preset.id} onClick={() => selectPreset(preset.id)} className={`text-left rounded-2xl border p-4 transition-all ${active ? 'border-solar-orange bg-orange-500/5 shadow-sm' : 'border-border-soft hover:border-solar-orange/30 hover:bg-warm-sand/50'}`}>
+                  <button key={preset.id} onClick={() => selectPreset(preset.id)} className={`text-left rounded-2xl border p-4 transition-all ${active ? 'border-orange-500 bg-orange-500/5 shadow-sm' : 'border-border-soft hover:border-orange-500/30 hover:bg-bg-surface-2/50'}`}>
                     <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3"><div className={`p-2.5 rounded-xl ${active ? 'bg-orange-500 text-white' : 'bg-warm-sand/50 text-text-secondary'}`}><Icon size={18} /></div><div><p className="font-bold text-text-primary">{preset.name}</p><Badge variant={active ? 'solar' : 'default'}>{preset.badge}</Badge></div></div>
+                      <div className="flex items-center gap-3"><div className={`p-2.5 rounded-xl ${active ? 'bg-orange-500 text-white' : 'bg-bg-surface-2/50 text-text-secondary'}`}><Icon size={18} /></div><div><p className="font-bold text-text-primary">{preset.name}</p><Badge variant={active ? 'solar' : 'default'}>{preset.badge}</Badge></div></div>
                       <div className="flex -space-x-1 pt-1">{[presetValues.primaryColor, presetValues.secondaryColor, presetValues.graphiteColor].map(color => <span key={color} className="h-5 w-5 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: color }} />)}</div>
                     </div>
                     <p className="text-xs text-text-secondary leading-relaxed mt-3">{preset.description}</p>
@@ -753,7 +753,7 @@ function AppearanceSettingsPanel() {
               <AdvancedToggle icon={TableProperties} title="Tabelas compactas" description="Mostra mais leads, propostas e eventos sem rolagem excessiva." checked={settings.compactTables} onChange={value => update('compactTables', value)} />
               <AdvancedToggle icon={BellRing} title="Prioridade para atrasos" description="Destaca leads parados, tarefas vencidas e propostas sem retorno." checked={settings.highlightOverdue} onChange={value => update('highlightOverdue', value)} />
               <AdvancedToggle icon={LayoutDashboard} title="Modo executivo" description="Reduz detalhes técnicos e privilegia KPIs, funil e próximos passos." checked={settings.executiveMode} onChange={value => update('executiveMode', value)} />
-              <div className="rounded-2xl border border-dashed border-border-strong p-4 bg-warm-sand/50/70"><div className="flex items-center gap-3 mb-3"><div className="p-2 rounded-xl bg-bg-surface-1 text-text-secondary border border-border-soft"><Lock size={17} /></div><div><p className="font-bold text-sm text-text-primary">Governança futura</p><p className="text-xs text-text-secondary">Avançado com aprovação do administrador.</p></div></div><ul className="space-y-2 text-xs text-text-secondary"><li className="flex gap-2"><ImageIcon size={14} /> Upload de logo por unidade</li><li className="flex gap-2"><Type size={14} /> Biblioteca de fontes da marca</li><li className="flex gap-2"><Palette size={14} /> Temas por perfil de usuário</li></ul></div>
+              <div className="rounded-2xl border border-dashed border-border-strong p-4 bg-bg-surface-2/50/70"><div className="flex items-center gap-3 mb-3"><div className="p-2 rounded-xl bg-bg-surface-1 text-text-secondary border border-border-soft"><Lock size={17} /></div><div><p className="font-bold text-sm text-text-primary">Governança futura</p><p className="text-xs text-text-secondary">Avançado com aprovação do administrador.</p></div></div><ul className="space-y-2 text-xs text-text-secondary"><li className="flex gap-2"><ImageIcon size={14} /> Upload de logo por unidade</li><li className="flex gap-2"><Type size={14} /> Biblioteca de fontes da marca</li><li className="flex gap-2"><Palette size={14} /> Temas por perfil de usuário</li></ul></div>
             </div>
           </Card>
         </div>
@@ -763,17 +763,17 @@ function AppearanceSettingsPanel() {
   );
 }
 
-function SectionTitle({ icon: Icon, title, description }: { icon: AnyIcon; title: string; description: string }) { return <div className="flex items-start gap-3"><div className="p-2.5 rounded-2xl bg-warm-sand/50 text-text-primary"><Icon size={19} /></div><div><h3 className="text-lg font-black text-text-primary">{title}</h3><p className="text-sm text-text-secondary mt-1">{description}</p></div></div>; }
+function SectionTitle({ icon: Icon, title, description }: { icon: AnyIcon; title: string; description: string }) { return <div className="flex items-start gap-3"><div className="p-2.5 rounded-2xl bg-bg-surface-2/50 text-text-primary"><Icon size={19} /></div><div><h3 className="text-lg font-black text-text-primary">{title}</h3><p className="text-sm text-text-secondary mt-1">{description}</p></div></div>; }
 function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) { return <label className="space-y-2 block"><span className="text-sm font-bold text-text-primary">{label}</span>{children}{hint && <span className="block text-xs text-text-secondary leading-relaxed">{hint}</span>}</label>; }
 function isHexColor(value: string) { return /^#[0-9a-fA-F]{6}$/.test(value); }
 function safeHex(value: string) { return isHexColor(value) ? value : '#F58220'; }
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) { return <Field label={label}><div className="flex items-center gap-3 border border-border-strong rounded-xl p-2 bg-bg-surface-1 max-w-full overflow-hidden"><input aria-label={label} type="color" value={safeHex(value)} onChange={event => onChange(event.target.value)} className="h-9 w-11 shrink-0 rounded-lg border-none bg-transparent cursor-pointer" /><input value={value.toUpperCase()} maxLength={7} onChange={event => onChange(event.target.value.startsWith('#') ? event.target.value : `#${event.target.value}`)} onBlur={() => { if (!isHexColor(value)) onChange('#F58220'); }} className="flex-1 min-w-0 text-sm font-mono text-text-primary focus:outline-none" /></div></Field>; }
-function SegmentedControl({ value, options, onChange }: { value: string; options: Array<{ value: string; label: string }>; onChange: (value: string) => void }) { return <div className="flex flex-wrap rounded-xl bg-warm-sand/50 p-1 gap-1 max-w-full">{options.map(option => <button key={option.value} onClick={() => onChange(option.value)} className={`flex-1 min-w-[72px] rounded-lg px-2.5 py-2 text-[11px] font-bold transition-all ${value === option.value ? 'bg-bg-surface-1 text-orange-400 shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>{option.label}</button>)}</div>; }
-function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) { return <button onClick={() => onChange(!checked)} className="w-full flex items-center justify-between gap-3 text-left"><span className="text-xs font-bold text-text-primary">{label}</span><span className={`relative h-6 w-11 rounded-full transition-all shrink-0 ${checked ? 'bg-orange-500' : 'bg-warm-sand/70'}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-bg-surface-1 shadow transition-all ${checked ? 'left-6' : 'left-1'}`} /></span></button>; }
-function OptionCard({ icon: Icon, title, description, children }: { icon: AnyIcon; title: string; description: string; children: ReactNode }) { return <div className="rounded-2xl border border-border-soft p-4 bg-warm-sand/50/40 space-y-4"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-bg-surface-1 text-orange-400 border border-border-soft"><Icon size={17} /></div><div><p className="font-bold text-sm text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-1">{description}</p></div></div>{children}</div>; }
-function AdvancedToggle({ icon: Icon, title, description, checked, onChange }: { icon: AnyIcon; title: string; description: string; checked: boolean; onChange: (value: boolean) => void }) { return <div className={`rounded-2xl border p-4 transition-all ${checked ? 'border-solar-orange/30 bg-orange-500/5' : 'border-border-soft bg-bg-surface-1'}`}><div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><div className={`p-2 rounded-xl ${checked ? 'bg-orange-500 text-white' : 'bg-warm-sand/50 text-text-secondary'}`}><Icon size={17} /></div><div><p className="font-bold text-sm text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-1">{description}</p></div></div><div className="w-12"><Toggle checked={checked} label="" onChange={onChange} /></div></div></div>; }
-function AppearancePreview({ settings, completion }: { settings: AppearanceSettings; completion: number }) { const radius = settings.corners === 'sharp' ? '10px' : settings.corners === 'rounded' ? '28px' : '18px'; const cardPadding = settings.density === 'compact' ? '12px' : settings.density === 'spacious' ? '22px' : '16px'; const previewCardClass = settings.cardStyle === 'glass' ? 'bg-bg-surface-1/65 backdrop-blur shadow-sm' : settings.cardStyle === 'flat' ? 'bg-bg-surface-1 border border-border-soft' : 'bg-bg-surface-1 shadow-sm'; return <Card className="p-5 bg-bg-surface-1"><div className="flex items-center justify-between mb-4"><div><h4 className="text-sm font-black text-text-primary">Prévia visual</h4><p className="text-xs text-text-secondary">Como a equipe perceberá o CRM.</p></div><Badge variant="success">{completion}% pronto</Badge></div><div className="rounded-[24px] border border-border-soft p-3 shadow-inner" style={{ background: settings.backgroundColor }}><div className="grid grid-cols-[70px_1fr] gap-3 min-h-[300px]"><div className="rounded-[18px] p-3 text-white flex flex-col gap-2" style={{ background: settings.graphiteColor }}><div className="h-8 w-8 rounded-xl bg-bg-surface-1/15" />{['Dash', 'Leads', 'Funil', 'Config'].map((item, index) => <div key={item} className={`h-8 rounded-xl ${index === 3 ? 'bg-bg-surface-1/20' : 'bg-bg-surface-1/8'} flex items-center justify-center text-[9px] font-bold`}>{settings.navigation === 'icons' ? item.slice(0, 1) : item}</div>)}</div><div className="space-y-3"><div className="flex items-center justify-between rounded-2xl bg-bg-surface-1/80 p-3"><div><p className="text-[10px] font-bold text-text-secondary uppercase tracking-wide">{settings.companyName}</p><p className="text-sm font-black" style={{ color: settings.graphiteColor }}>Configurações</p></div><div className="h-9 w-9 rounded-full" style={{ background: settings.primaryColor }} /></div><div className="grid grid-cols-2 gap-2">{['Leads', 'Propostas'].map((item, index) => <div key={item} className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><p className="text-[10px] font-bold text-text-secondary">{item}</p><p className="text-xl font-black" style={{ color: index === 0 ? settings.primaryColor : settings.secondaryColor }}>{index === 0 ? '148' : '32'}</p></div>)}</div><div className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><div className="flex items-center justify-between mb-3"><p className="text-xs font-black" style={{ color: settings.graphiteColor }}>Funil visual</p>{settings.fontScale !== 'normal' && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white mr-1" style={{ background: settings.primaryColor }}>{settings.fontScale === 'extra' ? 'TEXTO+' : 'TEXTO'}</span>}{settings.executiveMode && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white" style={{ background: settings.secondaryColor }}>EXEC</span>}</div><div className="space-y-2">{[78, 54, 28].map((width, index) => <div key={width} className="h-3 rounded-full bg-warm-sand/50 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${width}%`, background: index === 2 && settings.highlightOverdue ? settings.primaryColor : settings.secondaryColor }} /></div>)}</div></div>{settings.showHints && <div className="rounded-2xl border border-dashed bg-bg-surface-1/70 p-3" style={{ borderColor: settings.primaryColor }}><p className="text-[10px] font-bold" style={{ color: settings.primaryColor }}>Dica ativa</p><p className="text-[10px] text-text-secondary">Use filtros salvos para acompanhar campanhas críticas.</p></div>}</div></div></div></Card>; }
-function Insight({ label, text }: { label: string; text: string }) { return <div className="flex gap-3 rounded-xl bg-warm-sand/50 p-3"><span className="min-w-20 text-[10px] font-black text-orange-400 uppercase tracking-wide">{label}</span><span className="leading-relaxed">{text}</span></div>; }
+function SegmentedControl({ value, options, onChange }: { value: string; options: Array<{ value: string; label: string }>; onChange: (value: string) => void }) { return <div className="flex flex-wrap rounded-xl bg-bg-surface-2/50 p-1 gap-1 max-w-full">{options.map(option => <button key={option.value} onClick={() => onChange(option.value)} className={`flex-1 min-w-[72px] rounded-lg px-2.5 py-2 text-[11px] font-bold transition-all ${value === option.value ? 'bg-bg-surface-1 text-orange-400 shadow-sm' : 'text-text-secondary hover:text-text-primary'}`}>{option.label}</button>)}</div>; }
+function Toggle({ checked, label, onChange }: { checked: boolean; label: string; onChange: (value: boolean) => void }) { return <button onClick={() => onChange(!checked)} className="w-full flex items-center justify-between gap-3 text-left"><span className="text-xs font-bold text-text-primary">{label}</span><span className={`relative h-6 w-11 rounded-full transition-all shrink-0 ${checked ? 'bg-orange-500' : 'bg-bg-surface-2/70'}`}><span className={`absolute top-1 h-4 w-4 rounded-full bg-bg-surface-1 shadow transition-all ${checked ? 'left-6' : 'left-1'}`} /></span></button>; }
+function OptionCard({ icon: Icon, title, description, children }: { icon: AnyIcon; title: string; description: string; children: ReactNode }) { return <div className="rounded-2xl border border-border-soft p-4 bg-bg-surface-2/50/40 space-y-4"><div className="flex items-start gap-3"><div className="p-2 rounded-xl bg-bg-surface-1 text-orange-400 border border-border-soft"><Icon size={17} /></div><div><p className="font-bold text-sm text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-1">{description}</p></div></div>{children}</div>; }
+function AdvancedToggle({ icon: Icon, title, description, checked, onChange }: { icon: AnyIcon; title: string; description: string; checked: boolean; onChange: (value: boolean) => void }) { return <div className={`rounded-2xl border p-4 transition-all ${checked ? 'border-orange-500/30 bg-orange-500/5' : 'border-border-soft bg-bg-surface-1'}`}><div className="flex items-start justify-between gap-4"><div className="flex items-start gap-3"><div className={`p-2 rounded-xl ${checked ? 'bg-orange-500 text-white' : 'bg-bg-surface-2/50 text-text-secondary'}`}><Icon size={17} /></div><div><p className="font-bold text-sm text-text-primary">{title}</p><p className="text-xs text-text-secondary leading-relaxed mt-1">{description}</p></div></div><div className="w-12"><Toggle checked={checked} label="" onChange={onChange} /></div></div></div>; }
+function AppearancePreview({ settings, completion }: { settings: AppearanceSettings; completion: number }) { const radius = settings.corners === 'sharp' ? '10px' : settings.corners === 'rounded' ? '28px' : '18px'; const cardPadding = settings.density === 'compact' ? '12px' : settings.density === 'spacious' ? '22px' : '16px'; const previewCardClass = settings.cardStyle === 'glass' ? 'bg-bg-surface-1/65 backdrop-blur shadow-sm' : settings.cardStyle === 'flat' ? 'bg-bg-surface-1 border border-border-soft' : 'bg-bg-surface-1 shadow-sm'; return <Card className="p-5 bg-bg-surface-1"><div className="flex items-center justify-between mb-4"><div><h4 className="text-sm font-black text-text-primary">Prévia visual</h4><p className="text-xs text-text-secondary">Como a equipe perceberá o CRM.</p></div><Badge variant="success">{completion}% pronto</Badge></div><div className="rounded-[24px] border border-border-soft p-3 shadow-inner" style={{ background: settings.backgroundColor }}><div className="grid grid-cols-[70px_1fr] gap-3 min-h-[300px]"><div className="rounded-[18px] p-3 text-white flex flex-col gap-2" style={{ background: settings.graphiteColor }}><div className="h-8 w-8 rounded-xl bg-bg-surface-1/15" />{['Dash', 'Leads', 'Funil', 'Config'].map((item, index) => <div key={item} className={`h-8 rounded-xl ${index === 3 ? 'bg-bg-surface-1/20' : 'bg-bg-surface-1/8'} flex items-center justify-center text-[9px] font-bold`}>{settings.navigation === 'icons' ? item.slice(0, 1) : item}</div>)}</div><div className="space-y-3"><div className="flex items-center justify-between rounded-2xl bg-bg-surface-1/80 p-3"><div><p className="text-[10px] font-bold text-text-secondary uppercase tracking-wide">{settings.companyName}</p><p className="text-sm font-black" style={{ color: settings.graphiteColor }}>Configurações</p></div><div className="h-9 w-9 rounded-full" style={{ background: settings.primaryColor }} /></div><div className="grid grid-cols-2 gap-2">{['Leads', 'Propostas'].map((item, index) => <div key={item} className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><p className="text-[10px] font-bold text-text-secondary">{item}</p><p className="text-xl font-black" style={{ color: index === 0 ? settings.primaryColor : settings.secondaryColor }}>{index === 0 ? '148' : '32'}</p></div>)}</div><div className={previewCardClass} style={{ borderRadius: radius, padding: cardPadding }}><div className="flex items-center justify-between mb-3"><p className="text-xs font-black" style={{ color: settings.graphiteColor }}>Funil visual</p>{settings.fontScale !== 'normal' && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white mr-1" style={{ background: settings.primaryColor }}>{settings.fontScale === 'extra' ? 'TEXTO+' : 'TEXTO'}</span>}{settings.executiveMode && <span className="text-[9px] font-black px-2 py-1 rounded-full text-white" style={{ background: settings.secondaryColor }}>EXEC</span>}</div><div className="space-y-2">{[78, 54, 28].map((width, index) => <div key={width} className="h-3 rounded-full bg-bg-surface-2/50 overflow-hidden"><div className="h-full rounded-full" style={{ width: `${width}%`, background: index === 2 && settings.highlightOverdue ? settings.primaryColor : settings.secondaryColor }} /></div>)}</div></div>{settings.showHints && <div className="rounded-2xl border border-dashed bg-bg-surface-1/70 p-3" style={{ borderColor: settings.primaryColor }}><p className="text-[10px] font-bold" style={{ color: settings.primaryColor }}>Dica ativa</p><p className="text-[10px] text-text-secondary">Use filtros salvos para acompanhar campanhas críticas.</p></div>}</div></div></div></Card>; }
+function Insight({ label, text }: { label: string; text: string }) { return <div className="flex gap-3 rounded-xl bg-bg-surface-2/50 p-3"><span className="min-w-20 text-[10px] font-black text-orange-400 uppercase tracking-wide">{label}</span><span className="leading-relaxed">{text}</span></div>; }
 
 
 
@@ -802,10 +802,10 @@ function PipelineSettings() {
   const stages: FunnelStageConfig[] = [
     { key: 'novo_lead', name: '1. Entrada do lead', promise: 'Cada contato novo entra rastreável e com origem clara.', owner: 'Marketing / SDR', sla: 'até 15 min', entry: 'Formulário, WhatsApp, indicação, campanha ou importação manual.', exit: 'Lead válido com canal, oferta e responsável definidos.', automation: 'lead.created → notifica SDR e pode iniciar cadência.', webhook: 'lead.created', nextAction: 'Conferir origem, telefone, campanha e criar primeira tarefa.', risk: 'Perder origem/campanha e tratar lead quente tarde demais.', tone: 'bg-orange-500' },
     { key: 'qualificacao', name: '2. Qualificação', promise: 'Separar oportunidade real de curiosidade antes de consumir time técnico.', owner: 'SDR', sla: 'até 2h úteis', entry: 'Lead novo com contato possível.', exit: 'Perfil, cidade, conta média/interesse e timing definidos.', automation: 'Sem follow-up em 12h → cria alerta/tarefa urgente.', webhook: 'lead.no_followup_12h / automation.run', nextAction: 'Validar necessidade, segmento e melhor rota: assinatura, instalação, bateria ou investimento.', risk: 'Avançar lead sem dados mínimos e inflar proposta perdida.', tone: 'bg-mint-500' },
-    { key: 'atendimento_iniciado', name: '3. Atendimento iniciado', promise: 'Primeiro contato consultivo, não só resposta rápida.', owner: 'SDR / Consultor', sla: 'mesmo dia', entry: 'Lead qualificado com responsável.', exit: 'Cliente respondeu e aceitou enviar dados/conta.', automation: 'Tarefa de retorno se não houver resposta.', webhook: 'lead.stage_changed', nextAction: 'Registrar resumo do atendimento e combinar envio da fatura.', risk: 'Conversas fora do CRM sem histórico.', tone: 'bg-graphite' },
+    { key: 'atendimento_iniciado', name: '3. Atendimento iniciado', promise: 'Primeiro contato consultivo, não só resposta rápida.', owner: 'SDR / Consultor', sla: 'mesmo dia', entry: 'Lead qualificado com responsável.', exit: 'Cliente respondeu e aceitou enviar dados/conta.', automation: 'Tarefa de retorno se não houver resposta.', webhook: 'lead.stage_changed', nextAction: 'Registrar resumo do atendimento e combinar envio da fatura.', risk: 'Conversas fora do CRM sem histórico.', tone: 'bg-bg-surface-2' },
     { key: 'conta_recebida', name: '4. Conta recebida', promise: 'Transformar fatura em diagnóstico comercial mensurável.', owner: 'Consultor / Pré-vendas', sla: 'até 24h', entry: 'Fatura, consumo ou dados mínimos recebidos.', exit: 'Consumo, concessionária, impostos e potencial calculados.', automation: 'Checklist de análise e lembrete se a conta ficar parada.', webhook: 'lead.stage_changed', nextAction: 'Conferir concessionária/tarifa e preparar diagnóstico.', risk: 'Erro de cálculo ou falta de validação técnica.', tone: 'bg-orange-500' },
     { key: 'diagnostico', name: '5. Diagnóstico técnico', promise: 'Escolher a solução certa antes de apresentar preço.', owner: 'Técnico / Consultor', sla: '24–48h', entry: 'Conta validada e dados suficientes.', exit: 'Oferta recomendada, economia estimada e objeções previstas.', automation: 'Gera tarefa de proposta quando diagnóstico é concluído.', webhook: 'lead.stage_changed / automation.run', nextAction: 'Definir oferta principal e alternativa caso a primeira não encaixe.', risk: 'Propor produto errado para o perfil do cliente.', tone: 'bg-mint-500' },
-    { key: 'proposta_enviada', name: '6. Proposta enviada', promise: 'Proposta com follow-up controlado até decisão.', owner: 'Consultor Comercial', sla: 'follow-up em 48h', entry: 'Diagnóstico aprovado e proposta enviada.', exit: 'Aceite, negociação, perda ou pausa com motivo.', automation: 'proposal.open_48h → tarefa de follow-up e sugestão de mensagem.', webhook: 'proposal.open_48h / automation.run', nextAction: 'Agendar retorno, tratar objeções e registrar status da proposta.', risk: 'Proposta morrer sem retorno ou sem motivo de perda.', tone: 'bg-graphite' },
+    { key: 'proposta_enviada', name: '6. Proposta enviada', promise: 'Proposta com follow-up controlado até decisão.', owner: 'Consultor Comercial', sla: 'follow-up em 48h', entry: 'Diagnóstico aprovado e proposta enviada.', exit: 'Aceite, negociação, perda ou pausa com motivo.', automation: 'proposal.open_48h → tarefa de follow-up e sugestão de mensagem.', webhook: 'proposal.open_48h / automation.run', nextAction: 'Agendar retorno, tratar objeções e registrar status da proposta.', risk: 'Proposta morrer sem retorno ou sem motivo de perda.', tone: 'bg-bg-surface-2' },
     { key: 'contrato_enervita', name: '7. Contrato Enervita', promise: 'Fechamento com documentação e passagem limpa para operação.', owner: 'Consultor / Administrativo', sla: 'até 24h após aceite', entry: 'Cliente aceitou proposta.', exit: 'Contrato, documentação e próximos passos confirmados.', automation: 'Checklist de contrato e aviso para implantação.', webhook: 'lead.stage_changed', nextAction: 'Conferir dados, contrato e orientar implantação.', risk: 'Venda fechada sem documentação completa.', tone: 'bg-mint-500' },
     { key: 'perdido', name: '8. Perdido / pausado', promise: 'Nada some: perda vira aprendizado ou nutrição futura.', owner: 'Gestor Comercial', sla: 'registrar na hora', entry: 'Cliente recusou, não respondeu ou pausou decisão.', exit: 'Motivo de perda e próxima janela de reabordagem registrados.', automation: 'Nutrição/reativação futura planejada.', webhook: 'lead.stage_changed', nextAction: 'Registrar motivo real e marcar recontato quando fizer sentido.', risk: 'Perder inteligência comercial para campanhas futuras.', tone: 'bg-red-500' },
   ];
@@ -847,7 +847,7 @@ function PipelineSettings() {
         <SectionTitle icon={Layers} title="Linha visual do funil" description="Clique em uma etapa para ver objetivo, entrada, saída, automações e riscos." />
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {stages.map((stage, index) => (
-            <button key={stage.key} onClick={() => setSelectedStage(stage.key)} className={`text-left rounded-3xl border p-4 transition-all ${selectedStage === stage.key ? 'border-solar-orange bg-orange-500/5 shadow-sm scale-[1.01]' : 'border-border-soft bg-bg-surface-1 hover:border-solar-orange/30'}`}>
+            <button key={stage.key} onClick={() => setSelectedStage(stage.key)} className={`text-left rounded-3xl border p-4 transition-all ${selectedStage === stage.key ? 'border-orange-500 bg-orange-500/5 shadow-sm scale-[1.01]' : 'border-border-soft bg-bg-surface-1 hover:border-orange-500/30'}`}>
               <div className="flex items-center justify-between gap-3">
                 <span className={`h-9 w-9 rounded-2xl ${stage.tone} text-white flex items-center justify-center text-xs font-black`}>{index + 1}</span>
                 <Badge variant={leadCountByStage[stage.key] > 0 ? 'success' : 'default'}>{leadCountByStage[stage.key] ?? 0} lead(s)</Badge>
@@ -872,7 +872,7 @@ function PipelineSettings() {
             <FunnelInfoCard label="Próxima ação da equipe" text={selected.nextAction} />
             <FunnelInfoCard label="Risco se não controlar" text={selected.risk} danger />
           </div>
-          <div className="mt-6 rounded-3xl bg-warm-sand/50 p-5">
+          <div className="mt-6 rounded-3xl bg-bg-surface-2/50 p-5">
             <p className="text-xs uppercase tracking-wide font-black text-text-secondary mb-3">Como a automação entra nesta etapa</p>
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 items-stretch">
               <div className="rounded-2xl bg-bg-surface-1 border border-border-soft p-4"><p className="text-xs text-text-secondary font-bold mb-1">Evento / gatilho</p><p className="font-black text-text-primary">{selected.automation}</p></div>
@@ -885,10 +885,10 @@ function PipelineSettings() {
         <Card className="p-6">
           <SectionTitle icon={User} title="Dono e controle" description="Quem responde pela etapa e o que acompanhar." />
           <div className="mt-5 space-y-3">
-            <div className="rounded-2xl bg-warm-sand/50 p-4"><p className="text-xs text-text-secondary font-black uppercase">Responsável</p><p className="text-lg font-black text-text-primary mt-1">{selected.owner}</p></div>
-            <div className="rounded-2xl bg-warm-sand/50 p-4"><p className="text-xs text-text-secondary font-black uppercase">Leads nesta etapa</p><p className="text-lg font-black text-mint-400 mt-1">{leadCountByStage[selected.key] ?? 0}</p></div>
-            <div className="rounded-2xl bg-warm-sand/50 p-4"><p className="text-xs text-text-secondary font-black uppercase">Automações relacionadas</p><p className="text-sm font-bold text-text-primary mt-1">{matchingAutomations.length ? matchingAutomations.map(a => a.name).join(', ') : 'Sem regra ativa específica'}</p></div>
-            <div className="rounded-2xl bg-warm-sand/50 p-4"><p className="text-xs text-text-secondary font-black uppercase">Integrações relacionadas</p><p className="text-sm font-bold text-text-primary mt-1">{matchingWebhooks.length ? matchingWebhooks.map(w => w.name).join(', ') : 'Sem integração direta'}</p></div>
+            <div className="rounded-2xl bg-bg-surface-2/50 p-4"><p className="text-xs text-text-secondary font-black uppercase">Responsável</p><p className="text-lg font-black text-text-primary mt-1">{selected.owner}</p></div>
+            <div className="rounded-2xl bg-bg-surface-2/50 p-4"><p className="text-xs text-text-secondary font-black uppercase">Leads nesta etapa</p><p className="text-lg font-black text-mint-400 mt-1">{leadCountByStage[selected.key] ?? 0}</p></div>
+            <div className="rounded-2xl bg-bg-surface-2/50 p-4"><p className="text-xs text-text-secondary font-black uppercase">Automações relacionadas</p><p className="text-sm font-bold text-text-primary mt-1">{matchingAutomations.length ? matchingAutomations.map(a => a.name).join(', ') : 'Sem regra ativa específica'}</p></div>
+            <div className="rounded-2xl bg-bg-surface-2/50 p-4"><p className="text-xs text-text-secondary font-black uppercase">Integrações relacionadas</p><p className="text-sm font-bold text-text-primary mt-1">{matchingWebhooks.length ? matchingWebhooks.map(w => w.name).join(', ') : 'Sem integração direta'}</p></div>
           </div>
         </Card>
       </div>
@@ -900,7 +900,7 @@ function PipelineSettings() {
             {automationsLoading ? <p className="text-sm text-text-secondary">Carregando automações...</p> : automations.map(automation => (
               <div key={automation.id} className="rounded-2xl border border-border-soft p-4">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-3"><div><h4 className="font-black text-text-primary">{automation.name}</h4><code className="text-[10px] text-text-secondary">{automation.trigger}</code></div><Badge variant={(automation.active || automation.status === 'active') ? 'success' : 'info'}>{automation.active || automation.status === 'active' ? 'ativa' : 'planejada'}</Badge></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3"><div className="rounded-xl bg-warm-sand/50 p-3"><p className="text-[10px] uppercase font-black text-text-secondary">Condições</p><p className="text-xs text-text-primary mt-1">{automation.conditions.join(' • ')}</p></div><div className="rounded-xl bg-warm-sand/50 p-3"><p className="text-[10px] uppercase font-black text-text-secondary">Ações</p><p className="text-xs text-text-primary mt-1">{automation.actions.join(' • ')}</p></div></div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3"><div className="rounded-xl bg-bg-surface-2/50 p-3"><p className="text-[10px] uppercase font-black text-text-secondary">Condições</p><p className="text-xs text-text-primary mt-1">{automation.conditions.join(' • ')}</p></div><div className="rounded-xl bg-bg-surface-2/50 p-3"><p className="text-[10px] uppercase font-black text-text-secondary">Ações</p><p className="text-xs text-text-primary mt-1">{automation.actions.join(' • ')}</p></div></div>
               </div>
             ))}
           </div>
@@ -909,7 +909,7 @@ function PipelineSettings() {
           <SectionTitle icon={BellRing} title="Eventos e webhooks" description="Pontos onde o funil conversa com automações, fila e registros." />
           <div className="mt-5 space-y-3">
             {webhooksLoading ? <p className="text-sm text-text-secondary">Carregando webhooks...</p> : webhooks.map(webhook => (
-              <div key={webhook.id} className="rounded-2xl bg-warm-sand/50 p-4"><div className="flex items-start justify-between gap-2"><p className="font-black text-sm text-text-primary">{webhook.name}</p><Badge variant={webhook.status === 'active' ? 'success' : 'warning'}>{webhook.status === 'active' ? 'ativo' : webhook.status}</Badge></div><div className="flex flex-wrap gap-1 mt-3">{webhook.eventTypes.map(event => <span key={event} className="text-[9px] bg-bg-surface-1 border border-border-soft text-text-secondary px-1.5 py-0.5 rounded font-mono">{event}</span>)}</div><p className="text-xs text-text-secondary mt-3">Segredo: <b className={webhook.secretConfigured ? 'text-mint-400' : 'text-alert-red'}>{webhook.secretConfigured ? 'configurado' : 'pendente'}</b></p></div>
+              <div key={webhook.id} className="rounded-2xl bg-bg-surface-2/50 p-4"><div className="flex items-start justify-between gap-2"><p className="font-black text-sm text-text-primary">{webhook.name}</p><Badge variant={webhook.status === 'active' ? 'success' : 'warning'}>{webhook.status === 'active' ? 'ativo' : webhook.status}</Badge></div><div className="flex flex-wrap gap-1 mt-3">{webhook.eventTypes.map(event => <span key={event} className="text-[9px] bg-bg-surface-1 border border-border-soft text-text-secondary px-1.5 py-0.5 rounded font-mono">{event}</span>)}</div><p className="text-xs text-text-secondary mt-3">Segredo: <b className={webhook.secretConfigured ? 'text-mint-400' : 'text-alert-red'}>{webhook.secretConfigured ? 'configurado' : 'pendente'}</b></p></div>
             ))}
           </div>
         </Card>
@@ -1023,13 +1023,13 @@ function IntegrationsSettings() {
           <SectionTitle icon={Database} title="Arquitetura de webhooks" description="Separar entrada de dados, saída por eventos e acesso externo reduz risco operacional." />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
             {integrationLayers.map(([title, description]) => (
-              <div key={title} className="rounded-2xl border border-border-soft bg-warm-sand/50/50 p-4">
+              <div key={title} className="rounded-2xl border border-border-soft bg-bg-surface-2/50/50 p-4">
                 <p className="font-black text-sm text-text-primary">{title}</p>
                 <p className="text-xs text-text-primary leading-relaxed mt-2">{description}</p>
               </div>
             ))}
           </div>
-          <div className="mt-5 rounded-2xl bg-graphite text-mint-light p-5 crm-scroll-panel overflow-x-auto">
+          <div className="mt-5 rounded-2xl bg-bg-surface-2 text-mint-light p-5 crm-scroll-panel overflow-x-auto">
             <p className="text-xs text-white/50 mb-3">Fluxo recomendado para criação de lead externo</p>
             <pre className="text-xs whitespace-pre-wrap">{`POST /api/leads (autenticado)
 Authorization: Bearer <chave-gerada-para-a-integracao>
@@ -1044,7 +1044,7 @@ Content-Type: application/json
           </div>
         </Card>
 
-        <Card className="p-6 border-solar-orange/20 bg-orange-500/5">
+        <Card className="p-6 border-orange-500/20 bg-orange-500/5">
           <SectionTitle icon={ShieldCheck} title="Gerador de chaves de acesso" description="Próxima peça antes de liberar webhooks externas." />
           <div className="mt-5 space-y-3 text-sm">
             {keyGeneratorRequirements.map(item => <div key={item} className="flex gap-2 text-text-primary"><CheckCircle2 size={16} className="text-mint-400 shrink-0 mt-0.5" /> {item}</div>)}
@@ -1072,8 +1072,8 @@ Content-Type: application/json
                     <Badge variant={(automation.active || automation.status === 'active') ? 'success' : automation.status === 'paused' ? 'warning' : 'info'}>{automation.active || automation.status === 'active' ? 'ativa' : automation.status === 'paused' ? 'pausada' : 'planejada'}</Badge>
                   </div>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mt-4">
-                    <div className="rounded-xl bg-warm-sand/50 p-3"><p className="text-[10px] uppercase font-black text-text-secondary mb-2">Condições</p><ul className="space-y-1">{automation.conditions.map(item => <li key={item} className="text-xs text-text-primary">• {item}</li>)}</ul></div>
-                    <div className="rounded-xl bg-warm-sand/50 p-3"><p className="text-[10px] uppercase font-black text-text-secondary mb-2">Ações</p><ul className="space-y-1">{automation.actions.map(item => <li key={item} className="text-xs text-text-primary">• {item}</li>)}</ul></div>
+                    <div className="rounded-xl bg-bg-surface-2/50 p-3"><p className="text-[10px] uppercase font-black text-text-secondary mb-2">Condições</p><ul className="space-y-1">{automation.conditions.map(item => <li key={item} className="text-xs text-text-primary">• {item}</li>)}</ul></div>
+                    <div className="rounded-xl bg-bg-surface-2/50 p-3"><p className="text-[10px] uppercase font-black text-text-secondary mb-2">Ações</p><ul className="space-y-1">{automation.actions.map(item => <li key={item} className="text-xs text-text-primary">• {item}</li>)}</ul></div>
                   </div>
                   <div className="flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 border-t border-border-hair">
                     <div className="text-xs text-text-secondary">Última execução: <b className="text-text-primary">{automation.lastRunAt ? new Date(automation.lastRunAt).toLocaleString('pt-BR') : 'sem execução'}</b>{queuedFromLastRun !== null && <span> • {queuedFromLastRun} entrega(s) enfileirada(s)</span>}</div>
@@ -1088,7 +1088,7 @@ Content-Type: application/json
         <Card className="p-6">
           <SectionTitle icon={BellRing} title="Eventos monitorados" description="Vocabulário operacional que liga automações e webhooks." />
           <div className="mt-5 space-y-2">
-            {eventCatalog.map(([event, description]) => <div key={event} className="rounded-xl bg-warm-sand/50 p-3"><code className="text-xs font-bold text-text-primary">{event}</code><p className="text-xs text-text-secondary mt-1">{description}</p></div>)}
+            {eventCatalog.map(([event, description]) => <div key={event} className="rounded-xl bg-bg-surface-2/50 p-3"><code className="text-xs font-bold text-text-primary">{event}</code><p className="text-xs text-text-secondary mt-1">{description}</p></div>)}
           </div>
         </Card>
       </div>
@@ -1101,12 +1101,12 @@ Content-Type: application/json
           </div>
           <div className="space-y-4">
             {loading ? <div className="py-8 text-center text-text-secondary">Carregando webhooks...</div> : webhooks.map(webhook => (
-              <div key={webhook.id} className="p-4 rounded-2xl border border-border-soft hover:border-solar-orange/20 transition-all">
+              <div key={webhook.id} className="p-4 rounded-2xl border border-border-soft hover:border-orange-500/20 transition-all">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
                   <div className="min-w-0"><h4 className="font-bold text-sm text-text-primary">{webhook.name}</h4><span className="text-[10px] text-text-secondary">Destino seguro configurado</span></div>
                   <Badge variant={webhook.status === 'active' ? 'success' : webhook.status === 'failing' ? 'error' : 'default'}>{webhook.status === 'active' ? 'ativo' : webhook.status === 'failing' ? 'falhando' : webhook.status}</Badge>
                 </div>
-                <div className="flex flex-wrap gap-1 mt-3">{webhook.eventTypes.map(event => <span key={event} className="text-[9px] bg-warm-sand/50 text-text-secondary px-1.5 py-0.5 rounded font-mono">{event}</span>)}</div>
+                <div className="flex flex-wrap gap-1 mt-3">{webhook.eventTypes.map(event => <span key={event} className="text-[9px] bg-bg-surface-2/50 text-text-secondary px-1.5 py-0.5 rounded font-mono">{event}</span>)}</div>
                 <div className="mt-3 text-xs text-text-secondary">Segredo configurado: <b className={webhook.secretConfigured ? 'text-mint-400' : 'text-alert-red'}>{webhook.secretConfigured ? 'sim' : 'não'}</b> • Validação atual: registra a entrega na fila antes do envio externo.</div>
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-4 mt-4 border-t border-border-hair">
                   <div className="flex gap-5 text-xs"><span className="text-text-secondary">Sucesso: <b className="text-mint-400">{webhook.successRate}%</b></span><span className="text-text-secondary">Última entrega: <b className="text-text-primary">{webhook.lastDeliveryAt ? new Date(webhook.lastDeliveryAt).toLocaleString('pt-BR') : '-'}</b></span></div>
@@ -1121,7 +1121,7 @@ Content-Type: application/json
           <SectionTitle icon={BellRing} title="Registros recentes" description="Últimas entregas da fila de webhooks." />
           <div className="mt-5 space-y-3">
             {deliveries.length === 0 ? <p className="text-sm text-text-secondary py-6">Nenhuma entrega registrada ainda.</p> : deliveries.slice(0, 6).map(delivery => (
-              <div key={delivery.id} className="rounded-xl bg-warm-sand/50 p-3 text-xs text-text-primary">
+              <div key={delivery.id} className="rounded-xl bg-bg-surface-2/50 p-3 text-xs text-text-primary">
                 <div className="flex items-center justify-between gap-2"><span className="font-bold text-text-primary">{delivery.eventType}</span><Badge variant={delivery.status === 'sent' ? 'success' : delivery.status === 'failed' ? 'error' : 'warning'}>{delivery.status}</Badge></div>
                 <p className="mt-1 text-text-secondary">{delivery.webhookName ?? delivery.webhookId} • {delivery.attempts} tentativa(s)</p>
               </div>
@@ -1144,7 +1144,7 @@ Content-Type: application/json
         <SectionTitle icon={Sparkles} title="Conectores inteligentes / MCP" description="Futuro: agentes só entram depois de Chaves de acesso, escopos e auditoria funcionando." />
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-5">
           {connectorCards.map(card => (
-            <div key={card.title} className="rounded-2xl border border-border-soft p-5 bg-warm-sand/50/50">
+            <div key={card.title} className="rounded-2xl border border-border-soft p-5 bg-bg-surface-2/50/50">
               <div className="flex items-start justify-between gap-3"><h4 className="font-black text-text-primary">{card.title}</h4><Badge variant={card.status === 'Ativo' ? 'success' : card.status === 'Disponível' ? 'info' : 'warning'}>{card.status}</Badge></div>
               <p className="text-sm text-text-primary leading-relaxed mt-3">{card.text}</p>
               <p className="text-[10px] text-text-secondary mt-4 uppercase font-black">Escopos</p>
@@ -1152,7 +1152,7 @@ Content-Type: application/json
             </div>
           ))}
         </div>
-        <div className="mt-5 rounded-2xl bg-orange-500/5 border border-solar-orange/10 p-4 text-sm text-text-primary leading-relaxed">
+        <div className="mt-5 rounded-2xl bg-orange-500/5 border border-orange-500/10 p-4 text-sm text-text-primary leading-relaxed">
           Nesta etapa, MCP/agentes deve ficar como preparação arquitetural, não como promessa de recurso pronto. O caminho correto é liberar primeiro Chaves de acesso com escopos, depois criar tools específicas para leitura de leads, propostas, tarefas e registro de atividades.
         </div>
       </Card>

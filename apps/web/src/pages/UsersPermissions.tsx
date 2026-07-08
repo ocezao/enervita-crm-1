@@ -111,7 +111,7 @@ export default function UsersPermissions({ embedded = false }: UsersPermissionsP
       )}
 
       {embedded && (
-        <Card className="relative overflow-hidden border-solar-orange/10 bg-gradient-to-br from-white via-white to-solar-orange/5 p-6 md:p-8">
+        <Card className="relative overflow-hidden border-orange-500/10 bg-gradient-to-br from-white via-white to-solar-orange/5 p-6 md:p-8">
           <div className="absolute -right-16 -top-20 h-44 w-44 rounded-full bg-orange-500/10 blur-3xl" />
           <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="max-w-3xl">

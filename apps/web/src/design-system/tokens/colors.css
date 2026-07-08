@@ -1,0 +1,46 @@
+/* Helion Design System - Color Tokens */
+
+:root {
+  /* Backgrounds */
+  --helion-bg-void: #0A0D10;
+  --helion-bg-base: #0D1114;
+  --helion-bg-surface-1: #12171B;
+  --helion-bg-surface-2: #171D22;
+  --helion-bg-surface-3: #1D242A;
+  --helion-bg-overlay: rgba(10, 13, 16, 0.72);
+
+  /* Borders */
+  --helion-border-hair: rgba(255, 255, 255, 0.06);
+  --helion-border-soft: rgba(255, 255, 255, 0.09);
+  --helion-border-strong: rgba(255, 255, 255, 0.14);
+
+  /* Text */
+  --helion-text-primary: #EDEFF1;
+  --helion-text-secondary: #A3ACB3;
+  --helion-text-muted: #626B72;
+  --helion-text-disabled: #3D4449;
+
+  /* Orange - Primary Action / Energy */
+  --helion-orange-50: #FFF2E7;
+  --helion-orange-200: #FFC28A;
+  --helion-orange-400: #FF9640;
+  --helion-orange-500: #FF7A1A;
+  --helion-orange-600: #E8620A;
+  --helion-orange-700: #B84C08;
+  --helion-glow-orange: rgba(255, 122, 26, 0.35);
+  --helion-glow-orange-soft: rgba(255, 122, 26, 0.16);
+
+  /* Mint - Success / ROI */
+  --helion-mint-50: #E4FBF3;
+  --helion-mint-200: #86EFC9;
+  --helion-mint-400: #3FDDA3;
+  --helion-mint-500: #2ED9A3;
+  --helion-mint-600: #1FB584;
+  --helion-mint-700: #148A66;
+  --helion-glow-mint: rgba(46, 217, 163, 0.32);
+  --helion-glow-mint-soft: rgba(46, 217, 163, 0.14);
+
+  /* States */
+  --helion-red-500: #F1584E;
+  --helion-amber-500: #F0B429;
+}

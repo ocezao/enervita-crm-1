@@ -1,0 +1,25 @@
+/* Helion Design System - Grid Tokens */
+
+:root {
+  /* Breakpoints */
+  --helion-breakpoint-sm: 640px;
+  --helion-breakpoint-md: 768px;
+  --helion-breakpoint-lg: 1024px;
+  --helion-breakpoint-xl: 1280px;
+  --helion-breakpoint-2xl: 1536px;
+
+  /* Container Max Widths */
+  --helion-container-sm: 640px;
+  --helion-container-md: 768px;
+  --helion-container-lg: 1024px;
+  --helion-container-xl: 1280px;
+  --helion-container-2xl: 1536px;
+
+  /* Columns */
+  --helion-columns: 12;
+
+  /* Gaps */
+  --helion-gap-base: 1.5rem;
+  --helion-gap-sm: 1rem;
+  --helion-gap-lg: 2rem;
+}

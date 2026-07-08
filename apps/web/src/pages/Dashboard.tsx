@@ -129,12 +129,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-[2rem] bg-graphite p-8 text-white shadow-soft">
+      <div className="relative overflow-hidden rounded-[2rem] bg-bg-surface-2 p-8 text-white shadow-md">
         <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-orange-500/30 blur-3xl" />
         <div className="absolute bottom-0 left-20 h-24 w-24 rounded-full bg-solar-yellow/20 blur-2xl" />
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-8 items-center">
           <div>
-            <div className="flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-solar-yellow font-bold">
+            <div className="flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-warning-500 font-bold">
               <Sparkles size={16} /> Cockpit Enervita
             </div>
             <h1 className="mt-4 text-4xl font-black max-w-2xl">Operação comercial sob controle, do lead ao contrato ganho.</h1>
@@ -164,7 +164,7 @@ export default function Dashboard() {
                     <p className="text-sm font-semibold text-text-secondary">{label}</p>
                     <p className="mt-3 text-3xl font-black text-text-primary">{formatNumber(value)}</p>
                   </div>
-                  <div className="rounded-2xl bg-warm-sand/50 p-3 text-text-primary">
+                  <div className="rounded-2xl bg-bg-surface-2/50 p-3 text-text-primary">
                     <Icon size={22} />
                   </div>
                 </div>
@@ -206,7 +206,7 @@ export default function Dashboard() {
                 ) : (
                   <div className="space-y-3">
                     {commercial.attentionLeads.map((lead) => (
-                      <a key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between rounded-xl border border-border-soft bg-bg-surface-1 p-4 transition hover:border-solar-orange/40">
+                      <a key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between rounded-xl border border-border-soft bg-bg-surface-1 p-4 transition hover:border-orange-500/40">
                         <div>
                           <p className="font-bold text-text-primary">{lead.name}</p>
                           <p className="text-xs text-text-secondary">{stageLabel(lead.stage)} · {lead.reason}</p>
@@ -229,7 +229,7 @@ export default function Dashboard() {
                   <p className="text-sm text-text-secondary">Sem dados de funil.</p>
                 ) : (
                   commercial.stageBreakdown.map((stage) => (
-                    <div key={stage.stage} className="rounded-xl bg-warm-sand/50 p-3">
+                    <div key={stage.stage} className="rounded-xl bg-bg-surface-2/50 p-3">
                       <div className="flex items-center justify-between text-sm">
                         <span className="font-semibold text-text-primary">{stageLabel(stage.stage)}</span>
                         <span className="text-text-secondary">{formatNumber(stage.count)}</span>
@@ -252,7 +252,7 @@ export default function Dashboard() {
           <div className="p-6">
             <div className="space-y-4">
               {metrics.leadsByStage.map((stage) => (
-                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-warm-sand/50 px-4 py-3">
+                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-bg-surface-2/50 px-4 py-3">
                   <div>
                     <p className="font-semibold text-text-primary">{stageLabel(stage.stage)}</p>
                     <p className="text-xs text-text-secondary">Distribuição do pipeline</p>
