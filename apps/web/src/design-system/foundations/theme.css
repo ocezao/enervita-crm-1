@@ -1,22 +1,36 @@
 @theme {
-  /* Cores */
-  --color-brand: var(--helion-orange-500);
-  --color-success: var(--helion-mint-500);
-  --color-error: var(--helion-red-500);
-  --color-warning: var(--helion-amber-500);
-  
-  /* Superfícies */
-  --color-bg-void: var(--helion-bg-void);
-  --color-bg-surface-1: var(--helion-bg-surface-1);
-  --color-bg-surface-2: var(--helion-bg-surface-2);
-  
-  /* Bordas */
-  --color-border-hair: var(--helion-border-hair);
-  --color-border-soft: var(--helion-border-soft);
-  --color-border-strong: var(--helion-border-strong);
-  
-  /* Texto */
-  --color-text-primary: var(--helion-text-primary);
-  --color-text-secondary: var(--helion-text-secondary);
-  --color-text-muted: var(--helion-text-muted);
+  /* Brand */
+  --color-brand-500: #FF7A1A;
+  --color-brand-600: #E8620A;
+  --color-brand-400: #FF9640;
+
+  /* Status */
+  --color-success-500: #2ED9A3;
+  --color-error-500: #F1584E;
+  --color-warning-500: #F0B429;
+
+  /* Backgrounds & Surfaces */
+  --color-bg-base: #0D1114;
+  --color-bg-surface-1: #12171B;
+  --color-bg-surface-2: #171D22;
+  --color-bg-surface-3: #1D242A;
+
+  /* Borders */
+  --color-border-hair: rgba(255,255,255,0.06);
+  --color-border-soft: rgba(255,255,255,0.09);
+  --color-border-strong: rgba(255,255,255,0.14);
+
+  /* Text */
+  --color-text-primary: #EDEFF1;
+  --color-text-secondary: #A3ACB3;
+  --color-text-muted: #626B72;
+
+  /* Orange palette */
+  --color-orange-500: #FF7A1A;
+  --color-orange-400: #FF9640;
+  --color-orange-600: #E8620A;
+
+  /* Shadows & Glows */
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --glow-brand: rgba(255,122,26,0.35);
 }

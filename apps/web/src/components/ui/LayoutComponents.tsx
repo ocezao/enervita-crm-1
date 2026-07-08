@@ -6,7 +6,7 @@ export const SearchInput = ({ className, ...props }: React.InputHTMLAttributes<H
     <Search className="absolute left-3 text-text-secondary" size={18} />
     <input
       {...props}
-      className="w-full bg-bg-surface-1 border border-border-strong rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50 transition-all"
+      className="w-full bg-bg-surface-1 border border-border-strong rounded-xl py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-orange-500/50 transition-all"
     />
   </div>
 );

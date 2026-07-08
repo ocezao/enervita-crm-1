@@ -67,7 +67,7 @@ export default function Login() {
               required
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-xl border border-border-strong px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50"
+              className="w-full rounded-xl border border-border-strong px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-orange-500/50"
               placeholder="seuemail@enervita.com.br"
             />
           </div>
@@ -81,7 +81,7 @@ export default function Login() {
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-border-strong px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-solar-orange/50"
+              className="w-full rounded-xl border border-border-strong px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 focus:border-orange-500/50"
               placeholder="Digite sua senha"
             />
           </div>

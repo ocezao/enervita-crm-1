@@ -160,7 +160,7 @@ export function UserForm({ catalog, user, saving, onSubmit, onResetPassword, onD
         </div>
 
         {selectedProfile && (
-          <div className="rounded-xl border border-solar-orange/20 bg-orange-500/5 p-3">
+          <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-3">
             <p className="text-sm font-bold text-text-primary">{selectedProfile.label}</p>
             <p className="text-xs text-text-secondary mt-1">{selectedProfile.description}</p>
             <p className="text-xs text-orange-400 mt-2">{selectedProfile.defaultPermissions.length} permissões • {selectedProfile.defaultStages.length} etapas</p>

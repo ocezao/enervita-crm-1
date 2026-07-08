@@ -315,7 +315,7 @@ function renderProposalFilePreview(file: ProposalFileAttachment) {
   if (isTextualDocument(mimeType)) {
     const previewText = decodeBase64ToText(file.dataBase64 || '');
     return previewText
-      ? <pre className="max-h-64 overflow-auto rounded-xl border border-border-strong bg-warm-sand/50 p-3 text-xs whitespace-pre-wrap">{previewText}</pre>
+      ? <pre className="max-h-64 overflow-auto rounded-xl border border-border-strong bg-bg-surface-2/50 p-3 text-xs whitespace-pre-wrap">{previewText}</pre>
       : <p className="text-xs text-text-secondary">Previa textual indisponivel para este arquivo.</p>;
   }
 
@@ -340,7 +340,7 @@ function renderProposalFilePreview(file: ProposalFileAttachment) {
       <object
         data={dataUrl}
         type={mimeType}
-        className="h-64 w-full rounded-xl border border-border-strong bg-warm-sand/50"
+        className="h-64 w-full rounded-xl border border-border-strong bg-bg-surface-2/50"
         aria-label={`preview ${file.name}`}
       >
         <p className="p-3 text-xs text-text-secondary">Previa do documento indisponivel. Baixe para abrir.</p>
@@ -1323,17 +1323,17 @@ async function handleDeleteLead() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="flex items-start gap-3"><div className="p-2 bg-warm-sand/50 rounded-lg"><Phone size={16} className="text-text-secondary" /></div><div><p className="text-xs text-text-secondary">Telefone</p><p className="text-sm font-medium text-text-primary">{lead.contact?.phone || 'Não informado'}</p></div></div>
-                <div className="flex items-start gap-3"><div className="p-2 bg-warm-sand/50 rounded-lg"><Mail size={16} className="text-text-secondary" /></div><div><p className="text-xs text-text-secondary">E-mail</p><p className="text-sm font-medium text-text-primary">{lead.contact?.email || 'Não informado'}</p></div></div>
-                <div className="flex items-start gap-3"><div className="p-2 bg-warm-sand/50 rounded-lg"><MapPin size={16} className="text-text-secondary" /></div><div><p className="text-xs text-text-secondary">Empresa / Unidade</p><p className="text-sm font-medium text-text-primary">{lead.contact?.company || 'Não informado'}</p></div></div>
+                <div className="flex items-start gap-3"><div className="p-2 bg-bg-surface-2/50 rounded-lg"><Phone size={16} className="text-text-secondary" /></div><div><p className="text-xs text-text-secondary">Telefone</p><p className="text-sm font-medium text-text-primary">{lead.contact?.phone || 'Não informado'}</p></div></div>
+                <div className="flex items-start gap-3"><div className="p-2 bg-bg-surface-2/50 rounded-lg"><Mail size={16} className="text-text-secondary" /></div><div><p className="text-xs text-text-secondary">E-mail</p><p className="text-sm font-medium text-text-primary">{lead.contact?.email || 'Não informado'}</p></div></div>
+                <div className="flex items-start gap-3"><div className="p-2 bg-bg-surface-2/50 rounded-lg"><MapPin size={16} className="text-text-secondary" /></div><div><p className="text-xs text-text-secondary">Empresa / Unidade</p><p className="text-sm font-medium text-text-primary">{lead.contact?.company || 'Não informado'}</p></div></div>
               </div>
             )}
 
             <div className="mt-8 grid grid-cols-2 gap-2">
-              {phoneHref ? <a href={phoneHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-warm-sand/50 px-4 py-2 text-sm font-bold text-text-primary hover:bg-warm-sand/70"><Phone size={16} /> Ligar</a> : <Button variant="secondary" className="gap-2 w-full opacity-50" disabled><Phone size={16} /> Sem telefone</Button>}
-              {whatsappHref ? <button type="button" onClick={handleWhatsappClick} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm font-bold text-text-primary hover:bg-warm-sand/50"><MessageSquare size={16} /> WhatsApp</button> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
+              {phoneHref ? <a href={phoneHref} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-bg-surface-2/50 px-4 py-2 text-sm font-bold text-text-primary hover:bg-bg-surface-2/70"><Phone size={16} /> Ligar</a> : <Button variant="secondary" className="gap-2 w-full opacity-50" disabled><Phone size={16} /> Sem telefone</Button>}
+              {whatsappHref ? <button type="button" onClick={handleWhatsappClick} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border-strong px-4 py-2 text-sm font-bold text-text-primary hover:bg-bg-surface-2/50"><MessageSquare size={16} /> WhatsApp</button> : <Button variant="outline" className="gap-2 w-full opacity-50" disabled><MessageSquare size={16} /> Sem WhatsApp</Button>}
             </div>
-            <div className="mt-4 rounded-2xl border border-solar-orange/15 bg-orange-500/5 p-4">
+            <div className="mt-4 rounded-2xl border border-orange-500/15 bg-orange-500/5 p-4">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-orange-400">Próxima ação</p>
               {nextOpenTask ? (
                 <div className="mt-2 space-y-1">
@@ -1346,7 +1346,7 @@ async function handleDeleteLead() {
             </div>
           </Card>
 
-            <div className="rounded-2xl border border-solar-orange/20 bg-orange-500/5 p-4 mb-4">
+            <div className="rounded-2xl border border-orange-500/20 bg-orange-500/5 p-4 mb-4">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-400">Oportunidade</p>
               {lead.opportunity ? (
                 <div className="mt-2 space-y-1">
@@ -1374,7 +1374,7 @@ async function handleDeleteLead() {
               </p>
             )}
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-warm-sand/50 rounded-lg">
+              <div className="p-2 bg-bg-surface-2/50 rounded-lg">
                 <User size={16} className="text-text-secondary" />
               </div>
               <div className="flex-1 min-w-0">
@@ -1424,7 +1424,7 @@ async function handleDeleteLead() {
                         {/* Lista de usuarios */}
                         <div className="overflow-y-auto flex-1 p-1">
                           <button
-                            className="w-full text-left px-3 py-2 text-sm text-text-secondary hover:bg-warm-sand/50 rounded-lg transition-colors"
+                            className="w-full text-left px-3 py-2 text-sm text-text-secondary hover:bg-bg-surface-2/50 rounded-lg transition-colors"
                             onClick={() => setConfirmChange({ userId: null, userName: 'Sem responsavel' })}
                           >
                             Sem responsavel
@@ -1440,7 +1440,7 @@ async function handleDeleteLead() {
                                 className={`w-full text-left px-3 py-2 text-sm rounded-lg transition-colors ${
                                   lead.sdrOwnerId === u.id
                                     ? 'bg-orange-500/10 text-orange-400 font-semibold'
-                                    : 'text-text-primary hover:bg-warm-sand/50'
+                                    : 'text-text-primary hover:bg-bg-surface-2/50'
                                 }`}
                                 onClick={() => setConfirmChange({ userId: u.id, userName: u.name })}
                               >
@@ -1469,7 +1469,7 @@ async function handleDeleteLead() {
                                 {assigningOwner ? 'Salvando...' : 'Confirmar'}
                               </button>
                               <button
-                                className="px-3 py-1.5 text-xs font-bold text-text-secondary hover:bg-warm-sand/50 rounded-lg transition-colors"
+                                className="px-3 py-1.5 text-xs font-bold text-text-secondary hover:bg-bg-surface-2/50 rounded-lg transition-colors"
                                 onClick={() => setConfirmChange(null)}
                               >
                                 Cancelar
@@ -1502,7 +1502,7 @@ async function handleDeleteLead() {
             <h3 className="font-bold text-text-primary mb-4">Informações de cadastro</h3>
             <div className="space-y-3">
               {cadastro.map((item) => (
-                <div key={item.label} className="rounded-xl bg-warm-sand/50 p-3">
+                <div key={item.label} className="rounded-xl bg-bg-surface-2/50 p-3">
                   <p className="text-[10px] font-bold uppercase tracking-wide text-text-secondary">{item.label}</p>
                   <p className="mt-1 break-words text-sm font-semibold text-text-primary">{item.value}</p>
                 </div>
@@ -1549,7 +1549,7 @@ async function handleDeleteLead() {
 
         {/* Right Column: Activities/Timeline */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="flex gap-2 p-1 bg-warm-sand/50 rounded-xl w-fit">
+          <div className="flex gap-2 p-1 bg-bg-surface-2/50 rounded-xl w-fit">
             {[
               { id: 'timeline', label: 'Timeline', icon: Clock },
               { id: 'tasks', label: 'Tarefas', icon: CheckCircle2 },
@@ -1581,7 +1581,7 @@ async function handleDeleteLead() {
                       value={activityNote}
                       onChange={(event) => setActivityNote(event.target.value)}
                       disabled={!canCreateActivity}
-                      className="w-full bg-warm-sand/50 border border-border-strong rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 min-h-[100px] disabled:opacity-60"
+                      className="w-full bg-bg-surface-2/50 border border-border-strong rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-solar-orange/30 min-h-[100px] disabled:opacity-60"
                     />
                     <div className="flex justify-end mt-2">
                       {canCreateActivity && <Button variant="primary" size="sm" onClick={handleCreateActivity}>Registrar Atividade</Button>}
@@ -1595,7 +1595,7 @@ async function handleDeleteLead() {
                       <div className="absolute left-0 w-10 h-10 rounded-full bg-bg-surface-1 border-2 border-border-soft flex items-center justify-center text-text-secondary shadow-sm">
                         {activity.activityType === 'call' ? <Phone size={16} /> : <FileText size={16} />}
                       </div>
-                      <div className="flex-1 bg-warm-sand/50 rounded-2xl p-4 border border-border-soft">
+                      <div className="flex-1 bg-bg-surface-2/50 rounded-2xl p-4 border border-border-soft">
                         <div className="flex justify-between items-start mb-2">
                           <p className="text-sm font-bold text-text-primary">
                             {activity.activityType === 'call' ? 'Contato Telefônico' : 'Nota'}
@@ -1607,7 +1607,7 @@ async function handleDeleteLead() {
                     </div>
                   ))}
                   <div className="relative flex items-start gap-4 pl-12">
-                    <div className="absolute left-0 w-10 h-10 rounded-full bg-orange-500/10 border-2 border-solar-orange/20 flex items-center justify-center text-orange-400 shadow-sm">
+                    <div className="absolute left-0 w-10 h-10 rounded-full bg-orange-500/10 border-2 border-orange-500/20 flex items-center justify-center text-orange-400 shadow-sm">
                       <Plus size={16} />
                     </div>
                     <div className="flex-1 py-2">
@@ -1622,7 +1622,7 @@ async function handleDeleteLead() {
             {activeTab === 'tasks' && (
               <div className="p-6 space-y-6">
                 {canCreateTask && (
-                  <div className="rounded-2xl border border-border-soft bg-warm-sand/50 p-4 space-y-4">
+                  <div className="rounded-2xl border border-border-soft bg-bg-surface-2/50 p-4 space-y-4">
                     <h4 className="font-bold text-text-primary">Nova tarefa para este lead</h4>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <label className="text-xs font-bold text-text-secondary uppercase">Título da tarefa
@@ -1659,7 +1659,7 @@ async function handleDeleteLead() {
                     <h5 className="font-bold text-text-primary">Atribuição e origem</h5>
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                       {trackingDetails.map((item) => (
-                        <div key={item.label} className="rounded-xl bg-warm-sand/50 p-4">
+                        <div key={item.label} className="rounded-xl bg-bg-surface-2/50 p-4">
                           <span className="text-xs font-bold uppercase tracking-wide text-text-secondary">{item.label}</span>
                           <p className="mt-1 break-words font-semibold text-text-primary">{item.value}</p>
                         </div>
@@ -1667,7 +1667,7 @@ async function handleDeleteLead() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-border-strong bg-warm-sand/50 p-5 text-sm text-text-secondary">Este lead ainda não tem origem, campanha, conjunto, anúncio ou página registrados.</div>
+                  <div className="rounded-2xl border border-dashed border-border-strong bg-bg-surface-2/50 p-5 text-sm text-text-secondary">Este lead ainda não tem origem, campanha, conjunto, anúncio ou página registrados.</div>
                 )}
                 <div className="rounded-2xl border border-border-soft bg-bg-surface-1 p-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1675,11 +1675,11 @@ async function handleDeleteLead() {
                     <Badge variant="default">{trackingEvents.length} evento(s)</Badge>
                   </div>
                   {trackingEvents.length === 0 ? (
-                    <div className="mt-4 rounded-xl border border-dashed border-border-strong bg-warm-sand/50 p-4 text-sm text-text-secondary">Nenhum evento de tracking encontrado para este lead.</div>
+                    <div className="mt-4 rounded-xl border border-dashed border-border-strong bg-bg-surface-2/50 p-4 text-sm text-text-secondary">Nenhum evento de tracking encontrado para este lead.</div>
                   ) : (
                     <div className="mt-4 space-y-3">
                       {trackingEvents.map((event) => (
-                        <article key={event.id} className="rounded-xl border border-border-soft bg-warm-sand/50 p-4">
+                        <article key={event.id} className="rounded-xl border border-border-soft bg-bg-surface-2/50 p-4">
                           <div className="flex flex-wrap items-start justify-between gap-3">
                             <div>
                               <p className="text-sm font-bold text-text-primary">{event.eventName}</p>
@@ -1719,12 +1719,12 @@ async function handleDeleteLead() {
                             <h5 className="mt-1 font-bold text-text-primary">{entry.summary}</h5>
                             <p className="mt-1 text-xs text-text-secondary">{entry.actor.name} · {entry.actor.email}</p>
                           </div>
-                          <span className="rounded-full bg-warm-sand/50 px-3 py-1 text-xs font-semibold text-text-secondary">{formatDate(entry.occurredAt)}</span>
+                          <span className="rounded-full bg-bg-surface-2/50 px-3 py-1 text-xs font-semibold text-text-secondary">{formatDate(entry.occurredAt)}</span>
                         </div>
                         {entry.changes.length > 0 ? (
                           <div className="mt-4 space-y-2">
                             {entry.changes.map((change) => (
-                              <div key={`${entry.id}-${change.field}`} className="rounded-xl bg-warm-sand/50 p-3 text-sm">
+                              <div key={`${entry.id}-${change.field}`} className="rounded-xl bg-bg-surface-2/50 p-3 text-sm">
                                 <p className="text-xs font-bold uppercase tracking-wide text-text-secondary">{change.label}</p>
                                 <p className="mt-1 text-text-primary"><span className="font-semibold text-text-primary">{historyValue(change.before)}</span>{' '}{String.fromCharCode(8594)}{' '}<span className="font-semibold text-text-primary">{historyValue(change.after)}</span></p>
                               </div>
@@ -1751,7 +1751,7 @@ async function handleDeleteLead() {
                 {documentMessage && <div className="rounded-2xl border border-green-100 bg-green-50 p-3 text-sm font-semibold text-green-700">{documentMessage}</div>}
                 {documentError && <div className="rounded-2xl border border-red-100 bg-red-50 p-3 text-sm font-semibold text-red-700">{documentError}</div>}
 
-                <label className={`block rounded-2xl border border-dashed p-6 text-center transition ${canEditLead ? 'cursor-pointer border-solar-orange/40 bg-orange-500/5 hover:bg-orange-500/10' : 'border-border-strong bg-warm-sand/50 opacity-70'}`}>
+                <label className={`block rounded-2xl border border-dashed p-6 text-center transition ${canEditLead ? 'cursor-pointer border-orange-500/40 bg-orange-500/5 hover:bg-orange-500/10' : 'border-border-strong bg-bg-surface-2/50 opacity-70'}`}>
                   <Upload size={28} className="mx-auto mb-3 text-orange-400" />
                   <span className="block text-sm font-bold text-text-primary">{documentsUploading ? 'Enviando arquivos...' : 'Enviar documentos'}</span>
                   <span className="mt-1 block text-xs text-text-secondary">PDF, imagens, planilhas, textos, videos e arquivos ate 20 MB.</span>
@@ -1768,7 +1768,7 @@ async function handleDeleteLead() {
                 </label>
 
                 {documents.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-border-strong bg-warm-sand/50 p-10 text-center">
+                  <div className="rounded-2xl border border-dashed border-border-strong bg-bg-surface-2/50 p-10 text-center">
                     <FileText size={42} className="mx-auto mb-3 text-text-secondary" />
                     <h5 className="font-bold text-text-primary">Nenhum documento anexado</h5>
                     <p className="mt-1 text-sm text-text-secondary">Os arquivos enviados para este lead aparecem aqui.</p>
@@ -1778,7 +1778,7 @@ async function handleDeleteLead() {
                     {documents.map((document) => (
                       <article key={document.id} className="rounded-2xl border border-border-soft bg-bg-surface-1 p-4 shadow-sm">
                         <div className="flex items-start gap-3">
-                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-warm-sand/50 text-orange-400">
+                          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-bg-surface-2/50 text-orange-400">
                             <FileText size={20} />
                           </div>
                           <div className="min-w-0 flex-1">
@@ -1788,7 +1788,7 @@ async function handleDeleteLead() {
                         </div>
                         <div className="mt-4 flex flex-wrap gap-2">
                           <Button variant="outline" size="sm" className="gap-2" onClick={() => setPreviewDocument(document)}><Eye size={15} /> Preview</Button>
-                          <a href={document.downloadUrl || document.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-border-strong px-3 py-2 text-sm font-semibold text-text-primary hover:bg-warm-sand/50"><Download size={15} /> Baixar</a>
+                          <a href={document.downloadUrl || document.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-border-strong px-3 py-2 text-sm font-semibold text-text-primary hover:bg-bg-surface-2/50"><Download size={15} /> Baixar</a>
                           {canEditLead && <Button variant="ghost" size="sm" className="gap-2 text-red-600" onClick={() => void handleDeleteDocument(document)}><Trash2 size={15} /> Excluir</Button>}
                         </div>
                       </article>
@@ -1805,11 +1805,11 @@ async function handleDeleteLead() {
                           <p className="text-xs text-text-secondary">{previewDocument.mimeType || 'application/octet-stream'} | {fileSizeLabel(previewDocument.fileSize ?? 0)}</p>
                         </div>
                         <div className="flex shrink-0 gap-2">
-                          <a href={previewDocument.downloadUrl || previewDocument.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-xl border border-border-strong px-3 text-sm font-semibold text-text-primary hover:bg-warm-sand/50"><Download size={15} /> Baixar</a>
+                          <a href={previewDocument.downloadUrl || previewDocument.fileUrl || '#'} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-2 rounded-xl border border-border-strong px-3 text-sm font-semibold text-text-primary hover:bg-bg-surface-2/50"><Download size={15} /> Baixar</a>
                           <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setPreviewDocument(null)}><X size={16} /></Button>
                         </div>
                       </div>
-                      <div className="min-h-[360px] overflow-auto bg-warm-sand/50 p-4">
+                      <div className="min-h-[360px] overflow-auto bg-bg-surface-2/50 p-4">
                         {documentPreviewType(previewDocument) === 'image' && <img src={previewDocument.previewUrl || previewDocument.fileUrl || ''} alt={previewDocument.fileName} className="mx-auto max-h-[72vh] max-w-full rounded-xl bg-bg-surface-1 object-contain" />}
                         {documentPreviewType(previewDocument) === 'pdf' && <iframe src={previewDocument.previewUrl || previewDocument.fileUrl || ''} title={previewDocument.fileName} className="h-[72vh] w-full rounded-xl border border-border-strong bg-bg-surface-1" />}
                         {documentPreviewType(previewDocument) === 'video' && <video src={previewDocument.previewUrl || previewDocument.fileUrl || ''} controls className="mx-auto max-h-[72vh] max-w-full rounded-xl bg-black" />}
@@ -1839,10 +1839,10 @@ async function handleDeleteLead() {
                   <Badge variant="solar">{sortedProposals.length} proposta(s)</Badge>
                 </div>
 
-                {proposalMessage && <div className="rounded-2xl border border-solar-orange/20 bg-orange-500/5 p-3 text-sm font-semibold text-orange-400">{proposalMessage}</div>}
+                {proposalMessage && <div className="rounded-2xl border border-orange-500/20 bg-orange-500/5 p-3 text-sm font-semibold text-orange-400">{proposalMessage}</div>}
                 {solarMessage && <div className="rounded-2xl border border-energy-green/20 bg-mint-500/5 p-3 text-sm font-semibold text-mint-400">{solarMessage}</div>}
 
-                <div className="rounded-2xl border border-solar-orange/20 bg-bg-surface-1 p-5 shadow-sm">
+                <div className="rounded-2xl border border-orange-500/20 bg-bg-surface-1 p-5 shadow-sm">
                   <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                     <div>
                       <div className="flex items-center gap-2">
@@ -1855,16 +1855,16 @@ async function handleDeleteLead() {
                   </div>
 
                   <div className="mt-5 space-y-5">
-                    <section className="rounded-2xl border border-border-soft bg-warm-sand/50/70 p-4">
+                    <section className="rounded-2xl border border-border-soft bg-bg-surface-2/50/70 p-4">
                       <label className="block text-xs font-bold uppercase text-text-secondary">Cidade de irradiação</label>
                       <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_120px]">
-                        <input aria-label="Buscar cidade de irradiação" value={solarCidadeQuery} onChange={(event) => { setSolarCidadeQuery(event.target.value); setSolarCidade(null); }} className="h-11 min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: Franca/SP" />
+                        <input aria-label="Buscar cidade de irradiação" value={solarCidadeQuery} onChange={(event) => { setSolarCidadeQuery(event.target.value); setSolarCidade(null); }} className="h-11 min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: Franca/SP" />
                         <Button type="button" size="sm" variant="outline" className="h-11 justify-center" onClick={handleSearchSolarCity} disabled={solarLoadingRefs}>Buscar</Button>
                       </div>
                       {solarCities.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-2">
                           {solarCities.slice(0, 8).map((city) => (
-                            <button key={city.id} type="button" onClick={() => { setSolarCidade(city); setSolarCidadeQuery(`${city.cidade}/${city.uf}`); }} className={`max-w-full rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${solarCidade?.id === city.id ? 'border-solar-orange bg-orange-500/10 text-orange-400' : 'border-border-strong bg-bg-surface-1 text-text-primary hover:border-solar-orange/40'}`}>
+                            <button key={city.id} type="button" onClick={() => { setSolarCidade(city); setSolarCidadeQuery(`${city.cidade}/${city.uf}`); }} className={`max-w-full rounded-full border px-3 py-1.5 text-xs font-bold transition-colors ${solarCidade?.id === city.id ? 'border-orange-500 bg-orange-500/10 text-orange-400' : 'border-border-strong bg-bg-surface-1 text-text-primary hover:border-orange-500/40'}`}>
                               <span className="inline-block max-w-[260px] truncate align-bottom">{city.cidade}/{city.uf}</span> · {solarNumberText(city.irradiacao_kwh_m2_dia)}
                             </button>
                           ))}
@@ -1875,16 +1875,16 @@ async function handleDeleteLead() {
                     <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr]">
                       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <label className="block text-xs font-bold uppercase text-text-secondary">Consumo kWh/mês
-                          <input aria-label="Consumo médio mensal para dimensionamento" value={solarConsumo} onChange={(event) => setSolarConsumo(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: 1800" />
+                          <input aria-label="Consumo médio mensal para dimensionamento" value={solarConsumo} onChange={(event) => setSolarConsumo(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20" placeholder="Ex.: 1800" />
                         </label>
                         <label className="block text-xs font-bold uppercase text-text-secondary">Tipo de telhado
-                          <select aria-label="Tipo de telhado" value={solarTelhado} onChange={(event) => setSolarTelhado(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20">
+                          <select aria-label="Tipo de telhado" value={solarTelhado} onChange={(event) => setSolarTelhado(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20">
                             {solarTelhados.map((telhado) => <option key={telhado.id} value={telhado.nome}>{telhado.nome}</option>)}
                           </select>
                         </label>
                       </div>
                       <label className="block text-xs font-bold uppercase text-text-secondary">Placa padrão
-                        <select aria-label="Modelo de placa" value={solarPlacaId} onChange={(event) => setSolarPlacaId(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20">
+                        <select aria-label="Modelo de placa" value={solarPlacaId} onChange={(event) => setSolarPlacaId(event.target.value)} className="mt-1 h-11 w-full min-w-0 rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20">
                           {solarPlacas.map((placa) => <option key={placa.id} value={placa.id}>{placa.nome} · {placa.potencia_wp}Wp</option>)}
                         </select>
                       </label>
@@ -1892,13 +1892,13 @@ async function handleDeleteLead() {
 
                     <section className="grid grid-cols-1 gap-3 md:grid-cols-[repeat(3,minmax(0,1fr))_150px]">
                       <label className="block text-xs font-bold uppercase text-text-secondary">Perda %
-                        <input aria-label="Perda percentual do sistema" value={solarPerda} onChange={(event) => setSolarPerda(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
+                        <input aria-label="Perda percentual do sistema" value={solarPerda} onChange={(event) => setSolarPerda(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20" />
                       </label>
                       <label className="block text-xs font-bold uppercase text-text-secondary">Sobra %
-                        <input aria-label="Sobra percentual de energia" value={solarSobra} onChange={(event) => setSolarSobra(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
+                        <input aria-label="Sobra percentual de energia" value={solarSobra} onChange={(event) => setSolarSobra(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20" />
                       </label>
                       <label className="block text-xs font-bold uppercase text-text-secondary">Distância km
-                        <input aria-label="Distância em quilômetros" value={solarDistancia} onChange={(event) => setSolarDistancia(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-solar-orange/50 focus:ring-2 focus:ring-solar-orange/20" />
+                        <input aria-label="Distância em quilômetros" value={solarDistancia} onChange={(event) => setSolarDistancia(event.target.value)} className="mt-1 h-11 w-full rounded-xl border border-border-strong bg-bg-surface-1 px-3 text-sm normal-case outline-none focus:border-orange-500/50 focus:ring-2 focus:ring-solar-orange/20" />
                       </label>
                       <div className="flex items-end">
                         <Button type="button" size="sm" className="h-11 w-full justify-center gap-2" onClick={handleCalcularSolar} disabled={solarCalculating || solarLoadingRefs || solarPlacas.length === 0}>
@@ -1909,18 +1909,18 @@ async function handleDeleteLead() {
 
                     {solarDimensionamento && (
                       <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
-                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Módulos</p><p className="mt-1 text-lg font-black text-text-primary">{solarDimensionamento.quantidade_sugerida ?? '-'}</p></div>
-                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Potência</p><p className="mt-1 text-lg font-black text-text-primary">{solarNumberText(solarDimensionamento.potencia_total_sugerida_kwp)} kWp</p></div>
-                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Inversor</p><p className="mt-1 truncate text-sm font-black text-text-primary">{solarDimensionamento.modelo_inversor_nome ?? 'A validar'}</p></div>
-                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Irradiação</p><p className="mt-1 text-lg font-black text-text-primary">{solarNumberText(solarDimensionamento.irradiacao_kwh_m2_dia)}</p></div>
-                        <div className="min-h-20 rounded-xl bg-warm-sand/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Custo base</p><p className="mt-1 text-lg font-black text-energy-success">{formatCurrency(solarCustos?.total_geral ?? solarCustos?.total_final ?? 0)}</p></div>
+                        <div className="min-h-20 rounded-xl bg-bg-surface-2/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Módulos</p><p className="mt-1 text-lg font-black text-text-primary">{solarDimensionamento.quantidade_sugerida ?? '-'}</p></div>
+                        <div className="min-h-20 rounded-xl bg-bg-surface-2/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Potência</p><p className="mt-1 text-lg font-black text-text-primary">{solarNumberText(solarDimensionamento.potencia_total_sugerida_kwp)} kWp</p></div>
+                        <div className="min-h-20 rounded-xl bg-bg-surface-2/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Inversor</p><p className="mt-1 truncate text-sm font-black text-text-primary">{solarDimensionamento.modelo_inversor_nome ?? 'A validar'}</p></div>
+                        <div className="min-h-20 rounded-xl bg-bg-surface-2/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Irradiação</p><p className="mt-1 text-lg font-black text-text-primary">{solarNumberText(solarDimensionamento.irradiacao_kwh_m2_dia)}</p></div>
+                        <div className="min-h-20 rounded-xl bg-bg-surface-2/50 p-3"><p className="text-xs font-bold uppercase text-text-secondary">Custo base</p><p className="mt-1 text-lg font-black text-energy-success">{formatCurrency(solarCustos?.total_geral ?? solarCustos?.total_final ?? 0)}</p></div>
                       </section>
                     )}
                   </div>
                 </div>
 
                 {showTemplateSelector && (
-                  <div className="rounded-2xl border border-solar-orange/30 bg-bg-surface-1 p-4 space-y-3">
+                  <div className="rounded-2xl border border-orange-500/30 bg-bg-surface-1 p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <h5 className="font-bold text-text-primary">Selecionar Modelo</h5>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowTemplateSelector(false)}><X size={16} /></Button>
@@ -1930,7 +1930,7 @@ async function handleDeleteLead() {
                     ) : (
                       <div className="space-y-2 max-h-[300px] overflow-y-auto">
                         {templates.map((template) => (
-                          <button key={template.id} type="button" onClick={() => handleSelectTemplate(template)} className="w-full text-left rounded-xl border border-border-soft bg-warm-sand/50 p-3 hover:border-solar-orange/40 hover:bg-orange-500/5 transition-colors">
+                          <button key={template.id} type="button" onClick={() => handleSelectTemplate(template)} className="w-full text-left rounded-xl border border-border-soft bg-bg-surface-2/50 p-3 hover:border-orange-500/40 hover:bg-orange-500/5 transition-colors">
                             <div className="flex items-center justify-between">
                               <div>
                                 <p className="font-bold text-text-primary text-sm">{template.templateName || template.title}</p>
@@ -1946,7 +1946,7 @@ async function handleDeleteLead() {
                   </div>
                 )}
 
-                <div className="rounded-2xl border border-border-soft bg-warm-sand/50 p-4 space-y-4">
+                <div className="rounded-2xl border border-border-soft bg-bg-surface-2/50 p-4 space-y-4">
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant="outline" className="gap-2" onClick={handleLoadTemplates} disabled={loadingTemplates}>
                       <Copy size={14} /> {loadingTemplates ? 'Carregando...' : 'Carregar Modelo'}
@@ -1976,7 +1976,7 @@ async function handleDeleteLead() {
 
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" size="sm" variant={proposalDraft.sourceType === 'editor' ? 'primary' : 'outline'} onClick={() => setProposalDraft((current) => ({ ...current, sourceType: 'editor', importedFile: undefined, removeImportedFile: false }))}><Copy size={14} className="mr-2" /> Criar no editor</Button>
-                    <label className="inline-flex cursor-pointer items-center rounded-xl border border-border-strong bg-bg-surface-1 px-3 py-2 text-sm font-bold text-text-primary hover:border-solar-orange/40">
+                    <label className="inline-flex cursor-pointer items-center rounded-xl border border-border-strong bg-bg-surface-1 px-3 py-2 text-sm font-bold text-text-primary hover:border-orange-500/40">
                       <Upload size={14} className="mr-2 text-orange-400" /> Importar arquivo
                       <input type="file" className="hidden" onChange={(event) => void handleProposalFile(event.target.files?.[0])} disabled={isProposalBusy} />
                     </label>
@@ -2034,7 +2034,7 @@ async function handleDeleteLead() {
                             <div><span className="block font-bold uppercase text-text-secondary">Cidade</span>{proposal.solarSummary.cidade}/{proposal.solarSummary.uf}</div>
                           </div>
                         )}
-                        {proposal.contentText && <p className="mt-3 line-clamp-3 whitespace-pre-wrap rounded-xl bg-warm-sand/50 p-3 text-sm text-text-primary">{proposal.contentText}</p>}
+                        {proposal.contentText && <p className="mt-3 line-clamp-3 whitespace-pre-wrap rounded-xl bg-bg-surface-2/50 p-3 text-sm text-text-primary">{proposal.contentText}</p>}
                         {getProposalAttachment(proposal) && (
                           <div className="mt-3 space-y-2">
                             <p className="text-xs font-bold text-text-secondary">Arquivo: {proposal.importedFileName}</p>
@@ -2065,10 +2065,10 @@ async function handleDeleteLead() {
                 <h3 id="whatsapp-confirm-title" className="text-lg font-black text-text-primary">Confirmar abertura do WhatsApp</h3>
                 <p className="mt-1 text-sm text-text-secondary">Vou registrar esta ação na timeline do lead e abrir o WhatsApp em uma nova aba.</p>
               </div>
-              <button type="button" className="rounded-full p-1 text-text-secondary hover:bg-warm-sand/50 hover:text-text-primary" onClick={() => setWhatsappConfirmOpen(false)} aria-label="Fechar confirmação"><X size={18} /></button>
+              <button type="button" className="rounded-full p-1 text-text-secondary hover:bg-bg-surface-2/50 hover:text-text-primary" onClick={() => setWhatsappConfirmOpen(false)} aria-label="Fechar confirmação"><X size={18} /></button>
             </div>
             {whatsappStatus && <p className="mb-3 rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-700">{whatsappStatus}</p>}
-            <label className="mb-5 flex items-center gap-3 rounded-2xl bg-warm-sand/50 p-3 text-sm font-semibold text-text-primary">
+            <label className="mb-5 flex items-center gap-3 rounded-2xl bg-bg-surface-2/50 p-3 text-sm font-semibold text-text-primary">
               <input type="checkbox" checked={whatsappDoNotAskAgain} onChange={(event) => setWhatsappDoNotAskAgain(event.target.checked)} className="h-4 w-4 rounded border-border-strong text-orange-400 focus:ring-solar-orange" />
               Não mostrar novamente neste navegador
             </label>

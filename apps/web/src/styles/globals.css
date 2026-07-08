@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../design-system/foundations/theme.css";
 
 /* Helion Design System */
 @import "../design-system/foundations/base.css";
@@ -343,6 +344,7 @@ video {
 [data-crm-app-main] {
   min-width: 0;
   max-width: 100%;
+  background-color: #0a0d10;
 }
 
 [data-crm-app-main] > * {
