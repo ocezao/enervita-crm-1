@@ -1,35 +1,23 @@
-/**
- * ============================================================================
- * HELION DESIGN SYSTEM — TOKENS DE MOTION
- * ============================================================================
- * Estes tokens são consumidos pelos componentes (Fase 6: zero hardcode,
- * também vale para duration/easing, não só cor). A ESPECIFICAÇÃO DE
- * COMPORTAMENTO — o que anima, quando, e por quê — vive em
- * motion-principles.md, não aqui. Este arquivo só declara os NÚMEROS;
- * o .md declara as REGRAS que decidem qual número usar em qual situação.
- * ============================================================================
- */
+/* Helion Design System - Motion Tokens */
 
-@theme {
-  /* ============================================================
-     Duração — 3 velocidades, cada uma com propósito fixo
-     ============================================================ */
-  --duration-fast: 140ms;   /* micro-feedback: hover de ícone, toggle de check   */
-  --duration-base: 240ms;   /* transição padrão: cor, borda, sombra, transform   */
-  --duration-slow: 420ms;   /* entrada/saída de overlay, preenchimento de barra  */
+:root {
+  /* Duration */
+  --helion-duration-instant: 0ms;
+  --helion-duration-fast: 140ms;
+  --helion-duration-base: 240ms;
+  --helion-duration-slow: 420ms;
+  --helion-duration-slower: 600ms;
 
-  /* ============================================================
-     Easing — 2 curvas, cada uma com propósito fixo
-     ============================================================ */
+  /* Easing Functions */
+  --helion-ease-linear: linear;
+  --helion-ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --helion-ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --helion-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --helion-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --helion-ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-  /* ease-out-expo: usada em QUALQUER transição de estado (hover, foco,
-     mudança de cor/sombra/borda). Começa rápido, desacelera suave —
-     sensação de resposta imediata sem ser abrupta. */
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-
-  /* ease-spring: usada APENAS em elementos com massa percebida —
-     o knob de um switch, um card entrando na tela. Tem leve overshoot
-     (passa do ponto final e volta), o que lê como "objeto físico".
-     Nunca usar em cor/opacidade — overshoot de cor parece bug. */
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Transition Presets */
+  --helion-transition-fast: var(--helion-duration-fast) var(--helion-ease-out);
+  --helion-transition-base: var(--helion-duration-base) var(--helion-ease-out);
+  --helion-transition-slow: var(--helion-duration-slow) var(--helion-ease-out);
 }

@@ -1,34 +1,56 @@
-/**
- * ============================================================================
- * UTILITY — SCROLLBAR CUSTOMIZADA
- * ============================================================================
- * Scrollbar fina e discreta, coerente com a estética do sistema. Aplicada
- * globalmente via classe .scrollbar-helion (não em `*`, para permitir que
- * áreas específicas — ex: um iframe embutido — usem o scrollbar nativo).
- * ============================================================================
- */
+/* Helion Design System - Custom Scrollbar */
 
-@layer utilities {
-  .scrollbar-helion {
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-background-surface-4) transparent;
-  }
+.helion-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--helion-orange-500) var(--helion-bg-surface-2);
+}
 
-  .scrollbar-helion::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
+.helion-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
 
-  .scrollbar-helion::-webkit-scrollbar-track {
-    background: transparent;
-  }
+.helion-scrollbar::-webkit-scrollbar-track {
+  background: var(--helion-bg-surface-2);
+  border-radius: 999px;
+}
 
-  .scrollbar-helion::-webkit-scrollbar-thumb {
-    background: var(--color-background-surface-4);
-    border-radius: var(--radius-full);
-  }
+.helion-scrollbar::-webkit-scrollbar-thumb {
+  border: 2px solid var(--helion-bg-void);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--helion-orange-500), var(--helion-mint-500));
+}
 
-  .scrollbar-helion::-webkit-scrollbar-thumb:hover {
-    background: var(--color-border-strong);
-  }
+.helion-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--helion-orange-600), var(--helion-mint-400));
+}
+
+/* Thin variant */
+.helion-scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--helion-border-strong) transparent;
+}
+
+.helion-scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.helion-scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--helion-border-strong);
+  border-radius: 999px;
+}
+
+.helion-scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: var(--helion-orange-500);
+}
+
+/* Hidden scrollbar but still scrollable */
+.helion-scrollbar-hidden {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.helion-scrollbar-hidden::-webkit-scrollbar {
+  display: none;
 }

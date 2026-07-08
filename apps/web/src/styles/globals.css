@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* Helion Design System */
+@import "../design-system/foundations/base.css";
+@import "../design-system/foundations/theme.css";
+@import "../design-system/tokens/colors.css";
+@import "../design-system/tokens/typography.css";
+@import "../design-system/tokens/spacing.css";
+@import "../design-system/tokens/radius.css";
+@import "../design-system/tokens/shadows.css";
+@import "../design-system/tokens/motion.css";
+@import "../design-system/tokens/grid.css";
+@import "../design-system/utilities/glow-pulse.css";
+@import "../design-system/utilities/scrollbar.css";
+
 @font-face {
   font-family: 'Inter';
   font-style: normal;

@@ -1,1 +1,2 @@
-export { Funnel, type FunnelProps, type FunnelStage } from "./Funnel";
+export { Funnel } from './Funnel';
+export type { FunnelProps } from './Funnel';

@@ -1,19 +1,19 @@
-/**
- * ============================================================================
- * HELION DESIGN SYSTEM — TOKENS DE RADIUS
- * ============================================================================
- * O pedido original do produto foi "bordas arredondadas, design futurista".
- * Isso NÃO significa aplicar um valor único em tudo — a variação por
- * hierarquia (input mais reto, card mais suave, badge em pill) é o que
- * evita a sensação de "template genérico com border-radius:12px global".
- * ============================================================================
- */
+/* Helion Design System - Radius Tokens */
 
-@theme {
-  --radius-none: 0px;
-  --radius-sm: 0.5rem;    /*  8px — inputs, botões de ícone, chips pequenos */
-  --radius-md: 0.75rem;   /* 12px — botões, campos de formulário            */
-  --radius-lg: 1.125rem;  /* 18px — cards padrão                            */
-  --radius-xl: 1.5rem;    /* 24px — cards de destaque, modais, hero blocks  */
-  --radius-full: 9999px;  /* pill — badges, botões pill, avatares           */
+:root {
+  /* Border Radius Scale */
+  --helion-radius-none: 0;
+  --helion-radius-sm: 8px;
+  --helion-radius-md: 12px;
+  --helion-radius-lg: 18px;
+  --helion-radius-xl: 24px;
+  --helion-radius-2xl: 32px;
+  --helion-radius-full: 9999px;
+
+  /* Component Radius */
+  --helion-radius-button: var(--helion-radius-md);
+  --helion-radius-input: var(--helion-radius-md);
+  --helion-radius-card: var(--helion-radius-lg);
+  --helion-radius-modal: var(--helion-radius-xl);
+  --helion-radius-badge: var(--helion-radius-full);
 }

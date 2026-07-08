@@ -1,63 +1,52 @@
-/**
- * ============================================================================
- * UTILITY — GLOW PULSE
- * ============================================================================
- * A animação de "pulso de energia percorrendo uma linha" usada no elemento
- * de assinatura do produto (ver components/Funnel/ConversionNode). Extraída
- * para utilitário porque é reutilizável em qualquer contexto que precise
- * comunicar "dado fluindo em tempo real" — não é exclusiva de um componente.
- *
- * Regra de uso (ver motion-principles.md): esta é uma das ÚNICAS animações
- * do sistema que roda em loop contínuo sem gatilho de interação. Reservada
- * para comunicar processo ativo (dado sincronizando, energia fluindo).
- * Nunca usar como decoração ambiente genérica.
- * ============================================================================
- */
+/* Helion Design System - Glow and Pulse Effects */
 
-@theme {
-  --animate-glow-pulse: glow-pulse 2.8s ease-in-out infinite;
-  --animate-ring-pulse: ring-pulse 2.8s ease-in-out infinite;
-  --animate-skeleton-pulse: skeleton-pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes glow-pulse {
-  0% {
-    stroke-dashoffset: 240;
-    opacity: 0;
-  }
-  8% {
-    opacity: 1;
-  }
-  45% {
-    opacity: 1;
-  }
-  55% {
-    opacity: 0;
-  }
-  100% {
-    stroke-dashoffset: 0;
-    opacity: 0;
-  }
-}
-
-@keyframes ring-pulse {
-  0%,
-  100% {
-    r: 16;
-    opacity: 0.4;
+@keyframes helion-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px var(--helion-glow-orange-soft);
   }
   50% {
-    r: 20;
-    opacity: 0.15;
+    box-shadow: 0 0 30px var(--helion-glow-orange), 0 0 60px var(--helion-glow-orange-soft);
   }
 }
 
-@keyframes skeleton-pulse {
-  0%,
-  100% {
+@keyframes helion-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
     opacity: 0.5;
   }
-  50% {
-    opacity: 1;
+}
+
+@keyframes helion-pulse-mint {
+  0%, 100% {
+    box-shadow: 0 0 20px var(--helion-glow-mint-soft);
   }
+  50% {
+    box-shadow: 0 0 30px var(--helion-glow-mint), 0 0 60px var(--helion-glow-mint-soft);
+  }
+}
+
+.helion-glow-orange {
+  animation: helion-glow 2s ease-in-out infinite;
+}
+
+.helion-pulse {
+  animation: helion-pulse 2s ease-in-out infinite;
+}
+
+.helion-pulse-mint {
+  animation: helion-pulse-mint 2s ease-in-out infinite;
+}
+
+.helion-glow-sm {
+  box-shadow: 0 0 10px var(--helion-glow-orange-soft);
+}
+
+.helion-glow-md {
+  box-shadow: 0 0 20px var(--helion-glow-orange);
+}
+
+.helion-glow-lg {
+  box-shadow: 0 0 30px var(--helion-glow-orange), 0 0 60px var(--helion-glow-orange-soft);
 }

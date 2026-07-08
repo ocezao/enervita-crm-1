@@ -1,27 +1,22 @@
-/**
- * ============================================================================
- * HELION DESIGN SYSTEM — THEME (PONTO DE CONSOLIDAÇÃO)
- * ============================================================================
- * Fase 5 do Relatório de Arquitetura: "Migração para Tailwind CSS v4".
- *
- * Este é o ÚNICO arquivo que o Tailwind Engine precisa enxergar para gerar
- * as classes utilitárias (bg-background-surface-1, text-brand-primary,
- * rounded-lg, shadow-glow-primary, etc.). Ele não declara nenhum valor —
- * só importa, em ordem, os arquivos atômicos de tokens/.
- *
- * FLUXO DE DADOS (Fase 10, "Reconstrução do Fluxo"):
- *   tokens/*.css → foundations/theme.css → Tailwind Engine → utilitários
- *                                                            → components/*
- *
- * Regra: nenhum arquivo de components/ ou pages/ declara @theme. Tokens
- * só existem aqui e em tokens/. Fluxo é unidirecional — ver Fase 10.
- * ============================================================================
- */
-
-@import "../tokens/colors.css";
-@import "../tokens/typography.css";
-@import "../tokens/spacing.css";
-@import "../tokens/radius.css";
-@import "../tokens/shadows.css";
-@import "../tokens/motion.css";
-@import "../tokens/grid.css";
+@theme {
+  /* Cores */
+  --color-brand: var(--helion-orange-500);
+  --color-success: var(--helion-mint-500);
+  --color-error: var(--helion-red-500);
+  --color-warning: var(--helion-amber-500);
+  
+  /* Superfícies */
+  --color-bg-void: var(--helion-bg-void);
+  --color-bg-surface-1: var(--helion-bg-surface-1);
+  --color-bg-surface-2: var(--helion-bg-surface-2);
+  
+  /* Bordas */
+  --color-border-hair: var(--helion-border-hair);
+  --color-border-soft: var(--helion-border-soft);
+  --color-border-strong: var(--helion-border-strong);
+  
+  /* Texto */
+  --color-text-primary: var(--helion-text-primary);
+  --color-text-secondary: var(--helion-text-secondary);
+  --color-text-muted: var(--helion-text-muted);
+}

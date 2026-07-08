@@ -5,54 +5,32 @@ node_modules/
 # Build outputs
 dist/
 build/
-.next/
-out/
+target/
+
+# Cache directories
+.cache/
+.node_cache/
+.npm/
+.yarn/cache/
 
 # Environment variables
 .env
 .env.local
 .env.*
 
-# IDE files
+# IDE specific
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
 
 # Logs
 *.log
 
 # Temporary files
 *.tmp
-
-# Coverage
-coverage/
-htmlcov/
-.coverage
-
-# Python cache (if present in monorepo)
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
-
-# Compiled binary files
-*.exe
-*.dll
-*.so
-*.dylib
-
-# Compressed archives
-*.zip
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.7z
-*.rar
-
-# OS generated files
-.DS_Store
-Thumbs.db
 ```

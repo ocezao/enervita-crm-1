@@ -1,70 +1,40 @@
-/**
- * ============================================================================
- * COMPONENT — Badge
- * ============================================================================
- * Indicador de status compacto (ex: "Quente", "Fechado", "Em risco" no
- * pipeline de leads). Mapeamento direto para tokens/colors.css → status.*,
- * então adicionar um novo tom de status é uma mudança em UM lugar (o
- * token), não em cada componente que usa Badge.
- * ============================================================================
- */
+import React from 'react';
+import { cn } from '../../utilities/cn';
 
-import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "../../utilities/cn";
-
-const badgeVariants = cva(
-  "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-2xs font-semibold tracking-wide",
-  {
-    variants: {
-      tone: {
-        hot: "bg-[rgb(255_122_26_/_12%)] text-brand-primary-hover",
-        success: "bg-[rgb(46_217_163_/_12%)] text-brand-secondary-hover",
-        neutral: "bg-[rgb(163_172_179_/_10%)] text-text-secondary",
-        danger: "bg-[rgb(241_88_78_/_12%)] text-status-danger-subtle",
-        warning: "bg-[rgb(240_180_41_/_12%)] text-status-warning",
-        info: "bg-[rgb(91_158_232_/_12%)] text-status-info-subtle",
-      },
-    },
-    defaultVariants: {
-      tone: "neutral",
-    },
-  },
-);
-
-const dotToneMap: Record<
-  NonNullable<VariantProps<typeof badgeVariants>["tone"]>,
-  string
-> = {
-  hot: "bg-brand-primary shadow-glow-primary-sm",
-  success: "bg-brand-secondary shadow-glow-secondary-sm",
-  neutral: "bg-text-muted",
-  danger: "bg-status-danger",
-  warning: "bg-status-warning",
-  info: "bg-status-info",
-};
-
-export interface BadgeProps extends VariantProps<typeof badgeVariants> {
+export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+  variant?: 'default' | 'success' | 'error' | 'warning' | 'info';
+  size?: 'sm' | 'md' | 'lg';
   children: React.ReactNode;
-  className?: string;
-  /** Mostra o dot colorido antes do texto. Default true — a maior parte
-   *  do uso no produto (status de lead) usa o dot; desligue só para
-   *  contextos muito densos (ex: dentro de uma tabela já carregada). */
-  showDot?: boolean;
 }
 
 export function Badge({
-  tone = "neutral",
-  children,
+  variant = 'default',
+  size = 'md',
   className,
-  showDot = true,
+  children,
+  ...props
 }: BadgeProps) {
+  const baseStyles = 'inline-flex items-center font-medium rounded-full';
+  
+  const variants = {
+    default: 'bg-bg-surface-2 text-text-primary border border-border-soft',
+    success: 'bg-helion-mint-500/10 text-helion-mint-400 border border-helion-mint-500/20',
+    error: 'bg-helion-red-500/10 text-helion-red-500 border border-helion-red-500/20',
+    warning: 'bg-helion-amber-500/10 text-helion-amber-500 border border-helion-amber-500/20',
+    info: 'bg-helion-orange-500/10 text-helion-orange-400 border border-helion-orange-500/20',
+  };
+
+  const sizes = {
+    sm: 'px-2 py-0.5 text-xs',
+    md: 'px-3 py-1 text-sm',
+    lg: 'px-4 py-1.5 text-base',
+  };
+
   return (
-    <span className={cn(badgeVariants({ tone }), className)}>
-      {showDot && (
-        <span
-          className={cn("size-1.5 rounded-full", dotToneMap[tone ?? "neutral"])}
-        />
-      )}
+    <span
+      className={cn(baseStyles, variants[variant], sizes[size], className)}
+      {...props}
+    >
       {children}
     </span>
   );
