@@ -49,7 +49,7 @@ function kpiToneClass(tone: AnalyticsKpi['tone']) {
     orange: 'bg-orange-500/10 text-orange-400',
     blue: 'bg-blue-50 text-blue-600',
     red: 'bg-red-500/10 text-alert-red',
-    slate: 'bg-bg-surface-2/50 text-text-primary',
+    slate: 'bg-warm-sand/50 text-text-primary',
   };
   return tones[tone] ?? tones.slate;
 }
@@ -106,7 +106,7 @@ export default function Analytics() {
         </Card>
       )}
 
-      <Card className="overflow-hidden border-orange-500/20 bg-gradient-to-r from-solar-orange/10 via-white to-energy-green/10 p-6">
+      <Card className="overflow-hidden border-orange-500/20 bg-gradient-to-r from-orange-500/10 via-bg-surface-2 to-mint-500/10 p-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-start gap-4">
             <div className="rounded-2xl bg-bg-surface-1 p-3 text-orange-400 shadow-sm">
@@ -122,7 +122,7 @@ export default function Analytics() {
               </p>
             </div>
           </div>
-          <a href="https://analytics.enervita.com.br/" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-bg-surface-2 px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-bg-surface-2/90" aria-label="Abrir analytics externo">
+          <a href="https://analytics.enervita.com.br/" target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-xl bg-graphite px-4 py-2.5 text-sm font-black text-white shadow-sm transition hover:bg-graphite/90" aria-label="Abrir analytics externo">
             Abrir analytics externo <ExternalLink size={16} />
           </a>
         </div>
@@ -200,7 +200,7 @@ export default function Analytics() {
               return (
                 <div key={item.key}>
                   <div className="flex items-center justify-between text-xs mb-1"><span className="font-bold text-text-primary">{item.label}</span><span className="text-text-secondary">{item.value}</span></div>
-                  <div className="h-3 bg-bg-surface-2/50 rounded-full overflow-hidden"><div className="h-full bg-orange-500" style={{ width: `${Math.max(4, (item.value / max) * 100)}%` }} /></div>
+                  <div className="h-3 bg-warm-sand/50 rounded-full overflow-hidden"><div className="h-full bg-orange-500" style={{ width: `${Math.max(4, (item.value / max) * 100)}%` }} /></div>
                   {index > 0 && <p className="text-[10px] text-text-secondary mt-1">Conv. etapa anterior: {item.rateFromPrevious ?? 0}%</p>}
                 </div>
               );
@@ -248,12 +248,12 @@ export default function Analytics() {
             {overview.signals.map((signal) => (
               <div key={signal.key}>
                 <div className="flex justify-between text-sm mb-1"><span className="font-bold text-text-primary">{signal.label}</span><span className="text-text-secondary">{signal.count} leads • {signal.coverageRate}%</span></div>
-                <div className="h-2 bg-bg-surface-2/50 rounded-full overflow-hidden"><div className="h-full bg-mint-500" style={{ width: `${signal.coverageRate}%` }} /></div>
+                <div className="h-2 bg-warm-sand/50 rounded-full overflow-hidden"><div className="h-full bg-mint-500" style={{ width: `${signal.coverageRate}%` }} /></div>
               </div>
             ))}
           </div>
           <div className="mt-6 space-y-2">
-            {overview.notes.map((note) => <p key={note} className="text-xs text-text-secondary bg-bg-surface-2/50 rounded-xl px-3 py-2">{note}</p>)}
+            {overview.notes.map((note) => <p key={note} className="text-xs text-text-secondary bg-warm-sand/50 rounded-xl px-3 py-2">{note}</p>)}
           </div>
         </Card>
 
@@ -293,7 +293,7 @@ export default function Analytics() {
             <thead><tr className="border-b border-border-soft text-text-secondary"><th className="pb-3">Campanha</th><th className="pb-3">Origem</th><th className="pb-3">Leads</th><th className="pb-3">Rastreados</th><th className="pb-3">Propostas</th><th className="pb-3">Contratos</th><th className="pb-3">Pipeline</th></tr></thead>
             <tbody className="divide-y divide-border-hair">
               {overview.campaigns.map((campaign) => (
-                <tr key={`${campaign.source}-${campaign.campaign}`} className="hover:bg-bg-surface-2/50/60"><td className="py-3 font-bold text-text-primary">{campaign.campaign}</td><td className="py-3 text-text-secondary">{campaign.source}</td><td className="py-3 text-text-secondary">{campaign.leads}</td><td className="py-3 text-mint-400 font-bold">{campaign.trackedLeads}</td><td className="py-3 text-text-secondary">{campaign.proposals}</td><td className="py-3 text-text-secondary">{campaign.won}</td><td className="py-3 text-text-secondary">{formatCurrency(campaign.estimatedTicket)}</td></tr>
+                <tr key={`${campaign.source}-${campaign.campaign}`} className="hover:bg-warm-sand/50/60"><td className="py-3 font-bold text-text-primary">{campaign.campaign}</td><td className="py-3 text-text-secondary">{campaign.source}</td><td className="py-3 text-text-secondary">{campaign.leads}</td><td className="py-3 text-mint-400 font-bold">{campaign.trackedLeads}</td><td className="py-3 text-text-secondary">{campaign.proposals}</td><td className="py-3 text-text-secondary">{campaign.won}</td><td className="py-3 text-text-secondary">{formatCurrency(campaign.estimatedTicket)}</td></tr>
               ))}
             </tbody>
           </table>

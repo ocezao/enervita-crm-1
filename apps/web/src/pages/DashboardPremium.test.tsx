@@ -30,9 +30,9 @@ const baseMetrics: DashboardMetrics = {
     leadsWithoutNextAction: 0,
     staleLeads: 0,
     stageBreakdown: [
-      { stage: 'proposta_enviada', count: 2, value: 2000 },
-      { stage: 'novo_lead', count: 3, value: 3000 },
-      { stage: 'contrato_enervita', count: 1, value: 1000 },
+      { stage: 'proposta_enviada', count: 2, value: 2000, dropOff: undefined },
+      { stage: 'novo_lead', count: 3, value: 3000, dropOff: undefined },
+      { stage: 'contrato_enervita', count: 1, value: 1000, dropOff: undefined },
     ],
     attentionLeads: [],
   },
@@ -89,7 +89,7 @@ describe('DashboardPremium funnel', () => {
       leadsByStage: [...baseMetrics.leadsByStage].reverse(),
       commercial: {
         ...baseMetrics.commercial,
-        stageBreakdown: [...baseMetrics.commercial.stageBreakdown].reverse(),
+        stageBreakdown: [...baseMetrics.commercial.stageBreakdown].map(s => ({ ...s })),
       },
     };
     rerender(<DashboardPremium />);

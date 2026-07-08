@@ -360,7 +360,7 @@ function KanbanCardContextMenu({ menu, canMoveStage, onClose, onMove }: { menu: 
         role="menu"
         aria-label={`Menu do lead ${menu.lead.contact?.name ?? 'sem nome'}`}
       >
-        <div className="bg-gradient-to-r from-solar-orange/10 via-white to-energy-green/10 p-3 border-b border-border-soft">
+        <div className="bg-gradient-to-r from-orange-500/10 via-bg-surface-2 to-mint-500/10 p-3 border-b border-border-soft">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="text-[10px] font-black uppercase tracking-wider text-orange-400">Card selecionado</p>

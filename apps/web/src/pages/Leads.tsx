@@ -11,6 +11,7 @@ import { userHasPermission } from '../auth/permissions';
 import type { Lead, LeadStage } from '../lib/api/types';
 import { countAudienceReadyLeads, exportLeadsForAudience } from '../lib/api/leadAudienceExport';
 import { api, documentDigits, formatCnpj, formatCpf, isValidCnpj, isValidCpf } from '../lib/api/crmApi';
+import { ContactCard, TaskCard, EmptyState, AlertBanner, Skeleton, Tooltip } from '../components/ui';
 
 type ManualLeadForm = {
   name: string;
@@ -275,6 +276,89 @@ export default function Leads() {
         <Card className="p-5 bg-mint-500/5 border-energy-green/10"><Flame className="text-mint-400" size={20} /><p className="mt-3 text-xs font-bold text-mint-400 uppercase tracking-wider">Qualificados</p><h4 className="text-3xl font-black text-text-primary mt-1">{qualified}</h4></Card>
         <Card className="p-5 bg-bg-surface-2/5 border-border-soft/10"><Clock className="text-text-primary" size={20} /><p className="mt-3 text-xs font-bold text-text-secondary uppercase tracking-wider">Aguardando Contato</p><h4 className="text-3xl font-black text-text-primary mt-1">{waiting}</h4></Card>
         <Card className="p-5 bg-red-500/5 border-alert-red/10"><Flame className="text-alert-red" size={20} /><p className="mt-3 text-xs font-bold text-alert-red uppercase tracking-wider">Prioridade alta</p><h4 className="text-3xl font-black text-text-primary mt-1">{hot}</h4></Card>
+      </div>
+
+      {/* Seção com componentes estendidos */}
+      <div className="space-y-6">
+        <div>
+          <p className="text-sm font-semibold text-orange-400 uppercase tracking-[0.2em]">Componentes estendidos</p>
+          <h2 className="text-2xl font-bold text-text-primary mt-1">Cards e feedback</h2>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Card>
+            <div className="border-b border-border-soft px-6 py-4">
+              <h3 className="text-lg font-bold text-text-primary">Contatos recentes</h3>
+            </div>
+            <div className="p-6 space-y-4">
+              <ContactCard
+                name="Ana Silva"
+                company="Enervita Solutions"
+                avatarUrl=""
+                role="Diretora Comercial"
+                tags={[{ slug: 'vip', name: 'VIP' }, { slug: 'decisor', name: 'Decisor' }]}
+                fields={[{ label: 'E-mail', value: 'ana@enervita.com' }, { label: 'Telefone', value: '(11) 98765-4321' }]}
+              />
+              <ContactCard
+                name="Carlos Mendes"
+                company="Solar Tech"
+                avatarUrl=""
+                role="Gerente de Operações"
+                tags={[{ slug: 'quente', name: 'Quente' }]}
+                fields={[{ label: 'E-mail', value: 'carlos@solartech.com' }]}
+              />
+            </div>
+          </Card>
+
+          <Card>
+            <div className="border-b border-border-soft px-6 py-4">
+              <h3 className="text-lg font-bold text-text-primary">Tarefas do dia</h3>
+            </div>
+            <div className="p-6 space-y-3">
+              <TaskCard
+                title="Follow-up com Ana Silva"
+                description="Apresentar proposta de assinatura de energia"
+                dueDate="Hoje, 14:00"
+                priority="high"
+                checked={false}
+                onCheck={() => {}}
+              />
+              <TaskCard
+                title="Reunião de qualificação"
+                description="Lead novo da Solar Tech"
+                dueDate="Amanhã, 10:00"
+                priority="medium"
+                checked={false}
+                onCheck={() => {}}
+              />
+              <TaskCard
+                title="Enviar contrato"
+                description="Contrato assinado pela Enervita"
+                dueDate="Ontem"
+                priority="urgent"
+                checked={true}
+                onCheck={() => {}}
+              />
+            </div>
+          </Card>
+
+          <Card>
+            <div className="border-b border-border-soft px-6 py-4">
+              <h3 className="text-lg font-bold text-text-primary">Estado vazio</h3>
+            </div>
+            <div className="p-6">
+              <EmptyState
+                icon="inbox"
+                title="Nenhum lead encontrado"
+                description="Tente ajustar os filtros ou crie um novo lead manualmente."
+                actionLabel="Criar lead"
+                onAction={() => setShowCreateLead(true)}
+              />
+            </div>
+          </Card>
+        </div>
+
+        <AlertBanner variant="info" title="Dica" description="Use os componentes ContactCard e TaskCard para exibir informações de forma mais rica nas telas do CRM." />
       </div>
 
       <Card className="overflow-hidden">

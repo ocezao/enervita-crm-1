@@ -15,6 +15,16 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { useDashboardMetrics } from '../hooks/useCrm';
 import { Badge, Card } from '../components/ui/Base';
+import {
+  GeometricFunnel,
+  VerticalFunnel,
+  Gauge,
+  ActivityHeatmap,
+  MonthComparison,
+  SparklineRow,
+  AlertBanner,
+  Skeleton,
+} from '../components/ui';
 
 const stageLabels: Record<string, string> = {
   novo_lead: 'Novo lead',
@@ -129,24 +139,24 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <div className="relative overflow-hidden rounded-[2rem] bg-bg-surface-2 p-8 text-white shadow-md">
+      <div className="relative overflow-hidden rounded-[2rem] bg-bg-surface-3 p-8 text-white shadow-glow-orange">
         <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-orange-500/30 blur-3xl" />
-        <div className="absolute bottom-0 left-20 h-24 w-24 rounded-full bg-solar-yellow/20 blur-2xl" />
+        <div className="absolute bottom-0 left-20 h-24 w-24 rounded-full bg-orange-400/20 blur-2xl" />
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-8 items-center">
           <div>
-            <div className="flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-warning-500 font-bold">
+            <div className="flex items-center gap-2 text-sm uppercase tracking-[0.3em] text-orange-400 font-bold">
               <Sparkles size={16} /> Cockpit Enervita
             </div>
             <h1 className="mt-4 text-4xl font-black max-w-2xl">Operação comercial sob controle, do lead ao contrato ganho.</h1>
-            <p className="mt-3 text-white/70 max-w-xl">Acompanhe captação, follow-up, oportunidades, propostas e gargalos comerciais em um só lugar.</p>
+            <p className="mt-3 text-text-secondary max-w-xl">Acompanhe captação, follow-up, oportunidades, propostas e gargalos comerciais em um só lugar.</p>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-2xl bg-bg-surface-1/10 border border-white/10 p-4">
-              <p className="text-xs text-white/50 uppercase font-bold">Leads sem ação</p>
+            <div className="rounded-2xl bg-bg-surface-2/50 border border-border-soft p-4">
+              <p className="text-xs text-text-muted uppercase font-bold">Leads sem ação</p>
               <p className="text-3xl font-black mt-1">{metrics.leadsWithoutFollowup}</p>
             </div>
-            <div className="rounded-2xl bg-bg-surface-1/10 border border-white/10 p-4">
-              <p className="text-xs text-white/50 uppercase font-bold">Tarefas vencidas</p>
+            <div className="rounded-2xl bg-bg-surface-2/50 border border-border-soft p-4">
+              <p className="text-xs text-text-muted uppercase font-bold">Tarefas vencidas</p>
               <p className="text-3xl font-black mt-1">{metrics.overdueTasks}</p>
             </div>
           </div>
@@ -164,7 +174,7 @@ export default function Dashboard() {
                     <p className="text-sm font-semibold text-text-secondary">{label}</p>
                     <p className="mt-3 text-3xl font-black text-text-primary">{formatNumber(value)}</p>
                   </div>
-                  <div className="rounded-2xl bg-bg-surface-2/50 p-3 text-text-primary">
+                  <div className="rounded-2xl bg-bg-surface-2 p-3 text-text-primary">
                     <Icon size={22} />
                   </div>
                 </div>
@@ -206,7 +216,7 @@ export default function Dashboard() {
                 ) : (
                   <div className="space-y-3">
                     {commercial.attentionLeads.map((lead) => (
-                      <a key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between rounded-xl border border-border-soft bg-bg-surface-1 p-4 transition hover:border-orange-500/40">
+                      <a key={lead.id} href={`/leads/${lead.id}`} className="flex items-center justify-between rounded-xl border border-border-soft bg-bg-surface-1 p-4 transition hover:border-solar-orange/40">
                         <div>
                           <p className="font-bold text-text-primary">{lead.name}</p>
                           <p className="text-xs text-text-secondary">{stageLabel(lead.stage)} · {lead.reason}</p>
@@ -224,19 +234,19 @@ export default function Dashboard() {
               <div className="border-b border-border-soft px-6 py-4">
                 <h3 className="text-lg font-bold text-text-primary">Funil por etapa</h3>
               </div>
-              <div className="space-y-3 p-6">
+              <div className="p-6">
                 {commercial.stageBreakdown.length === 0 ? (
                   <p className="text-sm text-text-secondary">Sem dados de funil.</p>
                 ) : (
-                  commercial.stageBreakdown.map((stage) => (
-                    <div key={stage.stage} className="rounded-xl bg-bg-surface-2/50 p-3">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-semibold text-text-primary">{stageLabel(stage.stage)}</span>
-                        <span className="text-text-secondary">{formatNumber(stage.count)}</span>
-                      </div>
-                      <p className="text-xs text-text-secondary mt-1">{formatCurrency(stage.value)} em aberto</p>
-                    </div>
-                  ))
+                  <VerticalFunnel
+                    steps={commercial.stageBreakdown.map((s, i) => ({
+                      label: stageLabel(s.stage),
+                      value: s.count,
+                      sublabel: formatCurrency(s.value),
+                      color: ['#FF9640', '#FF7A1A', '#E8620A', '#B84C08', '#3FDDA3', '#2ED9A3', '#1FB584'][i % 7],
+                      dropOff: s.dropOff,
+                    }))}
+                  />
                 )}
               </div>
             </Card>
@@ -252,7 +262,7 @@ export default function Dashboard() {
           <div className="p-6">
             <div className="space-y-4">
               {metrics.leadsByStage.map((stage) => (
-                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-bg-surface-2/50 px-4 py-3">
+                <div key={stage.stage} className="flex items-center justify-between rounded-2xl bg-bg-surface-2 px-4 py-3">
                   <div>
                     <p className="font-semibold text-text-primary">{stageLabel(stage.stage)}</p>
                     <p className="text-xs text-text-secondary">Distribuição do pipeline</p>
@@ -284,6 +294,73 @@ export default function Dashboard() {
           </div>
         </Card>
       </div>
+
+      {/* Nova seção com componentes estendidos */}
+      {commercial && (
+        <div className="space-y-6">
+          <div>
+            <p className="text-sm font-semibold text-orange-400 uppercase tracking-[0.2em]">Métricas avançadas</p>
+            <h2 className="text-2xl font-bold text-text-primary mt-1">Performance e atividade</h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <div className="border-b border-border-soft px-6 py-4">
+                <h3 className="text-lg font-bold text-text-primary">Meta de conversão</h3>
+              </div>
+              <div className="p-6">
+                <Gauge value={72} label="Conversão atual" target={80} />
+              </div>
+            </Card>
+
+            <Card>
+              <div className="border-b border-border-soft px-6 py-4">
+                <h3 className="text-lg font-bold text-text-primary">Atividade semanal</h3>
+              </div>
+              <div className="p-6">
+                <ActivityHeatmap
+                  data={[
+                    { day: 'Seg', intensity: 0.8 },
+                    { day: 'Ter', intensity: 0.6 },
+                    { day: 'Qua', intensity: 0.9 },
+                    { day: 'Qui', intensity: 0.4 },
+                    { day: 'Sex', intensity: 0.7 },
+                    { day: 'Sáb', intensity: 0.2 },
+                    { day: 'Dom', intensity: 0.1 },
+                  ]}
+                />
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <div className="border-b border-border-soft px-6 py-4">
+                <h3 className="text-lg font-bold text-text-primary">Comparativo mensal</h3>
+              </div>
+              <div className="p-6">
+                <MonthComparison
+                  currentMonth={{ label: 'Este mês', value: 145, delta: 12 }}
+                  previousMonth={{ label: 'Mês anterior', value: 129 }}
+                />
+              </div>
+            </Card>
+
+            <Card>
+              <div className="border-b border-border-soft px-6 py-4">
+                <h3 className="text-lg font-bold text-text-primary">Tendência de leads</h3>
+              </div>
+              <div className="p-6 space-y-3">
+                <SparklineRow label="Novos leads" values={[12, 18, 15, 22, 19, 25, 28]} trend="up" />
+                <SparklineRow label="Qualificados" values={[8, 10, 9, 14, 12, 16, 18]} trend="up" />
+                <SparklineRow label="Propostas" values={[5, 7, 6, 8, 7, 9, 11]} trend="up" />
+              </div>
+            </Card>
+          </div>
+
+          <AlertBanner variant="info" title="Dica de performance" description="Seu time teve um aumento de 15% na conversão esta semana. Continue acompanhando o funil para identificar gargalos." />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>

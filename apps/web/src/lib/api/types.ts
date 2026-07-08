@@ -639,6 +639,7 @@ export interface CommercialStageBreakdown {
   stage: LeadStage;
   count: number;
   value: number;
+  dropOff?: string;
 }
 
 export interface CommercialAttentionLead {
