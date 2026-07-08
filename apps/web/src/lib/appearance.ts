@@ -5,6 +5,7 @@ export type CornerStyle = 'soft' | 'rounded' | 'sharp';
 export type FontScale = 'normal' | 'large' | 'extra';
 export type CardStyle = 'flat' | 'soft' | 'glass';
 export type ContentWidth = 'fluid' | 'focused';
+export type ThemeMode = 'light' | 'dark';
 
 export type AppearanceSettings = {
   preset: AppearancePresetId;
@@ -25,6 +26,7 @@ export type AppearanceSettings = {
   fontScale: FontScale;
   cardStyle: CardStyle;
   contentWidth: ContentWidth;
+  themeMode: ThemeMode;
 };
 
 export const APPEARANCE_STORAGE_KEY = 'enervita.crm.appearance.v1';
@@ -48,6 +50,7 @@ export const appearancePresets: Record<AppearancePresetId, Omit<AppearanceSettin
     fontScale: 'normal',
     cardStyle: 'soft',
     contentWidth: 'fluid',
+    themeMode: 'light',
   },
   executive: {
     preset: 'executive',
@@ -67,6 +70,7 @@ export const appearancePresets: Record<AppearancePresetId, Omit<AppearanceSettin
     fontScale: 'normal',
     cardStyle: 'flat',
     contentWidth: 'focused',
+    themeMode: 'light',
   },
   focus: {
     preset: 'focus',
@@ -86,6 +90,7 @@ export const appearancePresets: Record<AppearancePresetId, Omit<AppearanceSettin
     fontScale: 'large',
     cardStyle: 'soft',
     contentWidth: 'fluid',
+    themeMode: 'light',
   },
   night: {
     preset: 'night',
@@ -105,6 +110,7 @@ export const appearancePresets: Record<AppearancePresetId, Omit<AppearanceSettin
     fontScale: 'large',
     cardStyle: 'glass',
     contentWidth: 'focused',
+    themeMode: 'dark',
   },
 };
 
@@ -134,6 +140,38 @@ export function saveAppearanceSettings(settings: AppearanceSettings) {
 export function applyAppearanceSettings(settings: AppearanceSettings) {
   if (typeof document === 'undefined') return;
   const root = document.documentElement;
+  
+  // Apply theme mode (dark/light)
+  if (settings.themeMode === 'dark') {
+    root.classList.add('dark');
+    // Dark theme colors
+    root.style.setProperty('--color-bg-void', '#0A0D10');
+    root.style.setProperty('--color-bg-base', '#0D1114');
+    root.style.setProperty('--color-bg-surface-1', '#12171B');
+    root.style.setProperty('--color-bg-surface-2', '#171D22');
+    root.style.setProperty('--color-bg-surface-3', '#1D242A');
+    root.style.setProperty('--color-border-hair', 'rgba(255,255,255,0.06)');
+    root.style.setProperty('--color-border-soft', 'rgba(255,255,255,0.09)');
+    root.style.setProperty('--color-border-strong', 'rgba(255,255,255,0.14)');
+    root.style.setProperty('--color-text-primary', '#EDEFF1');
+    root.style.setProperty('--color-text-secondary', '#A3ACB3');
+    root.style.setProperty('--color-text-muted', '#626B72');
+  } else {
+    root.classList.remove('dark');
+    // Light theme colors
+    root.style.setProperty('--color-bg-void', '#FAF7F0');
+    root.style.setProperty('--color-bg-base', '#FFFFFF');
+    root.style.setProperty('--color-bg-surface-1', '#F8F9FA');
+    root.style.setProperty('--color-bg-surface-2', '#F1F3F5');
+    root.style.setProperty('--color-bg-surface-3', '#E9ECEF');
+    root.style.setProperty('--color-border-hair', 'rgba(0,0,0,0.06)');
+    root.style.setProperty('--color-border-soft', 'rgba(0,0,0,0.12)');
+    root.style.setProperty('--color-border-strong', 'rgba(0,0,0,0.20)');
+    root.style.setProperty('--color-text-primary', '#212529');
+    root.style.setProperty('--color-text-secondary', '#495057');
+    root.style.setProperty('--color-text-muted', '#868E96');
+  }
+  
   root.style.setProperty('--color-solar-orange', settings.primaryColor);
   root.style.setProperty('--color-energy-green', settings.secondaryColor);
   root.style.setProperty('--color-energy-deep', settings.secondaryColor);
@@ -148,4 +186,15 @@ export function applyAppearanceSettings(settings: AppearanceSettings) {
   root.dataset.crmFontScale = settings.fontScale;
   root.dataset.crmCardStyle = settings.cardStyle;
   root.dataset.crmContentWidth = settings.contentWidth;
+}
+
+export function toggleThemeMode(currentSettings: AppearanceSettings): AppearanceSettings {
+  const newMode: ThemeMode = currentSettings.themeMode === 'light' ? 'dark' : 'light';
+  const newSettings: AppearanceSettings = {
+    ...currentSettings,
+    themeMode: newMode,
+  };
+  saveAppearanceSettings(newSettings);
+  applyAppearanceSettings(newSettings);
+  return newSettings;
 }

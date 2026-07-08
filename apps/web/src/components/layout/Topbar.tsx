@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, Bot, Command, FileText, Kanban, LayoutDashboard, LogOut, Megaphone, Plus, Search, Settings, Sparkles, UserRound, Users, CheckSquare, Zap, BarChart3 } from 'lucide-react';
+import { Bell, Bot, Command, FileText, Kanban, LayoutDashboard, LogOut, Megaphone, Moon, Plus, Search, Settings, Sparkles, Sun, UserRound, Users, CheckSquare, Zap, BarChart3 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../auth/useAuth';
@@ -7,6 +7,7 @@ import { userHasAnyPermission } from '../../auth/permissions';
 import { Button } from '../ui/Base';
 import { HttpCrmApi } from '../../lib/api/crmApi';
 import type { Lead, Notification } from '../../lib/api/types';
+import { loadAppearanceSettings, toggleThemeMode } from '../../lib/appearance';
 
 type SearchSuggestion = {
   id: string;
@@ -69,6 +70,16 @@ export const Topbar = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [leadsLoaded, setLeadsLoaded] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const settings = loadAppearanceSettings();
+    return settings.themeMode === 'dark';
+  });
+
+  const handleToggleTheme = useCallback(() => {
+    const settings = loadAppearanceSettings();
+    const newSettings = toggleThemeMode(settings);
+    setIsDarkMode(newSettings.themeMode === 'dark');
+  }, []);
 
   const visibleStaticSuggestions = useMemo(
     () => pageSuggestions.filter((item) => !item.requiredAny || userHasAnyPermission(user, item.requiredAny)),
@@ -233,6 +244,9 @@ export const Topbar = () => {
       </div>
 
       <div className="flex items-center gap-4">
+        <Button variant="outline" size="icon" className="rounded-xl" aria-label={isDarkMode ? 'Mudar para tema claro' : 'Mudar para tema escuro'} title={isDarkMode ? 'Tema claro' : 'Tema escuro'} onClick={handleToggleTheme}>
+          {isDarkMode ? <Sun size={20} className="text-text-secondary" /> : <Moon size={20} className="text-text-secondary" />}
+        </Button>
         <div className="relative">
           <Button variant="outline" size="icon" className="relative rounded-xl" aria-label="Notificações" title="Notificações" onClick={() => setNotificationsOpen(prev => !prev)}>
             <Bell size={20} className="text-text-secondary" />
